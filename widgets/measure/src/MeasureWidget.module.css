@@ -7,6 +7,22 @@
   font: 500 13px/1.3 system-ui, -apple-system, 'Segoe UI', sans-serif;
 }
 
+/* Compact mode — shrinks the widget to fit in a side pane. */
+.widgetCompact {
+  gap: 8px;
+  font-size: 12px;
+}
+.widgetCompact .button {
+  padding: 6px 10px;
+}
+.widgetCompact .result {
+  padding: 10px 12px;
+  min-width: 180px;
+}
+.widgetCompact .resultHeader {
+  margin-bottom: 8px;
+}
+
 .toolbar {
   display: flex;
   gap: 8px;

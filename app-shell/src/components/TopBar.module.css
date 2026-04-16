@@ -86,4 +86,42 @@
   color: #fff;
 }
 
+.bpLabel {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(255, 255, 255, 0.35);
+}
+
+.bpGroup {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  padding: 2px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  font-size: 11px;
+}
+
+.bpBtn {
+  padding: 4px 10px;
+  border-radius: 6px;
+  color: rgba(255, 255, 255, 0.55);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font: inherit;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+.bpBtn:hover {
+  color: #fff;
+}
+.bpBtnActive {
+  background: #22c55e;
+  color: #0f0f14;
+  font-weight: 600;
+}
+
 .spacer { flex: 1; }

@@ -7,8 +7,11 @@ import styles from './MeasureWidget.module.css'
  * Measure widget UI. Self-contained: it reads the Cesium viewer from
  * `@mightyspatial/cesium-core`, owns its own tool lifecycle via useMeasure,
  * and renders the toolbar, live tooltip, and result panel.
+ *
+ * When ctx.displayMode is 'compact' (e.g. rendered inside a side pane), the
+ * widget tightens its layout: shorter button labels and inline result rows.
  */
-export function MeasureWidget({ onClose }: WidgetComponentProps) {
+export function MeasureWidget({ ctx, onClose }: WidgetComponentProps) {
   const {
     measureActive,
     measureRunning,
@@ -18,8 +21,14 @@ export function MeasureWidget({ onClose }: WidgetComponentProps) {
     clearResult,
   } = useMeasure()
 
+  const compact = ctx.displayMode === 'compact'
+
   return (
-    <div className={styles.widget} data-widget="measure">
+    <div
+      className={`${styles.widget} ${compact ? styles.widgetCompact : ''}`}
+      data-widget="measure"
+      data-display-mode={ctx.displayMode ?? 'full'}
+    >
       <div className={styles.toolbar}>
         {!measureActive && !measureResult && (
           <button
@@ -28,7 +37,7 @@ export function MeasureWidget({ onClose }: WidgetComponentProps) {
             onClick={startMeasure}
             aria-label="Start measurement"
           >
-            Start measuring
+            {compact ? 'Start' : 'Start measuring'}
           </button>
         )}
         {measureActive && (
@@ -49,7 +58,7 @@ export function MeasureWidget({ onClose }: WidgetComponentProps) {
               onClick={startMeasure}
               aria-label="Start another measurement"
             >
-              New measurement
+              {compact ? 'New' : 'New measurement'}
             </button>
             <button
               type="button"
@@ -71,12 +80,15 @@ export function MeasureWidget({ onClose }: WidgetComponentProps) {
                 {formatDistance(measureRunning.distance)}
               </span>
               <span className={styles.tooltipHint}>
-                {measureRunning.points} point{measureRunning.points !== 1 ? 's' : ''} — double-click to finish
+                {measureRunning.points} point{measureRunning.points !== 1 ? 's' : ''}
+                {compact ? ' — dbl-click' : ' — double-click to finish'}
               </span>
             </>
           ) : (
             <span className={styles.tooltipHint}>
-              Click on the globe to place points. ESC to cancel.
+              {compact
+                ? 'Click to place points. ESC to cancel.'
+                : 'Click on the globe to place points. ESC to cancel.'}
             </span>
           )}
         </div>
@@ -100,7 +112,7 @@ export function MeasureWidget({ onClose }: WidgetComponentProps) {
           </div>
           <div className={styles.resultBody}>
             <div className={styles.resultRow}>
-              <span className={styles.resultLabel}>Distance</span>
+              <span className={styles.resultLabel}>{compact ? 'Dist' : 'Distance'}</span>
               <span className={styles.resultValue}>
                 {formatDistance(measureResult.distance)}
               </span>
@@ -112,7 +124,7 @@ export function MeasureWidget({ onClose }: WidgetComponentProps) {
               </div>
             )}
             <div className={styles.resultRow}>
-              <span className={styles.resultLabel}>Points</span>
+              <span className={styles.resultLabel}>{compact ? 'Pts' : 'Points'}</span>
               <span className={styles.resultValue}>{measureResult.points}</span>
             </div>
           </div>

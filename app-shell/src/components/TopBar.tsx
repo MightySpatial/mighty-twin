@@ -7,11 +7,24 @@ interface TopBarProps {
   breakpoint: Breakpoint
   onModeChange: (mode: ViewMode) => void
   labels: { viewer: string; admin: string; settings: string }
+  /** Optional dev-only breakpoint override. When set, an extra toggle group
+   *  appears in the top bar so developers can flip between phone / tablet /
+   *  desktop layouts without resizing the browser. */
+  forcedBreakpoint?: Breakpoint | null
+  onForcedBreakpointChange?: (bp: Breakpoint | null) => void
 }
 
 /** Desktop/tablet top bar. Renders brand + three tabs + split-mode toggle.
  *  Phone layout omits the bar entirely (handled by MobileTabSwitcher). */
-export function TopBar({ brand, mode, breakpoint, onModeChange, labels }: TopBarProps) {
+export function TopBar({
+  brand,
+  mode,
+  breakpoint,
+  onModeChange,
+  labels,
+  forcedBreakpoint,
+  onForcedBreakpointChange,
+}: TopBarProps) {
   if (breakpoint === 'phone') return null
 
   const isViewerTab = mode === 'viewer-only' || mode === 'split-viewer' || mode === 'split-admin'
@@ -113,6 +126,40 @@ export function TopBar({ brand, mode, breakpoint, onModeChange, labels }: TopBar
       )}
 
       <div className={styles.spacer} />
+
+      {onForcedBreakpointChange && import.meta.env.DEV && (
+        <div className={styles.bpGroup} role="group" aria-label="Breakpoint">
+          <span className={styles.bpLabel} style={{ padding: '0 8px 0 4px' }}>
+            Breakpoint
+          </span>
+          {(['phone', 'tablet', 'desktop'] as const).map((bp) => (
+            <button
+              key={bp}
+              type="button"
+              className={`${styles.bpBtn} ${forcedBreakpoint === bp ? styles.bpBtnActive : ''}`}
+              onClick={() => onForcedBreakpointChange(forcedBreakpoint === bp ? null : bp)}
+              title={
+                forcedBreakpoint === bp
+                  ? `Release ${bp} override (return to auto)`
+                  : `Simulate ${bp} layout`
+              }
+            >
+              {bp}
+            </button>
+          ))}
+          {forcedBreakpoint && (
+            <button
+              type="button"
+              className={styles.bpBtn}
+              onClick={() => onForcedBreakpointChange(null)}
+              title="Return to auto-detected breakpoint"
+              style={{ opacity: 0.7 }}
+            >
+              auto
+            </button>
+          )}
+        </div>
+      )}
     </header>
   )
 }

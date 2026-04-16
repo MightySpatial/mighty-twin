@@ -10,6 +10,7 @@ export const measureManifest: WidgetManifest = {
   placement: 'toolbar',
   Component: MeasureWidget,
   description: 'Measure distance and area on the globe.',
+  minWidth: 280,
 }
 
 /** Register the Measure widget with the host. Idempotent. */

@@ -1,7 +1,17 @@
-import { useEffect, useMemo } from 'react'
-import type { AppShellProps, DisplayMode, PaneRole, ShellContextValue } from '../types'
+import { useEffect, useMemo, useState } from 'react'
+import type {
+  AppShellProps,
+  Breakpoint,
+  DisplayMode,
+  PaneRole,
+  ShellContextValue,
+} from '../types'
 import { ShellContextProvider } from '../context/ShellContext'
-import { useBreakpoint } from '../hooks/useBreakpoint'
+import {
+  useBreakpoint,
+  readForcedBreakpoint,
+  writeForcedBreakpoint,
+} from '../hooks/useBreakpoint'
 import { useViewMode } from '../hooks/useViewMode'
 import { useResizeObserver } from '../hooks/useResizeObserver'
 import { TopBar } from './TopBar'
@@ -25,7 +35,20 @@ export function AppShell({
   onModeChange,
 }: AppShellProps) {
   const { mode, setMode } = useViewMode()
-  const breakpoint = useBreakpoint()
+
+  // Dev-only breakpoint override. Initial value from the URL (so a shared
+  // link preserves the override); updates persist back to the URL without
+  // reload. In production, this state stays null and the breakpoint is
+  // fully auto-detected.
+  const [forcedBreakpoint, setForcedBreakpointState] = useState<Breakpoint | null>(() =>
+    readForcedBreakpoint(),
+  )
+  const onForcedBreakpointChange = (bp: Breakpoint | null) => {
+    setForcedBreakpointState(bp)
+    writeForcedBreakpoint(bp)
+  }
+
+  const breakpoint = useBreakpoint({ override: forcedBreakpoint })
 
   const labels = {
     viewer: tabLabels?.viewer ?? 'Viewer',
@@ -79,7 +102,11 @@ export function AppShell({
       }
     >
       {breakpoint === 'phone' ? (
-        <MobileHeader brand={brand} />
+        <MobileHeader
+          brand={brand}
+          forcedBreakpoint={forcedBreakpoint}
+          onForcedBreakpointChange={onForcedBreakpointChange}
+        />
       ) : (
         <TopBar
           brand={brand}
@@ -87,6 +114,8 @@ export function AppShell({
           breakpoint={breakpoint}
           onModeChange={setMode}
           labels={labels}
+          forcedBreakpoint={forcedBreakpoint}
+          onForcedBreakpointChange={onForcedBreakpointChange}
         />
       )}
 
