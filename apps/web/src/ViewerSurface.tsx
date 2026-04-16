@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import * as Cesium from 'cesium'
 import { useShellContext } from '@mightyspatial/app-shell'
+import { usePersistedSettings } from '@mightyspatial/settings-panels'
 
-const ION_TOKEN = import.meta.env.VITE_CESIUM_ION_TOKEN as string | undefined
-if (ION_TOKEN) Cesium.Ion.defaultAccessToken = ION_TOKEN
+const ENV_ION_TOKEN = import.meta.env.VITE_CESIUM_ION_TOKEN as string | undefined
 
 /** MightyTwin's viewer — defaults to flying to Forrest Airport (Space Angel
  *  demo site) at 28350 MGA2020 Zone 50 storage. All feature reads/writes go
@@ -13,9 +13,16 @@ export function ViewerSurface() {
   const containerRef = useRef<HTMLDivElement | null>(null)
   const [viewer, setViewer] = useState<Cesium.Viewer | null>(null)
   const { paneSize } = useShellContext()
+  const { settings } = usePersistedSettings()
 
   useEffect(() => {
     if (!containerRef.current) return
+
+    const userToken = settings.basemap.ionToken.trim()
+    const resolvedIonToken = userToken || ENV_ION_TOKEN
+    if (resolvedIonToken) Cesium.Ion.defaultAccessToken = resolvedIonToken
+    const hasIon = !!resolvedIonToken
+
     const v = new Cesium.Viewer(containerRef.current, {
       animation: false,
       timeline: false,
@@ -28,7 +35,7 @@ export function ViewerSurface() {
     })
 
     v.imageryLayers.removeAll()
-    if (ION_TOKEN) {
+    if (hasIon) {
       Cesium.IonImageryProvider.fromAssetId(2)
         .then((p) => !v.isDestroyed() && v.imageryLayers.addImageryProvider(p))
         .catch(() => {})
@@ -65,6 +72,7 @@ export function ViewerSurface() {
       v.destroy()
       setViewer(null)
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   useEffect(() => {
