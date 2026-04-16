@@ -17,5 +17,6 @@ export type {
   CoordinateFormat,
   ThemeMode,
   Density,
+  AdminView,
 } from './types'
 export { DEFAULT_SETTINGS, STORAGE_KEY, CHANGE_EVENT } from './types'

@@ -1,9 +1,5 @@
-/**
- * Mock admin chrome (placeholder).
- * Day-3: implement MockSitesPage / MockUsersPage / MockDataPage / MockLibraryPage
- * + MockAdminPage outer chrome mimicking MightyTwin admin.
- */
-
-export function MockAdminPage(): null {
-  return null
-}
+export { MockAdminPage } from './MockAdminShell'
+export { MockSitesPage } from './MockSitesPage'
+export { MockUsersPage } from './MockUsersPage'
+export { MockDataPage } from './MockDataPage'
+export { MockLibraryPage } from './MockLibraryPage'

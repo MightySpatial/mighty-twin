@@ -3,6 +3,7 @@ export type LengthUnit = 'metric' | 'imperial'
 export type CoordinateFormat = 'dd' | 'dms' | 'mgrs'
 export type ThemeMode = 'dark' | 'light' | 'system'
 export type Density = 'compact' | 'comfortable'
+export type AdminView = 'dev-tools' | 'mock'
 
 export interface AppSettings {
   basemap: {
@@ -22,6 +23,9 @@ export interface AppSettings {
     mode: ThemeMode
     density: Density
   }
+  admin: {
+    view: AdminView
+  }
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -29,6 +33,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   units: { length: 'metric', coordinates: 'dd' },
   widgets: { enabled: {}, showDebugOverlays: false },
   theme: { mode: 'dark', density: 'comfortable' },
+  admin: { view: 'dev-tools' },
 }
 
 export const STORAGE_KEY = 'mighty-settings-v1'
