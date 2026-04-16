@@ -1,0 +1,41 @@
+services:
+  postgres:
+    image: postgis/postgis:16-3.4-alpine
+    environment:
+      POSTGRES_USER: mighty
+      POSTGRES_PASSWORD: mighty
+      POSTGRES_DB: mightytwin
+    ports:
+      - "5432:5432"
+    volumes:
+      - twin-db:/var/lib/postgresql/data
+      - ./postgres-init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mighty -d mightytwin"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  api:
+    build:
+      context: ../apps/api
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "5001:5001"
+    environment:
+      - DATABASE_URL=postgresql+psycopg://mighty:mighty@postgres:5432/mightytwin
+      - ALLOWED_ORIGINS=http://localhost:3000
+
+  web:
+    build:
+      context: ../
+      dockerfile: apps/web/Dockerfile
+    depends_on:
+      - api
+    ports:
+      - "3000:80"
+
+volumes:
+  twin-db:

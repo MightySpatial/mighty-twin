@@ -1,0 +1,19 @@
+[project]
+name = "mighty-twin-root"
+version = "0.1.0"
+description = "MightyTwin — root workspace for the FastAPI backend"
+requires-python = ">=3.12"
+
+[tool.uv.workspace]
+members = ["apps/api"]
+
+[tool.uv.sources]
+# Shared Python libs pulled from the platform repo at a pinned tag.
+# Bump the tag via `bin/upgrade-platform vX.Y.Z` and re-run `uv lock`.
+mighty_core = { git = "https://github.com/MightySpatial/mighty-platform", tag = "v0.1.0", subdirectory = "python/mighty_core" }
+mighty_db = { git = "https://github.com/MightySpatial/mighty-platform", tag = "v0.1.0", subdirectory = "python/mighty_db" }
+mighty_models = { git = "https://github.com/MightySpatial/mighty-platform", tag = "v0.1.0", subdirectory = "python/mighty_models" }
+mighty_spatial = { git = "https://github.com/MightySpatial/mighty-platform", tag = "v0.1.0", subdirectory = "python/mighty_spatial" }
+mighty_migrations = { git = "https://github.com/MightySpatial/mighty-platform", tag = "v0.1.0", subdirectory = "python/mighty_migrations" }
+mighty_api = { git = "https://github.com/MightySpatial/mighty-platform", tag = "v0.1.0", subdirectory = "python/mighty_api" }
+mighty_licensing = { git = "https://github.com/MightySpatial/mighty-platform", tag = "v0.1.0", subdirectory = "python/mighty_licensing" }

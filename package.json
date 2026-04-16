@@ -1,0 +1,21 @@
+{
+  "name": "mighty-twin",
+  "version": "0.1.0",
+  "private": true,
+  "description": "MightyTwin — enterprise on-prem digital twin backed by PostgreSQL/PostGIS. Thin consumer of @mightyspatial/* packages.",
+  "author": "Mighty Spatial (Rahman Schionning)",
+  "license": "UNLICENSED",
+  "packageManager": "pnpm@9.15.0",
+  "engines": {
+    "node": ">=20",
+    "pnpm": ">=9"
+  },
+  "scripts": {
+    "dev": "pnpm --filter @mighty-twin/web dev",
+    "build": "pnpm --filter @mighty-twin/web build",
+    "typecheck": "pnpm -r run typecheck"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.2"
+  }
+}
