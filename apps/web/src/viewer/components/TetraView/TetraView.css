@@ -1,0 +1,144 @@
+/* MightyTwin — Tetra View Layout */
+
+.tetra-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 15;
+  background: #0a0a0f;
+  overflow: hidden;
+  animation: tetra-fade-in 0.25s ease;
+}
+
+@keyframes tetra-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* ── Close button (top right) ─────────────────────────────────────────────── */
+
+.tetra-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 20;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(15, 15, 20, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.85);
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.tetra-close:hover {
+  background: rgba(30, 30, 42, 0.95);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+/* ── Mode toggle button (top left) ────────────────────────────────────────── */
+
+.tetra-mode-toggle {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  background: rgba(15, 15, 20, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.85);
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.tetra-mode-toggle:hover {
+  background: rgba(30, 30, 42, 0.95);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.tetra-mode-label {
+  text-transform: uppercase;
+}
+
+/* ── Wall angle toggle (top centre) ──────────────────────────────────────── */
+
+.tetra-angle-toggle {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 20;
+  display: flex;
+  gap: 2px;
+  background: rgba(15, 15, 20, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  overflow: hidden;
+  backdrop-filter: blur(8px);
+}
+
+.tetra-angle-btn {
+  padding: 8px 14px;
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.tetra-angle-btn:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.tetra-angle-btn--active {
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.95);
+}
+
+/* ── Panel containers ─────────────────────────────────────────────────────── */
+/* All panels are full-screen; clip-path does the cutting */
+
+.tetra-panel {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.tetra-panel canvas {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* ── Label badges ─────────────────────────────────────────────────────────── */
+
+.tetra-label {
+  position: absolute;
+  bottom: 6px;
+  left: 8px;
+  font-size: 10px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.3);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  pointer-events: none;
+  z-index: 3;
+}

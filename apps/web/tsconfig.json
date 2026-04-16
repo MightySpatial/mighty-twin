@@ -13,8 +13,14 @@
     "skipLibCheck": true,
     "resolveJsonModule": true,
     "isolatedModules": true,
+    "allowJs": true,
     "noEmit": true,
-    "types": ["vite/client"]
+    "types": ["vite/client", "geojson"],
+    "baseUrl": ".",
+    "paths": {
+      "@mightydt/ui": ["./src/ui/index.ts"],
+      "@mightydt/types": ["./src/types/index.ts"]
+    }
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist"]

@@ -1,0 +1,276 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   APP LAYOUT — Responsive shell (phone/tablet/desktop)
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.app-layout {
+  display: flex;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  /* position: relative so child `position: absolute` drawer/bottom-nav
+     are scoped to the admin pane, not the viewport. v1 used fixed
+     positioning because admin was a standalone app at /admin. */
+  position: relative;
+}
+
+/* ─── SIDEBAR (Desktop) ───────────────────────────────────────────────────── */
+
+.sidebar {
+  width: var(--sidebar-width);
+  height: 100%;
+  background: var(--color-bg-secondary);
+  border-right: 1px solid var(--color-border);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+}
+
+.sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-5);
+  border-bottom: 1px solid var(--color-border-light);
+}
+
+.sidebar-logo {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.logo-icon {
+  font-size: 28px;
+  color: var(--color-accent);
+}
+
+.logo-text {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+}
+
+.sidebar-close {
+  display: none;
+  background: none;
+  border: none;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  padding: var(--space-2);
+}
+
+.sidebar-nav {
+  flex: 1;
+  padding: var(--space-4);
+  overflow-y: auto;
+}
+
+.nav-section {
+  margin-bottom: var(--space-6);
+}
+
+.nav-section-title {
+  display: block;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: var(--space-2);
+  padding: 0 var(--space-3);
+}
+
+.nav-link {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-3);
+  color: var(--color-text-secondary);
+  text-decoration: none;
+  border-radius: var(--radius-md);
+  transition: background var(--transition-fast), color var(--transition-fast);
+  margin-bottom: var(--space-1);
+  font-size: var(--font-size-md);
+  background: none;
+  border: none;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+}
+
+.nav-link:hover {
+  background: var(--color-bg-tertiary);
+  color: var(--color-text-primary);
+}
+
+.nav-link.active {
+  background: var(--color-accent-bg);
+  color: var(--color-accent-light);
+}
+
+.nav-link-chevron {
+  margin-left: auto;
+  opacity: 0.3;
+}
+
+.nav-link-danger {
+  color: var(--color-danger);
+}
+
+.nav-link-danger:hover {
+  background: var(--color-danger-bg);
+}
+
+.sidebar-footer {
+  padding: var(--space-4);
+  border-top: 1px solid var(--color-border-light);
+}
+
+/* ─── SIDEBAR (Tablet - Drawer) ───────────────────────────────────────────── */
+
+.sidebar-tablet {
+  /* absolute (not fixed): scoped to .app-layout, not the viewport */
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  z-index: 200;
+  transform: translateX(-100%);
+  transition: transform var(--transition-slow);
+  width: 280px;
+}
+
+.sidebar-tablet.open {
+  transform: translateX(0);
+}
+
+.sidebar-tablet .sidebar-close {
+  display: block;
+}
+
+.sidebar-backdrop {
+  /* absolute (not fixed): scoped to .app-layout */
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 199;
+  animation: fadeIn var(--transition-fast);
+}
+
+/* ─── MAIN WRAPPER ────────────────────────────────────────────────────────── */
+
+.main-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+}
+
+/* ─── HEADER ──────────────────────────────────────────────────────────────── */
+
+.header {
+  display: flex;
+  align-items: center;
+  height: var(--header-height);
+  padding: 0 var(--space-4);
+  background: var(--color-bg-secondary);
+  border-bottom: 1px solid var(--color-border);
+  flex-shrink: 0;
+}
+
+.header-phone {
+  padding-top: var(--safe-top);
+  height: calc(var(--header-height) + var(--safe-top));
+  justify-content: center;
+}
+
+.header-tablet {
+  gap: var(--space-4);
+}
+
+.header-title {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  margin: 0;
+}
+
+.header-menu-btn {
+  background: none;
+  border: none;
+  color: var(--color-text-secondary);
+  padding: var(--space-2);
+  cursor: pointer;
+}
+
+.header-spacer {
+  width: 40px;
+}
+
+/* ─── MAIN CONTENT ────────────────────────────────────────────────────────── */
+
+.main-content {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Phone: add padding for bottom nav */
+@media (max-width: 767px) {
+  .main-content {
+    padding-bottom: calc(var(--bottom-nav-height) + var(--safe-bottom));
+  }
+}
+
+/* ─── BOTTOM NAV (Phone) ──────────────────────────────────────────────────── */
+
+.bottom-nav {
+  display: flex;
+  background: var(--color-bg-secondary);
+  border-top: 1px solid var(--color-border);
+  padding-bottom: var(--safe-bottom);
+  /* absolute (not fixed): scoped to .app-layout */
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 50;
+}
+
+.bottom-nav-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-2) 0;
+  background: none;
+  border: none;
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-xs);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.bottom-nav-item.active {
+  color: var(--color-accent-light);
+}
+
+.bottom-nav-item svg {
+  width: 24px;
+  height: 24px;
+}
+
+/* ─── Desktop without header ──────────────────────────────────────────────── */
+
+@media (min-width: 1024px) {
+  .header {
+    display: none;
+  }
+  
+  .main-content {
+    /* Desktop gets a subtle header built into each page */
+  }
+}

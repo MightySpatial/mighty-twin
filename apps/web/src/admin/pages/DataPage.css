@@ -1,0 +1,40 @@
+/* DataPage specific styles */
+
+.storage-section {
+  padding: 0 var(--space-4);
+  margin-bottom: var(--space-4);
+}
+
+@media (min-width: 1024px) {
+  .storage-section {
+    max-width: 400px;
+    padding: 0;
+  }
+}
+
+.storage-labels {
+  display: flex;
+  justify-content: space-between;
+  margin-top: var(--space-2);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.filter-section {
+  padding: 0 var(--space-4);
+  margin-bottom: var(--space-4);
+}
+
+.data-card-icon {
+  font-size: 28px;
+  flex-shrink: 0;
+}
+
+.site-card-icon {
+  font-size: 28px;
+  flex-shrink: 0;
+}
+
+.site-icon {
+  font-size: 20px;
+}

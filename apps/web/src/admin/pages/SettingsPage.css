@@ -1,0 +1,60 @@
+/* SettingsPage styles */
+
+.settings-page {
+  height: 100%;
+  overflow-y: auto;
+}
+
+.settings-content {
+  padding: var(--space-4);
+}
+
+@media (min-width: 1024px) {
+  .settings-page {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: var(--space-6);
+  }
+  
+  .settings-content {
+    padding: 0;
+  }
+  
+  .page-header {
+    margin-bottom: var(--space-6);
+    padding-top: var(--space-4);
+  }
+}
+
+.settings-section {
+  margin-bottom: var(--space-6);
+}
+
+.settings-menu {
+  background: var(--color-bg-secondary);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.settings-menu .menu-item {
+  border-bottom: 1px solid var(--color-border-light);
+  border-radius: 0;
+}
+
+.settings-menu .menu-item:last-child {
+  border-bottom: none;
+}
+
+.settings-menu .menu-item-icon {
+  color: var(--color-accent-light);
+}
+
+.danger-title {
+  color: var(--color-danger);
+}
+
+.danger-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}

@@ -1,0 +1,1208 @@
+/* MightyTwin — Design Widget Styles */
+
+/* ── Main layout: rail + panel side-by-side ─────────────────────────────────── */
+
+.design-widget {
+  display: flex;
+  background: rgba(15, 15, 20, 0.95);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  overflow: hidden;
+  backdrop-filter: blur(12px);
+  max-height: calc(100vh - 120px);
+}
+
+/* ── Rail navigation ────────────────────────────────────────────────────────── */
+
+.design-rail {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px 4px;
+  border-right: 1px solid var(--color-border);
+  background: rgba(0, 0, 0, 0.2);
+  min-width: 56px;
+}
+
+.design-rail-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 8px 6px;
+  border: none;
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  border-radius: 6px;
+  transition: background 0.15s, color 0.15s;
+}
+
+.design-rail-btn:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--color-text-secondary);
+}
+
+.design-rail-btn.active {
+  background: rgba(99, 102, 241, 0.22);
+  color: #a5b4fc;
+  box-shadow: inset 2px 0 0 var(--color-accent);
+}
+
+.design-rail-icon {
+  font-size: 16px;
+  line-height: 1;
+}
+
+.design-rail-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+  color: inherit;
+}
+
+/* ── Panel content ──────────────────────────────────────────────────────────── */
+
+.design-panel-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 240px;
+  max-width: 280px;
+}
+
+.design-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.design-panel-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+
+/* ── Sketch Layers Panel ────────────────────────────────────────────────────── */
+
+.sketch-layers-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sketch-layers-toolbar {
+  display: flex;
+  gap: 4px;
+}
+
+.sketch-layers-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 0;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.sketch-layers-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.18);
+}
+
+.sketch-layers-btn.active {
+  background: rgba(99, 102, 241, 0.15);
+  border-color: rgba(99, 102, 241, 0.35);
+  color: #a5b4fc;
+}
+
+.sketch-preset-icon {
+  font-size: 14px;
+}
+
+/* ── Preset dropdown ────────────────────────────────────────────────────────── */
+
+.sketch-presets-dropdown {
+  background: rgba(20, 20, 28, 0.98);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.sketch-presets-header {
+  padding: 8px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.sketch-presets-list {
+  max-height: 200px;
+  overflow-y: auto;
+  padding: 4px;
+}
+
+.sketch-preset-option {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px;
+  background: none;
+  border: none;
+  border-radius: 5px;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 12px;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s;
+}
+
+.sketch-preset-option:hover {
+  background: rgba(99, 102, 241, 0.15);
+}
+
+.sketch-preset-name {
+  font-weight: 600;
+}
+
+.sketch-preset-count {
+  font-size: 11px;
+  color: var(--color-text-muted);
+  flex-shrink: 0;
+}
+
+.sketch-presets-hint {
+  padding: 6px 10px 8px;
+  font-size: 11px;
+  color: var(--color-text-muted);
+  margin: 0;
+  line-height: 1.4;
+}
+
+/* ── Layer list ─────────────────────────────────────────────────────────────── */
+
+.sketch-layer-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.sketch-layer-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+  border: 1px solid transparent;
+}
+
+.sketch-layer-item:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.sketch-layer-item.active {
+  background: rgba(99, 102, 241, 0.12);
+  border-color: rgba(99, 102, 241, 0.25);
+}
+
+.sketch-layer-item.hidden-layer {
+  opacity: 0.45;
+}
+
+/* ── Colour swatch ──────────────────────────────────────────────────────────── */
+
+.sketch-layer-colour-wrap {
+  position: relative;
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.sketch-layer-colour-input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  padding: 0;
+  border: none;
+}
+
+.sketch-layer-colour-dot {
+  display: block;
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  pointer-events: none;
+}
+
+/* ── Layer name ─────────────────────────────────────────────────────────────── */
+
+.sketch-layer-name {
+  flex: 1;
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.85);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+  user-select: none;
+}
+
+.sketch-layer-name-edit {
+  flex: 1;
+  height: 24px;
+  padding: 0 6px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--color-accent);
+  border-radius: 4px;
+  color: rgba(255, 255, 255, 0.95);
+  font-size: 12px;
+  font-weight: 600;
+  outline: none;
+  min-width: 0;
+}
+
+/* ── Layer actions ──────────────────────────────────────────────────────────── */
+
+.sketch-layer-actions {
+  display: flex;
+  gap: 2px;
+  flex-shrink: 0;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.sketch-layer-item:hover .sketch-layer-actions,
+.sketch-layer-item.active .sketch-layer-actions {
+  opacity: 1;
+}
+
+.sketch-layer-action-btn {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.45);
+  cursor: pointer;
+  border-radius: 4px;
+  padding: 0;
+  transition: color 0.15s, background 0.15s;
+}
+
+.sketch-layer-action-btn:hover {
+  color: rgba(255, 255, 255, 0.8);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.sketch-layer-action-btn.delete:hover {
+  color: #f87171;
+  background: rgba(248, 113, 113, 0.1);
+}
+
+.sketch-layer-action-btn.delete.confirm {
+  color: #f87171;
+  background: rgba(248, 113, 113, 0.18);
+}
+
+/* ── Hint text ──────────────────────────────────────────────────────────────── */
+
+.sketch-layers-hint {
+  font-size: 11px;
+  color: var(--color-text-muted);
+  margin: 0;
+  line-height: 1.4;
+  padding-top: 4px;
+}
+
+/* ── Placeholder panels (sprint 2+) ─────────────────────────────────────────── */
+
+.design-placeholder {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 0;
+}
+
+.design-placeholder-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+
+.design-placeholder-desc {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.design-placeholder-hint {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.4);
+  font-style: italic;
+  margin: 4px 0 0;
+}
+
+/* ── Draw Panel ────────────────────────────────────────────────────────────── */
+
+.draw-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* ── Placing-mode bar ──────────────────────────────────────────────────────── */
+
+.draw-placing-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px;
+  background: rgba(99, 102, 241, 0.15);
+  border: 1px solid rgba(99, 102, 241, 0.3);
+  border-radius: 8px;
+  flex-wrap: wrap;
+}
+
+.draw-placing-icon {
+  font-size: 14px;
+  color: #a5b4fc;
+  flex-shrink: 0;
+}
+
+.draw-placing-label {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.85);
+  flex-shrink: 0;
+}
+
+.draw-placing-label strong {
+  color: #a5b4fc;
+}
+
+.draw-placing-hint {
+  font-size: 11px;
+  color: var(--color-text-muted);
+  flex: 1;
+  min-width: 0;
+}
+
+.draw-placing-cancel {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 4px;
+  color: rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+  padding: 0;
+  flex-shrink: 0;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.draw-placing-cancel:hover {
+  background: rgba(248, 113, 113, 0.2);
+  color: #f87171;
+  border-color: rgba(248, 113, 113, 0.3);
+}
+
+/* ── Section labels ────────────────────────────────────────────────────────── */
+
+.draw-section-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 6px;
+}
+
+/* ── Tool buttons grid ─────────────────────────────────────────────────────── */
+
+.draw-tools-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+}
+
+.draw-tool-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 4px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.draw-tool-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.15);
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.draw-tool-btn.active {
+  background: rgba(99, 102, 241, 0.22);
+  border-color: rgba(99, 102, 241, 0.45);
+  color: #a5b4fc;
+}
+
+.draw-tool-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.draw-tool-icon {
+  font-size: 16px;
+  line-height: 1;
+}
+
+.draw-tool-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+/* ── Elevation mode ────────────────────────────────────────────────────────── */
+
+.draw-elevation-section {
+  display: flex;
+  flex-direction: column;
+}
+
+.draw-elevation-btns {
+  display: flex;
+  gap: 2px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 6px;
+  padding: 2px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.draw-elevation-btn {
+  flex: 1;
+  padding: 6px 0;
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  color: var(--color-text-muted);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, box-shadow 0.15s;
+}
+
+.draw-elevation-btn:hover:not(.active) {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--color-text-secondary);
+}
+
+.draw-elevation-btn.active {
+  background: rgba(99, 102, 241, 0.2);
+  color: #a5b4fc;
+  box-shadow: 0 0 0 1px rgba(99, 102, 241, 0.4);
+}
+
+.draw-elevation-desc {
+  font-size: 11px;
+  color: var(--color-text-muted);
+  margin: 4px 0 0;
+  line-height: 1.4;
+}
+
+/* Elevation datum select */
+.draw-elevation-select {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.85);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  padding: 6px 8px;
+  font-size: 12px;
+  margin-bottom: 4px;
+  cursor: pointer;
+}
+.draw-elevation-select:focus {
+  outline: none;
+  border-color: var(--color-accent);
+}
+
+/* Offset input row */
+.draw-offset-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+.draw-offset-input {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.85);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  padding: 6px 8px;
+  font-size: 12px;
+  min-width: 0;
+}
+.draw-offset-input:focus {
+  outline: none;
+  border-color: var(--color-accent);
+}
+
+/* ── Active layer badge ────────────────────────────────────────────────────── */
+
+.draw-active-layer {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.draw-layer-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.draw-layer-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+.draw-layer-locked {
+  font-size: 10px;
+  color: #fbbf24;
+  font-weight: 600;
+}
+
+.draw-hint {
+  font-size: 11px;
+  color: var(--color-text-muted);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.draw-empty-state {
+  padding: 16px 12px;
+  text-align: center;
+}
+
+.draw-empty-state p {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.draw-tool-shortcut {
+  font-size: 10px;
+  font-family: inherit;
+  padding: 2px 5px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: var(--color-text-muted);
+  line-height: 1;
+}
+
+.draw-tool-btn.active .draw-tool-shortcut {
+  background: rgba(99, 102, 241, 0.25);
+  border-color: rgba(99, 102, 241, 0.4);
+  color: #a5b4fc;
+}
+
+.draw-vertex-count {
+  font-size: 11px;
+  font-weight: 600;
+  color: #a5b4fc;
+  background: rgba(99, 102, 241, 0.15);
+  padding: 2px 8px;
+  border-radius: 10px;
+  white-space: nowrap;
+}
+
+/* ── Style Panel ──────────────────────────────────────────────────────────── */
+
+.design-style {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.design-style-empty {
+  padding: 20px 8px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--color-text-muted);
+  line-height: 1.5;
+}
+
+.design-style-empty-icon {
+  display: block;
+  font-size: 22px;
+  margin-bottom: 6px;
+  opacity: 0.5;
+}
+
+.design-style-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.design-style-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.design-style-color-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.design-style-swatch {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 6px;
+  background: none;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.design-style-swatch::-webkit-color-swatch-wrapper {
+  padding: 2px;
+}
+
+.design-style-swatch::-webkit-color-swatch {
+  border: none;
+  border-radius: 3px;
+}
+
+.design-style-hex {
+  flex: 1;
+  height: 28px;
+  padding: 0 8px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 12px;
+  font-family: monospace;
+  min-width: 0;
+}
+
+.design-style-hex:focus {
+  outline: none;
+  border-color: var(--color-accent);
+}
+
+.design-style-slider-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.design-style-slider-group .ext-slider {
+  flex: 1;
+  min-width: 0;
+}
+
+.design-style-val {
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.6);
+  min-width: 36px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+/* ── Point Symbology Picker ────────────────────────────────────────────────── */
+
+.psym-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--color-border);
+  margin-bottom: 2px;
+}
+
+.psym-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.psym-tabs {
+  display: flex;
+  gap: 2px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 6px;
+  padding: 2px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.psym-tab {
+  flex: 1;
+  padding: 5px 0;
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  color: var(--color-text-muted);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.psym-tab:hover:not(.psym-tab--active) {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--color-text-secondary);
+}
+
+.psym-tab--active {
+  background: rgba(99, 102, 241, 0.2);
+  color: #a5b4fc;
+  box-shadow: 0 0 0 1px rgba(99, 102, 241, 0.4);
+}
+
+.psym-type-grid {
+  display: flex;
+  gap: 4px;
+}
+
+.psym-type-grid--wrap {
+  flex-wrap: wrap;
+  max-height: 120px;
+  overflow-y: auto;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+}
+
+.psym-type-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.04);
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.psym-type-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.psym-type-btn--active {
+  background: rgba(99, 102, 241, 0.25);
+  border-color: var(--color-accent);
+}
+
+.psym-preview {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 48px;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 6px;
+  border: 1px solid var(--color-border);
+}
+
+/* ── Focus-visible states ──────────────────────────────────────────────────── */
+
+.design-rail-btn:focus-visible,
+.sketch-layers-btn:focus-visible,
+.draw-tool-btn:focus-visible,
+.draw-elevation-btn:focus-visible,
+.sketch-layer-action-btn:focus-visible,
+.sketch-preset-option:focus-visible,
+.psym-tab:focus-visible,
+.psym-type-btn:focus-visible,
+.draw-placing-cancel:focus-visible,
+.design-style-swatch:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 1px;
+}
+
+.draw-elevation-select:focus-visible,
+.draw-offset-input:focus-visible,
+.design-style-hex:focus-visible,
+.sketch-layer-name-edit:focus-visible,
+.edit-label-input:focus-visible,
+.move-input-group input:focus-visible {
+  outline: none;
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 1px var(--color-accent);
+}
+
+.move-mode-tab:focus-visible,
+.edit-label-btn:focus-visible,
+.edit-delete-btn:focus-visible,
+.edit-delete-yes:focus-visible,
+.edit-delete-no:focus-visible,
+.move-apply-btn:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 1px;
+}
+
+/* ── Mobile overrides ───────────────────────────────────────────────────────── */
+
+@media (max-width: 767px) {
+  .design-widget {
+    flex-direction: column;
+  }
+  .design-rail {
+    flex-direction: row;
+    border-right: none;
+    border-bottom: 1px solid var(--color-border);
+    min-width: 0;
+    overflow-x: auto;
+    padding: 4px;
+  }
+  .design-rail-btn {
+    flex-direction: row;
+    gap: 4px;
+    padding: 6px 10px;
+  }
+  .design-rail-label {
+    font-size: 11px;
+  }
+  .design-rail-btn.active {
+    box-shadow: inset 0 2px 0 var(--color-accent);
+  }
+  .design-panel-content {
+    min-width: 0;
+    max-width: none;
+  }
+  .sketch-layer-actions {
+    opacity: 1;
+  }
+}
+
+/* ── Edit Panel ─────────────────────────────────────────────────────────── */
+
+.edit-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 4px 0;
+}
+
+.edit-feature-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.edit-label-btn {
+  flex: 1;
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: left;
+  padding: 2px 4px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transition: background 0.15s;
+}
+.edit-label-btn:hover { background: rgba(255, 255, 255, 0.07); }
+.edit-label-pencil { opacity: 0.5; font-size: 11px; flex-shrink: 0; }
+
+.edit-label-input {
+  flex: 1;
+  background: var(--color-bg-tertiary);
+  border: 1px solid var(--color-accent);
+  border-radius: 4px;
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 4px 6px;
+  outline: none;
+}
+
+.geometry-badge {
+  flex-shrink: 0;
+  font-size: 11px;
+  font-family: monospace;
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.55);
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+.geometry-badge[data-geom="box"],
+.geometry-badge[data-geom="pit"],
+.geometry-badge[data-geom="cylinder"] { background: rgba(139, 92, 246, 0.2); color: #c4b5fd; }
+.geometry-badge[data-geom="point"]    { background: rgba(34, 211, 238, 0.15); color: #67e8f9; }
+.geometry-badge[data-geom="line"],
+.geometry-badge[data-geom="traverse"] { background: rgba(251, 191, 36, 0.15); color: #fcd34d; }
+.geometry-badge[data-geom="polygon"],
+.geometry-badge[data-geom="rectangle"] { background: rgba(52, 211, 153, 0.15); color: #6ee7b7; }
+
+.edit-delete-btn {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.45);
+  padding: 0;
+  border-radius: 4px;
+  transition: color 0.15s, background 0.15s;
+}
+.edit-delete-btn:hover {
+  color: #f87171;
+  background: rgba(248, 113, 113, 0.1);
+}
+
+.edit-delete-confirm {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.edit-delete-yes {
+  background: #dc2626;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.edit-delete-yes:hover {
+  background: #ef4444;
+}
+.edit-delete-no {
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.6);
+  border: none;
+  border-radius: 4px;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.edit-delete-no:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.edit-divider {
+  height: 1px;
+  background: var(--color-border);
+  margin: 0 -4px;
+}
+
+.edit-drag-hint {
+  font-size: 11px;
+  color: var(--color-text-muted);
+  margin: 0;
+}
+
+/* Move mode tabs */
+.move-mode-tabs {
+  display: flex;
+  gap: 2px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 6px;
+  padding: 2px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+.move-mode-tab {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: var(--color-text-muted);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 5px 6px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+.move-mode-tab.active {
+  background: rgba(99, 102, 241, 0.2);
+  color: #a5b4fc;
+}
+.move-mode-tab:hover:not(.active) {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--color-text-secondary);
+}
+
+/* Move inputs */
+.move-inputs {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.move-input-group {
+  display: grid;
+  grid-template-columns: 80px 1fr 40px;
+  align-items: center;
+  gap: 6px;
+}
+.move-input-group label {
+  font-size: 11px;
+  color: var(--color-text-muted);
+}
+.move-input-group input {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 12px;
+  padding: 4px 6px;
+  outline: none;
+  width: 100%;
+}
+.move-input-group input:focus {
+  border-color: var(--color-accent);
+}
+.move-unit {
+  font-size: 11px;
+  color: var(--color-text-muted);
+  text-align: right;
+}
+
+.move-apply-btn {
+  align-self: flex-start;
+  background: var(--color-accent);
+  border: none;
+  border-radius: 6px;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 18px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.move-apply-btn:hover { background: var(--color-accent-light); }
+
+/* Current position readout */
+.current-position {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px 8px;
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+.cur-pos-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.cur-pos-value {
+  font-size: 11px;
+  font-family: monospace;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-secondary);
+}
+.cur-pos-alt {
+  font-size: 11px;
+  font-family: monospace;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-muted);
+}
+
+/* Empty state */
+.edit-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 32px 16px;
+  text-align: center;
+}
+.edit-empty-icon {
+  font-size: 28px;
+  opacity: 0.35;
+}
+.edit-empty-text {
+  font-size: 13px;
+  color: var(--color-text-muted);
+  margin: 0;
+}
+.edit-empty-hint {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.4);
+  margin: 0;
+}

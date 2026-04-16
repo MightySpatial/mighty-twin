@@ -1,0 +1,243 @@
+/* MightyTwin — Attribute Table Widget Styles */
+
+.attr-table-panel {
+  width: 680px;
+  max-height: calc(100vh - 120px);
+  display: flex;
+  flex-direction: column;
+  background: rgba(15, 23, 42, 0.97);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 12px;
+  backdrop-filter: blur(12px);
+  overflow: hidden;
+  color: #e2e8f0;
+}
+
+/* ── Header ────────────────────────────────────────────────────────────────── */
+
+.attr-table-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+  flex-shrink: 0;
+}
+
+.attr-table-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: white;
+}
+
+.attr-table-count {
+  font-size: 11px;
+  color: rgba(255,255,255,0.45);
+  margin-left: auto;
+  margin-right: 10px;
+}
+
+.attr-table-close {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.4);
+  cursor: pointer;
+  border-radius: 4px;
+  font-size: 16px;
+  transition: color 0.12s, background 0.12s;
+}
+
+.attr-table-close:hover {
+  color: white;
+  background: rgba(255,255,255,0.08);
+}
+
+/* ── Layer tabs ────────────────────────────────────────────────────────────── */
+
+.attr-table-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 8px 14px;
+  overflow-x: auto;
+  flex-shrink: 0;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+
+.attr-table-tab {
+  padding: 5px 12px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 16px;
+  color: rgba(255,255,255,0.6);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
+}
+
+.attr-table-tab:hover {
+  background: rgba(255,255,255,0.08);
+  color: rgba(255,255,255,0.85);
+}
+
+.attr-table-tab.active {
+  background: rgba(34, 211, 238, 0.15);
+  border-color: rgba(34, 211, 238, 0.4);
+  color: #22d3ee;
+}
+
+/* ── Search ────────────────────────────────────────────────────────────────── */
+
+.attr-table-search {
+  padding: 6px 14px;
+  flex-shrink: 0;
+}
+
+.attr-table-search input {
+  width: 100%;
+  padding: 7px 10px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 6px;
+  color: #e2e8f0;
+  font-size: 12px;
+  outline: none;
+  transition: border-color 0.12s;
+}
+
+.attr-table-search input::placeholder {
+  color: rgba(255,255,255,0.3);
+}
+
+.attr-table-search input:focus {
+  border-color: #38bdf8;
+}
+
+/* ── Table ─────────────────────────────────────────────────────────────────── */
+
+.attr-table-scroll {
+  flex: 1;
+  overflow: auto;
+  max-height: 500px;
+  min-height: 0;
+}
+
+.attr-table-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+}
+
+.attr-table-table thead {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.attr-table-table th {
+  padding: 7px 10px;
+  background: rgba(30, 41, 59, 0.98);
+  color: rgba(255,255,255,0.6);
+  font-weight: 700;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
+  user-select: none;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  transition: color 0.12s;
+}
+
+.attr-table-table th:hover {
+  color: rgba(255,255,255,0.85);
+}
+
+.attr-table-table th .sort-arrow {
+  margin-left: 4px;
+  font-size: 10px;
+  color: #22d3ee;
+}
+
+.attr-table-table td {
+  padding: 5px 10px;
+  color: rgba(255,255,255,0.75);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 220px;
+  border-bottom: 1px solid rgba(255,255,255,0.03);
+}
+
+.attr-table-table tbody tr {
+  transition: background 0.1s;
+}
+
+.attr-table-table tbody tr:nth-child(even) {
+  background: rgba(255,255,255,0.02);
+}
+
+.attr-table-table tbody tr:hover {
+  background: rgba(255,255,255,0.06);
+}
+
+.attr-table-table tbody tr.selected {
+  background: rgba(34, 211, 238, 0.12);
+}
+
+/* ── Empty / loading states ────────────────────────────────────────────────── */
+
+.attr-table-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  font-size: 12px;
+  color: rgba(255,255,255,0.35);
+}
+
+.attr-table-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 40px 20px;
+  font-size: 12px;
+  color: rgba(255,255,255,0.4);
+}
+
+.attr-table-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255,255,255,0.1);
+  border-top-color: #22d3ee;
+  border-radius: 50%;
+  animation: attr-spin 0.6s linear infinite;
+}
+
+@keyframes attr-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ── Null value styling ────────────────────────────────────────────────────── */
+
+.attr-null {
+  color: rgba(255,255,255,0.2);
+  font-style: italic;
+}
+
+/* ── Mobile ────────────────────────────────────────────────────────────────── */
+
+@media (max-width: 767px) {
+  .attr-table-panel {
+    width: calc(100vw - 24px);
+    max-height: 60vh;
+  }
+}

@@ -1,0 +1,182 @@
+/* MightyTwin — Viewer Sidebar */
+
+/* ── Shell ─────────────────────────────────────────────────────────────────── */
+
+.viewer-sidebar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  z-index: 10;
+  display: flex;
+  flex-direction: row;
+  pointer-events: none; /* collapsed: only tab bar is interactive */
+}
+
+/* ── Tab Rail ───────────────────────────────────────────────────────────────── */
+
+.sidebar-tabs {
+  width: 48px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  background: rgba(10, 10, 16, 0.92);
+  border-right: 1px solid rgba(255, 255, 255, 0.07);
+  backdrop-filter: blur(16px);
+  pointer-events: all;
+  gap: 2px;
+  padding: 8px 4px;
+}
+
+.sidebar-tab {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 6px;
+  border: none;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.45);
+  cursor: pointer;
+  border-radius: 6px;
+  transition: color 0.15s, background 0.15s;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  justify-content: center;
+}
+
+.sidebar-tab:hover {
+  color: rgba(255, 255, 255, 0.85);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.sidebar-tab--active {
+  color: #a5b4fc;
+  background: rgba(99, 102, 241, 0.18);
+}
+
+.sidebar-tab--active:hover {
+  background: rgba(99, 102, 241, 0.25);
+}
+
+.sidebar-tab-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.sidebar-tab-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+/* Collapse button — sits at bottom of tab rail */
+.sidebar-collapse-btn {
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 8px;
+  border: none;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.3);
+  cursor: pointer;
+  border-radius: 6px;
+  transition: color 0.15s, background 0.15s;
+}
+.sidebar-collapse-btn:hover {
+  color: rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+/* ── Content Panel ──────────────────────────────────────────────────────────── */
+
+.viewer-sidebar--open .sidebar-content {
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar-content {
+  display: none;
+  width: 280px;
+  background: rgba(12, 12, 18, 0.96);
+  border-right: 1px solid rgba(255, 255, 255, 0.07);
+  backdrop-filter: blur(16px);
+  pointer-events: all;
+  overflow: hidden;
+}
+
+.sidebar-content-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  flex-shrink: 0;
+}
+
+.sidebar-content-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.5);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.sidebar-content-body {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  min-height: 0;
+}
+
+.sidebar-content-body::-webkit-scrollbar {
+  width: 4px;
+}
+.sidebar-content-body::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 2px;
+}
+
+/* ── Layers Tab Content ─────────────────────────────────────────────────────── */
+
+.sidebar-layer-list {
+  padding: 4px;
+}
+
+/* ── Extension Panel Content ────────────────────────────────────────────────── */
+
+.sidebar-ext-panel {
+  /* Extension panels define their own internal layout.
+     The close button inside them is hidden — closing deselects the tab. */
+  overflow: hidden;
+}
+
+/* Hide the built-in close button of extension panels when docked in sidebar */
+.sidebar-ext-panel .ext-panel-close,
+.sidebar-ext-panel .design-panel-close,
+.sidebar-ext-panel [class*="panel-close"] {
+  display: none;
+}
+
+/* Design widget in sidebar: override floating-panel constraints */
+.sidebar-ext-panel .design-widget {
+  border: none;
+  border-radius: 0;
+  max-height: none;
+  backdrop-filter: none;
+  background: transparent;
+}
+
+/* ── Mobile: sidebar hidden, use legacy floating panel ──────────────────────── */
+
+@media (max-width: 767px) {
+  .viewer-sidebar {
+    display: none;
+  }
+}

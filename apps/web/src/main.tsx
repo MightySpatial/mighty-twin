@@ -3,10 +3,7 @@ import { createRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import { usePersistedSettings } from '@mightyspatial/settings-panels'
 import './styles.css'
-import { registerAll } from './widgets'
 import { App } from './App'
-
-registerAll()
 
 function ThemeAttrs() {
   const { settings } = usePersistedSettings()
