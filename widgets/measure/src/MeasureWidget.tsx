@@ -3,6 +3,11 @@ import { useMeasure } from './useMeasure'
 import { formatArea, formatDistance } from './measureUtils'
 import styles from './MeasureWidget.module.css'
 
+const fmtDist = (m: number, ctx: WidgetComponentProps['ctx']) =>
+  formatDistance(m, ctx.units?.length ?? 'metric')
+const fmtArea = (sqm: number, ctx: WidgetComponentProps['ctx']) =>
+  formatArea(sqm, ctx.units?.length ?? 'metric')
+
 /**
  * Measure widget UI. Self-contained: it reads the Cesium viewer from
  * `@mightyspatial/cesium-core`, owns its own tool lifecycle via useMeasure,
@@ -77,7 +82,7 @@ export function MeasureWidget({ ctx, onClose }: WidgetComponentProps) {
           {measureRunning ? (
             <>
               <span className={styles.tooltipDist}>
-                {formatDistance(measureRunning.distance)}
+                {fmtDist(measureRunning.distance, ctx)}
               </span>
               <span className={styles.tooltipHint}>
                 {measureRunning.points} point{measureRunning.points !== 1 ? 's' : ''}
@@ -114,13 +119,13 @@ export function MeasureWidget({ ctx, onClose }: WidgetComponentProps) {
             <div className={styles.resultRow}>
               <span className={styles.resultLabel}>{compact ? 'Dist' : 'Distance'}</span>
               <span className={styles.resultValue}>
-                {formatDistance(measureResult.distance)}
+                {fmtDist(measureResult.distance, ctx)}
               </span>
             </div>
             {measureResult.area > 0 && (
               <div className={styles.resultRow}>
                 <span className={styles.resultLabel}>Area</span>
-                <span className={styles.resultValue}>{formatArea(measureResult.area)}</span>
+                <span className={styles.resultValue}>{fmtArea(measureResult.area, ctx)}</span>
               </div>
             )}
             <div className={styles.resultRow}>

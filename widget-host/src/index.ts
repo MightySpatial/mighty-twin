@@ -16,6 +16,16 @@ import type { Layer, Site, UserRole } from '@mightyspatial/types'
  *  consult this to pick between a full and a compact layout. */
 export type DisplayMode = 'full' | 'compact'
 
+/** User-facing formatting preferences, propagated by the host from persisted
+ *  app settings. Widgets read these so values render in the user's chosen
+ *  units without having to subscribe to settings themselves. */
+export interface HostUnits {
+  /** 'metric' (m, km, ha, km²) or 'imperial' (ft, mi, ac, mi²). */
+  length: 'metric' | 'imperial'
+  /** Decimal degrees, DMS, or MGRS for coordinate display. */
+  coordinates: 'dd' | 'dms' | 'mgrs'
+}
+
 /** What a widget gets access to when it mounts. */
 export interface WidgetContext {
   /** The live Cesium viewer. */
@@ -35,6 +45,9 @@ export interface WidgetContext {
   displayMode?: DisplayMode
   /** Live size of the pane the widget is rendered inside. Updates on resize. */
   paneSize?: { width: number; height: number }
+  /** User's unit/format preferences — optional to keep legacy hosts working;
+   *  widgets default to metric + DD when absent. */
+  units?: HostUnits
 }
 
 export interface WidgetUser {
