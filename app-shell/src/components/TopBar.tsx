@@ -44,88 +44,54 @@ export function TopBar({
       {/* Layout slider — the single source of truth for every display
           mode, including Settings. Five buttons end-to-end:
           [V] [V+A] [A+V] [A] [⚙ S]
-          Desktop shows all five; tablet collapses V+A/A+V to a 3-button
-          strip (Viewer / Admin / Settings) since split becomes an overlay
-          drawer there rather than a first-class layout. */}
-      {breakpoint === 'desktop' && (
-        <div className={styles.splitGroup} role="group" aria-label="Layout">
-          <button
-            type="button"
-            className={`${styles.splitBtn} ${mode === 'viewer-only' ? styles.splitBtnActive : ''}`}
-            onClick={() => onModeChange('viewer-only')}
-            title="Viewer only"
-          >
-            Viewer
-          </button>
-          <button
-            type="button"
-            className={`${styles.splitBtn} ${mode === 'split-viewer' ? styles.splitBtnActive : ''}`}
-            onClick={() => onModeChange('split-viewer')}
-            title="Viewer + Admin side pane"
-          >
-            V+A
-          </button>
-          <button
-            type="button"
-            className={`${styles.splitBtn} ${mode === 'split-admin' ? styles.splitBtnActive : ''}`}
-            onClick={() => onModeChange('split-admin')}
-            title="Admin + Viewer side pane"
-          >
-            A+V
-          </button>
-          <button
-            type="button"
-            className={`${styles.splitBtn} ${mode === 'admin-only' ? styles.splitBtnActive : ''}`}
-            onClick={() => onModeChange('admin-only')}
-            title="Admin only"
-          >
-            Admin
-          </button>
-          <button
-            type="button"
-            className={`${styles.splitBtn} ${mode === 'settings' ? styles.splitBtnActive : ''}`}
-            onClick={() => onModeChange('settings')}
-            title="Settings"
-          >
-            ⚙ {labels.settings}
-          </button>
-        </div>
-      )}
-
-      {/* Tablet: 3-button strip (Viewer / Admin / Settings). Split is
-          available by deep-link (drawer overlay) but not exposed here. */}
-      {breakpoint === 'tablet' && (
-        <div className={styles.splitGroup} role="group" aria-label="Layout">
-          <button
-            type="button"
-            className={`${styles.splitBtn} ${
-              mode === 'viewer-only' || mode === 'split-viewer' ? styles.splitBtnActive : ''
-            }`}
-            onClick={() => onModeChange('viewer-only')}
-            title="Viewer"
-          >
-            Viewer
-          </button>
-          <button
-            type="button"
-            className={`${styles.splitBtn} ${
-              mode === 'admin-only' || mode === 'split-admin' ? styles.splitBtnActive : ''
-            }`}
-            onClick={() => onModeChange('admin-only')}
-            title="Admin"
-          >
-            Admin
-          </button>
-          <button
-            type="button"
-            className={`${styles.splitBtn} ${mode === 'settings' ? styles.splitBtnActive : ''}`}
-            onClick={() => onModeChange('settings')}
-            title="Settings"
-          >
-            ⚙ {labels.settings}
-          </button>
-        </div>
-      )}
+          Shown on both desktop and tablet. On tablet the split modes
+          render the secondary pane as an overlay drawer rather than an
+          inline flex child, but the primary pane (viewer or admin) is
+          still selected by V+A vs A+V, so the slider maps cleanly.
+          Phone gets a simpler [V][A][⚙S] bottom nav — handled upstream
+          by MobileBottomNav, not here. */}
+      <div className={styles.splitGroup} role="group" aria-label="Layout">
+        <button
+          type="button"
+          className={`${styles.splitBtn} ${mode === 'viewer-only' ? styles.splitBtnActive : ''}`}
+          onClick={() => onModeChange('viewer-only')}
+          title="Viewer only"
+        >
+          Viewer
+        </button>
+        <button
+          type="button"
+          className={`${styles.splitBtn} ${mode === 'split-viewer' ? styles.splitBtnActive : ''}`}
+          onClick={() => onModeChange('split-viewer')}
+          title="Viewer + Admin side pane"
+        >
+          V+A
+        </button>
+        <button
+          type="button"
+          className={`${styles.splitBtn} ${mode === 'split-admin' ? styles.splitBtnActive : ''}`}
+          onClick={() => onModeChange('split-admin')}
+          title="Admin + Viewer side pane"
+        >
+          A+V
+        </button>
+        <button
+          type="button"
+          className={`${styles.splitBtn} ${mode === 'admin-only' ? styles.splitBtnActive : ''}`}
+          onClick={() => onModeChange('admin-only')}
+          title="Admin only"
+        >
+          Admin
+        </button>
+        <button
+          type="button"
+          className={`${styles.splitBtn} ${mode === 'settings' ? styles.splitBtnActive : ''}`}
+          onClick={() => onModeChange('settings')}
+          title="Settings"
+        >
+          ⚙ {labels.settings}
+        </button>
+      </div>
 
       <div className={styles.spacer} />
 
