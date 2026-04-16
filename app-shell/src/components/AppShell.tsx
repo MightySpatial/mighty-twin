@@ -91,7 +91,7 @@ export function AppShell({
   // one value, consumers inside the admin pane see another. We track per-pane
   // context by rendering two separate providers below.
 
-  return (
+  const rootContent = (
     <div
       className={`${styles.root} ${breakpoint === 'phone' ? styles.rootPhone : ''} ${layoutClass}`}
       style={
@@ -173,6 +173,32 @@ export function AppShell({
       )}
     </div>
   )
+
+  // When a breakpoint is explicitly forced (via the dev toggle), frame the
+  // shell inside a device-sized stage so devs see how the app actually looks
+  // at that viewport. Without a forced breakpoint, the shell fills the
+  // browser naturally.
+  if (forcedBreakpoint === 'phone') {
+    return (
+      <div className={styles.stage}>
+        <div className={`${styles.deviceFrame} ${styles.deviceFramePhone}`}>
+          <div className={styles.deviceLabel}>Phone · 390 × 780</div>
+          {rootContent}
+        </div>
+      </div>
+    )
+  }
+  if (forcedBreakpoint === 'tablet') {
+    return (
+      <div className={styles.stage}>
+        <div className={`${styles.deviceFrame} ${styles.deviceFrameTablet}`}>
+          <div className={styles.deviceLabel}>Tablet · 900 × 680</div>
+          {rootContent}
+        </div>
+      </div>
+    )
+  }
+  return <div className={styles.outer}>{rootContent}</div>
 }
 
 function PaneContextProvider({

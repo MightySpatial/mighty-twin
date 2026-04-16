@@ -27,21 +27,7 @@ export function TopBar({
 }: TopBarProps) {
   if (breakpoint === 'phone') return null
 
-  const isViewerTab = mode === 'viewer-only' || mode === 'split-viewer' || mode === 'split-admin'
-  const isAdminTab = mode === 'admin-only' || mode === 'split-viewer' || mode === 'split-admin'
   const isSettingsTab = mode === 'settings'
-
-  // When the user clicks a tab from a non-split mode, switch to that tab's
-  // fullscreen variant. When already in a split, clicking a tab that's in the
-  // split is a no-op; clicking the other side flips focus.
-  const onViewerClick = () => {
-    if (mode === 'split-admin') onModeChange('split-viewer')
-    else if (mode !== 'viewer-only' && mode !== 'split-viewer') onModeChange('viewer-only')
-  }
-  const onAdminClick = () => {
-    if (mode === 'split-viewer') onModeChange('split-admin')
-    else if (mode !== 'admin-only' && mode !== 'split-admin') onModeChange('admin-only')
-  }
   const onSettingsClick = () => {
     if (mode !== 'settings') onModeChange('settings')
   }
@@ -55,40 +41,14 @@ export function TopBar({
         <span>{brand.name}</span>
       </button>
 
-      <nav className={styles.tabs} role="tablist">
-        <button
-          type="button"
-          role="tab"
-          aria-selected={isViewerTab && !isSettingsTab}
-          className={`${styles.tab} ${isViewerTab && !isSettingsTab ? styles.tabActive : ''}`}
-          onClick={onViewerClick}
-        >
-          {labels.viewer}
-        </button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={isAdminTab && !isSettingsTab}
-          className={`${styles.tab} ${isAdminTab && !isSettingsTab ? styles.tabActive : ''}`}
-          onClick={onAdminClick}
-        >
-          {labels.admin}
-        </button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={isSettingsTab}
-          className={`${styles.tab} ${isSettingsTab ? styles.tabActive : ''}`}
-          onClick={onSettingsClick}
-        >
-          {labels.settings}
-        </button>
-      </nav>
-
-      {(mode === 'viewer-only' ||
-        mode === 'admin-only' ||
-        mode === 'split-viewer' ||
-        mode === 'split-admin') && (
+      {/* Layout slider — the single source of truth for which pane(s) are
+          visible. Desktop gets all four options (V / V+A / A+V / A);
+          tablet and phone would get a simpler pair (see below). */}
+      {breakpoint === 'desktop' &&
+        (mode === 'viewer-only' ||
+          mode === 'admin-only' ||
+          mode === 'split-viewer' ||
+          mode === 'split-admin') && (
         <div className={styles.splitGroup} role="group" aria-label="Layout">
           <button
             type="button"
@@ -123,7 +83,53 @@ export function TopBar({
             Admin
           </button>
         </div>
+        )}
+
+      {/* Tablet gets a simpler 2-way toggle (VIEWER / ADMIN). Split is
+          available by deep-link (drawer overlay) but not exposed here to
+          keep the bar honest at this size. */}
+      {breakpoint === 'tablet' &&
+        (mode === 'viewer-only' ||
+          mode === 'admin-only' ||
+          mode === 'split-viewer' ||
+          mode === 'split-admin') && (
+        <div className={styles.splitGroup} role="group" aria-label="Layout">
+          <button
+            type="button"
+            className={`${styles.splitBtn} ${
+              mode === 'viewer-only' || mode === 'split-viewer' ? styles.splitBtnActive : ''
+            }`}
+            onClick={() => onModeChange('viewer-only')}
+            title="Viewer"
+          >
+            Viewer
+          </button>
+          <button
+            type="button"
+            className={`${styles.splitBtn} ${
+              mode === 'admin-only' || mode === 'split-admin' ? styles.splitBtnActive : ''
+            }`}
+            onClick={() => onModeChange('admin-only')}
+            title="Admin"
+          >
+            Admin
+          </button>
+        </div>
       )}
+
+      {/* Settings button — a peer to the layout slider, not a layout itself.
+          Phone gets it via the bottom nav, so TopBar always renders it when
+          visible (phone already early-returns at the top of the component). */}
+      <button
+        type="button"
+        role="tab"
+        aria-selected={isSettingsTab}
+        className={`${styles.tab} ${isSettingsTab ? styles.tabActive : ''}`}
+        onClick={onSettingsClick}
+        title={isSettingsTab ? 'Close settings' : 'Open settings'}
+      >
+        ⚙ {labels.settings}
+      </button>
 
       <div className={styles.spacer} />
 
