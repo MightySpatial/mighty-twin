@@ -7,6 +7,10 @@
  * auto-generated from FastAPI /openapi.json to keep the two in sync.
  */
 
+import type { BBox, Geometry } from 'geojson'
+
+export type { BBox, Geometry }
+
 // ─── Auth ────────────────────────────────────────────────────────────────────
 
 export type AuthProvider = 'google' | 'microsoft' | 'email';
@@ -49,7 +53,7 @@ export interface Site {
   name: string;
   slug: string;
   description?: string;
-  bounds?: GeoJSON.BBox;
+  bounds?: BBox;
   defaultCamera?: CameraPosition;
   layers: Layer[];
   widgets: WidgetConfig[];
@@ -164,7 +168,7 @@ export interface DataSource {
   url?: string;
   bucket?: string;
   key?: string;
-  bounds?: GeoJSON.BBox;
+  bounds?: BBox;
   crs?: string;
   featureCount?: number;
   attributes?: AttributeSchema[];

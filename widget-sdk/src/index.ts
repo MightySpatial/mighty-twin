@@ -10,6 +10,8 @@
  * @mightyspatial/widget-host instead.
  */
 
+import type { Geometry, FeatureCollection } from 'geojson'
+
 // ─── Types ───────────────────────────────────────────────────────────────────
 
 export interface WidgetContext {
@@ -48,7 +50,7 @@ export interface Layer {
 export interface Feature {
   id: string;
   layerId: string;
-  geometry: GeoJSON.Geometry;
+  geometry: Geometry;
   properties: Record<string, unknown>;
 }
 
@@ -302,7 +304,7 @@ class LayersAPI extends EventEmitter {
   async addTemporary(options: {
     name: string;
     type: 'geojson';
-    data: GeoJSON.FeatureCollection;
+    data: FeatureCollection;
   }): Promise<{ id: string }> {
     return this.widget.send('layers:addTemporary', options) as Promise<{ id: string }>;
   }
@@ -332,7 +334,7 @@ class FeaturesAPI extends EventEmitter {
 
   async update(layerId: string, featureId: string, updates: {
     properties?: Record<string, unknown>;
-    geometry?: GeoJSON.Geometry;
+    geometry?: Geometry;
   }): Promise<Feature> {
     return this.widget.send('features:update', { layerId, featureId, updates }) as Promise<Feature>;
   }
@@ -387,7 +389,7 @@ class StorageAPI {
   public shared: SharedStorage;
   public offline: OfflineStorage;
 
-  constructor(private widget: Widget) {
+  constructor(widget: Widget) {
     this.local = new LocalStorage(widget);
     this.shared = new SharedStorage(widget);
     this.offline = new OfflineStorage(widget);
@@ -475,7 +477,7 @@ class DeviceAPI {
   public camera: CameraDevice;
   public location: LocationDevice;
 
-  constructor(private widget: Widget) {
+  constructor(widget: Widget) {
     this.camera = new CameraDevice(widget);
     this.location = new LocationDevice(widget);
   }

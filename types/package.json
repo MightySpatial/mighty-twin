@@ -22,6 +22,9 @@
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf dist .turbo"
   },
+  "dependencies": {
+    "@types/geojson": "^7946.0.14"
+  },
   "publishConfig": {
     "access": "restricted",
     "registry": "https://npm.pkg.github.com",

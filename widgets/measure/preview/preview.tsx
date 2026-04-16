@@ -56,10 +56,10 @@ export function MeasurePreview() {
         site: previewSite,
         config: {},
         api: {
-          get: async () => ({}),
-          post: async () => ({}),
-          put: async () => ({}),
-          del: async () => ({}),
+          get: async <T,>(_: string) => ({}) as T,
+          post: async <T,>(_: string, __?: unknown) => ({}) as T,
+          put: async <T,>(_: string, __?: unknown) => ({}) as T,
+          del: async <T,>(_: string) => ({}) as T,
         },
         toast: (opts) => console.log(`[toast:${opts.level ?? 'info'}] ${opts.message}`),
       }

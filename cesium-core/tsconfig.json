@@ -3,12 +3,10 @@
   "compilerOptions": {
     "rootDir": "./src",
     "outDir": "./dist",
-    "composite": true,
     "declaration": true,
     "declarationMap": true,
     "jsx": "react-jsx"
   },
-  "references": [{ "path": "../types" }],
   "include": ["src/**/*"],
   "exclude": ["dist", "node_modules"]
 }
