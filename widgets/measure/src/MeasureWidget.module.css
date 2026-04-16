@@ -1,0 +1,136 @@
+.widget {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  color: #fff;
+  font: 500 13px/1.3 system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+
+.toolbar {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.95);
+  font: inherit;
+  cursor: pointer;
+  transition: background 120ms ease, border-color 120ms ease;
+}
+
+.button:hover {
+  background: rgba(99, 102, 241, 0.18);
+  border-color: rgba(99, 102, 241, 0.4);
+}
+
+.button:focus-visible {
+  outline: 2px solid #6366f1;
+  outline-offset: 2px;
+}
+
+.buttonPrimary {
+  background: #6366f1;
+  border-color: #6366f1;
+  color: #fff;
+}
+.buttonPrimary:hover {
+  background: #4f46e5;
+  border-color: #4f46e5;
+}
+
+.buttonDanger {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: rgba(239, 68, 68, 0.4);
+  color: #fecaca;
+}
+.buttonDanger:hover {
+  background: rgba(239, 68, 68, 0.25);
+}
+
+.tooltip {
+  position: absolute;
+  top: -44px;
+  left: 0;
+  padding: 8px 12px;
+  background: rgba(15, 15, 20, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  backdrop-filter: blur(12px);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 180px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+
+.tooltipDist {
+  font-weight: 600;
+  color: #818cf8;
+}
+
+.tooltipHint {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.result {
+  background: rgba(15, 15, 20, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  backdrop-filter: blur(12px);
+  padding: 14px 16px;
+  min-width: 240px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+
+.resultHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  font-weight: 600;
+}
+
+.resultClose {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 4px;
+}
+.resultClose:hover {
+  color: #fff;
+}
+
+.resultBody {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.resultRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.resultLabel {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 12px;
+}
+
+.resultValue {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
