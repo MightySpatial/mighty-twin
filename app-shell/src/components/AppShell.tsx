@@ -3,6 +3,7 @@ import type {
   AppShellProps,
   Breakpoint,
   DisplayMode,
+  Orientation,
   PaneRole,
   ShellContextValue,
 } from '../types'
@@ -12,6 +13,11 @@ import {
   readForcedBreakpoint,
   writeForcedBreakpoint,
 } from '../hooks/useBreakpoint'
+import {
+  useOrientation,
+  readForcedOrientation,
+  writeForcedOrientation,
+} from '../hooks/useOrientation'
 import { useViewMode } from '../hooks/useViewMode'
 import { useResizeObserver } from '../hooks/useResizeObserver'
 import { TopBar } from './TopBar'
@@ -50,6 +56,16 @@ export function AppShell({
 
   const breakpoint = useBreakpoint({ override: forcedBreakpoint })
 
+  // Dev-only orientation override, same shape as breakpoint.
+  const [forcedOrientation, setForcedOrientationState] = useState<Orientation | null>(() =>
+    readForcedOrientation(),
+  )
+  const onForcedOrientationChange = (o: Orientation | null) => {
+    setForcedOrientationState(o)
+    writeForcedOrientation(o)
+  }
+  const orientation = useOrientation(forcedOrientation)
+
   const labels = {
     viewer: tabLabels?.viewer ?? 'Viewer',
     admin: tabLabels?.admin ?? 'Admin',
@@ -69,7 +85,10 @@ export function AppShell({
   }, [mode, onModeChange])
 
   // Determine layout classes
-  const layoutClass = useMemo(() => computeLayoutClass(mode, breakpoint), [mode, breakpoint])
+  const layoutClass = useMemo(
+    () => computeLayoutClass(mode, breakpoint, orientation),
+    [mode, breakpoint, orientation],
+  )
 
   const showViewer =
     breakpoint !== 'phone'
@@ -116,6 +135,8 @@ export function AppShell({
           labels={labels}
           forcedBreakpoint={forcedBreakpoint}
           onForcedBreakpointChange={onForcedBreakpointChange}
+          forcedOrientation={forcedOrientation}
+          onForcedOrientationChange={onForcedOrientationChange}
         />
       )}
 
@@ -127,7 +148,8 @@ export function AppShell({
         >
           <PaneContextProvider
             mode={mode}
-            breakpoint={breakpoint}
+            breakpoint={paneBreakpointFor('viewer', mode, breakpoint)}
+            orientation={orientation}
             setMode={setMode}
             paneSize={viewerObs.size}
             paneRole={paneRoleFor('viewer', mode)}
@@ -141,7 +163,8 @@ export function AppShell({
           <div ref={adminObs.ref} className={styles.adminPane}>
             <PaneContextProvider
               mode={mode}
-              breakpoint={breakpoint}
+              breakpoint={paneBreakpointFor('admin', mode, breakpoint)}
+              orientation={orientation}
               setMode={setMode}
               paneSize={adminObs.size}
               paneRole={paneRoleFor('admin', mode)}
@@ -157,6 +180,7 @@ export function AppShell({
             <PaneContextProvider
               mode={mode}
               breakpoint={breakpoint}
+              orientation={orientation}
               setMode={setMode}
               paneSize={{ width: 0, height: 0 }}
               paneRole={null}
@@ -189,10 +213,17 @@ export function AppShell({
     )
   }
   if (forcedBreakpoint === 'tablet') {
+    const isPortrait = orientation === 'portrait'
     return (
       <div className={styles.stage}>
-        <div className={`${styles.deviceFrame} ${styles.deviceFrameTablet}`}>
-          <div className={styles.deviceLabel}>Tablet · 900 × 680</div>
+        <div
+          className={`${styles.deviceFrame} ${
+            isPortrait ? styles.deviceFrameTabletPortrait : styles.deviceFrameTablet
+          }`}
+        >
+          <div className={styles.deviceLabel}>
+            Tablet · {isPortrait ? '680 × 900' : '900 × 680'}
+          </div>
           {rootContent}
         </div>
       </div>
@@ -204,32 +235,51 @@ export function AppShell({
 function PaneContextProvider({
   mode,
   breakpoint,
+  orientation,
   setMode,
   paneSize,
   paneRole,
   displayMode,
   children,
-}: Omit<ShellContextValue, 'mode' | 'breakpoint' | 'setMode'> & {
+}: {
   mode: ShellContextValue['mode']
   breakpoint: ShellContextValue['breakpoint']
+  orientation: ShellContextValue['orientation']
   setMode: ShellContextValue['setMode']
+  paneSize: ShellContextValue['paneSize']
+  paneRole: ShellContextValue['paneRole']
+  displayMode: ShellContextValue['displayMode']
   children: React.ReactNode
 }) {
-  const value: ShellContextValue = { mode, breakpoint, setMode, paneSize, paneRole, displayMode }
+  const value: ShellContextValue = {
+    mode,
+    breakpoint,
+    orientation,
+    setMode,
+    paneSize,
+    paneRole,
+    displayMode,
+  }
   return <ShellContextProvider value={value}>{children}</ShellContextProvider>
 }
 
-function computeLayoutClass(mode: string, bp: string): string {
+function computeLayoutClass(mode: string, bp: string, orient: Orientation): string {
   if (bp === 'phone') {
     if (mode === 'admin-only') return styles.phoneAdmin ?? ''
     if (mode === 'settings') return styles.phoneSettings ?? ''
     return styles.phoneViewer ?? ''
   }
   if (mode === 'split-viewer') {
-    return bp === 'desktop' ? (styles.splitViewerDesktop ?? '') : (styles.splitViewerTablet ?? '')
+    if (bp === 'desktop') return styles.splitViewerDesktop ?? ''
+    return orient === 'portrait'
+      ? (styles.splitViewerTabletPortrait ?? '')
+      : (styles.splitViewerTablet ?? '')
   }
   if (mode === 'split-admin') {
-    return bp === 'desktop' ? (styles.splitAdminDesktop ?? '') : (styles.splitAdminTablet ?? '')
+    if (bp === 'desktop') return styles.splitAdminDesktop ?? ''
+    return orient === 'portrait'
+      ? (styles.splitAdminTabletPortrait ?? '')
+      : (styles.splitAdminTablet ?? '')
   }
   return ''
 }
@@ -250,4 +300,23 @@ function displayModeFor(
   if (breakpoint === 'phone') return 'compact'
   const role = paneRoleFor(pane, mode)
   return role === 'side' ? 'compact' : 'full'
+}
+
+/** Per-pane breakpoint. Key principle: in split modes, the SIDE pane
+ *  renders as if it were a phone (so admin/viewer content uses their
+ *  phone layouts instead of a cramped desktop layout). The primary pane
+ *  keeps the host breakpoint. */
+function paneBreakpointFor(
+  pane: 'viewer' | 'admin',
+  mode: string,
+  breakpoint: Breakpoint,
+): Breakpoint {
+  // If the whole viewport is phone, everything is phone.
+  if (breakpoint === 'phone') return 'phone'
+  const role = paneRoleFor(pane, mode)
+  // In a split, the side pane is narrow — treat it as a phone so content
+  // (MockAdmin chips + cards, compact Measure widget) uses the mobile
+  // layout.
+  if (role === 'side') return 'phone'
+  return breakpoint
 }

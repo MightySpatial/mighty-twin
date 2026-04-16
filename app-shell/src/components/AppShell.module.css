@@ -54,6 +54,18 @@
     0 30px 80px rgba(0, 0, 0, 0.6);
 }
 
+.deviceFrameTabletPortrait {
+  width: 680px;
+  max-width: calc(100vw - 80px);
+  height: 900px;
+  max-height: calc(100vh - 80px);
+  border-radius: 22px;
+  box-shadow:
+    0 0 0 8px #1a1a24,
+    0 0 0 9px rgba(255, 255, 255, 0.06),
+    0 30px 80px rgba(0, 0, 0, 0.6);
+}
+
 .deviceLabel {
   position: absolute;
   top: -28px;
@@ -137,7 +149,8 @@
   right: var(--side-pane-width, 420px);
 }
 
-/* Split layouts — tablet (overlay drawer) */
+/* Split layouts — tablet LANDSCAPE (overlay drawer on the right/left).
+   The side pane content renders in phone mode (per paneBreakpointFor). */
 .splitViewerTablet .viewerSurface {
   inset: 0;
 }
@@ -155,6 +168,33 @@
 }
 .splitAdminTablet .adminPane {
   inset: 0;
+}
+
+/* Split layouts — tablet PORTRAIT (vertical stack).
+   V+A: viewer on top, admin on bottom. A+V: the reverse.
+   The minor pane gets ~45% height and renders in phone mode. */
+.splitViewerTabletPortrait .viewerSurface {
+  bottom: 45%;
+  inset: 0 0 45% 0;
+}
+.splitViewerTabletPortrait .adminPane {
+  top: auto;
+  height: 45%;
+  inset: auto 0 0 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.3);
+}
+
+.splitAdminTabletPortrait .viewerSurface {
+  top: auto;
+  height: 45%;
+  inset: auto 0 0 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.3);
+}
+.splitAdminTabletPortrait .adminPane {
+  bottom: 45%;
+  inset: 0 0 45% 0;
 }
 
 /* Phone: settings pane above viewer-admin stack; single pane active at a time */

@@ -1,4 +1,4 @@
-import type { BrandProps, ViewMode, Breakpoint } from '../types'
+import type { BrandProps, ViewMode, Breakpoint, Orientation } from '../types'
 import styles from './TopBar.module.css'
 
 interface TopBarProps {
@@ -12,6 +12,9 @@ interface TopBarProps {
    *  desktop layouts without resizing the browser. */
   forcedBreakpoint?: Breakpoint | null
   onForcedBreakpointChange?: (bp: Breakpoint | null) => void
+  /** Dev-only orientation override (meaningful on tablet). */
+  forcedOrientation?: Orientation | null
+  onForcedOrientationChange?: (o: Orientation | null) => void
 }
 
 /** Desktop/tablet top bar. Renders brand + three tabs + split-mode toggle.
@@ -24,6 +27,8 @@ export function TopBar({
   labels,
   forcedBreakpoint,
   onForcedBreakpointChange,
+  forcedOrientation,
+  onForcedOrientationChange,
 }: TopBarProps) {
   if (breakpoint === 'phone') return null
 
@@ -161,6 +166,29 @@ export function TopBar({
               auto
             </button>
           )}
+        </div>
+      )}
+
+      {/* Orientation toggle — only meaningful on tablet (portrait-mode
+          tablets stack split panes vertically instead of overlaying a
+          drawer). Dev-only. */}
+      {onForcedOrientationChange && import.meta.env.DEV && breakpoint === 'tablet' && (
+        <div className={styles.bpGroup} role="group" aria-label="Orientation">
+          {(['portrait', 'landscape'] as const).map((o) => (
+            <button
+              key={o}
+              type="button"
+              className={`${styles.bpBtn} ${forcedOrientation === o ? styles.bpBtnActive : ''}`}
+              onClick={() => onForcedOrientationChange(forcedOrientation === o ? null : o)}
+              title={
+                forcedOrientation === o
+                  ? `Release ${o} override`
+                  : `Simulate ${o} orientation`
+              }
+            >
+              {o.slice(0, 1)}
+            </button>
+          ))}
         </div>
       )}
     </header>

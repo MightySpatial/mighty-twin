@@ -10,6 +10,11 @@ export type ViewMode =
 
 export type Breakpoint = 'phone' | 'tablet' | 'desktop'
 
+/** Portrait = height > width. Meaningful mostly on tablet: landscape
+ *  tablets behave like narrow desktops, portrait tablets stack split
+ *  panes vertically instead of overlaying a drawer. */
+export type Orientation = 'portrait' | 'landscape'
+
 /** Display hint the shell passes to widgets via WidgetContext. */
 export type DisplayMode = 'full' | 'compact'
 
@@ -18,6 +23,7 @@ export type PaneRole = 'primary' | 'side' | null
 export interface ShellContextValue {
   mode: ViewMode
   breakpoint: Breakpoint
+  orientation: Orientation
   /** The display mode for the pane the current component is inside. */
   displayMode: DisplayMode
   /** Programmatically change view mode. Uses push/replace per transition rules. */
