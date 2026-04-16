@@ -29,7 +29,10 @@ export function TopBar({
 
   const isSettingsTab = mode === 'settings'
   const onSettingsClick = () => {
-    if (mode !== 'settings') onModeChange('settings')
+    // Toggle: click from a layout → Settings; click while in Settings →
+    // return to Viewer-only (a predictable fallback so the button never
+    // becomes a dead-end).
+    onModeChange(mode === 'settings' ? 'viewer-only' : 'settings')
   }
 
   const Icon = brand.icon
@@ -43,12 +46,9 @@ export function TopBar({
 
       {/* Layout slider — the single source of truth for which pane(s) are
           visible. Desktop gets all four options (V / V+A / A+V / A);
-          tablet and phone would get a simpler pair (see below). */}
-      {breakpoint === 'desktop' &&
-        (mode === 'viewer-only' ||
-          mode === 'admin-only' ||
-          mode === 'split-viewer' ||
-          mode === 'split-admin') && (
+          tablet and phone would get a simpler pair (see below).
+          Always rendered so the user has a way out of Settings. */}
+      {breakpoint === 'desktop' && (
         <div className={styles.splitGroup} role="group" aria-label="Layout">
           <button
             type="button"
@@ -87,12 +87,9 @@ export function TopBar({
 
       {/* Tablet gets a simpler 2-way toggle (VIEWER / ADMIN). Split is
           available by deep-link (drawer overlay) but not exposed here to
-          keep the bar honest at this size. */}
-      {breakpoint === 'tablet' &&
-        (mode === 'viewer-only' ||
-          mode === 'admin-only' ||
-          mode === 'split-viewer' ||
-          mode === 'split-admin') && (
+          keep the bar honest at this size. Always rendered so Settings
+          has a clear way out. */}
+      {breakpoint === 'tablet' && (
         <div className={styles.splitGroup} role="group" aria-label="Layout">
           <button
             type="button"
