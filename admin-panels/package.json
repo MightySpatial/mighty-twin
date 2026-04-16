@@ -31,6 +31,7 @@
     "clean": "rm -rf dist .turbo"
   },
   "dependencies": {
+    "@mightyspatial/app-shell": "workspace:*",
     "@mightyspatial/settings-panels": "workspace:*",
     "@mightyspatial/tokens": "workspace:*",
     "@mightyspatial/widget-host": "workspace:*"
