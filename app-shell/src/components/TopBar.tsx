@@ -32,14 +32,6 @@ export function TopBar({
 }: TopBarProps) {
   if (breakpoint === 'phone') return null
 
-  const isSettingsTab = mode === 'settings'
-  const onSettingsClick = () => {
-    // Toggle: click from a layout → Settings; click while in Settings →
-    // return to Viewer-only (a predictable fallback so the button never
-    // becomes a dead-end).
-    onModeChange(mode === 'settings' ? 'viewer-only' : 'settings')
-  }
-
   const Icon = brand.icon
 
   return (
@@ -49,10 +41,12 @@ export function TopBar({
         <span>{brand.name}</span>
       </button>
 
-      {/* Layout slider — the single source of truth for which pane(s) are
-          visible. Desktop gets all four options (V / V+A / A+V / A);
-          tablet and phone would get a simpler pair (see below).
-          Always rendered so the user has a way out of Settings. */}
+      {/* Layout slider — the single source of truth for every display
+          mode, including Settings. Five buttons end-to-end:
+          [V] [V+A] [A+V] [A] [⚙ S]
+          Desktop shows all five; tablet collapses V+A/A+V to a 3-button
+          strip (Viewer / Admin / Settings) since split becomes an overlay
+          drawer there rather than a first-class layout. */}
       {breakpoint === 'desktop' && (
         <div className={styles.splitGroup} role="group" aria-label="Layout">
           <button
@@ -87,13 +81,19 @@ export function TopBar({
           >
             Admin
           </button>
+          <button
+            type="button"
+            className={`${styles.splitBtn} ${mode === 'settings' ? styles.splitBtnActive : ''}`}
+            onClick={() => onModeChange('settings')}
+            title="Settings"
+          >
+            ⚙ {labels.settings}
+          </button>
         </div>
-        )}
+      )}
 
-      {/* Tablet gets a simpler 2-way toggle (VIEWER / ADMIN). Split is
-          available by deep-link (drawer overlay) but not exposed here to
-          keep the bar honest at this size. Always rendered so Settings
-          has a clear way out. */}
+      {/* Tablet: 3-button strip (Viewer / Admin / Settings). Split is
+          available by deep-link (drawer overlay) but not exposed here. */}
       {breakpoint === 'tablet' && (
         <div className={styles.splitGroup} role="group" aria-label="Layout">
           <button
@@ -116,26 +116,20 @@ export function TopBar({
           >
             Admin
           </button>
+          <button
+            type="button"
+            className={`${styles.splitBtn} ${mode === 'settings' ? styles.splitBtnActive : ''}`}
+            onClick={() => onModeChange('settings')}
+            title="Settings"
+          >
+            ⚙ {labels.settings}
+          </button>
         </div>
       )}
 
-      {/* Settings button — a peer to the layout slider, not a layout itself.
-          Phone gets it via the bottom nav, so TopBar always renders it when
-          visible (phone already early-returns at the top of the component). */}
-      <button
-        type="button"
-        role="tab"
-        aria-selected={isSettingsTab}
-        className={`${styles.tab} ${isSettingsTab ? styles.tabActive : ''}`}
-        onClick={onSettingsClick}
-        title={isSettingsTab ? 'Close settings' : 'Open settings'}
-      >
-        ⚙ {labels.settings}
-      </button>
-
       <div className={styles.spacer} />
 
-      {onForcedBreakpointChange && import.meta.env.DEV && (
+      {onForcedBreakpointChange && (
         <div className={styles.bpGroup} role="group" aria-label="Breakpoint">
           <span className={styles.bpLabel} style={{ padding: '0 8px 0 4px' }}>
             Breakpoint
@@ -171,8 +165,8 @@ export function TopBar({
 
       {/* Orientation toggle — only meaningful on tablet (portrait-mode
           tablets stack split panes vertically instead of overlaying a
-          drawer). Dev-only. */}
-      {onForcedOrientationChange && import.meta.env.DEV && breakpoint === 'tablet' && (
+          drawer). Gated on showDeveloperTools via the parent prop. */}
+      {onForcedOrientationChange && breakpoint === 'tablet' && (
         <div className={styles.bpGroup} role="group" aria-label="Orientation">
           {(['portrait', 'landscape'] as const).map((o) => (
             <button

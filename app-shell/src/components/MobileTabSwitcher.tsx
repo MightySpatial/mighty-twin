@@ -25,7 +25,7 @@ export function MobileHeader({
     <div className={styles.mobileHeader}>
       {Icon ? <Icon size={18} className="brand-icon" /> : null}
       <span style={{ marginLeft: Icon ? 8 : 0, flex: 1 }}>{brand.name}</span>
-      {onForcedBreakpointChange && import.meta.env.DEV && (
+      {onForcedBreakpointChange && (
         <div style={{ display: 'flex', gap: 4, fontSize: 10, textTransform: 'uppercase' }}>
           {(['phone', 'tablet', 'desktop'] as const).map((bp) => (
             <button

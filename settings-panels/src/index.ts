@@ -8,6 +8,7 @@ export { BasemapTerrainPanel } from './panels/BasemapTerrainPanel'
 export { UnitsPanel } from './panels/UnitsPanel'
 export { WidgetHostPanel } from './panels/WidgetHostPanel'
 export { ThemePanel } from './panels/ThemePanel'
+export { DeveloperPanel } from './panels/DeveloperPanel'
 export { usePersistedSettings } from './hooks/usePersistedSettings'
 
 export type {

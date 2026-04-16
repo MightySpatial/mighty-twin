@@ -4,17 +4,19 @@ import { BasemapTerrainPanel } from './panels/BasemapTerrainPanel'
 import { UnitsPanel } from './panels/UnitsPanel'
 import { WidgetHostPanel } from './panels/WidgetHostPanel'
 import { ThemePanel } from './panels/ThemePanel'
+import { DeveloperPanel } from './panels/DeveloperPanel'
 
-type SectionId = 'basemap' | 'units' | 'widgets' | 'theme'
+type SectionId = 'basemap' | 'units' | 'widgets' | 'theme' | 'dev'
 
 const SECTIONS: { id: SectionId; label: string }[] = [
   { id: 'basemap', label: 'Basemap & terrain' },
   { id: 'units', label: 'Units' },
   { id: 'widgets', label: 'Widget host' },
   { id: 'theme', label: 'Theme & density' },
+  { id: 'dev', label: 'Developer' },
 ]
 
-/** Full-page Settings view. Left nav of four sections, content panel on right.
+/** Full-page Settings view. Left nav of sections, content panel on right.
  *  Reads the initial section from the URL hash (`#basemap`, `#units`, etc.). */
 export function SettingsShell() {
   const [active, setActive] = useState<SectionId>(() => parseHash() ?? 'basemap')
@@ -30,7 +32,6 @@ export function SettingsShell() {
 
   const selectSection = (id: SectionId) => {
     setActive(id)
-    // Update hash without scroll jump
     if (typeof window !== 'undefined') {
       history.replaceState(null, '', `#${id}`)
     }
@@ -57,6 +58,7 @@ export function SettingsShell() {
         {active === 'units' && <UnitsPanel />}
         {active === 'widgets' && <WidgetHostPanel />}
         {active === 'theme' && <ThemePanel />}
+        {active === 'dev' && <DeveloperPanel />}
       </div>
     </div>
   )
@@ -65,6 +67,7 @@ export function SettingsShell() {
 function parseHash(): SectionId | null {
   if (typeof window === 'undefined') return null
   const h = window.location.hash.replace(/^#/, '')
-  if (h === 'basemap' || h === 'units' || h === 'widgets' || h === 'theme') return h
+  if (h === 'basemap' || h === 'units' || h === 'widgets' || h === 'theme' || h === 'dev')
+    return h
   return null
 }

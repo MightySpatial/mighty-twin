@@ -39,6 +39,7 @@ export function AppShell({
   drawerWidth = 320,
   defaultMode = 'viewer-only',
   onModeChange,
+  showDeveloperTools = false,
 }: AppShellProps) {
   const { mode, setMode } = useViewMode()
 
@@ -124,7 +125,7 @@ export function AppShell({
         <MobileHeader
           brand={brand}
           forcedBreakpoint={forcedBreakpoint}
-          onForcedBreakpointChange={onForcedBreakpointChange}
+          onForcedBreakpointChange={showDeveloperTools ? onForcedBreakpointChange : undefined}
         />
       ) : (
         <TopBar
@@ -134,9 +135,9 @@ export function AppShell({
           onModeChange={setMode}
           labels={labels}
           forcedBreakpoint={forcedBreakpoint}
-          onForcedBreakpointChange={onForcedBreakpointChange}
+          onForcedBreakpointChange={showDeveloperTools ? onForcedBreakpointChange : undefined}
           forcedOrientation={forcedOrientation}
-          onForcedOrientationChange={onForcedOrientationChange}
+          onForcedOrientationChange={showDeveloperTools ? onForcedOrientationChange : undefined}
         />
       )}
 

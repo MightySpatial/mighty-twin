@@ -67,4 +67,9 @@ export interface AppShellProps {
 
   /** Emitted after mode changes (telemetry hook). */
   onModeChange?: (mode: ViewMode) => void
+
+  /** Show developer affordances (breakpoint + orientation toggles in the
+   *  top bar). Host app typically reads settings.dev.enabled and passes
+   *  that here. Default: false — consumers must opt in. */
+  showDeveloperTools?: boolean
 }
