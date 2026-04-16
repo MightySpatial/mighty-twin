@@ -15,6 +15,7 @@ export function App() {
       viewer={<ViewerSurface />}
       adminContent={adminContent}
       settingsContent={<SettingsShell />}
+      showDeveloperTools={settings.dev.enabled}
     />
   )
 }

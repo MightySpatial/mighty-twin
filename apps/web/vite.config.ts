@@ -5,9 +5,9 @@ import cesium from 'vite-plugin-cesium'
 export default defineConfig({
   plugins: [react(), cesium()],
   server: {
-    port: 3000,
+    port: 3002,
     proxy: {
-      '/api': { target: 'http://localhost:5001', changeOrigin: true },
+      '/api': { target: 'http://localhost:5003', changeOrigin: true },
     },
   },
 })
