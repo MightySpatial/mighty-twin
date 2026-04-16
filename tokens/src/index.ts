@@ -96,27 +96,6 @@ export const shadows = {
   fab: '0 4px 16px rgba(99, 102, 241, 0.4)',
 } as const;
 
-// API Configuration
-export const apiConfig = {
-  baseUrl: process.env.VITE_API_URL || 'http://localhost:5001',
-  timeout: 30000,
-} as const;
-
-// OAuth Configuration
-export const oauthConfig = {
-  google: {
-    clientId: process.env.VITE_GOOGLE_CLIENT_ID || '',
-    scopes: ['email', 'profile'],
-  },
-  microsoft: {
-    clientId: process.env.VITE_MICROSOFT_CLIENT_ID || '',
-    tenantId: process.env.VITE_MICROSOFT_TENANT_ID || 'common',
-    scopes: ['User.Read', 'email', 'profile'],
-  },
-} as const;
-
-// Cesium Configuration
-export const cesiumConfig = {
-  accessToken: process.env.VITE_CESIUM_ACCESS_TOKEN || '',
-  defaultTerrain: 'https://assets.cesium.com/1/',
-} as const;
+// Config (apiConfig, oauthConfig, cesiumConfig) was removed from this package
+// — it belongs in each consumer app, read from env vars local to that app.
+// Tokens should contain only design tokens (colors, spacing, typography, etc).

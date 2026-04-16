@@ -1,0 +1,63 @@
+.adminShell {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 24px 28px;
+  background: #0f0f14;
+  color: #f5f5f7;
+  overflow: auto;
+}
+
+.header {
+  margin-bottom: 24px;
+}
+
+.title {
+  font-size: 24px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  margin: 0 0 6px;
+  color: #f5f5f7;
+}
+
+.subtitle {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.55);
+  margin: 0;
+}
+
+.navRail {
+  display: flex;
+  gap: 6px;
+  margin: 16px 0 24px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.navItem {
+  padding: 6px 12px;
+  font-size: 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.03);
+  color: rgba(255, 255, 255, 0.75);
+  cursor: pointer;
+  font: inherit;
+  transition: background 100ms ease, color 100ms ease;
+}
+
+.navItem:hover {
+  background: rgba(99, 102, 241, 0.12);
+  color: #fff;
+}
+
+.navItemActive {
+  background: rgba(99, 102, 241, 0.25);
+  color: #fff;
+  border-color: rgba(99, 102, 241, 0.6);
+}
+
+.content {
+  flex: 1;
+  min-height: 0;
+}

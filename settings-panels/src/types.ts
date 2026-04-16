@@ -1,0 +1,35 @@
+export type BasemapProvider = 'osm' | 'ion-bing' | 'ion-sentinel'
+export type LengthUnit = 'metric' | 'imperial'
+export type CoordinateFormat = 'dd' | 'dms' | 'mgrs'
+export type ThemeMode = 'dark' | 'light' | 'system'
+export type Density = 'compact' | 'comfortable'
+
+export interface AppSettings {
+  basemap: {
+    provider: BasemapProvider
+    ionToken: string
+    terrainEnabled: boolean
+  }
+  units: {
+    length: LengthUnit
+    coordinates: CoordinateFormat
+  }
+  widgets: {
+    enabled: Record<string, boolean>
+    showDebugOverlays: boolean
+  }
+  theme: {
+    mode: ThemeMode
+    density: Density
+  }
+}
+
+export const DEFAULT_SETTINGS: AppSettings = {
+  basemap: { provider: 'osm', ionToken: '', terrainEnabled: false },
+  units: { length: 'metric', coordinates: 'dd' },
+  widgets: { enabled: {}, showDebugOverlays: false },
+  theme: { mode: 'dark', density: 'comfortable' },
+}
+
+export const STORAGE_KEY = 'mighty-settings-v1'
+export const CHANGE_EVENT = 'mighty-settings-change'

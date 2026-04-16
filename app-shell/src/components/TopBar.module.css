@@ -1,0 +1,89 @@
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  height: 56px;
+  padding: 0 20px;
+  background: rgba(15, 15, 20, 0.92);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(12px);
+  z-index: 10;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  color: #818cf8;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  background: none;
+  border: none;
+  padding: 0;
+  font-family: inherit;
+}
+.brand:hover {
+  color: #a5b4fc;
+}
+
+.tabs {
+  display: flex;
+  gap: 4px;
+  font-size: 13px;
+}
+
+.tab {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 14px;
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.6);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font: inherit;
+  transition: background 120ms ease, color 120ms ease;
+}
+.tab:hover {
+  color: rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.04);
+}
+.tabActive {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.splitGroup {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  margin-left: 4px;
+  padding: 2px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  font-size: 11px;
+}
+
+.splitBtn {
+  padding: 4px 10px;
+  border-radius: 6px;
+  color: rgba(255, 255, 255, 0.55);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font: inherit;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+.splitBtn:hover {
+  color: #fff;
+}
+.splitBtnActive {
+  background: #6366f1;
+  color: #fff;
+}
+
+.spacer { flex: 1; }

@@ -1,0 +1,50 @@
+{
+  "name": "@mightyspatial/admin-panels",
+  "version": "0.1.0",
+  "description": "Admin content for Mighty platform apps — dev tools (WidgetInspector, CameraHUD) and mock admin pages",
+  "license": "UNLICENSED",
+  "sideEffects": ["**/*.css"],
+  "type": "module",
+  "main": "./src/index.ts",
+  "module": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "import": "./src/index.ts"
+    },
+    "./dev-tools": {
+      "types": "./src/dev-tools/index.ts",
+      "import": "./src/dev-tools/index.ts"
+    },
+    "./mock": {
+      "types": "./src/mock/index.ts",
+      "import": "./src/mock/index.ts"
+    }
+  },
+  "files": ["src", "dist", "README.md"],
+  "scripts": {
+    "build": "tsc --project tsconfig.build.json",
+    "dev": "tsc --project tsconfig.build.json --watch",
+    "lint": "eslint src",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist .turbo"
+  },
+  "dependencies": {
+    "@mightyspatial/tokens": "workspace:*",
+    "@mightyspatial/widget-host": "workspace:*"
+  },
+  "peerDependencies": {
+    "cesium": ">=1.126",
+    "react": ">=18"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.0",
+    "cesium": "^1.126.0",
+    "react": "^18.3.1"
+  },
+  "publishConfig": {
+    "access": "restricted",
+    "registry": "https://npm.pkg.github.com"
+  }
+}

@@ -12,6 +12,10 @@ import type { Layer, Site, UserRole } from '@mightyspatial/types'
 
 // ─── Context passed to every widget ─────────────────────────────────────────
 
+/** Display hint from the host — widgets that have size-sensitive UI can
+ *  consult this to pick between a full and a compact layout. */
+export type DisplayMode = 'full' | 'compact'
+
 /** What a widget gets access to when it mounts. */
 export interface WidgetContext {
   /** The live Cesium viewer. */
@@ -26,6 +30,11 @@ export interface WidgetContext {
   api: ApiClient
   /** UI helpers. */
   toast: (opts: ToastOptions) => void
+  /** Host-provided hint about how much space the widget has.
+   *  Widgets that don't care may ignore this. */
+  displayMode?: DisplayMode
+  /** Live size of the pane the widget is rendered inside. Updates on resize. */
+  paneSize?: { width: number; height: number }
 }
 
 export interface WidgetUser {
@@ -111,6 +120,12 @@ export interface WidgetManifest {
 
   /** Short description shown in the ux-guide index. Optional. */
   description?: string
+
+  /** Minimum pane width the widget can render in. When the pane is narrower,
+   *  the host hides the widget and shows a "widget hidden — expand pane"
+   *  hint (so nothing silently vanishes). Leave unset for widgets that
+   *  handle their own responsiveness. */
+  minWidth?: number
 }
 
 // ─── Registry ───────────────────────────────────────────────────────────────
