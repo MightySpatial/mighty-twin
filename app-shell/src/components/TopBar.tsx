@@ -55,15 +55,15 @@ export function TopBar({
           type="button"
           className={`${styles.splitBtn} ${mode === 'viewer-only' ? styles.splitBtnActive : ''}`}
           onClick={() => onModeChange('viewer-only')}
-          title="Viewer only"
+          title={`${labels.viewer} only`}
         >
-          Viewer
+          {labels.viewer}
         </button>
         <button
           type="button"
           className={`${styles.splitBtn} ${mode === 'split-viewer' ? styles.splitBtnActive : ''}`}
           onClick={() => onModeChange('split-viewer')}
-          title="Viewer + Admin side pane"
+          title={`${labels.viewer} + ${labels.admin} side pane`}
         >
           V+A
         </button>
@@ -71,7 +71,7 @@ export function TopBar({
           type="button"
           className={`${styles.splitBtn} ${mode === 'split-admin' ? styles.splitBtnActive : ''}`}
           onClick={() => onModeChange('split-admin')}
-          title="Admin + Viewer side pane"
+          title={`${labels.admin} + ${labels.viewer} side pane`}
         >
           A+V
         </button>
@@ -79,9 +79,9 @@ export function TopBar({
           type="button"
           className={`${styles.splitBtn} ${mode === 'admin-only' ? styles.splitBtnActive : ''}`}
           onClick={() => onModeChange('admin-only')}
-          title="Admin only"
+          title={`${labels.admin} only`}
         >
-          Admin
+          {labels.admin}
         </button>
         <button
           type="button"
