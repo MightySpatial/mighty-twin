@@ -105,15 +105,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Login with email/password
   const login = async (email: string, password: string) => {
-    const res = await fetch(`${API_URL}/api/auth/login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
-    })
+    let res: Response
+    try {
+      res = await fetch(`${API_URL}/api/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      })
+    } catch {
+      throw new Error('Server unavailable — is the API running?')
+    }
 
     if (!res.ok) {
-      const error: AuthErrorResponse = await res.json()
-      throw new Error(error.detail || 'Login failed')
+      let detail = 'Login failed'
+      try {
+        const body: AuthErrorResponse = await res.json()
+        if (body.detail) detail = body.detail
+      } catch {
+        // non-JSON error response (e.g. proxy HTML error page)
+      }
+      throw new Error(detail)
     }
 
     const { access_token, refresh_token }: AuthTokenResponse = await res.json()
