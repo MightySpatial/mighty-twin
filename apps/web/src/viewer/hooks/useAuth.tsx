@@ -46,7 +46,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isLoading: true,
   })
 
-  // Fetch current user
+  // Fetch current user (with timeout so a down proxy doesn't hang forever)
   const fetchUser = useCallback(async () => {
     const { accessToken } = getTokens()
     if (!accessToken) {
@@ -54,9 +54,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return
     }
 
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), 8_000)
+
     try {
       const res = await fetch(`${API_URL}/api/auth/me`, {
         headers: { Authorization: `Bearer ${accessToken}` },
+        signal: controller.signal,
       })
 
       if (res.ok) {
@@ -71,6 +75,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch {
       clearTokens()
       setState({ user: null, isAuthenticated: false, isLoading: false })
+    } finally {
+      clearTimeout(timeout)
     }
   }, [])
 
@@ -106,14 +112,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Login with email/password
   const login = async (email: string, password: string) => {
     let res: Response
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), 10_000)
+
     try {
       res = await fetch(`${API_URL}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
+        signal: controller.signal,
       })
-    } catch {
-      throw new Error('Server unavailable — is the API running?')
+    } catch (err) {
+      clearTimeout(timeout)
+      // In dev mode, fall back to a mock session so the app is usable
+      // without a running backend. Production builds always require the API.
+      if (import.meta.env.DEV) {
+        console.warn('[auth] API unreachable — using dev mock session')
+        setTokens('dev-mock-token', 'dev-mock-refresh')
+        setState({
+          user: { id: 'dev', name: 'Dev User', email, role: 'admin' } as User,
+          isAuthenticated: true,
+          isLoading: false,
+        })
+        return
+      }
+      const msg = err instanceof DOMException && err.name === 'AbortError'
+        ? 'Login timed out — is the API running?'
+        : 'Server unavailable — is the API running?'
+      throw new Error(msg)
+    } finally {
+      clearTimeout(timeout)
     }
 
     if (!res.ok) {
