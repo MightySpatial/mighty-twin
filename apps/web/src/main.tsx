@@ -2,6 +2,8 @@ import { StrictMode, useEffect } from 'react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import { usePersistedSettings } from '@mightyspatial/settings-panels'
+import { AuthProvider } from './viewer/hooks/useAuth'
+import { ToastProvider } from './viewer/hooks/useToast'
 import './styles.css'
 import { App } from './App'
 
@@ -24,8 +26,12 @@ function ThemeAttrs() {
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <BrowserRouter>
-      <ThemeAttrs />
-      <App />
+      <AuthProvider>
+        <ToastProvider>
+          <ThemeAttrs />
+          <App />
+        </ToastProvider>
+      </AuthProvider>
     </BrowserRouter>
   </StrictMode>,
 )

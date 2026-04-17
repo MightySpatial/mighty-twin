@@ -1,38 +1,30 @@
 import { useState } from 'react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
+import { useShellContext } from '@mightyspatial/app-shell'
 import { useBreakpoint } from '../hooks/useBreakpoint'
-import {
-  Home, Users, MapPin, Database, FolderOpen, Settings,
-  Menu, X, LogOut, Map as MapIcon, ChevronRight, MoreHorizontal,
-  Wrench, Plug
-} from 'lucide-react'
+import { MapPin, Database, FolderOpen, Upload, Menu, X, ChevronRight } from 'lucide-react'
 import './AppLayout.css'
 
 const NAV_ITEMS = [
-  { path: '/admin', icon: Home, label: 'Home' },
   { path: '/admin/sites', icon: MapPin, label: 'Sites' },
   { path: '/admin/data', icon: Database, label: 'Data' },
+  { path: '/admin/upload', icon: Upload, label: 'Upload' },
   { path: '/admin/library', icon: FolderOpen, label: 'Library' },
 ]
 
-const MORE_ITEMS = [
-  { path: '/admin/tools', icon: Wrench, label: 'Tools' },
-  { path: '/admin/integrations', icon: Plug, label: 'Integrations' },
-  { path: '/admin/users', icon: Users, label: 'Users' },
-  { path: '/admin/settings', icon: Settings, label: 'Settings' },
-]
-
+/** Atlas layout — the publisher-level chrome. Wraps Sites, Data, Upload,
+ *  and Library in a sidebar (desktop) / drawer (tablet) / bottom-tab
+ *  (phone) shell. Users, Tools, Integrations, and system settings have
+ *  moved to the top-level Settings tab. */
 export default function AppLayout() {
   const { isPhone, isTablet, isDesktop } = useBreakpoint()
+  const { setMode } = useShellContext()
   const [sidebarOpen, setSidebarOpen] = useState(false)
-  const [moreOpen, setMoreOpen] = useState(false)
   const location = useLocation()
 
-  // Get current page title
   const getPageTitle = () => {
-    const allItems = [...NAV_ITEMS, ...MORE_ITEMS]
-    const current = allItems.find(item => item.path === location.pathname)
-    return current?.label || 'Admin'
+    const current = NAV_ITEMS.find(item => location.pathname.startsWith(item.path))
+    return current?.label || 'Atlas'
   }
 
   return (
@@ -43,31 +35,17 @@ export default function AppLayout() {
           <div className="sidebar-header">
             <div className="sidebar-logo">
               <span className="logo-icon">⬡</span>
-              <span className="logo-text">MightyTwin</span>
+              <span className="logo-text">Atlas</span>
             </div>
           </div>
 
           <nav className="sidebar-nav">
             <div className="nav-section">
-              <span className="nav-section-title">Main</span>
+              <span className="nav-section-title">Publisher</span>
               {NAV_ITEMS.map(item => (
-                <NavLink 
-                  key={item.path} 
-                  to={item.path} 
-                  className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
-                >
-                  <item.icon size={20} />
-                  <span>{item.label}</span>
-                </NavLink>
-              ))}
-            </div>
-
-            <div className="nav-section">
-              <span className="nav-section-title">Admin</span>
-              {MORE_ITEMS.map(item => (
-                <NavLink 
-                  key={item.path} 
-                  to={item.path} 
+                <NavLink
+                  key={item.path}
+                  to={item.path}
                   className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
                 >
                   <item.icon size={20} />
@@ -76,28 +54,17 @@ export default function AppLayout() {
               ))}
             </div>
           </nav>
-
-          <div className="sidebar-footer">
-            <button className="nav-link">
-              <MapIcon size={20} />
-              <span>Go to Viewer</span>
-            </button>
-            <button className="nav-link nav-link-danger">
-              <LogOut size={20} />
-              <span>Logout</span>
-            </button>
-          </div>
         </aside>
       )}
 
-      {/* ═══ TABLET SIDEBAR (collapsible) ═══ */}
+      {/* ═══ TABLET SIDEBAR (drawer) ═══ */}
       {isTablet && (
         <>
           <aside className={`sidebar sidebar-tablet ${sidebarOpen ? 'open' : ''}`}>
             <div className="sidebar-header">
               <div className="sidebar-logo">
                 <span className="logo-icon">⬡</span>
-                <span className="logo-text">MightyTwin</span>
+                <span className="logo-text">Atlas</span>
               </div>
               <button className="sidebar-close" onClick={() => setSidebarOpen(false)}>
                 <X size={24} />
@@ -105,10 +72,10 @@ export default function AppLayout() {
             </div>
 
             <nav className="sidebar-nav">
-              {[...NAV_ITEMS, ...MORE_ITEMS].map(item => (
-                <NavLink 
-                  key={item.path} 
-                  to={item.path} 
+              {NAV_ITEMS.map(item => (
+                <NavLink
+                  key={item.path}
+                  to={item.path}
                   className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
                   onClick={() => setSidebarOpen(false)}
                 >
@@ -118,17 +85,6 @@ export default function AppLayout() {
                 </NavLink>
               ))}
             </nav>
-
-            <div className="sidebar-footer">
-              <button className="nav-link">
-                <MapIcon size={20} />
-                <span>Go to Viewer</span>
-              </button>
-              <button className="nav-link nav-link-danger">
-                <LogOut size={20} />
-                <span>Logout</span>
-              </button>
-            </div>
           </aside>
           {sidebarOpen && (
             <div className="sidebar-backdrop" onClick={() => setSidebarOpen(false)} />
@@ -138,7 +94,6 @@ export default function AppLayout() {
 
       {/* ═══ MAIN CONTENT AREA ═══ */}
       <div className="main-wrapper">
-        {/* Header (tablet) */}
         {isTablet && (
           <header className="header header-tablet">
             <button className="header-menu-btn" onClick={() => setSidebarOpen(true)}>
@@ -149,71 +104,30 @@ export default function AppLayout() {
           </header>
         )}
 
-        {/* Header (phone) */}
         {isPhone && (
           <header className="header header-phone">
             <h1 className="header-title">{getPageTitle()}</h1>
           </header>
         )}
 
-        {/* Page Content */}
         <main className="main-content">
           <Outlet />
         </main>
 
-        {/* Bottom Nav (phone only) */}
+        {/* Bottom Nav (phone only) — 4 items, no More sheet needed */}
         {isPhone && (
           <nav className="bottom-nav">
             {NAV_ITEMS.map(item => (
-              <NavLink 
-                key={item.path} 
-                to={item.path} 
+              <NavLink
+                key={item.path}
+                to={item.path}
                 className={({ isActive }) => `bottom-nav-item ${isActive ? 'active' : ''}`}
               >
                 <item.icon size={24} />
                 <span>{item.label}</span>
               </NavLink>
             ))}
-            <button 
-              className={`bottom-nav-item ${moreOpen ? 'active' : ''}`}
-              onClick={() => setMoreOpen(true)}
-            >
-              <MoreHorizontal size={24} />
-              <span>More</span>
-            </button>
           </nav>
-        )}
-
-        {/* More Sheet (phone only) */}
-        {isPhone && moreOpen && (
-          <>
-            <div className="sheet-backdrop" onClick={() => setMoreOpen(false)} />
-            <div className="sheet">
-              <div className="sheet-handle" />
-              <div className="menu-list">
-                {MORE_ITEMS.map(item => (
-                  <NavLink 
-                    key={item.path} 
-                    to={item.path} 
-                    className="menu-item"
-                    onClick={() => setMoreOpen(false)}
-                  >
-                    <span className="menu-item-icon"><item.icon size={20} /></span>
-                    <span className="menu-item-label">{item.label}</span>
-                    <ChevronRight size={18} className="menu-item-chevron" />
-                  </NavLink>
-                ))}
-                <button className="menu-item">
-                  <span className="menu-item-icon"><MapIcon size={20} /></span>
-                  <span className="menu-item-label">Go to Viewer</span>
-                </button>
-                <button className="menu-item menu-item-danger">
-                  <span className="menu-item-icon"><LogOut size={20} /></span>
-                  <span className="menu-item-label">Logout</span>
-                </button>
-              </div>
-            </div>
-          </>
         )}
       </div>
     </div>
