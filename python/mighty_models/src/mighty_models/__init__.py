@@ -22,6 +22,7 @@ from .setting import Setting
 from .layer import DataSource, Layer
 from .story_map import StoryMap
 from .snapshot import SketchLayer, Snapshot
+from .library import LIBRARY_MAX_DEPTH, LibraryFolder, LibraryItem
 
 __all__ = [
     "GUID",
@@ -36,4 +37,7 @@ __all__ = [
     "StoryMap",
     "Snapshot",
     "SketchLayer",
+    "LibraryFolder",
+    "LibraryItem",
+    "LIBRARY_MAX_DEPTH",
 ]
