@@ -21,6 +21,7 @@ from .config import get_settings
 from .dev_stubs import router as dev_stubs_router
 from .settings_routes import settings_router, system_router
 from .spatial_routes import router as spatial_router
+from .story_routes import setup_router, story_router
 
 
 @asynccontextmanager
@@ -63,8 +64,11 @@ app.include_router(auth_router)
 app.include_router(settings_router)
 app.include_router(system_router)
 app.include_router(spatial_router)
+app.include_router(story_router)
+app.include_router(setup_router)
 
 
-# Remaining stubs (setup wizard) until Phase E lands.
+# All real now — dev_stubs router is empty (kept the import + include
+# pattern so adding placeholders for future phases stays one-line).
 if settings.dev_stubs_enabled:
     app.include_router(dev_stubs_router)

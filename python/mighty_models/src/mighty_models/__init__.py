@@ -20,6 +20,7 @@ from .site import Base, Site
 from .user import User, UserRole
 from .setting import Setting
 from .layer import DataSource, Layer
+from .story_map import StoryMap
 
 __all__ = [
     "GUID",
@@ -31,4 +32,5 @@ __all__ = [
     "Setting",
     "DataSource",
     "Layer",
+    "StoryMap",
 ]

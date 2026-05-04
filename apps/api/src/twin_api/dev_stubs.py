@@ -1,29 +1,19 @@
-"""Dev-only stub endpoints — placeholders until each phase lands real
-implementations.
+"""Dev-only stub endpoints — empty as of Phase E.
 
-Mounted from main.py only when ``settings.dev_stubs_enabled`` is true
-(default: true; set ``DEV_STUBS_ENABLED=false`` in prod).
+All previously-stubbed routes have been replaced with real implementations:
+  - /api/auth/*           → auth.py (Phase B)
+  - /api/settings*        → settings_routes.py (Phase C)
+  - /api/system/config*   → settings_routes.py (Phase C)
+  - /api/spatial/*        → spatial_routes.py (Phase D)
+  - /api/story-maps/*     → story_routes.py (Phase E)
+  - /api/setup/*          → story_routes.py (Phase E)
 
-As of Phase C, /api/auth/* and /api/settings* and /api/system/config
-are real (in auth.py and settings_routes.py). What remains here is the
-Setup Wizard surface — Phase E owns its replacement.
+Kept as a router so future phases can drop temporary stubs here without
+touching main.py wiring.
 """
 
 from __future__ import annotations
 
-from typing import Any
-
 from fastapi import APIRouter
 
 router = APIRouter(tags=["dev-stubs"])
-
-
-# Phase E will replace these.
-@router.get("/api/setup/status")
-def stub_setup_status() -> dict[str, bool]:
-    return {"is_complete": True}
-
-
-@router.get("/api/setup/license/status")
-def stub_license_status() -> dict[str, Any]:
-    return {"valid": True, "expires_at": None}
