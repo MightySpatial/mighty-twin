@@ -1,0 +1,1321 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MightyTwin · map layout mockup v2</title>
+<style>
+  :root {
+    --bg-base: #0a0c14;
+    --bg-surface: #11141d;
+    --bg-sunken: #0d1018;
+    --bg-elev: #161a25;
+    --fg-primary: #f0f2f8;
+    --fg-secondary: rgba(240,242,248,0.72);
+    --fg-muted: rgba(240,242,248,0.5);
+    --fg-faint: rgba(240,242,248,0.28);
+    --line: rgba(240,242,248,0.07);
+    --line-strong: rgba(240,242,248,0.14);
+    --cobalt: #2453ff;
+    --violet: #a78bfa;
+    --magenta: #ec4899;
+    --amber: #f59e0b;
+    --emerald: #34d399;
+    --teal: #2dd4bf;
+    --sky: #38bdf8;
+    --coral: #fb7185;
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 14px;
+    --shadow-sm: 0 1px 2px rgba(0,0,0,0.3);
+    --shadow-md: 0 4px 14px rgba(0,0,0,0.32);
+    --shadow-lg: 0 12px 32px rgba(0,0,0,0.42);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: var(--bg-base); color: var(--fg-primary); }
+
+  .canvas {
+    padding: 32px;
+    display: flex; flex-direction: column;
+    gap: 48px;
+    max-width: 1700px;
+    margin: 0 auto;
+  }
+  .label-row {
+    display: flex;
+    align-items: baseline;
+    gap: 16px;
+    margin-bottom: 14px;
+    color: var(--fg-secondary);
+  }
+  .label-row h2 { margin: 0; font-size: 14px; font-weight: 600; letter-spacing: 0.02em; }
+  .label-row .sub { font-size: 12px; color: var(--fg-muted); }
+
+  .frame {
+    position: relative;
+    background: var(--bg-base);
+    border: 1px solid var(--line-strong);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    box-shadow: var(--shadow-md);
+  }
+  .frame-desktop { aspect-ratio: 16 / 10; }
+  .frame-tablet  { aspect-ratio: 4 / 3; max-width: 880px; }
+  .frame-phone   { aspect-ratio: 9 / 19; max-width: 360px; }
+  .frame-row {
+    display: grid;
+    grid-template-columns: 1fr 380px;
+    gap: 28px;
+    align-items: start;
+  }
+
+  /* ───────────── shell ───────────── */
+  .shell {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    grid-template-rows: 52px 1fr;
+  }
+  .topbar {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 0 16px;
+    background: rgba(15,15,20,0.92);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--line);
+    z-index: 5;
+  }
+  /* Brand zone: complementary hierarchy.
+     When client branding is set, the client wordmark is primary and
+     MightyTwin shrinks to a "by Mighty" attribution. When unbranded
+     (no client logo), MightyTwin is primary. The two states share
+     classes; the .branded modifier flips visual weight. */
+  .brand-zone {
+    display: flex; align-items: center; gap: 12px;
+    padding-right: 14px;
+    border-right: 1px solid var(--line);
+    min-width: 0;
+  }
+
+  /* Unbranded — Mighty is primary */
+  .brand {
+    display: flex; align-items: center; gap: 8px;
+    color: var(--cobalt);
+    font-weight: 600; font-size: 14px;
+  }
+  .brand .dot {
+    width: 14px; height: 14px;
+    background: linear-gradient(135deg, var(--cobalt), var(--violet));
+    border-radius: 4px;
+    transform: rotate(8deg);
+  }
+
+  /* Branded — client is primary, Mighty is minor */
+  .customer-brand {
+    display: flex; align-items: center; gap: 9px;
+  }
+  .customer-mark {
+    width: 26px; height: 26px;
+    background: linear-gradient(135deg, #f97316, #ef4444);
+    border-radius: 7px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 700; color: #fff;
+    box-shadow: var(--shadow-sm);
+  }
+  .customer-name {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--fg-primary);
+    letter-spacing: -0.01em;
+  }
+  .powered-by {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding-left: 10px;
+    border-left: 1px solid var(--line);
+    color: var(--fg-faint);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .powered-by .mighty-dot {
+    width: 8px; height: 8px;
+    background: linear-gradient(135deg, var(--cobalt), var(--violet));
+    border-radius: 2px;
+    transform: rotate(8deg);
+    opacity: 0.7;
+  }
+  .powered-by .mighty-name {
+    font-weight: 600;
+    color: var(--fg-muted);
+    letter-spacing: 0.04em;
+  }
+
+  /* Site chip embedded in top bar */
+  .site-chip {
+    display: flex; align-items: center; gap: 10px;
+    padding: 5px 12px 5px 5px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background 120ms ease;
+    min-width: 0;
+  }
+  .site-chip:hover { background: rgba(255,255,255,0.07); }
+  .site-chip .icon {
+    width: 26px; height: 26px;
+    background: linear-gradient(135deg, var(--cobalt), var(--violet));
+    border-radius: 7px;
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-size: 12px; font-weight: 700;
+  }
+  .site-chip .name { font-size: 13px; font-weight: 600; }
+  .site-chip .sub  { font-size: 10px; color: var(--fg-muted); }
+  .site-chip .chev { color: var(--fg-faint); margin-left: 4px; font-size: 11px; }
+
+  .layout-slider {
+    display: inline-flex;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 2px;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .layout-slider button {
+    border: none; background: transparent;
+    padding: 4px 12px;
+    border-radius: 6px;
+    color: var(--fg-secondary);
+    cursor: pointer;
+    font: inherit;
+  }
+  .layout-slider button.active { background: var(--cobalt); color: #fff; }
+  .layout-slider .dual {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 4px 10px;
+  }
+  .layout-slider .divider { color: var(--fg-faint); }
+  .topbar-spacer { flex: 1; }
+  .settings-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 5px 12px;
+    border-radius: 8px;
+    background: transparent;
+    border: 1px solid var(--line);
+    color: var(--fg-secondary);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+  }
+
+  /* ───────────── body: map + chat (collapsible) ───────────── */
+  .body-shell {
+    display: grid;
+    grid-template-columns: 1fr auto;  /* auto = chat sets its own width */
+    min-height: 0;
+  }
+  .map-surface {
+    position: relative;
+    overflow: hidden;
+    background:
+      radial-gradient(circle at 30% 30%, rgba(45,212,191,0.16), transparent 50%),
+      radial-gradient(circle at 70% 70%, rgba(99,102,241,0.13), transparent 55%),
+      linear-gradient(180deg, #1a1d28 0%, #0d1018 100%);
+  }
+  .map-surface::before {
+    content: "";
+    position: absolute;
+    width: 65%;
+    aspect-ratio: 1 / 1;
+    left: 50%; top: 48%;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    background:
+      radial-gradient(circle at 35% 35%, #2dd4bf 0%, #0e766e 30%, #042f2e 60%, #061117 100%);
+    box-shadow:
+      inset -50px -50px 80px rgba(0,0,0,0.6),
+      0 0 80px rgba(45,212,191,0.1);
+    opacity: 0.85;
+  }
+  .map-surface::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image:
+      radial-gradient(ellipse 80px 50px at 45% 50%, rgba(178,170,138,0.4), transparent 60%),
+      radial-gradient(ellipse 50px 30px at 60% 40%, rgba(178,170,138,0.35), transparent 60%),
+      radial-gradient(ellipse 30px 20px at 35% 60%, rgba(178,170,138,0.3), transparent 60%);
+    pointer-events: none;
+    mix-blend-mode: screen;
+    opacity: 0.7;
+  }
+
+  /* Left edge: vertical zoom + camera column */
+  .zoom-col {
+    position: absolute;
+    left: 14px; top: 50%;
+    transform: translateY(-50%);
+    display: flex; flex-direction: column; gap: 4px;
+    padding: 4px;
+    background: rgba(17,20,29,0.86);
+    backdrop-filter: blur(12px);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    box-shadow: var(--shadow-sm);
+  }
+  .zoom-col .z-btn {
+    width: 32px; height: 32px;
+    display: flex; align-items: center; justify-content: center;
+    border: none; background: transparent;
+    border-radius: 6px;
+    color: var(--fg-secondary);
+    cursor: pointer;
+  }
+  .zoom-col .z-btn:hover { background: rgba(255,255,255,0.05); color: var(--fg-primary); }
+  .zoom-col .z-btn.active { color: var(--teal); position: relative; }
+  .zoom-col .z-btn.active::before {
+    content: "";
+    position: absolute; left: -5px; top: 6px; bottom: 6px;
+    width: 2px; background: var(--teal);
+    border-radius: 1px;
+  }
+  .zoom-col .div { height: 1px; background: var(--line); margin: 2px 4px; }
+
+  /* Right edge: nav gimbal (Cesium compass + pitch indicator) */
+  .nav-gimbal {
+    position: absolute;
+    right: 16px; top: 14px;
+    width: 84px; height: 84px;
+    background: rgba(17,20,29,0.86);
+    backdrop-filter: blur(12px);
+    border: 1px solid var(--line);
+    border-radius: 50%;
+    box-shadow: var(--shadow-sm);
+    display: flex; align-items: center; justify-content: center;
+    color: var(--fg-secondary);
+  }
+  .nav-gimbal svg { width: 100%; height: 100%; }
+
+  /* Always-visible legend dock — bottom-left */
+  .legend-dock {
+    position: absolute;
+    left: 64px; bottom: 84px;
+    width: 200px;
+    background: rgba(17,20,29,0.92);
+    backdrop-filter: blur(14px);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    box-shadow: var(--shadow-md);
+    overflow: hidden;
+  }
+  .legend-dock .head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--line);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--fg-muted);
+  }
+  .legend-dock .body { padding: 8px 10px; display: flex; flex-direction: column; gap: 6px; }
+  .legend-dock .row { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--fg-secondary); }
+  .legend-dock .swatch {
+    width: 14px; height: 8px; border-radius: 2px;
+  }
+
+  /* Feature popup — ANCHORED, not centered */
+  .feature-popup {
+    position: absolute;
+    /* Sample anchor: a feature was clicked at ~50%/55% on the map */
+    left: 52%; top: 38%;
+    width: 280px;
+    background: rgba(17,20,29,0.96);
+    backdrop-filter: blur(16px);
+    border: 1px solid var(--line-strong);
+    border-radius: 12px;
+    box-shadow: var(--shadow-lg);
+    overflow: hidden;
+  }
+  /* Leader line + dot at the actual click point */
+  .feature-popup .anchor-dot {
+    position: absolute;
+    left: -32px; top: 38px;
+    width: 12px; height: 12px;
+    background: var(--teal);
+    border: 2px solid #fff;
+    border-radius: 50%;
+    box-shadow: 0 0 0 4px rgba(45,212,191,0.18), var(--shadow-md);
+  }
+  .feature-popup .anchor-line {
+    position: absolute;
+    left: -22px; top: 44px;
+    width: 22px; height: 1px;
+    background: var(--fg-faint);
+  }
+  .feature-popup .head { padding: 12px 14px 10px; border-bottom: 1px solid var(--line); }
+  .feature-popup .ftype {
+    font-size: 10px; text-transform: uppercase;
+    letter-spacing: 0.06em; color: var(--teal);
+    display: flex; align-items: center; gap: 6px;
+  }
+  .feature-popup .ftype .pill { width: 6px; height: 6px; background: var(--teal); border-radius: 50%; }
+  .feature-popup .fname { font-size: 14px; font-weight: 600; margin-top: 4px; }
+  .feature-popup .props {
+    padding: 10px 14px;
+    display: grid; grid-template-columns: 80px 1fr; gap: 6px 12px;
+    font-size: 12px;
+  }
+  .feature-popup .props .k { color: var(--fg-muted); }
+  .feature-popup .props .v { color: var(--fg-primary); }
+  .feature-popup .more {
+    display: block;
+    padding: 9px 14px;
+    border-top: 1px solid var(--line);
+    color: var(--cobalt);
+    font-size: 12px;
+    cursor: pointer;
+    text-align: center;
+  }
+
+  /* Time slider — strip above the bottom rails. Auto-hides when no
+     temporal layers are active. Inset right of the scale bar zone. */
+  .time-slider {
+    position: absolute;
+    left: 110px; right: 32px; bottom: 124px;
+    background: rgba(17,20,29,0.86);
+    backdrop-filter: blur(12px);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 8px 14px;
+    display: grid; grid-template-columns: auto 1fr auto; gap: 14px;
+    align-items: center;
+    box-shadow: var(--shadow-sm);
+  }
+  .time-slider .label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--fg-muted);
+  }
+  .time-slider .track {
+    position: relative;
+    height: 4px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 2px;
+  }
+  .time-slider .fill {
+    position: absolute;
+    left: 0; top: 0; height: 100%;
+    width: 62%;
+    background: var(--sky);
+    border-radius: 2px;
+  }
+  .time-slider .knob {
+    position: absolute;
+    left: 62%; top: 50%;
+    width: 14px; height: 14px;
+    background: #fff;
+    border: 2px solid var(--sky);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    box-shadow: var(--shadow-sm);
+  }
+  .time-slider .stamp {
+    font-size: 11px; color: var(--fg-secondary);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Bottom rails — primary + secondary widget controllers */
+  .widget-rails {
+    position: absolute;
+    left: 50%; bottom: 18px;
+    transform: translateX(-50%);
+    display: flex; flex-direction: column; align-items: center; gap: 6px;
+  }
+  .widget-rail {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 6px;
+    background: rgba(17,20,29,0.92);
+    backdrop-filter: blur(14px);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    box-shadow: var(--shadow-md);
+  }
+  .widget-rail.primary { background: rgba(36,83,255,0.10); border-color: rgba(36,83,255,0.22); }
+  .widget-rail.secondary { background: rgba(17,20,29,0.7); }
+  .tool-tile {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    padding: 8px 12px;
+    border: none;
+    background: transparent;
+    color: var(--fg-secondary);
+    border-radius: 8px;
+    cursor: pointer;
+    font: inherit; font-size: 10px;
+    text-transform: uppercase; letter-spacing: 0.05em;
+    position: relative;
+    transition: background 120ms ease;
+  }
+  .tool-tile:hover { background: rgba(255,255,255,0.05); color: var(--fg-primary); }
+  .tool-tile.active { color: var(--fg-primary); background: rgba(45,212,191,0.06); }
+  .tool-tile.active::after {
+    content: "";
+    position: absolute; left: 12px; right: 12px; bottom: 4px;
+    height: 2px; background: var(--teal); border-radius: 1px;
+  }
+  .tool-tile svg { width: 18px; height: 18px; }
+  .tool-divider { width: 1px; height: 24px; background: var(--line); margin: 0 4px; }
+  .more-toggle {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 4px 10px; font-size: 10px;
+    color: var(--fg-muted);
+    text-transform: uppercase; letter-spacing: 0.05em;
+    background: transparent; border: none;
+    cursor: pointer;
+  }
+
+  /* Scale bar bottom-left */
+  .scale-bar {
+    position: absolute; bottom: 12px; left: 14px;
+    display: flex; align-items: center; gap: 8px;
+    color: var(--fg-faint); font-size: 11px;
+  }
+  .scale-bar .bar {
+    width: 80px; height: 6px;
+    border-bottom: 1px solid var(--fg-faint);
+    border-left: 1px solid var(--fg-faint);
+    border-right: 1px solid var(--fg-faint);
+  }
+
+  /* ───────────── AI chat — minimisable ───────────── */
+  /* Expanded state */
+  .chat-rail {
+    width: 360px;
+    background: rgba(17,20,29,0.95);
+    border-left: 1px solid var(--line);
+    display: flex; flex-direction: column;
+    transition: width 200ms ease;
+  }
+  /* Collapsed state — slim rail with vertical label + sparkle */
+  .chat-rail.collapsed {
+    width: 56px;
+    align-items: center;
+    cursor: pointer;
+  }
+  .chat-rail.collapsed .chat-header,
+  .chat-rail.collapsed .chat-log,
+  .chat-rail.collapsed .chat-input { display: none; }
+  .chat-rail.collapsed .collapsed-strip {
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: space-between;
+    height: 100%;
+    padding: 14px 0;
+    width: 100%;
+  }
+  .chat-rail .collapsed-strip { display: none; }
+  .collapsed-strip .ai-mark {
+    width: 36px; height: 36px;
+    background: linear-gradient(135deg, var(--violet), var(--magenta));
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; box-shadow: var(--shadow-md);
+    position: relative;
+  }
+  /* Pulse ring */
+  .collapsed-strip .ai-mark::after {
+    content: "";
+    position: absolute; inset: -4px;
+    border-radius: 12px;
+    border: 2px solid var(--violet);
+    opacity: 0.4;
+    animation: pulse 2.4s infinite;
+  }
+  @keyframes pulse {
+    0% { transform: scale(1); opacity: 0.4; }
+    80% { transform: scale(1.4); opacity: 0; }
+    100% { transform: scale(1.4); opacity: 0; }
+  }
+  .collapsed-strip .vert-label {
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--fg-muted);
+    margin: 0;
+  }
+  .collapsed-strip .config-badge {
+    padding: 2px 8px;
+    background: rgba(245,158,11,0.16);
+    color: var(--amber);
+    border-radius: 8px;
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
+  }
+  .collapsed-strip .expand-arrow {
+    color: var(--fg-faint);
+    font-size: 14px;
+  }
+
+  /* Expanded chat header & content */
+  .chat-header {
+    display: flex; align-items: center; gap: 10px;
+    padding: 14px;
+    border-bottom: 1px solid var(--line);
+  }
+  .chat-header .ai-avatar {
+    width: 28px; height: 28px;
+    background: linear-gradient(135deg, var(--violet), var(--magenta));
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-weight: 700;
+  }
+  .chat-header .ai-meta { flex: 1; min-width: 0; }
+  .chat-header .ai-name { font-size: 13px; font-weight: 600; color: var(--fg-primary); }
+  .chat-header .ai-model { font-size: 11px; color: var(--fg-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .chat-header .ai-action {
+    width: 24px; height: 24px;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--fg-muted); cursor: pointer; border-radius: 4px;
+  }
+  .chat-header .ai-action:hover { background: rgba(255,255,255,0.04); color: var(--fg-primary); }
+  .chat-log { flex: 1; overflow: auto; padding: 14px; display: flex; flex-direction: column; gap: 12px; }
+  .chat-bubble { padding: 10px 12px; border-radius: 12px; font-size: 13px; line-height: 1.45; max-width: 86%; }
+  .chat-bubble.user { align-self: flex-end; background: rgba(36,83,255,0.12); border: 1px solid rgba(36,83,255,0.28); }
+  .chat-bubble.ai { align-self: flex-start; background: rgba(255,255,255,0.03); color: var(--fg-secondary); }
+  .chat-tool { width: 100%; border: 1px solid var(--line); border-radius: 10px; background: rgba(167,139,250,0.06); overflow: hidden; }
+  .chat-tool .ttl {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--line);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--violet);
+  }
+  .chat-tool .ttl .badge {
+    margin-left: auto;
+    padding: 1px 6px;
+    background: rgba(167,139,250,0.16);
+    color: var(--violet);
+    border-radius: 4px;
+    font-size: 10px;
+    text-transform: none;
+  }
+  .chat-tool .preview { padding: 10px 12px; font-size: 12px; color: var(--fg-secondary); background: rgba(0,0,0,0.2); }
+  .chat-tool .preview b { color: var(--fg-primary); }
+  .chat-tool .actions { display: flex; gap: 6px; padding: 8px 12px; border-top: 1px solid var(--line); }
+  .chat-action {
+    flex: 1; padding: 6px 10px; border-radius: 6px;
+    border: 1px solid var(--line-strong);
+    background: transparent; color: var(--fg-secondary);
+    font-size: 11px; cursor: pointer;
+  }
+  .chat-action.primary { background: var(--cobalt); border-color: var(--cobalt); color: #fff; }
+  .chat-action.danger  { border-color: rgba(251,113,133,0.3); color: var(--coral); }
+  .chat-input { border-top: 1px solid var(--line); padding: 10px; display: flex; gap: 8px; }
+  .chat-input textarea {
+    flex: 1; height: 38px; padding: 8px 10px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    color: var(--fg-primary);
+    resize: none; font: inherit; font-size: 13px;
+  }
+  .chat-send {
+    width: 38px; height: 38px;
+    border: none; background: var(--cobalt); color: #fff;
+    border-radius: 8px; cursor: pointer;
+  }
+
+  /* Phone */
+  .frame-phone .topbar { display: none; }
+  .frame-phone .body-shell { grid-template-columns: 1fr; grid-template-rows: 38px 1fr 60px; }
+  .frame-phone .map-surface { grid-row: 2; }
+  .frame-phone .chat-rail, .frame-phone .nav-gimbal,
+  .frame-phone .legend-dock, .frame-phone .time-slider, .frame-phone .widget-rails { display: none; }
+  .frame-phone .ph-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 8px 12px; background: rgba(17,20,29,0.95);
+    border-bottom: 1px solid var(--line);
+    font-size: 13px; font-weight: 600;
+  }
+  .frame-phone .ph-header .customer-brand { gap: 6px; }
+  .frame-phone .ph-header .customer-mark { width: 22px; height: 22px; font-size: 10px; }
+  .frame-phone .ph-bottom-tabs {
+    display: flex; align-items: center; justify-content: space-around;
+    background: rgba(17,20,29,0.96);
+    border-top: 1px solid var(--line);
+  }
+  .frame-phone .ph-tab {
+    display: flex; flex-direction: column; align-items: center; gap: 2px;
+    padding: 8px 14px;
+    color: var(--fg-secondary);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .frame-phone .ph-tab.active { color: var(--fg-primary); position: relative; }
+  .frame-phone .ph-tab.active::before {
+    content: "";
+    position: absolute; left: 18px; right: 18px; top: 4px;
+    height: 2px; background: var(--cobalt); border-radius: 1px;
+  }
+  .frame-phone .zoom-col { left: 12px; top: 64px; transform: none; }
+  .frame-phone .nav-gimbal { display: flex; right: 12px; top: 60px; width: 56px; height: 56px; }
+  .frame-phone .ph-fab-tools, .frame-phone .ph-fab-chat {
+    position: absolute; bottom: 70px;
+    width: 48px; height: 48px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: var(--shadow-md);
+  }
+  .frame-phone .ph-fab-tools {
+    left: 14px;
+    background: rgba(17,20,29,0.95);
+    backdrop-filter: blur(12px);
+    border: 1px solid var(--line);
+    color: var(--fg-primary);
+  }
+  .frame-phone .ph-fab-chat {
+    right: 14px;
+    background: linear-gradient(135deg, var(--violet), var(--magenta));
+    color: #fff; border: none;
+    width: 52px; height: 52px;
+  }
+
+  .ic { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .gimbal-text {
+    font-family: -apple-system, BlinkMacSystemFont, system-ui;
+    fill: var(--fg-secondary);
+    font-size: 11px;
+    font-weight: 600;
+  }
+
+  .annot {
+    position: absolute;
+    padding: 3px 8px;
+    background: rgba(36,83,255,0.18);
+    border: 1px solid rgba(36,83,255,0.4);
+    border-radius: 6px;
+    color: var(--fg-primary);
+    font-size: 10px;
+    white-space: nowrap;
+    pointer-events: none;
+  }
+  .annot::before {
+    content: ""; position: absolute;
+    width: 1px; background: rgba(36,83,255,0.4);
+  }
+  .annot.left::before { right: 100%; top: 50%; width: 24px; height: 1px; background: rgba(36,83,255,0.4); }
+</style>
+</head>
+<body>
+
+<svg style="display:none">
+  <symbol id="i-zoom-in" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/><line x1="21" y1="21" x2="16.5" y2="16.5"/></symbol>
+  <symbol id="i-zoom-out" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="8" y1="11" x2="14" y2="11"/><line x1="21" y1="21" x2="16.5" y2="16.5"/></symbol>
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></symbol>
+  <symbol id="i-2d3d" viewBox="0 0 24 24"><rect x="3" y="3" width="8" height="8" rx="1"/><path d="M14 7l4-3 3 3-4 3-3-3z"/><path d="M14 14h7v7h-7z"/></symbol>
+  <symbol id="i-basemap" viewBox="0 0 24 24"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21 3 6"/><line x1="9" y1="3" x2="9" y2="18"/><line x1="15" y1="6" x2="15" y2="21"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.5" y2="16.5"/></symbol>
+  <symbol id="i-measure" viewBox="0 0 24 24"><path d="M2 16l8-8 4 4 8-8"/><path d="M2 16l3 3 8-8 3 3 6-6"/></symbol>
+  <symbol id="i-story" viewBox="0 0 24 24"><polyline points="4 4 4 20 8 18 12 20 16 18 20 20 20 4"/></symbol>
+  <symbol id="i-snap" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="14" rx="2"/><circle cx="12" cy="13" r="4"/><line x1="9" y1="3" x2="15" y2="3"/></symbol>
+  <symbol id="i-layers" viewBox="0 0 24 24"><polygon points="12 2 22 7 12 12 2 7 12 2"/><polyline points="2 12 12 17 22 12"/><polyline points="2 17 12 22 22 17"/></symbol>
+  <symbol id="i-legend" viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/></symbol>
+  <symbol id="i-table" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/></symbol>
+  <symbol id="i-design" viewBox="0 0 24 24"><polygon points="12 3 22 9 22 15 12 21 2 15 2 9 12 3"/><line x1="12" y1="3" x2="12" y2="21"/><line x1="2" y1="9" x2="22" y2="9"/></symbol>
+  <symbol id="i-ai" viewBox="0 0 24 24"><path d="M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5L12 3z"/><path d="M19 15l.7 2.1L22 18l-2.3.9L19 21l-.7-2.1L16 18l2.3-.9L19 15z"/></symbol>
+  <symbol id="i-send" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></symbol>
+  <symbol id="i-tools" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19 12h2M3 12h2M12 19v2M12 3v2M16.95 16.95l1.4 1.4M5.65 5.65l1.4 1.4M16.95 7.05l1.4-1.4M5.65 18.35l1.4-1.4"/></symbol>
+  <symbol id="i-collapse" viewBox="0 0 24 24"><polyline points="13 17 18 12 13 7"/><polyline points="6 17 11 12 6 7"/></symbol>
+  <symbol id="i-strike" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><line x1="5" y1="5" x2="19" y2="19"/></symbol>
+  <symbol id="i-terrain" viewBox="0 0 24 24"><path d="M3 19l5-7 4 5 4-3 5 5"/><path d="M3 19h18"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 16 14"/></symbol>
+</svg>
+
+<div class="canvas">
+
+  <!-- ─────────────────  DESKTOP — chat EXPANDED, AI configured  ───────────────── -->
+  <section>
+    <div class="label-row">
+      <h2>Desktop · chat expanded (AI configured)</h2>
+      <span class="sub">Top-bar brand + customer logo · embedded site chip · nav gimbal top-right · always-visible legend dock · time slider above primary/secondary widget rails · feature popup ANCHORED with leader line.</span>
+    </div>
+    <div class="frame frame-desktop">
+      <div class="shell">
+        <header class="topbar">
+          <div class="brand-zone">
+            <div class="customer-brand">
+              <span class="customer-mark">SA</span>
+              <span class="customer-name">Space Angel</span>
+            </div>
+            <div class="powered-by">
+              <span class="mighty-dot"></span>
+              <span class="mighty-name">Mighty</span>
+            </div>
+          </div>
+          <div class="site-chip">
+            <div class="icon">F</div>
+            <div>
+              <div class="name">Forrest Airport</div>
+              <div class="sub">Spaceport · 12 layers</div>
+            </div>
+            <div class="chev">▾</div>
+          </div>
+          <div class="topbar-spacer"></div>
+          <div class="layout-slider">
+            <button class="active">Map</button>
+            <button class="dual"><span>Map</span><span class="divider">|</span><span>Atlas</span></button>
+            <button>Atlas</button>
+          </div>
+          <div class="topbar-spacer"></div>
+          <button class="settings-btn">⚙ Settings</button>
+        </header>
+        <div class="body-shell">
+          <div class="map-surface">
+            <!-- Left edge: zoom + camera -->
+            <div class="zoom-col">
+              <button class="z-btn"><svg class="ic"><use href="#i-zoom-in"/></svg></button>
+              <button class="z-btn"><svg class="ic"><use href="#i-zoom-out"/></svg></button>
+              <div class="div"></div>
+              <button class="z-btn"><svg class="ic"><use href="#i-home"/></svg></button>
+              <button class="z-btn active"><svg class="ic"><use href="#i-2d3d"/></svg></button>
+              <button class="z-btn"><svg class="ic"><use href="#i-basemap"/></svg></button>
+            </div>
+
+            <!-- Right edge: nav gimbal (compass + pitch) -->
+            <div class="nav-gimbal">
+              <svg viewBox="0 0 84 84" aria-label="Nav gimbal">
+                <circle cx="42" cy="42" r="38" fill="none" stroke="rgba(240,242,248,0.18)" stroke-width="1"/>
+                <circle cx="42" cy="42" r="30" fill="none" stroke="rgba(240,242,248,0.10)" stroke-width="1"/>
+                <!-- Tick marks -->
+                <g stroke="rgba(240,242,248,0.4)" stroke-width="1.5">
+                  <line x1="42" y1="6"  x2="42" y2="14"/>
+                  <line x1="78" y1="42" x2="70" y2="42"/>
+                  <line x1="42" y1="78" x2="42" y2="70"/>
+                  <line x1="6"  y1="42" x2="14" y2="42"/>
+                </g>
+                <!-- N / E / S / W -->
+                <text x="42" y="14" text-anchor="middle" class="gimbal-text">N</text>
+                <text x="74" y="46" text-anchor="middle" class="gimbal-text">E</text>
+                <text x="42" y="78" text-anchor="middle" class="gimbal-text">S</text>
+                <text x="10" y="46" text-anchor="middle" class="gimbal-text">W</text>
+                <!-- Tilt arc -->
+                <path d="M22 56 A20 20 0 0 0 62 56" fill="none" stroke="rgba(45,212,191,0.4)" stroke-width="2"/>
+                <!-- Heading arrow (rotated 18°) -->
+                <g transform="rotate(18 42 42)">
+                  <polygon points="42,16 38,28 46,28" fill="#2dd4bf"/>
+                  <polygon points="42,68 39,58 45,58" fill="rgba(240,242,248,0.5)"/>
+                </g>
+              </svg>
+            </div>
+
+            <!-- Feature popup — anchored to clicked feature, NOT centered -->
+            <div class="feature-popup">
+              <div class="anchor-line"></div>
+              <div class="anchor-dot"></div>
+              <div class="head">
+                <div class="ftype"><span class="pill"></span>Runway · vector</div>
+                <div class="fname">RW 06/24</div>
+              </div>
+              <div class="props">
+                <div class="k">Length</div><div class="v">3 200 m</div>
+                <div class="k">Surface</div><div class="v">Asphalt</div>
+                <div class="k">Bearing</div><div class="v">063° / 243°</div>
+                <div class="k">PCN</div><div class="v">68 / R / B / W / T</div>
+              </div>
+              <div class="more">More properties &nbsp;→</div>
+            </div>
+
+            <!-- Time slider (visible when temporal layers exist) -->
+            <div class="time-slider">
+              <span class="label"><svg class="ic" style="display:inline; vertical-align:-3px; width:14px; height:14px"><use href="#i-clock"/></svg>&nbsp;Time</span>
+              <div class="track">
+                <div class="fill"></div>
+                <div class="knob"></div>
+              </div>
+              <span class="stamp">2026-04-18 13:45</span>
+            </div>
+
+            <!-- Bottom rails -->
+            <div class="widget-rails">
+              <!-- Secondary (less-frequent) -->
+              <div class="widget-rail secondary">
+                <button class="tool-tile"><svg class="ic"><use href="#i-story"/></svg>Story</button>
+                <button class="tool-tile"><svg class="ic"><use href="#i-snap"/></svg>Snap</button>
+                <button class="tool-tile"><svg class="ic"><use href="#i-design"/></svg>Design</button>
+                <button class="tool-tile"><svg class="ic"><use href="#i-table"/></svg>Table</button>
+                <button class="tool-tile"><svg class="ic"><use href="#i-strike"/></svg>Strike</button>
+                <button class="tool-tile"><svg class="ic"><use href="#i-terrain"/></svg>Terrain</button>
+                <button class="more-toggle">More &nbsp;▾</button>
+              </div>
+              <!-- Primary (always visible, accent border) -->
+              <div class="widget-rail primary">
+                <button class="tool-tile"><svg class="ic"><use href="#i-search"/></svg>Search</button>
+                <button class="tool-tile active"><svg class="ic"><use href="#i-measure"/></svg>Measure</button>
+                <button class="tool-tile"><svg class="ic"><use href="#i-layers"/></svg>Layers</button>
+                <button class="tool-tile"><svg class="ic"><use href="#i-legend"/></svg>Legend</button>
+              </div>
+            </div>
+
+            <!-- Scale bar -->
+            <div class="scale-bar"><div class="bar"></div>500 m</div>
+          </div>
+
+          <!-- AI chat: expanded (configured) -->
+          <aside class="chat-rail">
+            <div class="chat-header">
+              <div class="ai-avatar">M</div>
+              <div class="ai-meta">
+                <div class="ai-name">Twin AI</div>
+                <div class="ai-model">anthropic · claude-sonnet-4-6</div>
+              </div>
+              <div class="ai-action" title="Collapse"><svg class="ic"><use href="#i-collapse"/></svg></div>
+            </div>
+            <div class="chat-log">
+              <div class="chat-bubble user">Highlight runways longer than 2 km and fly to the eastern apron.</div>
+              <div class="chat-tool">
+                <div class="ttl"><svg class="ic" style="width:14px;height:14px"><use href="#i-design"/></svg>set_camera_3d<span class="badge">write</span></div>
+                <div class="preview">Fly to <b>Eastern apron</b> · 128.124°E, −30.847°S · 1 800 m altitude · pitch −45°</div>
+                <div class="actions">
+                  <button class="chat-action">Tweak</button>
+                  <button class="chat-action danger">Decline</button>
+                  <button class="chat-action primary">Approve &amp; apply</button>
+                </div>
+              </div>
+              <div class="chat-bubble ai"><b>RW 06/24</b> (3 200 m) highlighted in teal. Approve to fly to the eastern apron.</div>
+            </div>
+            <div class="chat-input">
+              <textarea placeholder="Ask Twin AI…"></textarea>
+              <button class="chat-send"><svg class="ic" style="color:#fff"><use href="#i-send"/></svg></button>
+            </div>
+          </aside>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─────────────────  DESKTOP — chat MINIMISED (default until AI configured) ───────────────── -->
+  <section>
+    <div class="label-row">
+      <h2>Desktop · chat minimised (default until AI configured)</h2>
+      <span class="sub">Slim 56 px column. Vertical "Twin AI" label · pulsing violet sparkle · "setup" badge when no provider key. Click anywhere on the strip to expand.</span>
+    </div>
+    <div class="frame frame-desktop">
+      <div class="shell">
+        <header class="topbar">
+          <div class="brand-zone">
+            <div class="customer-brand">
+              <span class="customer-mark">SA</span>
+              <span class="customer-name">Space Angel</span>
+            </div>
+            <div class="powered-by">
+              <span class="mighty-dot"></span>
+              <span class="mighty-name">Mighty</span>
+            </div>
+          </div>
+          <div class="site-chip">
+            <div class="icon">F</div>
+            <div>
+              <div class="name">Forrest Airport</div>
+              <div class="sub">Spaceport · 12 layers</div>
+            </div>
+            <div class="chev">▾</div>
+          </div>
+          <div class="topbar-spacer"></div>
+          <div class="layout-slider">
+            <button class="active">Map</button>
+            <button class="dual"><span>Map</span><span class="divider">|</span><span>Atlas</span></button>
+            <button>Atlas</button>
+          </div>
+          <div class="topbar-spacer"></div>
+          <button class="settings-btn">⚙ Settings</button>
+        </header>
+        <div class="body-shell">
+          <div class="map-surface">
+            <div class="zoom-col">
+              <button class="z-btn"><svg class="ic"><use href="#i-zoom-in"/></svg></button>
+              <button class="z-btn"><svg class="ic"><use href="#i-zoom-out"/></svg></button>
+              <div class="div"></div>
+              <button class="z-btn"><svg class="ic"><use href="#i-home"/></svg></button>
+              <button class="z-btn active"><svg class="ic"><use href="#i-2d3d"/></svg></button>
+              <button class="z-btn"><svg class="ic"><use href="#i-basemap"/></svg></button>
+            </div>
+            <div class="nav-gimbal">
+              <svg viewBox="0 0 84 84">
+                <circle cx="42" cy="42" r="38" fill="none" stroke="rgba(240,242,248,0.18)" stroke-width="1"/>
+                <circle cx="42" cy="42" r="30" fill="none" stroke="rgba(240,242,248,0.10)" stroke-width="1"/>
+                <text x="42" y="14" text-anchor="middle" class="gimbal-text">N</text>
+                <text x="74" y="46" text-anchor="middle" class="gimbal-text">E</text>
+                <text x="42" y="78" text-anchor="middle" class="gimbal-text">S</text>
+                <text x="10" y="46" text-anchor="middle" class="gimbal-text">W</text>
+                <g transform="rotate(0 42 42)">
+                  <polygon points="42,16 38,28 46,28" fill="#2dd4bf"/>
+                  <polygon points="42,68 39,58 45,58" fill="rgba(240,242,248,0.5)"/>
+                </g>
+              </svg>
+            </div>
+            <div class="widget-rails">
+              <div class="widget-rail secondary">
+                <button class="tool-tile"><svg class="ic"><use href="#i-story"/></svg>Story</button>
+                <button class="tool-tile"><svg class="ic"><use href="#i-snap"/></svg>Snap</button>
+                <button class="tool-tile"><svg class="ic"><use href="#i-design"/></svg>Design</button>
+                <button class="tool-tile"><svg class="ic"><use href="#i-table"/></svg>Table</button>
+                <button class="more-toggle">More &nbsp;▾</button>
+              </div>
+              <div class="widget-rail primary">
+                <button class="tool-tile"><svg class="ic"><use href="#i-search"/></svg>Search</button>
+                <button class="tool-tile active"><svg class="ic"><use href="#i-measure"/></svg>Measure</button>
+                <button class="tool-tile"><svg class="ic"><use href="#i-layers"/></svg>Layers</button>
+                <button class="tool-tile"><svg class="ic"><use href="#i-legend"/></svg>Legend</button>
+              </div>
+            </div>
+            <div class="scale-bar"><div class="bar"></div>500 m</div>
+          </div>
+
+          <!-- AI chat: collapsed slim rail -->
+          <aside class="chat-rail collapsed">
+            <div class="collapsed-strip">
+              <div class="ai-mark"><svg class="ic" style="color:#fff"><use href="#i-ai"/></svg></div>
+              <div class="vert-label">Twin AI</div>
+              <div class="config-badge">setup</div>
+              <div class="expand-arrow">‹</div>
+            </div>
+          </aside>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─────────────────  DESKTOP — sharePane (Layers stacked above chat) ───────────────── -->
+  <section>
+    <div class="label-row">
+      <h2>Desktop · sharePane mode (Layers in the right rail with chat)</h2>
+      <span class="sub">Widgets with <code>loadMode: 'sharePane'</code> stack above AI chat in the right column. The map surface stays uncluttered. Drag the divider to rebalance; chat keeps the bottom 40 % minimum.</span>
+    </div>
+    <div class="frame frame-desktop">
+      <div class="shell">
+        <header class="topbar">
+          <div class="brand-zone">
+            <div class="customer-brand">
+              <span class="customer-mark">SA</span>
+              <span class="customer-name">Space Angel</span>
+            </div>
+            <div class="powered-by">
+              <span class="mighty-dot"></span>
+              <span class="mighty-name">Mighty</span>
+            </div>
+          </div>
+          <div class="site-chip">
+            <div class="icon">F</div>
+            <div>
+              <div class="name">Forrest Airport</div>
+              <div class="sub">Spaceport · 12 layers</div>
+            </div>
+            <div class="chev">▾</div>
+          </div>
+          <div class="topbar-spacer"></div>
+          <div class="layout-slider">
+            <button class="active">Map</button>
+            <button class="dual"><span>Map</span><span class="divider">|</span><span>Atlas</span></button>
+            <button>Atlas</button>
+          </div>
+          <div class="topbar-spacer"></div>
+          <button class="settings-btn">⚙ Settings</button>
+        </header>
+        <div class="body-shell">
+          <div class="map-surface">
+            <div class="zoom-col">
+              <button class="z-btn"><svg class="ic"><use href="#i-zoom-in"/></svg></button>
+              <button class="z-btn"><svg class="ic"><use href="#i-zoom-out"/></svg></button>
+              <div class="div"></div>
+              <button class="z-btn"><svg class="ic"><use href="#i-home"/></svg></button>
+              <button class="z-btn active"><svg class="ic"><use href="#i-2d3d"/></svg></button>
+              <button class="z-btn"><svg class="ic"><use href="#i-basemap"/></svg></button>
+            </div>
+            <div class="nav-gimbal">
+              <svg viewBox="0 0 84 84">
+                <circle cx="42" cy="42" r="38" fill="none" stroke="rgba(240,242,248,0.18)" stroke-width="1"/>
+                <circle cx="42" cy="42" r="30" fill="none" stroke="rgba(240,242,248,0.10)" stroke-width="1"/>
+                <text x="42" y="14" text-anchor="middle" class="gimbal-text">N</text>
+                <text x="74" y="46" text-anchor="middle" class="gimbal-text">E</text>
+                <text x="42" y="78" text-anchor="middle" class="gimbal-text">S</text>
+                <text x="10" y="46" text-anchor="middle" class="gimbal-text">W</text>
+                <g transform="rotate(0 42 42)">
+                  <polygon points="42,16 38,28 46,28" fill="#2dd4bf"/>
+                  <polygon points="42,68 39,58 45,58" fill="rgba(240,242,248,0.5)"/>
+                </g>
+              </svg>
+            </div>
+            <div class="widget-rails">
+              <div class="widget-rail secondary">
+                <button class="tool-tile"><svg class="ic"><use href="#i-story"/></svg>Story</button>
+                <button class="tool-tile"><svg class="ic"><use href="#i-snap"/></svg>Snap</button>
+                <button class="tool-tile"><svg class="ic"><use href="#i-design"/></svg>Design</button>
+                <button class="tool-tile"><svg class="ic"><use href="#i-table"/></svg>Table</button>
+                <button class="more-toggle">More ▾</button>
+              </div>
+              <div class="widget-rail primary">
+                <button class="tool-tile"><svg class="ic"><use href="#i-search"/></svg>Search</button>
+                <button class="tool-tile"><svg class="ic"><use href="#i-measure"/></svg>Measure</button>
+                <button class="tool-tile active"><svg class="ic"><use href="#i-layers"/></svg>Layers</button>
+                <button class="tool-tile"><svg class="ic"><use href="#i-legend"/></svg>Legend</button>
+              </div>
+            </div>
+            <div class="scale-bar"><div class="bar"></div>500 m</div>
+          </div>
+
+          <!-- Right rail: shared between Layers (top) + AI chat (bottom) -->
+          <aside class="chat-rail" style="display: flex; flex-direction: column;">
+            <!-- Shared widget: Layers panel -->
+            <div style="flex: 1.15; min-height: 0; display: flex; flex-direction: column; border-bottom: 1px solid var(--line-strong);">
+              <header style="display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-bottom: 1px solid var(--line); background: rgba(45,212,191,0.04);">
+                <svg class="ic" style="color: var(--teal); width: 16px; height: 16px"><use href="#i-layers"/></svg>
+                <div style="flex: 1; font-size: 13px; font-weight: 600;">Layers</div>
+                <span style="font-size: 10px; color: var(--fg-muted); text-transform: uppercase; letter-spacing: 0.06em;">share-pane</span>
+                <div style="width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; color: var(--fg-muted); cursor: pointer; border-radius: 4px;">×</div>
+              </header>
+              <div style="flex: 1; overflow: auto; padding: 10px 14px; display: flex; flex-direction: column; gap: 8px; font-size: 13px;">
+                <div style="display: flex; align-items: center; gap: 10px; padding: 6px 8px; background: rgba(255,255,255,0.03); border-radius: 6px;">
+                  <input type="checkbox" checked style="margin: 0;">
+                  <span style="width: 12px; height: 8px; background: #34d399; border-radius: 2px;"></span>
+                  <span style="flex: 1;">Runways</span>
+                  <span style="font-size: 10px; color: var(--fg-muted);">12</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 10px; padding: 6px 8px;">
+                  <input type="checkbox" checked style="margin: 0;">
+                  <span style="width: 12px; height: 8px; background: #38bdf8; border-radius: 2px;"></span>
+                  <span style="flex: 1;">Taxiways</span>
+                  <span style="font-size: 10px; color: var(--fg-muted);">28</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 10px; padding: 6px 8px;">
+                  <input type="checkbox" checked style="margin: 0;">
+                  <span style="width: 12px; height: 8px; background: #a78bfa; border-radius: 2px;"></span>
+                  <span style="flex: 1;">Aprons</span>
+                  <span style="font-size: 10px; color: var(--fg-muted);">4</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 10px; padding: 6px 8px; opacity: 0.6;">
+                  <input type="checkbox" style="margin: 0;">
+                  <span style="width: 12px; height: 8px; background: #f59e0b; border-radius: 2px;"></span>
+                  <span style="flex: 1;">Service roads</span>
+                  <span style="font-size: 10px; color: var(--fg-muted);">142</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 10px; padding: 6px 8px;">
+                  <input type="checkbox" style="margin: 0;">
+                  <span style="width: 12px; height: 8px; background: #2dd4bf; border-radius: 2px;"></span>
+                  <span style="flex: 1;">3D Tiles · Hangar</span>
+                  <span style="font-size: 10px; color: var(--fg-muted);">3.2 GB</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 6px; margin-top: 6px; padding: 6px 8px; font-size: 11px; color: var(--fg-muted); border-top: 1px solid var(--line); padding-top: 10px;">
+                  <span>Globe transparency</span>
+                  <span style="flex: 1;"></span>
+                  <span style="font-variant-numeric: tabular-nums;">100%</span>
+                </div>
+                <div style="height: 4px; background: rgba(255,255,255,0.06); border-radius: 2px; position: relative;">
+                  <div style="position: absolute; left: 0; top: 0; height: 100%; width: 100%; background: var(--teal); border-radius: 2px;"></div>
+                  <div style="position: absolute; right: 0; top: 50%; width: 12px; height: 12px; background: #fff; border: 2px solid var(--teal); border-radius: 50%; transform: translate(50%, -50%);"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Drag divider -->
+            <div style="height: 6px; background: rgba(255,255,255,0.04); cursor: ns-resize; display: flex; align-items: center; justify-content: center;">
+              <div style="width: 32px; height: 2px; background: var(--fg-faint); border-radius: 1px;"></div>
+            </div>
+
+            <!-- AI chat: shrunk -->
+            <div style="flex: 0.85; min-height: 0; display: flex; flex-direction: column;">
+              <div class="chat-header" style="border-bottom: 1px solid var(--line);">
+                <div class="ai-avatar">M</div>
+                <div class="ai-meta">
+                  <div class="ai-name">Twin AI</div>
+                  <div class="ai-model">anthropic · claude-sonnet-4-6</div>
+                </div>
+                <div class="ai-action"><svg class="ic"><use href="#i-collapse"/></svg></div>
+              </div>
+              <div class="chat-log" style="padding: 10px 14px;">
+                <div class="chat-bubble user" style="font-size: 12px;">Hide the service roads layer.</div>
+                <div class="chat-tool">
+                  <div class="ttl"><svg class="ic" style="width:14px;height:14px"><use href="#i-layers"/></svg>set_layer_visibility<span class="badge">write</span></div>
+                  <div class="preview">Hide layer <b>Service roads</b></div>
+                  <div class="actions">
+                    <button class="chat-action">Tweak</button>
+                    <button class="chat-action danger">Decline</button>
+                    <button class="chat-action primary">Apply</button>
+                  </div>
+                </div>
+              </div>
+              <div class="chat-input">
+                <textarea placeholder="Ask Twin AI…"></textarea>
+                <button class="chat-send"><svg class="ic" style="color:#fff"><use href="#i-send"/></svg></button>
+              </div>
+            </div>
+          </aside>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─────────────────  Tablet + Phone  ───────────────── -->
+  <section>
+    <div class="label-row">
+      <h2>Tablet + Phone</h2>
+      <span class="sub">Tablet keeps full chrome but chat is minimised by default. Phone collapses everything to bottom tabs + two FABs (tools left, AI right).</span>
+    </div>
+    <div class="frame-row">
+      <!-- Tablet -->
+      <div class="frame frame-tablet">
+        <div class="shell">
+          <header class="topbar">
+            <div class="brand-zone">
+              <div class="customer-brand">
+                <span class="customer-mark">SA</span>
+                <span class="customer-name">Space Angel</span>
+              </div>
+              <div class="powered-by">
+                <span class="mighty-dot"></span>
+              </div>
+            </div>
+            <div class="site-chip">
+              <div class="icon">F</div>
+              <div>
+                <div class="name">Forrest Airport</div>
+              </div>
+              <div class="chev">▾</div>
+            </div>
+            <div class="topbar-spacer"></div>
+            <div class="layout-slider">
+              <button class="active">Map</button>
+              <button class="dual"><span>M</span><span class="divider">|</span><span>A</span></button>
+              <button>Atlas</button>
+            </div>
+            <div class="topbar-spacer"></div>
+            <button class="settings-btn">⚙</button>
+          </header>
+          <div class="body-shell">
+            <div class="map-surface">
+              <div class="zoom-col">
+                <button class="z-btn"><svg class="ic"><use href="#i-zoom-in"/></svg></button>
+                <button class="z-btn"><svg class="ic"><use href="#i-zoom-out"/></svg></button>
+                <div class="div"></div>
+                <button class="z-btn"><svg class="ic"><use href="#i-home"/></svg></button>
+                <button class="z-btn active"><svg class="ic"><use href="#i-2d3d"/></svg></button>
+              </div>
+              <div class="nav-gimbal" style="width:64px;height:64px;top:12px;right:12px;">
+                <svg viewBox="0 0 84 84">
+                  <circle cx="42" cy="42" r="38" fill="none" stroke="rgba(240,242,248,0.18)" stroke-width="1"/>
+                  <text x="42" y="14" text-anchor="middle" class="gimbal-text">N</text>
+                  <g transform="rotate(8 42 42)">
+                    <polygon points="42,16 38,28 46,28" fill="#2dd4bf"/>
+                  </g>
+                </svg>
+              </div>
+              <div class="widget-rails">
+                <div class="widget-rail primary">
+                  <button class="tool-tile"><svg class="ic"><use href="#i-search"/></svg>Search</button>
+                  <button class="tool-tile active"><svg class="ic"><use href="#i-measure"/></svg>Measure</button>
+                  <button class="tool-tile"><svg class="ic"><use href="#i-layers"/></svg>Layers</button>
+                  <button class="more-toggle">More ▾</button>
+                </div>
+              </div>
+              <div class="scale-bar"><div class="bar"></div>500 m</div>
+            </div>
+            <aside class="chat-rail collapsed">
+              <div class="collapsed-strip">
+                <div class="ai-mark"><svg class="ic" style="color:#fff"><use href="#i-ai"/></svg></div>
+                <div class="vert-label">Twin AI</div>
+                <div class="expand-arrow">‹</div>
+              </div>
+            </aside>
+          </div>
+        </div>
+      </div>
+
+      <!-- Phone -->
+      <div class="frame frame-phone">
+        <div class="shell">
+          <div class="ph-header">
+            <div class="customer-brand">
+              <span class="customer-mark">SA</span>
+              <span>Forrest Airport</span>
+            </div>
+            <span class="mighty-dot" style="display:inline-block; width:10px; height:10px;"></span>
+          </div>
+          <div class="map-surface">
+            <div class="zoom-col">
+              <button class="z-btn"><svg class="ic"><use href="#i-zoom-in"/></svg></button>
+              <button class="z-btn"><svg class="ic"><use href="#i-zoom-out"/></svg></button>
+              <div class="div"></div>
+              <button class="z-btn"><svg class="ic"><use href="#i-home"/></svg></button>
+              <button class="z-btn active"><svg class="ic"><use href="#i-2d3d"/></svg></button>
+            </div>
+            <div class="nav-gimbal">
+              <svg viewBox="0 0 84 84">
+                <circle cx="42" cy="42" r="36" fill="none" stroke="rgba(240,242,248,0.18)" stroke-width="1.5"/>
+                <text x="42" y="16" text-anchor="middle" class="gimbal-text" style="font-size:13px">N</text>
+                <g transform="rotate(0 42 42)">
+                  <polygon points="42,18 37,30 47,30" fill="#2dd4bf"/>
+                </g>
+              </svg>
+            </div>
+            <div class="scale-bar"><div class="bar"></div>500 m</div>
+            <button class="ph-fab-tools"><svg class="ic"><use href="#i-tools"/></svg></button>
+            <button class="ph-fab-chat"><svg class="ic" style="color:#fff;width:22px;height:22px"><use href="#i-ai"/></svg></button>
+          </div>
+          <div class="ph-bottom-tabs">
+            <div class="ph-tab active"><svg class="ic" style="width:20px;height:20px"><use href="#i-basemap"/></svg>Map</div>
+            <div class="ph-tab"><svg class="ic" style="width:20px;height:20px"><use href="#i-layers"/></svg>Atlas</div>
+            <div class="ph-tab"><svg class="ic" style="width:20px;height:20px"><use href="#i-tools"/></svg>Settings</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─────────────────  rationale ───────────────── -->
+  <section style="margin-top: 8px; color: var(--fg-secondary); font-size: 13px; line-height: 1.65; max-width: 860px;">
+    <h2 style="font-size: 14px; margin: 0 0 12px;">Where everything lives</h2>
+    <ul style="padding-left: 20px;">
+      <li><b>Brand zone (top-bar left):</b> <i>complementary</i> hierarchy. When a client logo is set (Settings → Workspace admin → Branding), the client wordmark is primary (15 px name + 26 px coloured mark) and Mighty drops to a small "by Mighty" attribution behind a hairline divider. Unbranded workspaces show MightyTwin as primary. The two states share classes; a <code>.branded</code> modifier flips weight.</li>
+      <li><b>Site chip:</b> embedded into the top bar (not floating over the map). Hero chooser opens a popover with current/recent sites + "+ New".</li>
+      <li><b>Layout slider + Settings:</b> top-bar centre + right (already shipped).</li>
+      <li><b>Vertical zoom column:</b> left edge — zoom in/out · home · 2D/3D · basemap. Active state = vertical bar accent (UX rule #6).</li>
+      <li><b>Nav gimbal:</b> top-right corner of the map surface. Compass with N/E/S/W ticks, heading arrow, tilt arc. Click resets to north + level. Replaces Cesium's default gimbal which we'd been hiding.</li>
+      <li><b>Legend:</b> <i>off by default; per-site Atlas setting</i>. The Legend tile in the primary rail toggles it on/off for the current session. When enabled for a site (Atlas Site Layout Designer → Legend visible), it docks at a configurable corner (top-right under gimbal by default). Twin doesn't expose a legend on every map automatically because most engineering sites don't need one; clean by default, on-demand when it matters.</li>
+      <li><b>Time slider:</b> appears as a strip ABOVE the bottom rails when temporal layers are on. Hides when no temporal data is active. Inset-left so it clears the scale bar.</li>
+      <li><b>Transparency:</b> NOT a top-level widget. Lives inside the Layers panel (per-layer slider), since transparency is meaningful per layer not globally. Global "see-through-the-globe" is its own thing in the Layers panel header.</li>
+      <li><b>Primary widget rail (cobalt-tinted):</b> Search · Measure · Layers · Legend. Always visible, the four tools every user reaches for. The Legend tile is a session toggle; per-site default-on/default-off is set in Atlas.</li>
+      <li><b>Secondary widget rail (sits above primary):</b> Story · Snap · Design · Table · Strike · Terrain · "More ▾". Same tile shape, neutral background. The "More ▾" expands a popover with the long tail.</li>
+      <li><b>Per-widget config:</b> each widget registers with <code>{ id, label, controller: 'primary' | 'secondary' | 'none', position: number, loadMode: 'floating' | 'sharePane' | 'drawer' | 'inline', defaultSize, scope: 'global' | 'per-site' }</code>. Settings → Engine → Widgets layout edits the global catalog; Atlas Site Layout Designer overrides per-site. <b>loadMode</b> matters:
+        <ul>
+          <li><b>floating</b> — free-floating panel anchored on the map (Layers panel default).</li>
+          <li><b>sharePane</b> — share the right rail with AI chat: widget stacks above chat, chat shrinks to bottom half. Keeps the map surface uncluttered when several widgets are open at once.</li>
+          <li><b>drawer</b> — slide-up bottom drawer (Attribute table default).</li>
+          <li><b>inline</b> — fixed map-edge component (zoom column, gimbal, scale bar — not user-toggleable).</li>
+        </ul>
+      </li>
+      <li><b>Feature popup:</b> ANCHORED to the click point with a leader line + teal pulsing dot. Smart placement avoids the gimbal / chat / rails. Phone variant slides up from bottom as a 60 % sheet.</li>
+      <li><b>AI chat:</b> minimised by default until configured (slim 56 px right column with vertical "Twin AI" label, pulsing violet sparkle, "setup" badge). Collapses/expands via the chevron in the header. State persists across sessions — once configured + expanded, it stays expanded.</li>
+      <li><b>Phone:</b> bottom tabs (Map / Atlas / Settings), two FABs at the bottom corners — Tools (left, slate) and AI (right, violet). Site chip becomes the header. Gimbal + zoom column live top-left/top-right inside the map surface.</li>
+    </ul>
+    <h2 style="font-size: 14px; margin: 24px 0 12px;">Settings → per-widget config (forward-looking)</h2>
+    <p>Each widget registers with: <code>{ id, label, primary | secondary, defaultPosition, defaultSize, scope: 'global' | 'per-site' }</code>. Settings → Engine → Widgets layout shows the catalog and lets admins toggle primary/secondary tier and default size. Per-site overrides land later via the Atlas Site Layout Designer.</p>
+  </section>
+
+</div>
+
+</body>
+</html>
