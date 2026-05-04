@@ -1,0 +1,23 @@
+[project]
+name = "mighty_migrations"
+version = "0.1.0"
+description = "Shared Alembic migration tree — single source of truth for both SQLite and PostGIS targets"
+requires-python = ">=3.12"
+dependencies = [
+    "alembic>=1.14.0",
+    "sqlalchemy>=2.0.35",
+    "geoalchemy2>=0.15.2",
+    "mighty_models",
+    "mighty_spatial",
+]
+
+[tool.uv.sources]
+mighty_models = { workspace = true }
+mighty_spatial = { workspace = true }
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/mighty_migrations"]
