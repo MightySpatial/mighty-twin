@@ -13,7 +13,7 @@ from __future__ import annotations
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import DateTime, Integer, String
+from sqlalchemy import Boolean, DateTime, Integer, String
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 from .types import GUID, JSONType
@@ -43,6 +43,14 @@ class Site(Base):
     #: Branding + config blob. Schema-less on purpose; Pydantic schemas in
     #: the API layer validate the shape for each consumer.
     config: Mapped[dict] = mapped_column(JSONType, default=dict)
+
+    #: Phase M — when true, the site is viewable without authentication
+    #: at /p/<slug>. The frontend filters widgets to publicVisible: true
+    #: only (search, layers, legend, zoom, basemap, compass, story); admin
+    #: + create / sketch / strike / terrain widgets are hidden.
+    is_public_pre_login: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False
+    )
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),

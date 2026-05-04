@@ -1,4 +1,5 @@
 import { lazy, Suspense } from 'react'
+import { Route, Routes, useLocation } from 'react-router-dom'
 import { AppShell } from '@mightyspatial/app-shell'
 import { SettingsShell, usePersistedSettings } from '@mightyspatial/settings-panels'
 import { useAuth } from './viewer/hooks/useAuth'
@@ -10,6 +11,7 @@ import AISettings from './ai/AISettings'
 import ChatPanel from './ai/ChatPanel'
 
 const LoginPage = lazy(() => import('./viewer/pages/LoginPage'))
+const PublicViewerPage = lazy(() => import('./viewer/pages/PublicViewerPage'))
 
 const loadingFallback = (
   <div
@@ -43,6 +45,20 @@ const TWIN_SETTINGS_SECTIONS = [
 export function App() {
   const { isAuthenticated, isLoading } = useAuth()
   const { settings } = usePersistedSettings()
+  const location = useLocation()
+
+  // Phase M: /p/<slug> is the unauthenticated public viewer. Bypass the
+  // auth gate entirely — these routes have their own page-level shell.
+  const isPublicRoute = location.pathname.startsWith('/p/')
+  if (isPublicRoute) {
+    return (
+      <Suspense fallback={loadingFallback}>
+        <Routes>
+          <Route path="/p/:siteSlug" element={<PublicViewerPage />} />
+        </Routes>
+      </Suspense>
+    )
+  }
 
   if (isLoading) return loadingFallback
 
