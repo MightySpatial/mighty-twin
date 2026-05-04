@@ -57,7 +57,7 @@ export function App() {
       viewer={<ViewerRoot />}
       adminContent={<AdminRoot />}
       settingsContent={<SettingsShell extraSections={TWIN_SETTINGS_SECTIONS} />}
-      tabLabels={{ admin: 'Atlas' }}
+      tabLabels={{ viewer: 'Map', admin: 'Atlas' }}
       showDeveloperTools={settings.dev.enabled}
     />
   )

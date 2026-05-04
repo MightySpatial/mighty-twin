@@ -7,7 +7,7 @@ import type { SiteConfigState } from '../../types/api'
 import { Cartesian3 } from 'cesium'
 import { useBreakpoint } from '../../hooks/useBreakpoint'
 import {
-  Home, ZoomIn, ZoomOut, Map as MapIcon, Search, Ruler, Mountain, ListTree, HelpCircle, Hexagon,
+  Home, ZoomIn, ZoomOut, Map as MapIcon, Search, Ruler, Mountain, ListTree, HelpCircle, Hexagon, Globe, Square,
 } from 'lucide-react'
 import { getExtensionPanels } from '../../extensions'
 import type { ViewerContext } from '../../extensions/types'
@@ -72,6 +72,7 @@ export default function CesiumViewerComponent({
   const [tetraActive, setTetraActive] = useState(false)
   const [zoomSplashOpen, setZoomSplashOpen] = useState(false)
   const zoomSplashTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const [is2D, setIs2D] = useState(false)
 
   // Zoom-to splash: show once per session per site after 3s delay
   useEffect(() => {
@@ -171,6 +172,21 @@ export default function CesiumViewerComponent({
     viewerRef.current?.camera.zoomOut(h * 0.4)
   }, [viewerRef])
 
+  // 2D/3D toggle. Cesium's morphTo* animates the transition; we keep
+  // local UI state in sync so the button shows the *target* mode (icon
+  // reflects what clicking will give you).
+  const toggleSceneMode = useCallback(() => {
+    const viewer = viewerRef.current
+    if (!viewer) return
+    if (is2D) {
+      viewer.scene.morphTo3D(1.0)
+      setIs2D(false)
+    } else {
+      viewer.scene.morphTo2D(1.0)
+      setIs2D(true)
+    }
+  }, [viewerRef, is2D])
+
   // Sidebar width: tab rail (48px) + content panel (280px) when open
   const sidebarWidth = !isMobile && sidebarOpen ? 328 : !isMobile ? 48 : 0
 
@@ -216,6 +232,14 @@ export default function CesiumViewerComponent({
       <div className="map-controls">
         <button className="map-control-btn" onClick={() => setSearchOpen(s => !s)} title="Search"><Search size={18} /></button>
         <button className="map-control-btn" onClick={flyHome} title="Home"><Home size={18} /></button>
+        <button
+          className={`map-control-btn${is2D ? ' active' : ''}`}
+          onClick={toggleSceneMode}
+          title={is2D ? 'Switch to 3D' : 'Switch to 2D'}
+          aria-label={is2D ? 'Switch to 3D view' : 'Switch to 2D view'}
+        >
+          {is2D ? <Globe size={18} /> : <Square size={18} />}
+        </button>
         <div className="map-controls-divider" />
         <button className="map-control-btn" onClick={zoomIn} title="Zoom In"><ZoomIn size={18} /></button>
         <button className="map-control-btn" onClick={zoomOut} title="Zoom Out"><ZoomOut size={18} /></button>

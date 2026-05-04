@@ -85,6 +85,49 @@
   background: #6366f1;
   color: #fff;
 }
+/* Middle "both panes" button — slightly wider, includes a divider so the
+   two labels read as a single split affordance rather than two buttons. */
+.splitBtnDual {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+}
+.splitDivider {
+  opacity: 0.4;
+  font-weight: 300;
+  user-select: none;
+}
+
+/* Settings button — separate visual from the layout slider so the
+   Map↔Atlas axis stays uncluttered. Gear + label, same height as the
+   slider buttons. */
+.settingsBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 8px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.55);
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  cursor: pointer;
+  font: inherit;
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  transition: background 120ms ease, color 120ms ease;
+}
+.settingsBtn:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.04);
+}
+.settingsBtnActive {
+  background: rgba(99, 102, 241, 0.16);
+  color: #fff;
+  border-color: rgba(99, 102, 241, 0.4);
+}
 
 .bpLabel {
   font-size: 10px;

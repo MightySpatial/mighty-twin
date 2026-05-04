@@ -68,7 +68,7 @@ export function AppShell({
   const orientation = useOrientation(forcedOrientation)
 
   const labels = {
-    viewer: tabLabels?.viewer ?? 'Viewer',
+    viewer: tabLabels?.viewer ?? 'Map',
     admin: tabLabels?.admin ?? 'Admin',
     settings: tabLabels?.settings ?? 'Settings',
   }

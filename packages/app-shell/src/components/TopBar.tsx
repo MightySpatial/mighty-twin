@@ -41,15 +41,16 @@ export function TopBar({
         <span>{brand.name}</span>
       </button>
 
-      {/* Layout slider — the single source of truth for every display
-          mode, including Settings. Five buttons end-to-end:
-          [V] [V+A] [A+V] [A] [⚙ S]
-          Shown on both desktop and tablet. On tablet the split modes
-          render the secondary pane as an overlay drawer rather than an
-          inline flex child, but the primary pane (viewer or admin) is
-          still selected by V+A vs A+V, so the slider maps cleanly.
-          Phone gets a simpler [V][A][⚙S] bottom nav — handled upstream
-          by MobileBottomNav, not here. */}
+      {/* Layout slider — three positions for the Map↔Atlas axis:
+          [Map] [Map | Atlas] [Atlas]
+          The middle position is "both panes visible" (split-viewer
+          internally — viewer primary, admin side pane). On tablet the
+          side pane becomes an overlay drawer; on desktop it sits inline.
+          Settings is a separate gear button outside the slider so it
+          doesn't compete with the layout axis.
+
+          Phone gets a [Map][Atlas][Settings] bottom nav — handled
+          upstream by MobileBottomNav, not here. */}
       <div className={styles.splitGroup} role="group" aria-label="Layout">
         <button
           type="button"
@@ -61,19 +62,16 @@ export function TopBar({
         </button>
         <button
           type="button"
-          className={`${styles.splitBtn} ${mode === 'split-viewer' ? styles.splitBtnActive : ''}`}
+          className={`${styles.splitBtn} ${styles.splitBtnDual} ${
+            mode === 'split-viewer' || mode === 'split-admin' ? styles.splitBtnActive : ''
+          }`}
           onClick={() => onModeChange('split-viewer')}
-          title={`${labels.viewer} + ${labels.admin} side pane`}
+          title={`${labels.viewer} + ${labels.admin} side by side`}
+          aria-label={`${labels.viewer} and ${labels.admin}`}
         >
-          V+A
-        </button>
-        <button
-          type="button"
-          className={`${styles.splitBtn} ${mode === 'split-admin' ? styles.splitBtnActive : ''}`}
-          onClick={() => onModeChange('split-admin')}
-          title={`${labels.admin} + ${labels.viewer} side pane`}
-        >
-          A+V
+          <span>{labels.viewer}</span>
+          <span className={styles.splitDivider} aria-hidden>|</span>
+          <span>{labels.admin}</span>
         </button>
         <button
           type="button"
@@ -83,15 +81,18 @@ export function TopBar({
         >
           {labels.admin}
         </button>
-        <button
-          type="button"
-          className={`${styles.splitBtn} ${mode === 'settings' ? styles.splitBtnActive : ''}`}
-          onClick={() => onModeChange('settings')}
-          title="Settings"
-        >
-          ⚙ {labels.settings}
-        </button>
       </div>
+
+      {/* Settings — separate from the layout slider since it isn't on the
+          Map↔Atlas axis. Gear icon + label. */}
+      <button
+        type="button"
+        className={`${styles.settingsBtn} ${mode === 'settings' ? styles.settingsBtnActive : ''}`}
+        onClick={() => onModeChange('settings')}
+        title="Settings"
+      >
+        ⚙ {labels.settings}
+      </button>
 
       <div className={styles.spacer} />
 
