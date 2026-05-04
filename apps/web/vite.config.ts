@@ -15,11 +15,10 @@ export default defineConfig({
     port: 3002,
     proxy: {
       '/api': {
-        // VM where MightyTwin v1's FastAPI runs. When the VM is down,
-        // the TCP connection attempt hangs for 30+ seconds at the OS
-        // level. The timeout below cuts that to 5s so the dev-mode
-        // mock auth in useAuth can kick in quickly.
-        target: 'http://192.168.64.3:5003',
+        // Local apps/api FastAPI (uv run uvicorn ... --port 5001).
+        // Phase A wired /api/sites against real Postgres; auth + settings
+        // are stub responses from twin_api.dev_stubs until Phase B/C land.
+        target: process.env.VITE_API_PROXY_TARGET ?? 'http://127.0.0.1:5001',
         changeOrigin: true,
         timeout: 5000,
         proxyTimeout: 5000,

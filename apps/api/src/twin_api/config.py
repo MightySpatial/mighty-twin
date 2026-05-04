@@ -21,8 +21,8 @@ class Settings(BaseSettings):
     )
 
     database_url: str = Field(
-        default="postgresql+psycopg://mighty:mighty@localhost:5433/mightytwin",
-        description="SQLAlchemy URL. PostGIS in prod; SpatiaLite supported for dev.",
+        default="postgresql+psycopg://mightytwin:mightytwin_dev@127.0.0.1:5432/mightytwin",
+        description="SQLAlchemy URL. PostGIS in prod and local dev; SpatiaLite available for embedded targets.",
     )
     allowed_origins: list[str] = Field(
         default_factory=lambda: ["http://localhost:3000", "http://localhost:3002"],
@@ -35,6 +35,13 @@ class Settings(BaseSettings):
     license_key: str = Field(
         default="",
         description="Mighty licence key. Stub-accepted in dev; enforced in prod.",
+    )
+    dev_stubs_enabled: bool = Field(
+        default=True,
+        description=(
+            "Mount dev-only stub endpoints (auth, settings) so the web app boots "
+            "before Phase B/C land. MUST be False in prod."
+        ),
     )
 
 
