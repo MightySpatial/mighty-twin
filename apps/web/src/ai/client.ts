@@ -5,6 +5,7 @@
  */
 
 import { loadSettings } from './storage'
+import { findTool, TOOLS } from './tools'
 import type { AIMessage, AIProvider } from './types'
 
 const DEFAULTS: Record<AIProvider, { model: string; baseUrl?: string }> = {
@@ -28,6 +29,13 @@ export interface ChatOptions {
   maxTokens?: number
   /** Optional abort signal — bound to the React unmount cleanup. */
   signal?: AbortSignal
+  /** When true, expose the v1 read-only Twin MCP tool catalog to the
+   *  model and execute calls in the browser against /api endpoints.
+   *  Defaults to true; set false for plain-text testing. */
+  tools?: boolean
+  /** Hard cap on tool-use ↔ assistant rounds within a single chat()
+   *  call so a model can't loop forever. Default 4. */
+  maxToolRounds?: number
 }
 
 export class MissingApiKeyError extends Error {
@@ -48,25 +56,90 @@ export async function chat(
   const maxTokens = opts.maxTokens ?? 1200
   const signal = opts.signal
 
-  // Anthropic — direct browser access
+  // Anthropic — direct browser access. Supports tool use loop.
   if (settings.active === 'anthropic') {
     if (!cfg.apiKey) throw new MissingApiKeyError('anthropic')
     const sys = messages.find((m) => m.role === 'system')?.content
-    const rest = messages.filter((m) => m.role !== 'system')
-    const r = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'content-type': 'application/json',
-        'x-api-key': cfg.apiKey,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true',
-      },
-      body: JSON.stringify({ model, max_tokens: maxTokens, system: sys, messages: rest }),
-      signal,
-    })
-    if (!r.ok) throw new Error(`Anthropic ${r.status}: ${await r.text()}`)
-    const j = await r.json()
-    return j.content?.[0]?.text ?? ''
+    const useTools = opts.tools !== false
+    const maxRounds = opts.maxToolRounds ?? 4
+
+    // Convert plain string messages to Anthropic content-block format.
+    let anthMessages: Array<{ role: 'user' | 'assistant'; content: unknown }> =
+      messages
+        .filter((m) => m.role !== 'system')
+        .map((m) => ({ role: m.role as 'user' | 'assistant', content: m.content }))
+
+    let textOut = ''
+    for (let round = 0; round < maxRounds; round++) {
+      const r = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          'x-api-key': cfg.apiKey,
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true',
+        },
+        body: JSON.stringify({
+          model,
+          max_tokens: maxTokens,
+          system: sys,
+          messages: anthMessages,
+          ...(useTools
+            ? {
+                tools: TOOLS.map((t) => ({
+                  name: t.name,
+                  description: t.description,
+                  input_schema: t.input_schema,
+                })),
+              }
+            : {}),
+        }),
+        signal,
+      })
+      if (!r.ok) throw new Error(`Anthropic ${r.status}: ${await r.text()}`)
+      const j = await r.json()
+      const blocks: Array<Record<string, unknown>> = j.content || []
+      // Collect assistant text + tool_use requests.
+      const textBlocks = blocks.filter((b) => b.type === 'text')
+      const toolUses = blocks.filter((b) => b.type === 'tool_use') as Array<{
+        type: 'tool_use'
+        id: string
+        name: string
+        input: Record<string, unknown>
+      }>
+      textOut = textBlocks.map((b) => (b as { text: string }).text).join('\n')
+
+      if (toolUses.length === 0) return textOut
+
+      // Append assistant message + run each tool, append tool_result.
+      anthMessages.push({ role: 'assistant', content: blocks })
+      const toolResults = []
+      for (const u of toolUses) {
+        const tool = findTool(u.name)
+        let resultContent: string
+        let isError = false
+        if (!tool) {
+          resultContent = JSON.stringify({ error: `Unknown tool ${u.name}` })
+          isError = true
+        } else {
+          try {
+            const out = await tool.run(u.input || {})
+            resultContent = JSON.stringify(out)
+          } catch (err) {
+            resultContent = JSON.stringify({ error: (err as Error).message })
+            isError = true
+          }
+        }
+        toolResults.push({
+          type: 'tool_result',
+          tool_use_id: u.id,
+          content: resultContent,
+          is_error: isError,
+        })
+      }
+      anthMessages.push({ role: 'user', content: toolResults })
+    }
+    return textOut || '(tool-use round cap reached without a final answer)'
   }
 
   // Gemini — its own envelope
