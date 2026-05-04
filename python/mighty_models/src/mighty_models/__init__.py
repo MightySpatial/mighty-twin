@@ -18,5 +18,6 @@ __version__ = "0.1.0"
 from .types import GUID, JSONType
 from .site import Base, Site
 from .user import User, UserRole
+from .setting import Setting
 
-__all__ = ["GUID", "JSONType", "Base", "Site", "User", "UserRole"]
+__all__ = ["GUID", "JSONType", "Base", "Site", "User", "UserRole", "Setting"]

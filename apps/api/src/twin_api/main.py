@@ -22,6 +22,7 @@ from .auth import router as auth_router
 from .config import get_settings
 from .db import DbSession
 from .dev_stubs import router as dev_stubs_router
+from .settings_routes import settings_router, system_router
 
 
 @asynccontextmanager
@@ -94,10 +95,12 @@ def get_site(slug: str, db: DbSession) -> dict[str, object]:
     return payload
 
 
-# Real auth — replaces the dev_stubs auth endpoints.
+# Real implementations.
 app.include_router(auth_router)
+app.include_router(settings_router)
+app.include_router(system_router)
 
 
-# Remaining stubs (settings, system config, setup) until Phase C lands.
+# Remaining stubs (setup wizard) until Phase E lands.
 if settings.dev_stubs_enabled:
     app.include_router(dev_stubs_router)
