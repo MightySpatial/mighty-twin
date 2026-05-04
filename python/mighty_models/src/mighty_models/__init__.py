@@ -21,6 +21,7 @@ from .user import User, UserRole
 from .setting import Setting
 from .layer import DataSource, Layer
 from .story_map import StoryMap
+from .snapshot import SketchLayer, Snapshot
 
 __all__ = [
     "GUID",
@@ -33,4 +34,6 @@ __all__ = [
     "DataSource",
     "Layer",
     "StoryMap",
+    "Snapshot",
+    "SketchLayer",
 ]
