@@ -5,7 +5,31 @@
 
 export type SolidTool = 'box' | 'pit' | 'cylinder'
 
-export type DesignTool = 'select' | 'point' | 'line' | 'polygon' | 'rectangle' | 'circle' | 'traverse' | SolidTool | null
+/** Phase-I primitives ported from DT v1. Parameter panels in
+ *  apps/web/src/viewer/widgets/design/tools/parameters/ accept user
+ *  input but full geometry generation is staged — each gets fully
+ *  active as it's exercised in user testing. */
+export type DesignPrimitive =
+  | 'curve'
+  | 'sphere'
+  | 'ellipse'
+  | 'polygonN'
+  | 'loft'
+  | 'pipe'
+  | 'cone'
+  | 'extrude'
+
+export type DesignTool =
+  | 'select'
+  | 'point'
+  | 'line'
+  | 'polygon'
+  | 'rectangle'
+  | 'circle'
+  | 'traverse'
+  | SolidTool
+  | DesignPrimitive
+  | null
 
 export type ElevationMode = 'terrain' | 'none' | 'entry'
 
