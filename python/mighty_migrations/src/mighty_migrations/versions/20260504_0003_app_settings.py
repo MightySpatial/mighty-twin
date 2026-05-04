@@ -36,6 +36,10 @@ SEED_ROWS = [
     ("preload_site_slug", None, True),  # site slug when overview_mode='preload_site'
     # Admin-only — exposed via /api/settings (admin) or /api/system/config
     ("cesium_ion_token", "", False),
+    # NOTE: Phase Q/R/S keys (autodetect_rules, branding, widget_layout)
+    # land via app code on first read with `_ensure_setting()` defaults
+    # rather than this seed list — keeps the migration small and
+    # idempotent across versions.
 ]
 
 

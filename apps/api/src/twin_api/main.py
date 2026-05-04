@@ -28,6 +28,7 @@ from .embed_routes import router as embed_router
 from .public_routes import router as public_router
 from .analytics_routes import router as analytics_router
 from .library_routes import router as library_router
+from .engine_routes import router as engine_router
 
 
 @asynccontextmanager
@@ -78,6 +79,7 @@ app.include_router(embed_router)
 app.include_router(public_router)
 app.include_router(analytics_router)
 app.include_router(library_router)
+app.include_router(engine_router)
 
 
 # All real now — dev_stubs router is empty (kept the import + include
