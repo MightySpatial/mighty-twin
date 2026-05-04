@@ -5,7 +5,7 @@
  */
 
 import { loadSettings } from './storage'
-import { findTool, TOOLS } from './tools'
+import { activeTools, findTool } from './tools'
 import type { AIMessage, AIProvider } from './types'
 
 const DEFAULTS: Record<AIProvider, { model: string; baseUrl?: string }> = {
@@ -86,7 +86,7 @@ export async function chat(
           messages: anthMessages,
           ...(useTools
             ? {
-                tools: TOOLS.map((t) => ({
+                tools: activeTools().map((t) => ({
                   name: t.name,
                   description: t.description,
                   input_schema: t.input_schema,

@@ -24,6 +24,7 @@ from .spatial_routes import router as spatial_router
 from .story_routes import setup_router, story_router
 from .upload_routes import router as upload_router
 from .me_routes import router as me_router
+from .embed_routes import router as embed_router
 
 
 @asynccontextmanager
@@ -70,6 +71,7 @@ app.include_router(story_router)
 app.include_router(setup_router)
 app.include_router(upload_router)
 app.include_router(me_router)
+app.include_router(embed_router)
 
 
 # All real now — dev_stubs router is empty (kept the import + include

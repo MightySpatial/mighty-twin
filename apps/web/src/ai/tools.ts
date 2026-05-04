@@ -9,6 +9,8 @@
  *  shell uses; nothing routes through Mighty servers.
  */
 
+import { listSheets, getSheet, loadSheetsConfig } from './sheetsClient'
+
 export interface ToolDef {
   name: string
   description: string
@@ -82,6 +84,34 @@ export const TOOLS: ToolDef[] = [
   },
 ]
 
+/** Sheets MCP tools — only included when the user has configured a
+ *  Sheets MCP URL. Routes through sheetsClient.ts.
+ */
+export const SHEETS_TOOLS: ToolDef[] = [
+  {
+    name: 'sheets_list',
+    description: 'List the sheets in the user\'s connected Mighty Sheets workbook (via their MCP).',
+    input_schema: { type: 'object', properties: {} },
+    run: async () => listSheets(),
+  },
+  {
+    name: 'sheets_get',
+    description: 'Fetch one sheet by id from the connected Mighty Sheets workbook.',
+    input_schema: {
+      type: 'object',
+      required: ['id'],
+      properties: { id: { type: 'string' } },
+    },
+    run: async (args) => getSheet(String(args.id)),
+  },
+]
+
+export function activeTools(): ToolDef[] {
+  // Only include Sheets tools when the user has wired their connector.
+  if (loadSheetsConfig()) return [...TOOLS, ...SHEETS_TOOLS]
+  return TOOLS
+}
+
 export function findTool(name: string): ToolDef | undefined {
-  return TOOLS.find((t) => t.name === name)
+  return [...TOOLS, ...SHEETS_TOOLS].find((t) => t.name === name)
 }
