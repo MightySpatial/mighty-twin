@@ -1,0 +1,31 @@
+.hud {
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  gap: 8px 14px;
+  font-size: 12px;
+  padding: 16px;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  max-width: 480px;
+}
+
+.label {
+  color: rgba(255, 255, 255, 0.45);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 10px;
+  align-self: center;
+}
+
+.value {
+  font-family: ui-monospace, SFMono-Regular, monospace;
+  color: #fff;
+  font-variant-numeric: tabular-nums;
+}
+
+.empty {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 13px;
+  padding: 16px;
+}
