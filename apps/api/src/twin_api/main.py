@@ -1,25 +1,26 @@
 """MightyTwin API — FastAPI + PostgreSQL/PostGIS.
 
 Boots a session-bound engine in the lifespan, exposes a typed dependency
-for request-scoped DB sessions, and serves the consolidated route catalog
-(currently: sites). Auth/users/layers/uploads land in subsequent phases.
+for request-scoped DB sessions, and mounts the route catalog. Real
+implementations land phase by phase; routes not yet built come from
+``dev_stubs`` so the web app stays bootable in dev.
 """
 
 from __future__ import annotations
 
-from collections.abc import AsyncIterator, Iterator
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
-from typing import Annotated
 
-from fastapi import Depends, FastAPI, Request
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import select
-from sqlalchemy.orm import Session
 
 from mighty_db import get_engine, get_session_factory
 from mighty_models import Site
 
-from .config import Settings, get_settings
+from .auth import router as auth_router
+from .config import get_settings
+from .db import DbSession
 from .dev_stubs import router as dev_stubs_router
 
 
@@ -34,18 +35,6 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         yield
     finally:
         engine.dispose()
-
-
-def get_db(request: Request) -> Iterator[Session]:
-    session_factory = request.app.state.session_factory
-    session: Session = session_factory()
-    try:
-        yield session
-    finally:
-        session.close()
-
-
-DbSession = Annotated[Session, Depends(get_db)]
 
 
 app = FastAPI(
@@ -84,8 +73,8 @@ def _serialize_site(site: Site) -> dict[str, object]:
 @app.get("/api/spatial/sites")
 def list_sites(db: DbSession) -> list[dict[str, object]]:
     """Return all sites the caller can see as a bare array (frontend's
-    `useApiData('/api/spatial/sites', [])` expects an array, not an
-    envelope). Auth gating lands in Phase B.
+    ``useApiData('/api/spatial/sites', [])`` expects an array, not an
+    envelope). Auth gating lands in Phase D.
     """
     sites = db.execute(select(Site).order_by(Site.name)).scalars().all()
     return [_serialize_site(s) for s in sites]
@@ -94,11 +83,9 @@ def list_sites(db: DbSession) -> list[dict[str, object]]:
 @app.get("/api/spatial/sites/{slug}")
 def get_site(slug: str, db: DbSession) -> dict[str, object]:
     """Return a single site. Used by the viewer + admin detail page.
-    Includes `layers: []` for forward-compat with the SiteData shape;
+    Includes ``layers: []`` for forward-compat with the SiteData shape;
     real layer joins land in Phase D.
     """
-    from fastapi import HTTPException
-
     site = db.execute(select(Site).where(Site.slug == slug)).scalar_one_or_none()
     if site is None:
         raise HTTPException(status_code=404, detail=f"Site {slug!r} not found")
@@ -107,5 +94,10 @@ def get_site(slug: str, db: DbSession) -> dict[str, object]:
     return payload
 
 
+# Real auth — replaces the dev_stubs auth endpoints.
+app.include_router(auth_router)
+
+
+# Remaining stubs (settings, system config, setup) until Phase C lands.
 if settings.dev_stubs_enabled:
     app.include_router(dev_stubs_router)

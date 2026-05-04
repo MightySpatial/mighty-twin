@@ -6,13 +6,13 @@ requires-python = ">=3.12"
 dependencies = [
     "fastapi>=0.115.0",
     "slowapi>=0.1.9",
-    "python-jose[cryptography]>=3.3.0",
-    "passlib[bcrypt]==1.7.4",
-    "bcrypt==4.0.1",
     "mighty_core",
     "mighty_db",
     "mighty_models",
 ]
+# Auth-related deps (bcrypt, pyjwt) live in consumer apps that implement
+# the auth router (e.g. apps/api -> twin_api.auth). mighty_api currently
+# exports middleware only; auth routers land per-consumer via factories.
 
 [tool.uv.sources]
 mighty_core = { workspace = true }

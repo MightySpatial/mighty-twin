@@ -11,6 +11,8 @@ dependencies = [
     "sqlalchemy>=2.0.35",
     "geoalchemy2>=0.15.2",
     "psycopg[binary]>=3.2.0",
+    "bcrypt>=4.2.0",
+    "pyjwt>=2.10.0",
     "mighty_core",
     "mighty_db",
     "mighty_models",
