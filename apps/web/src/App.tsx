@@ -6,6 +6,8 @@ import { ViewerRoot } from './viewer/ViewerRoot'
 import { AdminRoot } from './admin/AdminRoot'
 import UsersPage from './admin/pages/UsersPage'
 import SystemSettingsPage from './admin/pages/SystemSettingsPage'
+import AISettings from './ai/AISettings'
+import ChatPanel from './ai/ChatPanel'
 
 const LoginPage = lazy(() => import('./viewer/pages/LoginPage'))
 
@@ -29,6 +31,7 @@ const loadingFallback = (
  *  or dev-web). The shared panels (Basemap, Units, Theme, etc.) render
  *  above these automatically. */
 const TWIN_SETTINGS_SECTIONS = [
+  { id: 'ai', label: 'AI', panel: <AISettings /> },
   { id: 'users', label: 'Users', panel: <UsersPage /> },
   { id: 'system', label: 'System', panel: <SystemSettingsPage /> },
 ]
@@ -59,6 +62,7 @@ export function App() {
       settingsContent={<SettingsShell extraSections={TWIN_SETTINGS_SECTIONS} />}
       tabLabels={{ viewer: 'Map', admin: 'Atlas' }}
       showDeveloperTools={settings.dev.enabled}
+      rightRail={<ChatPanel />}
     />
   )
 }

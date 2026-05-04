@@ -72,4 +72,13 @@ export interface AppShellProps {
    *  top bar). Host app typically reads settings.dev.enabled and passes
    *  that here. Default: false — consumers must opt in. */
   showDeveloperTools?: boolean
+
+  /** Optional always-on right rail. Renders as a fixed-width column to
+   *  the right of all primary panes — viewer, admin, and split modes
+   *  alike. Hidden on phone (mobile gets a FAB pattern instead, owned
+   *  by the rail content itself). Pass null to disable. The Mighty UX
+   *  system designates this slot for the always-on AI chat panel. */
+  rightRail?: ReactNode | null
+  /** Width of the right rail in px when present. Default 360. */
+  rightRailWidth?: number
 }

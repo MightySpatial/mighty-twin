@@ -40,6 +40,8 @@ export function AppShell({
   defaultMode = 'viewer-only',
   onModeChange,
   showDeveloperTools = false,
+  rightRail = null,
+  rightRailWidth = 360,
 }: AppShellProps) {
   const { mode, setMode } = useViewMode()
 
@@ -141,6 +143,7 @@ export function AppShell({
         />
       )}
 
+      <div className={styles.bodyShell}>
       <div className={styles.body}>
         {/* Viewer surface — always rendered to preserve Cesium instance. */}
         <div
@@ -191,6 +194,16 @@ export function AppShell({
             </PaneContextProvider>
           </div>
         )}
+
+      </div>
+      {rightRail && breakpoint !== 'phone' && (
+        <div
+          className={styles.rightRail}
+          style={{ flex: `0 0 ${rightRailWidth}px` }}
+        >
+          {rightRail}
+        </div>
+      )}
       </div>
 
       {breakpoint === 'phone' && (
