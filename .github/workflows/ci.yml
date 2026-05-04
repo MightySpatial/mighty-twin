@@ -30,17 +30,38 @@ jobs:
       postgres:
         image: postgis/postgis:16-3.4-alpine
         env:
-          POSTGRES_USER: mighty
-          POSTGRES_PASSWORD: mighty
+          POSTGRES_USER: mightytwin
+          POSTGRES_PASSWORD: mightytwin_dev
           POSTGRES_DB: mightytwin
         ports: ['5432:5432']
         options: >-
           --health-cmd pg_isready --health-interval 5s
           --health-timeout 3s --health-retries 20
+    env:
+      DATABASE_URL: postgresql+psycopg://mightytwin:mightytwin_dev@127.0.0.1:5432/mightytwin
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with: { python-version: '3.12' }
       - run: curl -LsSf https://astral.sh/uv/install.sh | sh
-      - run: uv sync --all-packages
-      - run: uv run python -c "import twin_api; print(twin_api.__version__)"
+      - run: ~/.local/bin/uv sync --project apps/api
+      - name: alembic upgrade head
+        working-directory: apps/api
+        run: ~/.local/bin/uv run alembic upgrade head
+      - name: smoke — boot api & hit endpoints
+        working-directory: apps/api
+        run: |
+          ~/.local/bin/uv run uvicorn twin_api.main:app --host 127.0.0.1 --port 5003 &
+          PID=$!
+          for i in 1 2 3 4 5 6 7 8 9 10; do
+            curl -fs http://127.0.0.1:5003/health && break || sleep 1
+          done
+          curl -fs http://127.0.0.1:5003/health
+          curl -fs http://127.0.0.1:5003/api/settings/public
+          TOKEN=$(curl -fs -X POST -H 'content-type: application/json' \
+            -d '{"email":"admin@mightyspatial.com","password":"admin123"}' \
+            http://127.0.0.1:5003/api/auth/login \
+            | python3 -c "import sys,json; print(json.load(sys.stdin)['access_token'])")
+          curl -fs -H "Authorization: Bearer $TOKEN" http://127.0.0.1:5003/api/auth/me
+          curl -fs -H "Authorization: Bearer $TOKEN" http://127.0.0.1:5003/api/spatial/sites
+          kill $PID
