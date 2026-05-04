@@ -34,6 +34,25 @@ export function TopBar({
 
   const Icon = brand.icon
 
+  // Middle "both panes" button — invertible. Clicking it while already in
+  // split mode swaps which pane is primary (split-viewer ↔ split-admin),
+  // and the rendered label flips so reading direction (left=primary)
+  // matches the actual layout.
+  const splitActive = mode === 'split-viewer' || mode === 'split-admin'
+  const adminPrimary = mode === 'split-admin'
+  const splitLeftLabel = adminPrimary ? labels.admin : labels.viewer
+  const splitRightLabel = adminPrimary ? labels.viewer : labels.admin
+  const handleSplitClick = () => {
+    if (mode === 'split-viewer') return onModeChange('split-admin')
+    if (mode === 'split-admin') return onModeChange('split-viewer')
+    // Entering from a non-split mode: keep the side you came from primary.
+    if (mode === 'admin-only') return onModeChange('split-admin')
+    return onModeChange('split-viewer')
+  }
+  const splitTitle = splitActive
+    ? `Swap — ${adminPrimary ? labels.viewer : labels.admin} primary`
+    : `${labels.viewer} + ${labels.admin} side by side`
+
   return (
     <header className={styles.topbar}>
       <button type="button" className={styles.brand} onClick={brand.onClick}>
@@ -42,15 +61,10 @@ export function TopBar({
       </button>
 
       {/* Layout slider — three positions for the Map↔Atlas axis:
-          [Map] [Map | Atlas] [Atlas]
-          The middle position is "both panes visible" (split-viewer
-          internally — viewer primary, admin side pane). On tablet the
-          side pane becomes an overlay drawer; on desktop it sits inline.
-          Settings is a separate gear button outside the slider so it
-          doesn't compete with the layout axis.
-
-          Phone gets a [Map][Atlas][Settings] bottom nav — handled
-          upstream by MobileBottomNav, not here. */}
+          [Map] [Map | Atlas] [Atlas]   ·   ⚙ Settings
+          The middle button is "both panes visible" and invertible — see
+          handleSplitClick above. Phone gets a [Map][Atlas][Settings]
+          bottom nav — handled upstream by MobileBottomNav, not here. */}
       <div className={styles.splitGroup} role="group" aria-label="Layout">
         <button
           type="button"
@@ -63,15 +77,17 @@ export function TopBar({
         <button
           type="button"
           className={`${styles.splitBtn} ${styles.splitBtnDual} ${
-            mode === 'split-viewer' || mode === 'split-admin' ? styles.splitBtnActive : ''
+            splitActive ? styles.splitBtnActive : ''
           }`}
-          onClick={() => onModeChange('split-viewer')}
-          title={`${labels.viewer} + ${labels.admin} side by side`}
-          aria-label={`${labels.viewer} and ${labels.admin}`}
+          onClick={handleSplitClick}
+          title={splitTitle}
+          aria-label={`${splitLeftLabel} and ${splitRightLabel}${
+            splitActive ? ' — click to swap' : ''
+          }`}
         >
-          <span>{labels.viewer}</span>
+          <span>{splitLeftLabel}</span>
           <span className={styles.splitDivider} aria-hidden>|</span>
-          <span>{labels.admin}</span>
+          <span>{splitRightLabel}</span>
         </button>
         <button
           type="button"
