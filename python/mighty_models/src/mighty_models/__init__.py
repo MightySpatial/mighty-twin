@@ -19,5 +19,16 @@ from .types import GUID, JSONType
 from .site import Base, Site
 from .user import User, UserRole
 from .setting import Setting
+from .layer import DataSource, Layer
 
-__all__ = ["GUID", "JSONType", "Base", "Site", "User", "UserRole", "Setting"]
+__all__ = [
+    "GUID",
+    "JSONType",
+    "Base",
+    "Site",
+    "User",
+    "UserRole",
+    "Setting",
+    "DataSource",
+    "Layer",
+]

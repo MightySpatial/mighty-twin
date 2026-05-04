@@ -11,18 +11,16 @@ from __future__ import annotations
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy import select
 
 from mighty_db import get_engine, get_session_factory
-from mighty_models import Site
 
 from .auth import router as auth_router
 from .config import get_settings
-from .db import DbSession
 from .dev_stubs import router as dev_stubs_router
 from .settings_routes import settings_router, system_router
+from .spatial_routes import router as spatial_router
 
 
 @asynccontextmanager
@@ -60,45 +58,11 @@ def health() -> dict[str, str]:
     return {"status": "ok", "app": "mighty-twin"}
 
 
-def _serialize_site(site: Site) -> dict[str, object]:
-    return {
-        "id": str(site.id),
-        "slug": site.slug,
-        "name": site.name,
-        "description": site.description,
-        "storage_srid": site.storage_srid,
-        **(site.config or {}),
-    }
-
-
-@app.get("/api/spatial/sites")
-def list_sites(db: DbSession) -> list[dict[str, object]]:
-    """Return all sites the caller can see as a bare array (frontend's
-    ``useApiData('/api/spatial/sites', [])`` expects an array, not an
-    envelope). Auth gating lands in Phase D.
-    """
-    sites = db.execute(select(Site).order_by(Site.name)).scalars().all()
-    return [_serialize_site(s) for s in sites]
-
-
-@app.get("/api/spatial/sites/{slug}")
-def get_site(slug: str, db: DbSession) -> dict[str, object]:
-    """Return a single site. Used by the viewer + admin detail page.
-    Includes ``layers: []`` for forward-compat with the SiteData shape;
-    real layer joins land in Phase D.
-    """
-    site = db.execute(select(Site).where(Site.slug == slug)).scalar_one_or_none()
-    if site is None:
-        raise HTTPException(status_code=404, detail=f"Site {slug!r} not found")
-    payload = _serialize_site(site)
-    payload["layers"] = []
-    return payload
-
-
 # Real implementations.
 app.include_router(auth_router)
 app.include_router(settings_router)
 app.include_router(system_router)
+app.include_router(spatial_router)
 
 
 # Remaining stubs (setup wizard) until Phase E lands.
