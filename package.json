@@ -17,19 +17,5 @@
   },
   "devDependencies": {
     "typescript": "^5.7.2"
-  },
-  "pnpm": {
-    "overrides": {
-      "@mightyspatial/admin-panels": "link:../mighty-platform/packages/admin-panels",
-      "@mightyspatial/app-shell": "link:../mighty-platform/packages/app-shell",
-      "@mightyspatial/cesium-core": "link:../mighty-platform/packages/cesium-core",
-      "@mightyspatial/settings-panels": "link:../mighty-platform/packages/settings-panels",
-      "@mightyspatial/tokens": "link:../mighty-platform/packages/tokens",
-      "@mightyspatial/types": "link:../mighty-platform/packages/types",
-      "@mightyspatial/ui": "link:../mighty-platform/packages/ui",
-      "@mightyspatial/utils": "link:../mighty-platform/packages/utils",
-      "@mightyspatial/widget-host": "link:../mighty-platform/packages/widget-host",
-      "@mightyspatial/widget-measure": "link:../mighty-platform/packages/widgets/measure"
-    }
   }
 }

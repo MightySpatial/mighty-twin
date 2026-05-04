@@ -3,6 +3,7 @@ node_modules/
 dist/
 build/
 .turbo/
+*.tsbuildinfo
 
 __pycache__/
 *.py[cod]
