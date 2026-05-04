@@ -2,14 +2,16 @@ import { useState } from 'react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { useShellContext } from '@mightyspatial/app-shell'
 import { useBreakpoint } from '../hooks/useBreakpoint'
-import { MapPin, Database, FolderOpen, Upload, Menu, X, ChevronRight } from 'lucide-react'
+import { LayoutDashboard, MapPin, Database, FolderOpen, Upload, Inbox, Menu, X, ChevronRight } from 'lucide-react'
 import './AppLayout.css'
 
 const NAV_ITEMS = [
+  { path: '/admin/overview', icon: LayoutDashboard, label: 'Overview' },
   { path: '/admin/sites', icon: MapPin, label: 'Sites' },
   { path: '/admin/data', icon: Database, label: 'Data' },
-  { path: '/admin/upload', icon: Upload, label: 'Upload' },
   { path: '/admin/library', icon: FolderOpen, label: 'Library' },
+  { path: '/admin/submissions', icon: Inbox, label: 'Submissions' },
+  { path: '/admin/upload', icon: Upload, label: 'Upload' },
 ]
 
 /** Atlas layout — the publisher-level chrome. Wraps Sites, Data, Upload,

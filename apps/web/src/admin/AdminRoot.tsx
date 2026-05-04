@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import AppLayout from './layouts/AppLayout'
+import OverviewPage from './pages/OverviewPage'
 import SitesPage from './pages/SitesPage'
 import SiteNewPage from './pages/SiteNewPage'
 import SiteDetailPage from './pages/SiteDetailPage'
@@ -7,19 +8,20 @@ import DataPage from './pages/DataPage'
 import DataSourcePage from './pages/DataSourcePage'
 import UploadPage from './pages/UploadPage'
 import LibraryPage from './pages/LibraryPage'
+import SubmissionsPage from './pages/SubmissionsPage'
 import './styles/components.css'
 import './styles/global.css'
 
-/** Atlas pane — publisher-level routes only (Sites, Data, Upload,
- *  Library). Users, Tools, Integrations, and settings-like pages are
- *  handled by the shell's Settings tab instead. */
+/** Atlas pane — publisher-level routes (Overview, Sites, Data, Library,
+ *  Upload, Submissions). Users + system settings live in the shell's
+ *  Settings tab. */
 export function AdminRoot() {
   return (
     <div className="admin-root">
       <Routes>
         <Route path="/admin" element={<AppLayout />}>
-          {/* Landing: go straight to Sites, no dashboard */}
-          <Route index element={<Navigate to="/admin/sites" replace />} />
+          <Route index element={<Navigate to="/admin/overview" replace />} />
+          <Route path="overview" element={<OverviewPage />} />
           <Route path="sites" element={<SitesPage />} />
           <Route path="sites/new" element={<SiteNewPage />} />
           <Route path="sites/:slug" element={<SiteDetailPage />} />
@@ -27,6 +29,7 @@ export function AdminRoot() {
           <Route path="data/:id" element={<DataSourcePage />} />
           <Route path="upload" element={<UploadPage />} />
           <Route path="library" element={<LibraryPage />} />
+          <Route path="submissions" element={<SubmissionsPage />} />
         </Route>
       </Routes>
     </div>
