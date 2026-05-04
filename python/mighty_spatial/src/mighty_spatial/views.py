@@ -32,6 +32,7 @@ Usage inside a migration:
 
 from __future__ import annotations
 
+import sqlalchemy as sa
 from alembic import op
 
 
@@ -40,61 +41,39 @@ def create_reproject_view(
     source_table: str,
     geom_col: str = "geom",
     target_srid: int = 4326,
-    *,
-    extra_columns: str = "*",
 ) -> None:
-    """Create (or replace) a VIEW that exposes `source_table` with its
-    geometry column transformed to `target_srid`.
+    """Create a VIEW that exposes ``source_table`` with its geometry column
+    transformed to ``target_srid``. The view's columns mirror the source
+    table exactly — same names, same order — except the geometry column,
+    which becomes the transformed one.
 
-    `extra_columns` is a SQL fragment spliced between SELECT and the
-    transformed geom; defaults to `*` which selects every column and then
-    the transformed geom is added alongside under the original column name
-    (the untransformed column is dropped).
-
-    Dialect notes:
-      * PostGIS: `CREATE OR REPLACE VIEW ...`; `ST_Transform` is native.
-      * SpatiaLite: no OR REPLACE, but `DROP VIEW IF EXISTS` + `CREATE VIEW`
-        works. SpatiaLite also benefits from a `VIEWS_GEOMETRY_COLUMNS`
-        registration so the view's geom is advertised; we do that when
-        dialect is sqlite.
+    Works for both PostGIS and SpatiaLite via column introspection (we
+    enumerate the source table's columns at migration time so we can emit
+    a clean SELECT that excludes the original geom and adds back the
+    transformed one under the same name).
     """
-    dialect = op.get_bind().dialect.name
-    transformed = f"ST_Transform({source_table}.{geom_col}, {target_srid}) AS {geom_col}"
-    # Select everything from the base table EXCEPT the original geom, then
-    # add the transformed geom back under the same name.
-    # Some dialects lack `SELECT * EXCEPT (...)`, so we wrap: select * then
-    # overlay by aliasing. Callers can pass an explicit column list via
-    # extra_columns when that matters.
+    bind = op.get_bind()
+    dialect = bind.dialect.name
+    inspector = sa.inspect(bind)
+    column_names = [c["name"] for c in inspector.get_columns(source_table)]
+    if geom_col not in column_names:
+        raise RuntimeError(
+            f"create_reproject_view: column {geom_col!r} not found on "
+            f"table {source_table!r}"
+        )
+    non_geom = [c for c in column_names if c != geom_col]
+    select_list = ", ".join(non_geom + [
+        f"ST_Transform({geom_col}, {target_srid}) AS {geom_col}"
+    ])
 
     if dialect == "postgresql":
         op.execute(f"DROP VIEW IF EXISTS {view_name}")
-        # In Postgres, duplicate column names aren't allowed in a SELECT —
-        # do it explicitly: select every base column except geom, plus the
-        # transformed geom.
-        op.execute(
-            f"""
-            CREATE VIEW {view_name} AS
-            SELECT
-                s.*, -- caller can override via extra_columns; geom is replaced below
-                {transformed}
-            FROM (SELECT * FROM {source_table}) s
-            """.strip()
-        )
-        # NOTE: duplicate geom column names are avoided by selecting base
-        # into a subquery aliased `s` and then emitting the transformed geom
-        # without `AS geom` on the inner `s.*`. If your schema needs strict
-        # control, pass explicit extra_columns.
+        op.execute(f"CREATE VIEW {view_name} AS SELECT {select_list} FROM {source_table}")
     elif dialect == "sqlite":
         op.execute(f"DROP VIEW IF EXISTS {view_name}")
-        op.execute(
-            f"""
-            CREATE VIEW {view_name} AS
-            SELECT {extra_columns} FROM {source_table}
-            """.strip()
-        )
+        op.execute(f"CREATE VIEW {view_name} AS SELECT {select_list} FROM {source_table}")
         # SpatiaLite needs the view's geometry column explicitly registered
-        # so it can participate in spatial operations. The RecoverGeometry
-        # pattern for views lives in views_geometry_columns.
+        # so it can participate in spatial operations.
         op.execute(
             f"""
             INSERT OR REPLACE INTO views_geometry_columns
