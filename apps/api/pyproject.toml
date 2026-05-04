@@ -13,6 +13,8 @@ dependencies = [
     "psycopg[binary]>=3.2.0",
     "bcrypt>=4.2.0",
     "pyjwt>=2.10.0",
+    "python-multipart>=0.0.20",
+    "openpyxl>=3.1.5",
     "mighty_core",
     "mighty_db",
     "mighty_models",
