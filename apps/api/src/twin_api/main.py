@@ -33,6 +33,7 @@ from .submission_routes import router as submission_router
 from .feed_routes import router as feed_router
 from .feature_routes import router as feature_router
 from .oauth_routes import router as oauth_router
+from .feature_import_routes import router as feature_import_router
 
 
 @asynccontextmanager
@@ -88,6 +89,7 @@ app.include_router(submission_router)
 app.include_router(feed_router)
 app.include_router(feature_router)
 app.include_router(oauth_router)
+app.include_router(feature_import_router)
 
 
 # All real now — dev_stubs router is empty (kept the import + include

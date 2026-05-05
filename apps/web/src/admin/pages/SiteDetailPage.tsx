@@ -40,6 +40,7 @@ import {
 import { apiFetch, useApiData } from '../hooks/useApi'
 import { useBreakpoint } from '../hooks/useBreakpoint'
 import LayerStyleEditor from '../components/LayerStyleEditor'
+import LayerImportModal from '../components/LayerImportModal'
 
 interface Layer {
   id: string
@@ -93,6 +94,7 @@ export default function SiteDetailPage() {
   const [editingName, setEditingName] = useState(false)
   const [nameDraft, setNameDraft] = useState('')
   const [stylingLayer, setStylingLayer] = useState<Layer | null>(null)
+  const [importingLayer, setImportingLayer] = useState<Layer | null>(null)
 
   const [storyMaps, setStoryMaps] = useState<{ id: string; name: string; is_published: boolean; slides?: unknown[] }[]>([])
 
@@ -580,6 +582,7 @@ export default function SiteDetailPage() {
                       onToggle={() => toggleLayerVisible(l)}
                       onDelete={() => deleteLayer(l)}
                       onStyle={() => setStylingLayer(l)}
+                      onImport={() => setImportingLayer(l)}
                       onMove={(dir) => moveLayer(l, dir, sorted)}
                     />
                   ))
@@ -666,6 +669,25 @@ export default function SiteDetailPage() {
           onClose={() => setStylingLayer(null)}
           onSaved={() => {
             setStylingLayer(null)
+            reload()
+          }}
+        />
+      )}
+
+      {importingLayer && (
+        <LayerImportModal
+          siteSlug={site.slug}
+          layer={importingLayer}
+          onClose={() => setImportingLayer(null)}
+          onDone={(counts) => {
+            const inserted = counts.inserted ?? 0
+            const skipped = counts.skipped ?? 0
+            setImportingLayer(null)
+            alert(
+              `Imported ${inserted} feature${inserted === 1 ? '' : 's'}` +
+                (skipped > 0 ? ` (skipped ${skipped} without geometry)` : '') +
+                '.',
+            )
             reload()
           }}
         />
@@ -787,6 +809,7 @@ function LayerRow({
   onToggle,
   onDelete,
   onStyle,
+  onImport,
   onMove,
 }: {
   layer: Layer
@@ -795,6 +818,7 @@ function LayerRow({
   onToggle: () => void
   onDelete: () => void
   onStyle: () => void
+  onImport: () => void
   onMove: (dir: 'up' | 'down') => void
 }) {
   const swatch = (layer.style as Record<string, unknown> | null)?.strokeColor as
@@ -859,6 +883,13 @@ function LayerRow({
           {layer.opacity < 1 && <span>{Math.round(layer.opacity * 100)}%</span>}
         </div>
       </div>
+      <button
+        onClick={onImport}
+        style={iconBtn}
+        title="Import features (GeoJSON / CSV)"
+      >
+        <Plus size={14} />
+      </button>
       <button
         onClick={onStyle}
         style={iconBtn}
