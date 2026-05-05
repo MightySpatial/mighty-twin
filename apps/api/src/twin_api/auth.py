@@ -184,6 +184,10 @@ class UserCreate(BaseModel):
     role: Literal["admin", "creator", "viewer"] = "viewer"
 
 
+class PasswordReset(BaseModel):
+    new_password: str
+
+
 # ── Router ──────────────────────────────────────────────────────────────
 
 
@@ -299,6 +303,27 @@ def update_user(
     db.commit()
     db.refresh(target)
     return UserOut.from_user(target)
+
+
+@router.post("/users/{user_id}/reset-password", status_code=204)
+def reset_password(
+    user_id: str, body: PasswordReset, _: AdminUser, db: DbSession
+) -> None:
+    """Admin-set password reset. Replaces the hash; the user must use the
+    new password on their next sign-in. There's no email sent — the
+    admin is expected to communicate the new password out-of-band (this
+    is the on-prem perpetual-licence flow, not a SaaS reset link)."""
+    if len(body.new_password) < 8:
+        raise HTTPException(
+            status_code=400, detail="Password must be at least 8 characters"
+        )
+    target = db.execute(
+        select(User).where(User.id == uuid.UUID(user_id))
+    ).scalar_one_or_none()
+    if target is None:
+        raise HTTPException(status_code=404, detail="User not found")
+    target.hashed_password = hash_password(body.new_password)
+    db.commit()
 
 
 @router.delete("/users/{user_id}", status_code=204)

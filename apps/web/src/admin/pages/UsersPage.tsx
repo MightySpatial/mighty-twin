@@ -16,7 +16,9 @@
 import { useEffect, useMemo, useState } from 'react'
 import {
   AlertCircle,
+  CheckCircle,
   Eye,
+  Key,
   Loader,
   Pencil,
   Plus,
@@ -28,6 +30,7 @@ import {
 } from 'lucide-react'
 import { apiFetch, useApiData } from '../hooks/useApi'
 import { useBreakpoint } from '../hooks/useBreakpoint'
+import { useToast } from '../../viewer/hooks/useToast'
 
 type Role = 'admin' | 'creator' | 'viewer'
 
@@ -60,6 +63,7 @@ function initials(name: string): string {
 
 export default function UsersPage() {
   const { isPhone } = useBreakpoint()
+  const { addToast } = useToast()
   const { data, loading, error, reload, setData } = useApiData('/api/auth/users', [])
   const users = (data as User[]) ?? []
   const [search, setSearch] = useState('')
@@ -68,6 +72,7 @@ export default function UsersPage() {
   const [editingName, setEditingName] = useState<string | null>(null)
   const [nameDraft, setNameDraft] = useState('')
   const [inviteOpen, setInviteOpen] = useState(false)
+  const [resetting, setResetting] = useState<User | null>(null)
 
   const filtered = useMemo(() => {
     return users.filter((u) => {
@@ -87,7 +92,7 @@ export default function UsersPage() {
       })) as User
       setData(users.map((u) => (u.id === id ? updated : u)))
     } catch (e) {
-      alert((e as Error).message)
+      addToast('error', (e as Error).message)
     } finally {
       setBusyId(null)
     }
@@ -100,7 +105,7 @@ export default function UsersPage() {
       await apiFetch(`/api/auth/users/${u.id}`, { method: 'DELETE' })
       setData(users.filter((x) => x.id !== u.id))
     } catch (e) {
-      alert((e as Error).message)
+      addToast('error', (e as Error).message)
     } finally {
       setBusyId(null)
     }
@@ -376,6 +381,17 @@ export default function UsersPage() {
                   title={u.is_active ? 'Active — click to deactivate' : 'Inactive — click to activate'}
                 />
 
+                {/* Reset password */}
+                <button
+                  onClick={() => setResetting(u)}
+                  disabled={busyId === u.id}
+                  style={iconBtn}
+                  title="Reset password"
+                  aria-label={`Reset password for ${u.name}`}
+                >
+                  <Key size={12} color="rgba(240,242,248,0.7)" />
+                </button>
+
                 {/* Delete */}
                 <button
                   onClick={() => deleteUser(u)}
@@ -409,6 +425,140 @@ export default function UsersPage() {
           }}
         />
       )}
+
+      {resetting && (
+        <ResetPasswordModal
+          user={resetting}
+          onClose={() => setResetting(null)}
+          onReset={() => {
+            addToast('success', `Password reset for ${resetting.name}.`)
+            setResetting(null)
+          }}
+        />
+      )}
+    </div>
+  )
+}
+
+function ResetPasswordModal({
+  user,
+  onClose,
+  onReset,
+}: {
+  user: User
+  onClose: () => void
+  onReset: () => void
+}) {
+  const [password, setPassword] = useState('')
+  const [confirm, setConfirm] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [err, setErr] = useState<string | null>(null)
+  const valid = password.length >= 8 && password === confirm
+
+  async function submit() {
+    if (!valid) return
+    setBusy(true)
+    setErr(null)
+    try {
+      await apiFetch(`/api/auth/users/${user.id}/reset-password`, {
+        method: 'POST',
+        body: JSON.stringify({ new_password: password }),
+      })
+      onReset()
+    } catch (e) {
+      setErr((e as Error).message)
+      setBusy(false)
+    }
+  }
+
+  return (
+    <div
+      onClick={onClose}
+      style={{
+        position: 'fixed',
+        inset: 0,
+        background: 'rgba(0,0,0,0.5)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 100,
+      }}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          width: 380,
+          maxWidth: 'calc(100vw - 32px)',
+          background: '#15151c',
+          border: '1px solid rgba(255,255,255,0.08)',
+          borderRadius: 12,
+          padding: 18,
+          color: '#f0f2f8',
+        }}
+      >
+        <h2 style={{ margin: '0 0 6px', fontSize: 16, fontWeight: 600 }}>
+          Reset password
+        </h2>
+        <p style={{ margin: '0 0 14px', fontSize: 12, color: 'rgba(240,242,248,0.55)' }}>
+          Set a new password for <strong>{user.name}</strong> ({user.email}). The user
+          can change it again from their own account once signed in.
+        </p>
+        <ModalField label="New password">
+          <input
+            autoFocus
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="Min 8 characters"
+            style={modalInput}
+          />
+        </ModalField>
+        <ModalField label="Confirm password">
+          <input
+            type="password"
+            value={confirm}
+            onChange={(e) => setConfirm(e.target.value)}
+            placeholder="Re-enter password"
+            style={modalInput}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && valid && !busy) submit()
+            }}
+          />
+        </ModalField>
+        {confirm && password !== confirm && (
+          <div style={{ fontSize: 11, color: '#fbbf24', marginBottom: 10 }}>
+            Passwords don't match.
+          </div>
+        )}
+        {err && (
+          <div
+            style={{
+              padding: 8,
+              background: 'rgba(251,113,133,0.06)',
+              border: '1px solid rgba(251,113,133,0.32)',
+              borderRadius: 7,
+              color: '#fca5a5',
+              fontSize: 11,
+              marginBottom: 12,
+            }}
+          >
+            {err}
+          </div>
+        )}
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+          <button onClick={onClose} disabled={busy} style={modalGhost}>
+            Cancel
+          </button>
+          <button
+            onClick={submit}
+            disabled={busy || !valid}
+            style={{ ...primaryBtn, opacity: busy || !valid ? 0.5 : 1 }}
+          >
+            {busy ? <Loader size={12} className="spin" /> : <CheckCircle size={12} />}
+            Reset
+          </button>
+        </div>
+      </div>
     </div>
   )
 }
