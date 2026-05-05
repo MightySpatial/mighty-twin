@@ -51,6 +51,7 @@ interface Layer {
   opacity: number
   order: number
   style?: Record<string, unknown> | null
+  data_source_id?: string | null
 }
 
 interface SnapshotEntry {
@@ -895,10 +896,29 @@ function LayerRow({
             color: 'rgba(240,242,248,0.4)',
             display: 'flex',
             gap: 8,
+            alignItems: 'center',
           }}
         >
           <span>{layer.type}</span>
           {layer.opacity < 1 && <span>{Math.round(layer.opacity * 100)}%</span>}
+          {layer.data_source_id && (
+            <Link
+              to={`/admin/data/${layer.data_source_id}`}
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                color: 'rgba(167,139,250,0.85)',
+                textDecoration: 'none',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 3,
+              }}
+              title="Open data source"
+              onMouseEnter={(e) => (e.currentTarget.style.textDecoration = 'underline')}
+              onMouseLeave={(e) => (e.currentTarget.style.textDecoration = 'none')}
+            >
+              data source ↗
+            </Link>
+          )}
         </div>
       </div>
       <button
