@@ -302,6 +302,17 @@ export default function SitesPage() {
           isPhone={isPhone}
           onCreate={() => navigate('/admin/sites/new')}
           onImport={() => importInputRef.current?.click()}
+          onLoadDemo={async () => {
+            try {
+              const result = (await apiFetch('/api/setup/load-demo', {
+                method: 'POST',
+                body: JSON.stringify({ force: false }),
+              })) as { site_slug: string }
+              navigate(`/admin/sites/${result.site_slug}`)
+            } catch (e) {
+              alert(`Couldn't load demo: ${(e as Error).message}`)
+            }
+          }}
         />
       )}
 
@@ -563,11 +574,14 @@ function FirstSiteHero({
   isPhone,
   onCreate,
   onImport,
+  onLoadDemo,
 }: {
   isPhone: boolean
   onCreate: () => void
   onImport: () => void
+  onLoadDemo: () => Promise<void>
 }) {
+  const [loadingDemo, setLoadingDemo] = useState(false)
   return (
     <div
       style={{
@@ -636,15 +650,19 @@ function FirstSiteHero({
           accent="#a78bfa"
         />
         <HeroOption
-          icon={<Layers size={18} />}
-          title="Try the Locaters demo"
-          subtitle="Real underground utility data — three streets of pipes."
-          action="See setup script"
-          onClick={() =>
-            alert(
-              "Run from the repo root:\n\n  uv run python bin/seed_locaters.py\n\nDemo sites land at /admin/sites with one layer per utility type.",
-            )
-          }
+          icon={loadingDemo ? <Loader size={18} className="spin" /> : <Layers size={18} />}
+          title="Load demo site"
+          subtitle="Sydney Harbour with points, a route, and a polygon."
+          action={loadingDemo ? 'Loading…' : 'Load demo'}
+          onClick={async () => {
+            if (loadingDemo) return
+            setLoadingDemo(true)
+            try {
+              await onLoadDemo()
+            } finally {
+              setLoadingDemo(false)
+            }
+          }}
           accent="#34d399"
         />
       </div>
