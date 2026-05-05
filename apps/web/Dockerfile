@@ -1,4 +1,4 @@
-FROM node:20-alpine AS build
+FROM node:22-alpine AS build
 
 # Use corepack to activate pnpm (avoids npm install OOM on constrained builders)
 RUN corepack enable && corepack prepare pnpm@9.15.0 --activate
