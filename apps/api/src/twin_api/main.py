@@ -29,6 +29,7 @@ from .public_routes import router as public_router
 from .analytics_routes import router as analytics_router
 from .library_routes import router as library_router
 from .engine_routes import router as engine_router
+from .submission_routes import router as submission_router
 
 
 @asynccontextmanager
@@ -80,6 +81,7 @@ app.include_router(public_router)
 app.include_router(analytics_router)
 app.include_router(library_router)
 app.include_router(engine_router)
+app.include_router(submission_router)
 
 
 # All real now — dev_stubs router is empty (kept the import + include

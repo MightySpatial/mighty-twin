@@ -23,6 +23,7 @@ from .layer import DataSource, Layer
 from .story_map import StoryMap
 from .snapshot import SketchLayer, Snapshot
 from .library import LIBRARY_MAX_DEPTH, LibraryFolder, LibraryItem
+from .submission import Submission
 
 __all__ = [
     "GUID",
@@ -40,4 +41,5 @@ __all__ = [
     "LibraryFolder",
     "LibraryItem",
     "LIBRARY_MAX_DEPTH",
+    "Submission",
 ]
