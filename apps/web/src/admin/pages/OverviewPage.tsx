@@ -152,19 +152,49 @@ export default function OverviewPage() {
       )}
 
       <section style={gridSection}>
-        <Stat label="Sites" value={data.counts.sites} sub={`${data.counts.public_sites} public`} />
-        <Stat label="Active users" value={data.counts.active_users} sub={`of ${data.counts.users} total`} />
-        <Stat label="Layers" value={data.counts.layers} />
-        <Stat label="Data sources" value={data.counts.data_sources} />
-        <Stat label="Story maps" value={data.counts.story_maps} />
-        <Stat label="Snaps" value={data.counts.snapshots} />
+        <Stat
+          label="Sites"
+          value={data.counts.sites}
+          sub={`${data.counts.public_sites} public`}
+          to="/admin/sites"
+        />
+        <Stat
+          label="Active users"
+          value={data.counts.active_users}
+          sub={`of ${data.counts.users} total`}
+          to="/settings#users"
+        />
+        <Stat label="Layers" value={data.counts.layers} to="/admin/sites" />
+        <Stat label="Data sources" value={data.counts.data_sources} to="/admin/data" />
+        <Stat label="Story maps" value={data.counts.story_maps} to="/admin/stories" />
+        <Stat label="Snaps" value={data.counts.snapshots} to="/admin/snapshots" />
       </section>
 
       <section style={gridSection}>
-        <Stat label="Snaps · last 24h" value={data.activity.snapshots_last_24h} accent="#34d399" />
-        <Stat label="Snaps · last 7d" value={data.activity.snapshots_last_7d} accent="#34d399" />
-        <Stat label="Users added · last 7d" value={data.activity.users_added_last_7d} accent="#a78bfa" />
-        <Stat label="Sites added · last 7d" value={data.activity.sites_added_last_7d} accent="#2dd4bf" />
+        <Stat
+          label="Snaps · last 24h"
+          value={data.activity.snapshots_last_24h}
+          accent="#34d399"
+          to="/admin/snapshots"
+        />
+        <Stat
+          label="Snaps · last 7d"
+          value={data.activity.snapshots_last_7d}
+          accent="#34d399"
+          to="/admin/snapshots"
+        />
+        <Stat
+          label="Users added · last 7d"
+          value={data.activity.users_added_last_7d}
+          accent="#a78bfa"
+          to="/settings#users"
+        />
+        <Stat
+          label="Sites added · last 7d"
+          value={data.activity.sites_added_last_7d}
+          accent="#2dd4bf"
+          to="/admin/sites"
+        />
       </section>
 
       {/* Submissions queue card — only renders when there's something to action. */}
@@ -246,7 +276,12 @@ export default function OverviewPage() {
             <ul style={listReset}>
               {data.recent_snapshots.map((s) => (
                 <li key={s.id} style={listItem}>
-                  <span style={{ flex: 1, color: '#f0f2f8' }}>{s.name}</span>
+                  <Link
+                    to="/admin/snapshots"
+                    style={{ flex: 1, color: '#f0f2f8', textDecoration: 'none' }}
+                  >
+                    {s.name}
+                  </Link>
                   {s.site_slug && (
                     <Link
                       to={`/admin/sites/${encodeURIComponent(s.site_slug)}`}
@@ -274,23 +309,31 @@ function Stat({
   value,
   sub,
   accent,
+  to,
 }: {
   label: string
   value: number
   sub?: string
   accent?: string
+  /** When set, the whole tile becomes a navigation link to this admin
+   *  route. Hover lifts the border + adds a tiny chevron. */
+  to?: string
 }) {
-  return (
-    <div
-      style={{
-        padding: 16,
-        background: 'rgba(255,255,255,0.03)',
-        border: '1px solid rgba(255,255,255,0.07)',
-        borderRadius: 10,
-      }}
-    >
-      <div style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'rgba(240,242,248,0.5)' }}>
-        {label}
+  const content = (
+    <>
+      <div
+        style={{
+          fontSize: 11,
+          textTransform: 'uppercase',
+          letterSpacing: '0.06em',
+          color: 'rgba(240,242,248,0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+        }}
+      >
+        <span>{label}</span>
+        {to && <span style={{ fontSize: 11, opacity: 0.4 }}>↗</span>}
       </div>
       <div
         style={{
@@ -304,7 +347,34 @@ function Stat({
         {value.toLocaleString()}
       </div>
       {sub && <div style={{ marginTop: 4, fontSize: 12, color: 'rgba(240,242,248,0.5)' }}>{sub}</div>}
-    </div>
+    </>
+  )
+  const baseStyle: React.CSSProperties = {
+    padding: 16,
+    background: 'rgba(255,255,255,0.03)',
+    border: '1px solid rgba(255,255,255,0.07)',
+    borderRadius: 10,
+    color: '#f0f2f8',
+    textDecoration: 'none',
+    transition: 'border-color 120ms, background 120ms',
+  }
+  if (!to) return <div style={baseStyle}>{content}</div>
+  return (
+    <Link
+      to={to}
+      className="overview-stat-link"
+      style={{ ...baseStyle, display: 'block', cursor: 'pointer' }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.borderColor = 'rgba(36,83,255,0.4)'
+        e.currentTarget.style.background = 'rgba(36,83,255,0.06)'
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.borderColor = 'rgba(255,255,255,0.07)'
+        e.currentTarget.style.background = 'rgba(255,255,255,0.03)'
+      }}
+    >
+      {content}
+    </Link>
   )
 }
 
