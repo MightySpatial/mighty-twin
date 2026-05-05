@@ -18,7 +18,9 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import {
   AlertCircle,
+  ChevronDown,
   ChevronLeft,
+  ChevronUp,
   ExternalLink,
   Eye,
   EyeOff,
@@ -152,6 +154,31 @@ export default function SiteDetailPage() {
         method: 'PATCH',
         body: JSON.stringify({ visible: !layer.visible }),
       })
+      reload()
+    } catch (e) {
+      alert(`Failed: ${(e as Error).message}`)
+    }
+  }
+
+  async function moveLayer(layer: Layer, dir: 'up' | 'down', sorted: Layer[]) {
+    if (!slug) return
+    const idx = sorted.findIndex((l) => l.id === layer.id)
+    const target = dir === 'up' ? idx - 1 : idx + 1
+    if (target < 0 || target >= sorted.length) return
+    const a = sorted[idx]
+    const b = sorted[target]
+    // Swap their order values; persist both PATCHes in parallel.
+    try {
+      await Promise.all([
+        apiFetch(`/api/spatial/sites/${slug}/layers/${a.id}`, {
+          method: 'PATCH',
+          body: JSON.stringify({ order: b.order }),
+        }),
+        apiFetch(`/api/spatial/sites/${slug}/layers/${b.id}`, {
+          method: 'PATCH',
+          body: JSON.stringify({ order: a.order }),
+        }),
+      ])
       reload()
     } catch (e) {
       alert(`Failed: ${(e as Error).message}`)
@@ -496,16 +523,20 @@ export default function SiteDetailPage() {
               />
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                {[...layers]
-                  .sort((a, b) => a.order - b.order)
-                  .map((l) => (
+                {(() => {
+                  const sorted = [...layers].sort((a, b) => a.order - b.order)
+                  return sorted.map((l, idx) => (
                     <LayerRow
                       key={l.id}
                       layer={l}
+                      canUp={idx > 0}
+                      canDown={idx < sorted.length - 1}
                       onToggle={() => toggleLayerVisible(l)}
                       onDelete={() => deleteLayer(l)}
+                      onMove={(dir) => moveLayer(l, dir, sorted)}
                     />
-                  ))}
+                  ))
+                })()}
               </div>
             )}
           </Card>
@@ -691,12 +722,18 @@ function ToggleSwitch({
 
 function LayerRow({
   layer,
+  canUp,
+  canDown,
   onToggle,
   onDelete,
+  onMove,
 }: {
   layer: Layer
+  canUp: boolean
+  canDown: boolean
   onToggle: () => void
   onDelete: () => void
+  onMove: (dir: 'up' | 'down') => void
 }) {
   return (
     <div
@@ -711,6 +748,38 @@ function LayerRow({
         opacity: layer.visible ? 1 : 0.55,
       }}
     >
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <button
+          onClick={() => onMove('up')}
+          disabled={!canUp}
+          style={{
+            padding: 2,
+            background: 'transparent',
+            border: 'none',
+            color: canUp ? 'rgba(240,242,248,0.6)' : 'rgba(240,242,248,0.2)',
+            cursor: canUp ? 'pointer' : 'not-allowed',
+            lineHeight: 0,
+          }}
+          title="Move up"
+        >
+          <ChevronUp size={12} />
+        </button>
+        <button
+          onClick={() => onMove('down')}
+          disabled={!canDown}
+          style={{
+            padding: 2,
+            background: 'transparent',
+            border: 'none',
+            color: canDown ? 'rgba(240,242,248,0.6)' : 'rgba(240,242,248,0.2)',
+            cursor: canDown ? 'pointer' : 'not-allowed',
+            lineHeight: 0,
+          }}
+          title="Move down"
+        >
+          <ChevronDown size={12} />
+        </button>
+      </div>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: 13, fontWeight: 500 }}>{layer.name}</div>
         <div
