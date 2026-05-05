@@ -227,9 +227,17 @@ export default function FeedsPage() {
             {feeds.length === 0 ? 'No feeds yet' : 'No matches'}
           </div>
           {feeds.length === 0 && (
-            <div style={{ fontSize: 12, marginTop: 4 }}>
-              Create one to back a layer with a recurring external source.
-            </div>
+            <>
+              <div style={{ fontSize: 12, marginTop: 4 }}>
+                Create one to back a layer with a recurring external source.
+              </div>
+              <button
+                onClick={() => setCreating(true)}
+                style={{ ...primaryBtn, marginTop: 14 }}
+              >
+                <Plus size={14} /> Add your first feed
+              </button>
+            </>
           )}
         </div>
       )}

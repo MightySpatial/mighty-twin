@@ -195,6 +195,12 @@ export default function StoryMapsPage() {
           <div style={{ fontSize: 12, marginTop: 4 }}>
             Stories pair narrative with camera flights through a site.
           </div>
+          <button
+            onClick={() => setShowNew(true)}
+            style={{ ...primaryBtn, marginTop: 14 }}
+          >
+            <Plus size={14} /> Write your first story
+          </button>
         </div>
       )}
 

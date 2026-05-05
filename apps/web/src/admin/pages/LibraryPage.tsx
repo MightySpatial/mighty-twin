@@ -424,8 +424,30 @@ export default function LibraryPage() {
           <div style={{ fontSize: 12, marginTop: 4 }}>
             {search
               ? 'Try a different search term.'
-              : 'Use New folder or New item to add content.'}
+              : 'Photos, links, files — keep them with the site they belong to.'}
           </div>
+          {!search && (
+            <div
+              style={{
+                marginTop: 14,
+                display: 'inline-flex',
+                gap: 8,
+              }}
+            >
+              <button
+                onClick={() => setShowNewFolder(true)}
+                style={ghostBtn}
+              >
+                <FolderOpen size={14} /> New folder
+              </button>
+              <button
+                onClick={() => setShowNewItem(true)}
+                style={primaryBtn}
+              >
+                <Plus size={14} /> Add an item
+              </button>
+            </div>
+          )}
         </div>
       )}
 

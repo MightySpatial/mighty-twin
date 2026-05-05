@@ -277,6 +277,27 @@ export default function MySnapshotsPage() {
               'Try a different filter or search term.'
             )}
           </div>
+          {snaps.length === 0 && (
+            <button
+              onClick={() => navigate('/viewer')}
+              style={{
+                marginTop: 14,
+                padding: '8px 14px',
+                background: '#2453ff',
+                border: 'none',
+                borderRadius: 8,
+                color: '#fff',
+                fontSize: 13,
+                fontWeight: 500,
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+              }}
+            >
+              <Camera size={14} /> Open the viewer
+            </button>
+          )}
         </div>
       )}
 
