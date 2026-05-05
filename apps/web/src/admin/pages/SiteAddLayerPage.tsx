@@ -23,6 +23,7 @@ import {
   Plus,
 } from 'lucide-react'
 import { apiFetch } from '../hooks/useApi'
+import { useBreakpoint } from '../hooks/useBreakpoint'
 
 interface DataSource {
   id: string
@@ -44,6 +45,7 @@ type Mode = 'existing' | 'fromUrl'
 
 export default function SiteAddLayerPage() {
   const navigate = useNavigate()
+  const { isPhone } = useBreakpoint()
   const { slug } = useParams<{ slug: string }>()
   const [mode, setMode] = useState<Mode>('existing')
   const [dataSources, setDataSources] = useState<DataSource[]>([])
@@ -118,7 +120,14 @@ export default function SiteAddLayerPage() {
   }
 
   return (
-    <div style={{ padding: 24, color: '#f0f2f8', maxWidth: 720 }}>
+    <div
+      style={{
+        padding: isPhone ? 14 : 24,
+        paddingBottom: isPhone ? 80 : 24,
+        color: '#f0f2f8',
+        maxWidth: 720,
+      }}
+    >
       <div
         style={{
           display: 'flex',
@@ -191,7 +200,14 @@ export default function SiteAddLayerPage() {
       )}
 
       {/* Mode selector */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 14 }}>
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: isPhone ? '1fr' : '1fr 1fr',
+          gap: 8,
+          marginBottom: 14,
+        }}
+      >
         <ModeCard
           active={mode === 'existing'}
           icon={<Database size={18} />}

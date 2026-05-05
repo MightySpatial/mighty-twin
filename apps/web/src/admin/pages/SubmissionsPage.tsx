@@ -26,6 +26,7 @@ import {
   XCircle,
 } from 'lucide-react'
 import { apiFetch } from '../hooks/useApi'
+import { useBreakpoint } from '../hooks/useBreakpoint'
 
 type Status = 'pending' | 'approved' | 'rejected' | 'promoted'
 
@@ -61,6 +62,7 @@ const STATUS_META: Record<Status, { label: string; color: string; icon: typeof C
 }
 
 export default function SubmissionsPage() {
+  const { isPhone } = useBreakpoint()
   const [status, setStatus] = useState<Status>('pending')
   const [items, setItems] = useState<Submission[]>([])
   const [loading, setLoading] = useState(true)
@@ -117,7 +119,13 @@ export default function SubmissionsPage() {
   }, [status])
 
   return (
-    <div style={{ padding: 24, color: '#f0f2f8' }}>
+    <div
+      style={{
+        padding: isPhone ? 14 : 24,
+        paddingBottom: isPhone ? 80 : 24,
+        color: '#f0f2f8',
+      }}
+    >
       <header style={{ marginBottom: 18 }}>
         <h1 style={{ margin: 0, fontSize: 24, fontWeight: 600 }}>Submissions</h1>
         <p

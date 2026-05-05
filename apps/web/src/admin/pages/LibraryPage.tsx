@@ -32,6 +32,7 @@ import {
   ArrowLeft,
 } from 'lucide-react'
 import { apiFetch } from '../hooks/useApi'
+import { useBreakpoint } from '../hooks/useBreakpoint'
 
 interface Folder {
   id: string
@@ -80,6 +81,7 @@ function fmtBytes(b: number | null): string {
 }
 
 export default function LibraryPage() {
+  const { isPhone } = useBreakpoint()
   const [tree, setTree] = useState<Folder[]>([])
   const [folderId, setFolderId] = useState<string | null>(null)
   const [items, setItems] = useState<Item[]>([])
@@ -219,7 +221,14 @@ export default function LibraryPage() {
   }
 
   return (
-    <div style={{ padding: 24, color: '#f0f2f8', position: 'relative' }}>
+    <div
+      style={{
+        padding: isPhone ? 14 : 24,
+        paddingBottom: isPhone ? 80 : 24,
+        color: '#f0f2f8',
+        position: 'relative',
+      }}
+    >
       {/* Header */}
       <header
         style={{
@@ -428,7 +437,9 @@ export default function LibraryPage() {
               <div
                 style={{
                   display: view === 'grid' ? 'grid' : 'flex',
-                  gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))',
+                  gridTemplateColumns: isPhone
+                    ? 'repeat(2, 1fr)'
+                    : 'repeat(auto-fill, minmax(180px, 1fr))',
                   flexDirection: view === 'grid' ? undefined : 'column',
                   gap: view === 'grid' ? 12 : 6,
                 }}
@@ -459,7 +470,9 @@ export default function LibraryPage() {
               <div
                 style={{
                   display: view === 'grid' ? 'grid' : 'flex',
-                  gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))',
+                  gridTemplateColumns: isPhone
+                    ? 'repeat(2, 1fr)'
+                    : 'repeat(auto-fill, minmax(180px, 1fr))',
                   flexDirection: view === 'grid' ? undefined : 'column',
                   gap: view === 'grid' ? 12 : 6,
                 }}

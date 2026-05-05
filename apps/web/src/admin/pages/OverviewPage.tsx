@@ -8,6 +8,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { apiFetch } from '../hooks/useApi'
+import { useBreakpoint } from '../hooks/useBreakpoint'
 
 interface Overview {
   counts: {
@@ -40,8 +41,28 @@ interface Overview {
 }
 
 export default function OverviewPage() {
+  const { isPhone } = useBreakpoint()
   const [data, setData] = useState<Overview | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const pageStyle: React.CSSProperties = {
+    padding: isPhone ? 14 : 24,
+    paddingBottom: isPhone ? 80 : 24,
+    color: '#f0f2f8',
+  }
+  const gridSection: React.CSSProperties = {
+    display: 'grid',
+    gridTemplateColumns: isPhone
+      ? 'repeat(2, 1fr)'
+      : 'repeat(auto-fill, minmax(180px, 1fr))',
+    gap: 12,
+    marginBottom: 24,
+  }
+  const twoCol: React.CSSProperties = {
+    display: 'grid',
+    gridTemplateColumns: isPhone ? '1fr' : 'repeat(auto-fit, minmax(280px, 1fr))',
+    gap: 16,
+    marginBottom: 24,
+  }
 
   useEffect(() => {
     let cancelled = false
@@ -252,19 +273,6 @@ function Empty({ children }: { children: React.ReactNode }) {
   )
 }
 
-const pageStyle: React.CSSProperties = { padding: 24, color: '#f0f2f8' }
-const gridSection: React.CSSProperties = {
-  display: 'grid',
-  gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))',
-  gap: 12,
-  marginBottom: 24,
-}
-const twoCol: React.CSSProperties = {
-  display: 'grid',
-  gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-  gap: 16,
-  marginBottom: 24,
-}
 const listReset: React.CSSProperties = { listStyle: 'none', padding: 0, margin: 0 }
 const listItem: React.CSSProperties = {
   display: 'flex',

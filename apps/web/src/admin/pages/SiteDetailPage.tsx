@@ -34,6 +34,7 @@ import {
   X,
 } from 'lucide-react'
 import { apiFetch, useApiData } from '../hooks/useApi'
+import { useBreakpoint } from '../hooks/useBreakpoint'
 
 interface Layer {
   id: string
@@ -73,6 +74,7 @@ interface SiteDetail {
 export default function SiteDetailPage() {
   const { slug } = useParams<{ slug: string }>()
   const navigate = useNavigate()
+  const { isPhone } = useBreakpoint()
   const { data, loading, error, reload, setData } = useApiData(
     slug ? `/api/spatial/sites/${slug}` : null,
     null,
@@ -204,14 +206,15 @@ export default function SiteDetailPage() {
   const camera = cfg.default_camera ?? { longitude: 0, latitude: 0, height: 1000 }
 
   return (
-    <div style={{ padding: 24, color: '#f0f2f8' }}>
+    <div style={{ padding: isPhone ? 14 : 24, color: '#f0f2f8' }}>
       {/* Top bar */}
       <div
         style={{
           display: 'flex',
           alignItems: 'center',
-          gap: 12,
+          gap: 8,
           marginBottom: 14,
+          flexWrap: 'wrap',
         }}
       >
         <button onClick={() => navigate('/admin/sites')} style={ghostBtn}>
@@ -224,10 +227,10 @@ export default function SiteDetailPage() {
           rel="noreferrer"
           style={ghostBtn}
         >
-          <ExternalLink size={14} /> Open in viewer
+          <ExternalLink size={14} /> {isPhone ? 'Viewer' : 'Open in viewer'}
         </a>
         <button onClick={deleteSite} style={dangerBtn}>
-          <Trash2 size={14} /> Delete site
+          <Trash2 size={14} /> {isPhone ? '' : 'Delete site'}
         </button>
       </div>
 
@@ -236,12 +239,13 @@ export default function SiteDetailPage() {
         style={{
           display: 'flex',
           alignItems: 'flex-start',
-          gap: 18,
+          gap: isPhone ? 12 : 18,
           marginBottom: 18,
-          padding: 18,
+          padding: isPhone ? 14 : 18,
           background: 'rgba(255,255,255,0.03)',
           border: '1px solid rgba(255,255,255,0.07)',
           borderRadius: 12,
+          flexWrap: 'wrap',
         }}
       >
         <div
@@ -362,7 +366,7 @@ export default function SiteDetailPage() {
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: 'minmax(0, 2fr) minmax(0, 3fr)',
+          gridTemplateColumns: isPhone ? '1fr' : 'minmax(0, 2fr) minmax(0, 3fr)',
           gap: 16,
         }}
       >

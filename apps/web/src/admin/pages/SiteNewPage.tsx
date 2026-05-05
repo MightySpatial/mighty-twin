@@ -19,6 +19,7 @@ import {
   Plus,
 } from 'lucide-react'
 import { apiFetch } from '../hooks/useApi'
+import { useBreakpoint } from '../hooks/useBreakpoint'
 
 function slugify(s: string): string {
   return s
@@ -43,6 +44,7 @@ const COMMON_SRIDS = [
 
 export default function SiteNewPage() {
   const navigate = useNavigate()
+  const { isPhone } = useBreakpoint()
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -96,7 +98,14 @@ export default function SiteNewPage() {
   }
 
   return (
-    <div style={{ padding: 24, color: '#f0f2f8', maxWidth: 720 }}>
+    <div
+      style={{
+        padding: isPhone ? 14 : 24,
+        paddingBottom: isPhone ? 80 : 24,
+        color: '#f0f2f8',
+        maxWidth: 720,
+      }}
+    >
       <div
         style={{
           display: 'flex',
@@ -290,7 +299,13 @@ export default function SiteNewPage() {
 
       {/* Section: default camera */}
       <Card title="Default camera">
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: isPhone ? '1fr' : '1fr 1fr 1fr',
+            gap: 10,
+          }}
+        >
           <Field label="Longitude">
             <input
               type="number"

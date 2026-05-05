@@ -27,6 +27,7 @@ import {
   Trash2,
 } from 'lucide-react'
 import { apiFetch, useApiData } from '../hooks/useApi'
+import { useBreakpoint } from '../hooks/useBreakpoint'
 
 interface Site {
   id: string
@@ -40,6 +41,7 @@ interface Site {
 
 export default function SitesPage() {
   const navigate = useNavigate()
+  const { isPhone } = useBreakpoint()
   const { data, loading, error, reload } = useApiData('/api/spatial/sites', [])
   const sites = (data as Site[]) ?? []
 
@@ -78,7 +80,7 @@ export default function SitesPage() {
   const publicCount = sites.filter((s) => s.is_public_pre_login).length
 
   return (
-    <div style={{ padding: 24, color: '#f0f2f8' }}>
+    <div style={{ padding: isPhone ? 14 : 24, color: '#f0f2f8', paddingBottom: isPhone ? 80 : 24 }}>
       <header
         style={{
           display: 'flex',
@@ -193,7 +195,9 @@ export default function SitesPage() {
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+            gridTemplateColumns: isPhone
+              ? '1fr'
+              : 'repeat(auto-fill, minmax(280px, 1fr))',
             gap: 12,
           }}
         >
