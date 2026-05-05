@@ -19,7 +19,7 @@ from typing import Any
 
 from fastapi import APIRouter, File, Form, HTTPException, Request, Response, UploadFile, status
 from pydantic import BaseModel, Field
-from sqlalchemy import func, select
+from sqlalchemy import func, select, text
 
 from mighty_models import DataSource, Layer, Site, Snapshot, StoryMap, User
 
@@ -462,7 +462,22 @@ def list_layers(slug: str, _: CurrentUser, db: DbSession) -> list[dict[str, Any]
         .scalars()
         .all()
     )
-    return [_serialize_layer(r) for r in rows]
+    # Feature counts per layer — single grouped query to avoid an N+1.
+    counts = dict(
+        db.execute(
+            text(
+                "SELECT layer_id, COUNT(*) FROM features "
+                "WHERE site_id = :sid GROUP BY layer_id"
+            ),
+            {"sid": str(site.id)},
+        ).all()
+    )
+    out = []
+    for r in rows:
+        s = _serialize_layer(r)
+        s["feature_count"] = int(counts.get(r.id, 0))
+        out.append(s)
+    return out
 
 
 @router.post("/sites/{slug}/layers", status_code=201)

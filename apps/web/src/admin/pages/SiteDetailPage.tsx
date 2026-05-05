@@ -52,6 +52,7 @@ interface Layer {
   order: number
   style?: Record<string, unknown> | null
   data_source_id?: string | null
+  feature_count?: number
 }
 
 interface SnapshotEntry {
@@ -989,6 +990,12 @@ function LayerRow({
           }}
         >
           <span>{layer.type}</span>
+          {typeof layer.feature_count === 'number' && (
+            <span title="Feature count">
+              {layer.feature_count.toLocaleString()} feature
+              {layer.feature_count === 1 ? '' : 's'}
+            </span>
+          )}
           {layer.opacity < 1 && <span>{Math.round(layer.opacity * 100)}%</span>}
           {layer.data_source_id && (
             <Link
