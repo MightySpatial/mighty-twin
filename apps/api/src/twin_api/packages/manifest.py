@@ -59,6 +59,26 @@ class LayerManifest(BaseModel):
     style: dict[str, Any] = Field(default_factory=dict)
     metadata: dict[str, Any] = Field(default_factory=dict)
     feature_count: int = 0
+    feed_id: str | None = None
+    materialisation: str = "materialised"
+
+
+class FeedManifest(BaseModel):
+    """Minimal feed envelope so re-importing a site preserves its
+    external bindings. Auth + secret values are *not* included; the
+    importing instance must rebind credentials by environment."""
+
+    id: str
+    name: str
+    description: str | None = None
+    kind: str
+    url: str | None = None
+    refresh: str = "on_demand"
+    schedule_cron: str | None = None
+    source_srid: int = 4326
+    geometry_hint: dict[str, Any] = Field(default_factory=lambda: {"kind": "native"})
+    config: dict[str, Any] = Field(default_factory=dict)
+    enabled: bool = True
 
 
 class DataSourceManifest(BaseModel):
@@ -112,6 +132,7 @@ class PackageCounts(BaseModel):
     story_maps: int = 0
     library_folders: int = 0
     library_items: int = 0
+    feeds: int = 0
 
 
 class PackageManifest(BaseModel):
@@ -130,6 +151,7 @@ class PackageManifest(BaseModel):
     data_sources: list[DataSourceManifest] = Field(default_factory=list)
     story_maps: list[StoryMapManifest] = Field(default_factory=list)
     library: LibraryManifest = Field(default_factory=LibraryManifest)
+    feeds: list[FeedManifest] = Field(default_factory=list)
 
     #: Path inside the archive of the NDJSON feature stream. Always
     #: WGS84 — the importer ST_Transforms back to the target site's

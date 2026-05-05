@@ -28,6 +28,7 @@ from sqlalchemy.orm import Session
 
 from mighty_models import (
     DataSource,
+    Feed,
     Layer,
     LibraryFolder,
     LibraryItem,
@@ -100,6 +101,7 @@ def import_site_package(
         "story_maps": 0,
         "library_folders": 0,
         "library_items": 0,
+        "feeds": 0,
     }
 
     # ── Site ────────────────────────────────────────────────────────
@@ -122,6 +124,30 @@ def import_site_package(
     db.add(site)
     db.flush()  # so site.id is available for FKs
 
+    # ── Feeds (referenced by layers) ────────────────────────────────
+    # Imported feeds have `auth` cleared — secrets don't travel through
+    # packages. The importer must rebind credentials by env var on the
+    # target instance.
+    feed_id_map: dict[str, uuid.UUID] = {}
+    for f_m in manifest.feeds:
+        new_feed = Feed(
+            id=uuid.uuid4(),
+            name=f_m.name,
+            description=f_m.description,
+            kind=f_m.kind,
+            url=f_m.url,
+            auth=None,
+            refresh=f_m.refresh,
+            schedule_cron=f_m.schedule_cron,
+            source_srid=f_m.source_srid,
+            geometry_hint=f_m.geometry_hint or {"kind": "native"},
+            config=f_m.config or {},
+            enabled=f_m.enabled,
+        )
+        db.add(new_feed)
+        feed_id_map[f_m.id] = new_feed.id
+        counts["feeds"] += 1
+
     # ── Data sources (referenced by layers) ─────────────────────────
     ds_id_map: dict[str, uuid.UUID] = {}  # old id → new id
     for ds_m in manifest.data_sources:
@@ -142,10 +168,13 @@ def import_site_package(
     layer_id_map: dict[str, uuid.UUID] = {}
     for l_m in manifest.layers:
         ds_id = ds_id_map.get(l_m.data_source_id) if l_m.data_source_id else None
+        feed_id = feed_id_map.get(l_m.feed_id) if l_m.feed_id else None
         new_layer = Layer(
             id=uuid.uuid4(),
             site_id=site.id,
             data_source_id=ds_id,
+            feed_id=feed_id,
+            materialisation=l_m.materialisation or "materialised",
             name=l_m.name,
             type=l_m.type,
             visible=1 if l_m.visible else 0,

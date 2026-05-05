@@ -93,6 +93,22 @@ class Layer(Base):
         JSONType, nullable=False, default=dict
     )
 
+    #: Optional pointer to an external Feed. When set, the layer's data
+    #: comes from the feed adapter rather than (or in addition to) the
+    #: data_source. ``materialisation`` decides whether the adapter
+    #: writes into ``features`` or whether the viewer proxies through.
+    feed_id: Mapped[uuid.UUID | None] = mapped_column(
+        GUID(),
+        ForeignKey("feeds.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+
+    #: 'proxy' | 'materialised'. Only meaningful when feed_id is set.
+    #: Defaults to 'materialised' so refresh semantics are explicit.
+    materialisation: Mapped[str] = mapped_column(
+        String(32), nullable=False, default="materialised"
+    )
+
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc),

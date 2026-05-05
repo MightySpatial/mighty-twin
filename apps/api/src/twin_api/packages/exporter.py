@@ -31,6 +31,7 @@ from sqlalchemy.orm import Session
 
 from mighty_models import (
     DataSource,
+    Feed,
     Layer,
     LibraryFolder,
     LibraryItem,
@@ -42,6 +43,7 @@ from mighty_models import (
 from .manifest import (
     DataSourceManifest,
     ExportedBy,
+    FeedManifest,
     LayerManifest,
     LibraryFolderManifest,
     LibraryItemManifest,
@@ -97,6 +99,12 @@ def export_site_package(
         if data_source_ids
         else []
     )
+    feed_ids = {layer.feed_id for layer in layers if layer.feed_id}
+    feeds = (
+        db.execute(select(Feed).where(Feed.id.in_(feed_ids))).scalars().all()
+        if feed_ids
+        else []
+    )
     story_maps = (
         db.execute(select(StoryMap).where(StoryMap.site_id == site.id)).scalars().all()
     )
@@ -128,6 +136,7 @@ def export_site_package(
         story_maps=len(story_maps),
         library_folders=len(library_folders),
         library_items=len(library_items),
+        feeds=len(feeds),
     )
 
     # ── Manifest entries ────────────────────────────────────────────
@@ -144,8 +153,27 @@ def export_site_package(
             style=layer.style or {},
             metadata=layer.layer_metadata or {},
             feature_count=int(layer_feature_counts.get(layer.id, 0)),
+            feed_id=str(layer.feed_id) if layer.feed_id else None,
+            materialisation=layer.materialisation or "materialised",
         )
         for layer in layers
+    ]
+
+    feed_manifests = [
+        FeedManifest(
+            id=str(f.id),
+            name=f.name,
+            description=f.description,
+            kind=f.kind,
+            url=f.url,
+            refresh=f.refresh,
+            schedule_cron=f.schedule_cron,
+            source_srid=f.source_srid,
+            geometry_hint=f.geometry_hint or {"kind": "native"},
+            config=f.config or {},
+            enabled=bool(f.enabled),
+        )
+        for f in feeds
     ]
 
     ds_manifests: list[DataSourceManifest] = []
@@ -228,6 +256,7 @@ def export_site_package(
         data_sources=ds_manifests,
         story_maps=sm_manifests,
         library=lib_manifest,
+        feeds=feed_manifests,
         features_path="features.ndjson" if include_features else None,
         notes=notes,
     )
