@@ -28,6 +28,7 @@ import {
 } from 'lucide-react'
 import { apiFetch } from '../hooks/useApi'
 import { useBreakpoint } from '../hooks/useBreakpoint'
+import { useToast } from '../../viewer/hooks/useToast'
 
 interface SlideCamera {
   longitude: number
@@ -427,6 +428,7 @@ function StoryMapEditor({
   onDeleted: (id: string) => void
 }) {
   const { isPhone } = useBreakpoint()
+  const { addToast } = useToast()
   const [draft, setDraft] = useState<StoryMap>(story)
   const [activeIdx, setActiveIdx] = useState<number>(story.slides.length > 0 ? 0 : -1)
   const [busy, setBusy] = useState(false)
@@ -457,8 +459,9 @@ function StoryMapEditor({
     if (!siteSlug || activeIdx < 0) return
     const raw = localStorage.getItem(`mighty:viewer-cam:${siteSlug}`)
     if (!raw) {
-      alert(
-        `No camera captured yet for "${siteSlug}". Open the viewer in another tab and move the camera, then try again.`,
+      addToast(
+        'warning',
+        `No camera captured yet for "${siteSlug}". Open the viewer in another tab, move the camera, and try again.`,
       )
       return
     }
@@ -492,7 +495,10 @@ function StoryMapEditor({
         },
       })
     } catch {
-      alert('Captured camera is corrupted — try moving the viewer again.')
+      addToast(
+        'error',
+        'Captured camera is corrupted — try moving the viewer again.',
+      )
     }
   }
 
@@ -529,7 +535,7 @@ function StoryMapEditor({
       await apiFetch(`/api/story-maps/${story.id}`, { method: 'DELETE' })
       onDeleted(story.id)
     } catch (e) {
-      alert(`Delete failed: ${(e as Error).message}`)
+      addToast('error', `Delete failed: ${(e as Error).message}`)
     }
   }
 

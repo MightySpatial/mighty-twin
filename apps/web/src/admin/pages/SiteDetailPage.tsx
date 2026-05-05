@@ -39,6 +39,7 @@ import {
 } from 'lucide-react'
 import { apiFetch, useApiData } from '../hooks/useApi'
 import { useBreakpoint } from '../hooks/useBreakpoint'
+import { useToast } from '../../viewer/hooks/useToast'
 import LayerStyleEditor from '../components/LayerStyleEditor'
 import LayerImportModal from '../components/LayerImportModal'
 
@@ -82,6 +83,7 @@ export default function SiteDetailPage() {
   const { slug } = useParams<{ slug: string }>()
   const navigate = useNavigate()
   const { isPhone } = useBreakpoint()
+  const { addToast } = useToast()
   const { data, loading, error, reload, setData } = useApiData(
     slug ? `/api/spatial/sites/${slug}` : null,
     null,
@@ -125,7 +127,7 @@ export default function SiteDetailPage() {
       })) as SiteDetail
       setData(updated)
     } catch (e) {
-      alert(`Save failed: ${(e as Error).message}`)
+      addToast('error', `Save failed: ${(e as Error).message}`)
     } finally {
       setSavingField(null)
     }
@@ -142,7 +144,7 @@ export default function SiteDetailPage() {
       await apiFetch(`/api/spatial/sites/${site.slug}`, { method: 'DELETE' })
       navigate('/admin/sites')
     } catch (e) {
-      alert(`Delete failed: ${(e as Error).message}`)
+      addToast('error', `Delete failed: ${(e as Error).message}`)
     }
   }
 
@@ -171,8 +173,9 @@ export default function SiteDetailPage() {
       a.click()
       document.body.removeChild(a)
       URL.revokeObjectURL(url)
+      addToast('success', `Exported ${site.slug}.mtsite`)
     } catch (e) {
-      alert(`Export failed: ${(e as Error).message}`)
+      addToast('error', `Export failed: ${(e as Error).message}`)
     } finally {
       setExporting(false)
     }
@@ -195,7 +198,7 @@ export default function SiteDetailPage() {
       })
       reload()
     } catch (e) {
-      alert(`Failed: ${(e as Error).message}`)
+      addToast('error', `Layer toggle failed: ${(e as Error).message}`)
     }
   }
 
@@ -220,7 +223,7 @@ export default function SiteDetailPage() {
       ])
       reload()
     } catch (e) {
-      alert(`Failed: ${(e as Error).message}`)
+      addToast('error', `Reorder failed: ${(e as Error).message}`)
     }
   }
 
@@ -233,7 +236,7 @@ export default function SiteDetailPage() {
       })
       reload()
     } catch (e) {
-      alert(`Failed: ${(e as Error).message}`)
+      addToast('error', `Layer delete failed: ${(e as Error).message}`)
     }
   }
 
@@ -245,7 +248,7 @@ export default function SiteDetailPage() {
       })
       setSnapshots((prev) => prev.filter((x) => x.id !== s.id))
     } catch (e) {
-      alert((e as Error).message)
+      addToast('error', (e as Error).message)
     }
   }
 
@@ -683,10 +686,10 @@ export default function SiteDetailPage() {
             const inserted = counts.inserted ?? 0
             const skipped = counts.skipped ?? 0
             setImportingLayer(null)
-            alert(
+            addToast(
+              skipped > 0 ? 'warning' : 'success',
               `Imported ${inserted} feature${inserted === 1 ? '' : 's'}` +
-                (skipped > 0 ? ` (skipped ${skipped} without geometry)` : '') +
-                '.',
+                (skipped > 0 ? ` (skipped ${skipped} without geometry)` : ''),
             )
             reload()
           }}
