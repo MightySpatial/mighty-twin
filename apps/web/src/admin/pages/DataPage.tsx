@@ -39,6 +39,9 @@ interface DataSource {
   url: string | null
   size_bytes: number | null
   attributes: Record<string, unknown>
+  /** Sites this DataSource is used in — joined through Layer on the
+   *  server so the catalog can filter without a second round-trip. */
+  sites?: { slug: string; name: string }[]
 }
 
 type IconCmp = React.ComponentType<{ size?: number | string }>
@@ -72,8 +75,27 @@ export default function DataPage() {
   const sources = (data as DataSource[]) ?? []
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState<string>('all')
+  const [siteFilter, setSiteFilter] = useState<string>('all')
   const [deleting, setDeleting] = useState<string | null>(null)
   const [copied, setCopied] = useState<string | null>(null)
+
+  // Distinct sites referenced by any DataSource, for the dropdown.
+  // "Unassigned" is a synthetic bucket for DataSources not used in any site
+  // (uploaded but never wired into a layer).
+  const siteOptions = useMemo(() => {
+    const seen = new Map<string, string>()
+    let hasUnassigned = false
+    for (const s of sources) {
+      const sites = s.sites ?? []
+      if (sites.length === 0) hasUnassigned = true
+      for (const x of sites) seen.set(x.slug, x.name)
+    }
+    const sorted = Array.from(seen.entries())
+      .sort((a, b) => a[1].localeCompare(b[1]))
+      .map(([slug, name]) => ({ slug, name }))
+    if (hasUnassigned) sorted.push({ slug: '__unassigned__', name: 'Unassigned' })
+    return sorted
+  }, [sources])
 
   const counts = useMemo(() => {
     const out: Record<string, number> = { all: sources.length }
@@ -84,6 +106,14 @@ export default function DataPage() {
   const filtered = useMemo(() => {
     return sources.filter((s) => {
       if (filter !== 'all' && s.type !== filter) return false
+      if (siteFilter !== 'all') {
+        const sites = s.sites ?? []
+        if (siteFilter === '__unassigned__') {
+          if (sites.length > 0) return false
+        } else if (!sites.some((x) => x.slug === siteFilter)) {
+          return false
+        }
+      }
       const q = search.toLowerCase()
       if (!q) return true
       return (
@@ -92,7 +122,7 @@ export default function DataPage() {
         (s.url ?? '').toLowerCase().includes(q)
       )
     })
-  }, [sources, search, filter])
+  }, [sources, search, filter, siteFilter])
 
   const totalBytes = useMemo(
     () => sources.reduce((sum, s) => sum + (s.size_bytes ?? 0), 0),
@@ -183,6 +213,43 @@ export default function DataPage() {
             }}
           />
           {loading && <Loader size={14} className="spin" />}
+        </div>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
+            padding: '0 4px 0 12px',
+            background: 'rgba(255,255,255,0.04)',
+            border: '1px solid rgba(255,255,255,0.07)',
+            borderRadius: 8,
+            minWidth: 180,
+          }}
+          title="Filter by the site this data is loaded into"
+        >
+          <MapPin size={14} color="rgba(240,242,248,0.45)" />
+          <select
+            value={siteFilter}
+            onChange={(e) => setSiteFilter(e.target.value)}
+            style={{
+              flex: 1,
+              padding: '8px 4px',
+              background: 'transparent',
+              border: 'none',
+              outline: 'none',
+              color: '#f0f2f8',
+              fontSize: 12,
+              cursor: 'pointer',
+              appearance: 'none',
+            }}
+          >
+            <option value="all">All sites</option>
+            {siteOptions.map((s) => (
+              <option key={s.slug} value={s.slug}>
+                {s.name}
+              </option>
+            ))}
+          </select>
         </div>
       </div>
 
@@ -288,7 +355,34 @@ export default function DataPage() {
                   <Icon size={18} />
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 13, fontWeight: 600 }}>{ds.name}</div>
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 8,
+                      flexWrap: 'wrap',
+                    }}
+                  >
+                    <div style={{ fontSize: 13, fontWeight: 600 }}>{ds.name}</div>
+                    {(ds.sites ?? []).slice(0, 3).map((sx) => (
+                      <span
+                        key={sx.slug}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setSiteFilter(sx.slug)
+                        }}
+                        style={siteBadge}
+                        title={`Filter to ${sx.name}`}
+                      >
+                        <MapPin size={9} /> {sx.name}
+                      </span>
+                    ))}
+                    {(ds.sites?.length ?? 0) > 3 && (
+                      <span style={{ fontSize: 10, color: 'rgba(240,242,248,0.5)' }}>
+                        +{(ds.sites?.length ?? 0) - 3} more
+                      </span>
+                    )}
+                  </div>
                   <div
                     style={{
                       fontSize: 11,
@@ -421,4 +515,18 @@ const iconBtn: React.CSSProperties = {
   cursor: 'pointer',
   display: 'inline-flex',
   alignItems: 'center',
+}
+
+const siteBadge: React.CSSProperties = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: 4,
+  padding: '2px 7px',
+  background: 'rgba(36,83,255,0.10)',
+  border: '1px solid rgba(36,83,255,0.28)',
+  borderRadius: 999,
+  color: '#9bb3ff',
+  fontSize: 10,
+  fontWeight: 500,
+  cursor: 'pointer',
 }

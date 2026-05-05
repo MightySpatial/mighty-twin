@@ -458,8 +458,28 @@ class DataSourceCreate(BaseModel):
 
 @router.get("/data-sources")
 def list_data_sources(_: CurrentUser, db: DbSession) -> list[dict[str, Any]]:
+    """Catalog list. Joins through Layer to attach the sites each
+    DataSource is in use on, so the frontend can filter "data used in
+    site X" without a second round-trip."""
     rows = db.execute(select(DataSource).order_by(DataSource.name)).scalars().all()
-    return [_serialize_ds(d) for d in rows]
+    membership = db.execute(
+        select(Layer.data_source_id, Site.slug, Site.name)
+        .join(Site, Site.id == Layer.site_id)
+        .where(Layer.data_source_id.is_not(None))
+    ).all()
+    sites_by_ds: dict[uuid.UUID, list[dict[str, str]]] = {}
+    for ds_id, slug, name in membership:
+        if ds_id is None:
+            continue
+        bucket = sites_by_ds.setdefault(ds_id, [])
+        if not any(s["slug"] == slug for s in bucket):
+            bucket.append({"slug": slug, "name": name})
+    out: list[dict[str, Any]] = []
+    for d in rows:
+        s = _serialize_ds(d)
+        s["sites"] = sites_by_ds.get(d.id, [])
+        out.append(s)
+    return out
 
 
 @router.get("/data-sources/{ds_id}")
