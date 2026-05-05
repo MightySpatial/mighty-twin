@@ -85,6 +85,16 @@ export default function OverviewPage() {
   }
   if (!data) return <div style={pageStyle}>Loading…</div>
 
+  // Brand-new workspace shortcut: when every counter is zero, surface
+  // a getting-started block above the dashboard so the first time
+  // users see this page it doesn't feel like a graveyard of zeros.
+  const isFreshWorkspace =
+    data.counts.sites === 0 &&
+    data.counts.layers === 0 &&
+    data.counts.data_sources === 0 &&
+    data.counts.story_maps === 0 &&
+    data.counts.snapshots === 0
+
   return (
     <div style={pageStyle}>
       <header style={{ marginBottom: 24 }}>
@@ -93,6 +103,53 @@ export default function OverviewPage() {
           Workspace at a glance — sites, users, recent activity.
         </p>
       </header>
+
+      {isFreshWorkspace && (
+        <Link
+          to="/admin/sites"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 14,
+            padding: 16,
+            marginBottom: 18,
+            background:
+              'linear-gradient(135deg, rgba(36,83,255,0.12), rgba(167,139,250,0.06))',
+            border: '1px solid rgba(36,83,255,0.4)',
+            borderRadius: 12,
+            color: '#f0f2f8',
+            textDecoration: 'none',
+          }}
+        >
+          <div
+            style={{
+              width: 44,
+              height: 44,
+              borderRadius: 11,
+              background: 'linear-gradient(135deg, #2453ff, #a78bfa)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#fff',
+              fontWeight: 700,
+              fontSize: 20,
+              flexShrink: 0,
+            }}
+          >
+            ✨
+          </div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 14, fontWeight: 600 }}>
+              Welcome — start with your first site
+            </div>
+            <div style={{ fontSize: 12, color: 'rgba(240,242,248,0.55)', marginTop: 2 }}>
+              Sites organise layers, snaps, story maps, and submissions. Pick one
+              of three starting points on the Sites page.
+            </div>
+          </div>
+          <span style={{ fontSize: 12, color: '#9bb3ff' }}>Get started →</span>
+        </Link>
+      )}
 
       <section style={gridSection}>
         <Stat label="Sites" value={data.counts.sites} sub={`${data.counts.public_sites} public`} />
