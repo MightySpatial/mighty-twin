@@ -3,7 +3,7 @@ import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { useShellContext } from '@mightyspatial/app-shell'
 import { useBreakpoint } from '../hooks/useBreakpoint'
 import { apiFetch } from '../hooks/useApi'
-import { LayoutDashboard, MapPin, Database, FolderOpen, Upload, Inbox, BookOpen, Menu, X, ChevronRight } from 'lucide-react'
+import { LayoutDashboard, MapPin, Database, FolderOpen, Upload, Inbox, BookOpen, Camera, Menu, X, ChevronRight } from 'lucide-react'
 import './AppLayout.css'
 
 const NAV_ITEMS = [
@@ -12,6 +12,7 @@ const NAV_ITEMS = [
   { path: '/admin/data', icon: Database, label: 'Data' },
   { path: '/admin/library', icon: FolderOpen, label: 'Library' },
   { path: '/admin/stories', icon: BookOpen, label: 'Stories' },
+  { path: '/admin/snapshots', icon: Camera, label: 'Snapshots' },
   { path: '/admin/submissions', icon: Inbox, label: 'Submissions', badgeKey: 'submissions_pending' },
   { path: '/admin/upload', icon: Upload, label: 'Upload' },
 ]
