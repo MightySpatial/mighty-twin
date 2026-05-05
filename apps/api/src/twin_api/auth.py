@@ -237,6 +237,40 @@ def me(user: CurrentUser) -> UserOut:
     return UserOut.from_user(user)
 
 
+class SelfPasswordChange(BaseModel):
+    current_password: str
+    new_password: str
+
+
+@router.post("/me/change-password", status_code=204)
+def change_own_password(
+    body: SelfPasswordChange, user: CurrentUser, db: DbSession
+) -> None:
+    """Authenticated self-service password change. Verifies the current
+    password before swapping the hash so a stolen JWT alone can't change
+    it. OAuth-only accounts (no local password) can't use this endpoint."""
+    if user.hashed_password is None:
+        raise HTTPException(
+            status_code=400,
+            detail="This account uses single sign-on; change your password with the IdP.",
+        )
+    if not verify_password(body.current_password, user.hashed_password):
+        raise HTTPException(status_code=403, detail="Current password is incorrect")
+    if len(body.new_password) < 8:
+        raise HTTPException(
+            status_code=400, detail="Password must be at least 8 characters"
+        )
+    if body.current_password == body.new_password:
+        raise HTTPException(
+            status_code=400, detail="New password must differ from current password"
+        )
+    target = db.execute(
+        select(User).where(User.id == user.id)
+    ).scalar_one()
+    target.hashed_password = hash_password(body.new_password)
+    db.commit()
+
+
 @router.get("/users")
 def list_users(_: AdminUser, db: DbSession) -> list[UserOut]:
     users = db.execute(select(User).order_by(User.email)).scalars().all()

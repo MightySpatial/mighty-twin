@@ -8,6 +8,7 @@ import { AdminRoot } from './admin/AdminRoot'
 import UsersPage from './admin/pages/UsersPage'
 import SystemSettingsPage from './admin/pages/SystemSettingsPage'
 import DiagnosticsPanel from './admin/pages/DiagnosticsPanel'
+import ProfilePanel from './admin/pages/ProfilePanel'
 import AISettings from './ai/AISettings'
 import ChatPanel from './ai/ChatPanel'
 import {
@@ -43,6 +44,7 @@ const loadingFallback = (
  *  above these automatically. */
 const TWIN_SETTINGS_SECTIONS = [
   // Workspace admin
+  { id: 'profile', label: 'Profile', panel: <ProfilePanel /> },
   { id: 'branding', label: 'Branding', panel: <BrandingPanel /> },
   { id: 'users', label: 'Users', panel: <UsersPage /> },
   // Engine
