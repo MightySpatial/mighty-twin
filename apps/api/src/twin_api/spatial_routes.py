@@ -25,7 +25,13 @@ from mighty_models import DataSource, Layer, Site, Snapshot, User
 
 from .auth import AdminUser, CurrentUser
 from .db import DbSession
-from .packages import PackageImportError, export_site_package, import_site_package
+from .packages import (
+    PackageImportError,
+    SheetsTranslationError,
+    export_site_package,
+    import_site_package,
+    translate_sheets_to_mtsite,
+)
 
 router = APIRouter(prefix="/api/spatial", tags=["spatial"])
 
@@ -210,6 +216,44 @@ async def import_site_endpoint(
         result = import_site_package(
             db,
             raw,
+            target_slug=target_slug,
+            overwrite_collision=overwrite_collision,
+        )
+    except PackageImportError as e:
+        msg = str(e)
+        status_code = 409 if "already exists" in msg else 400
+        raise HTTPException(status_code=status_code, detail=msg) from e
+    return result
+
+
+# ── Mighty Sheets workbook import (.mishpkg → translate → import) ──────
+
+
+@router.post("/sites/import-sheets", status_code=201)
+async def import_sheets_workbook(
+    _: AdminUser,
+    db: DbSession,
+    file: UploadFile = File(...),
+    target_slug: str | None = Form(None),
+    overwrite_collision: bool = Form(False),
+) -> dict[str, Any]:
+    """Upload a Mighty Sheets workbook export (.mishpkg) and translate
+    it into a .mtsite, then run the standard package importer.
+
+    The translator handles geometry promotion (lng/lat columns, WKT,
+    or attribute-only) per table; the importer handles the rest.
+    """
+    raw = await file.read()
+    if not raw:
+        raise HTTPException(status_code=400, detail="Empty upload")
+    try:
+        mtsite_blob = translate_sheets_to_mtsite(raw)
+    except SheetsTranslationError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    try:
+        result = import_site_package(
+            db,
+            mtsite_blob,
             target_slug=target_slug,
             overwrite_collision=overwrite_collision,
         )

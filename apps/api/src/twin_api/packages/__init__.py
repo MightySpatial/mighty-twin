@@ -17,6 +17,7 @@ The format is designed so the same importer handles every source.
 from .manifest import PackageManifest, PACKAGE_SCHEMA_VERSION
 from .exporter import export_site_package
 from .importer import PackageImportError, import_site_package
+from .sheets_translator import SheetsTranslationError, translate_sheets_to_mtsite
 
 __all__ = [
     "PackageManifest",
@@ -24,4 +25,6 @@ __all__ = [
     "export_site_package",
     "import_site_package",
     "PackageImportError",
+    "translate_sheets_to_mtsite",
+    "SheetsTranslationError",
 ]

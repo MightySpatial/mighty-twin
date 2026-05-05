@@ -58,12 +58,18 @@ export default function SitesPage() {
   async function handleImportFile(file: File, overwrite: boolean) {
     setImporting(true)
     setImportErr(null)
+    // Route Sheets workbook exports (.mishpkg) through the translator
+    // endpoint; everything else goes to the .mtsite path.
+    const isSheets = /\.mishpkg$/i.test(file.name)
+    const path = isSheets
+      ? '/api/spatial/sites/import-sheets'
+      : '/api/spatial/sites/import'
     try {
       const fd = new FormData()
       fd.append('file', file)
       if (overwrite) fd.append('overwrite_collision', 'true')
       const token = localStorage.getItem('accessToken')
-      const res = await fetch(`${API_URL}/api/spatial/sites/import`, {
+      const res = await fetch(`${API_URL}${path}`, {
         method: 'POST',
         headers: token ? { Authorization: `Bearer ${token}` } : {},
         body: fd,
@@ -150,7 +156,7 @@ export default function SitesPage() {
           <input
             ref={importInputRef}
             type="file"
-            accept=".mtsite,.zip,application/zip"
+            accept=".mtsite,.mishpkg,.zip,application/zip"
             style={{ display: 'none' }}
             onChange={(e) => {
               const f = e.target.files?.[0]
@@ -162,7 +168,7 @@ export default function SitesPage() {
             onClick={() => importInputRef.current?.click()}
             disabled={importing}
             style={ghostHeaderBtn}
-            title="Import a .mtsite package"
+            title="Import a .mtsite package or a Mighty Sheets .mishpkg export"
           >
             {importing ? <Loader size={14} className="spin" /> : <Package size={14} />}
             {importing ? 'Importing…' : 'Import'}
