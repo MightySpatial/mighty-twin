@@ -73,6 +73,14 @@ class Settings(BaseSettings):
                     file=sys.stderr,
                 )
                 raise ValueError("JWT_SECRET must be set in production")
+            # RFC 7518 §3.2 — HS256 keys must be ≥ the hash output (32 B).
+            # Short keys make brute-forcing the signature feasible.
+            if len(v.encode("utf-8")) < 32:
+                print(
+                    f"FATAL: JWT_SECRET is {len(v)} chars; HS256 requires ≥32.",
+                    file=sys.stderr,
+                )
+                raise ValueError("JWT_SECRET must be at least 32 bytes in production")
         return v
 
 
