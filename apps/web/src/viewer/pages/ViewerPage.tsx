@@ -137,7 +137,7 @@ export default function ViewerPage() {
   return (
     <div className="viewer-page">
       {/* Header */}
-      <header className="viewer-header">
+      <header className="viewer-header" style={{ display: 'none' }} aria-hidden="true">
         <div className="header-left">
           <button className="header-menu-btn" onClick={() => setMenuOpen(!menuOpen)}>
             {menuOpen ? <X size={20} /> : <Menu size={20} />}

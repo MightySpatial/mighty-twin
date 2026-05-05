@@ -4,14 +4,13 @@
  */
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import type { SiteConfigState } from '../../types/api'
-import { Cartesian3 } from 'cesium'
+import { Cartesian3, Math as CesiumMath } from 'cesium'
 import { useBreakpoint } from '../../hooks/useBreakpoint'
-import {
-  Home, ZoomIn, ZoomOut, Map as MapIcon, Search, Ruler, Mountain, ListTree, HelpCircle, Hexagon, Globe, Square,
-} from 'lucide-react'
+import { HelpCircle } from 'lucide-react'
 import { getExtensionPanels } from '../../extensions'
 import type { ViewerContext } from '../../extensions/types'
 import type { CesiumViewerProps } from './types'
+import { MapShell } from '../MapShell'
 
 import { useTokenFetch } from './hooks/useTokenFetch'
 import { useCesiumMount } from './hooks/useCesiumMount'
@@ -187,6 +186,76 @@ export default function CesiumViewerComponent({
     }
   }, [viewerRef, is2D])
 
+  // Camera-heading + reset, used by the new nav gimbal in MapShell.
+  const [headingDeg, setHeadingDeg] = useState(0)
+  useEffect(() => {
+    const viewer = viewerRef.current
+    if (!viewer) return
+    const onPostRender = () => {
+      const h = CesiumMath.toDegrees(viewer.camera.heading)
+      // Reduce setState churn — only update when changed by ≥ 1 deg.
+      setHeadingDeg((prev) => (Math.abs(prev - h) > 0.5 ? h : prev))
+    }
+    viewer.scene.postRender.addEventListener(onPostRender)
+    return () => {
+      viewer.scene.postRender.removeEventListener(onPostRender)
+    }
+  }, [viewerRef.current])
+
+  const resetCamera = useCallback(() => {
+    const viewer = viewerRef.current
+    if (!viewer) return
+    const c = viewer.camera
+    const cart = c.positionCartographic
+    c.flyTo({
+      destination: Cartesian3.fromRadians(cart.longitude, cart.latitude, cart.height),
+      orientation: { heading: 0, pitch: -CesiumMath.PI_OVER_TWO, roll: 0 },
+      duration: 0.8,
+    })
+  }, [])
+
+  // Map MapShell action ids → existing widget state. Tools that aren't
+  // implemented yet (snap/design/table/story/strike) toggle a placeholder
+  // state we can wire later without ripping the rail apart.
+  const [comingSoon, setComingSoon] = useState<string | null>(null)
+  useEffect(() => {
+    if (!comingSoon) return
+    const t = setTimeout(() => setComingSoon(null), 2400)
+    return () => clearTimeout(t)
+  }, [comingSoon])
+
+  const activeToolId = useMemo<string | null>(() => {
+    if (searchOpen) return 'search'
+    if (measureActive) return 'measure'
+    if (sidebarOpen && !isMobile) return 'layers'
+    if (legendOpen) return 'legend'
+    if (transparencyOpen) return 'terrain'
+    if (basemapOpen) return null  // basemap lives in zoom column, not bottom rail
+    return null
+  }, [searchOpen, measureActive, sidebarOpen, isMobile, legendOpen, transparencyOpen, basemapOpen])
+
+  const onMapShellAction = useCallback((id: string) => {
+    switch (id) {
+      case 'search':
+        setSearchOpen((o) => !o); break
+      case 'measure':
+        measureActive ? cleanupMeasure() : startMeasure(); break
+      case 'layers':
+        setSidebarOpen((o) => !o); break
+      case 'legend':
+        setLegendOpen((o) => !o); break
+      case 'terrain':
+        setTransparencyOpen((o) => !o); break
+      case 'snap':
+      case 'design':
+      case 'table':
+      case 'story':
+      case 'strike':
+        setComingSoon(id); break
+      default: break
+    }
+  }, [measureActive, cleanupMeasure, startMeasure])
+
   // Sidebar width: tab rail (48px) + content panel (280px) when open
   const sidebarWidth = !isMobile && sidebarOpen ? 328 : !isMobile ? 48 : 0
 
@@ -228,43 +297,105 @@ export default function CesiumViewerComponent({
       {/* Search */}
       <SearchWidget viewerRef={viewerRef} searchOpen={searchOpen} setSearchOpen={setSearchOpen} />
 
-      {/* Map Controls */}
-      <div className="map-controls">
-        <button className="map-control-btn" onClick={() => setSearchOpen(s => !s)} title="Search"><Search size={18} /></button>
-        <button className="map-control-btn" onClick={flyHome} title="Home"><Home size={18} /></button>
-        <button
-          className={`map-control-btn${is2D ? ' active' : ''}`}
-          onClick={toggleSceneMode}
-          title={is2D ? 'Switch to 3D' : 'Switch to 2D'}
-          aria-label={is2D ? 'Switch to 3D view' : 'Switch to 2D view'}
-        >
-          {is2D ? <Globe size={18} /> : <Square size={18} />}
-        </button>
-        <div className="map-controls-divider" />
-        <button className="map-control-btn" onClick={zoomIn} title="Zoom In"><ZoomIn size={18} /></button>
-        <button className="map-control-btn" onClick={zoomOut} title="Zoom Out"><ZoomOut size={18} /></button>
-        <div className="map-controls-divider" />
-        <button className={`map-control-btn${measureActive ? ' active' : ''}`} onClick={startMeasure} title="Measure (M)"><Ruler size={18} /></button>
-        <button className={`map-control-btn${transparencyOpen ? ' active' : ''}`} onClick={() => setTransparencyOpen(s => !s)} title="Globe Transparency"><Mountain size={18} /></button>
-        <button className="map-control-btn" onClick={() => setBasemapOpen(s => !s)} title="Basemap"><MapIcon size={18} /></button>
-        <button className={`map-control-btn${legendOpen ? ' active' : ''}`} onClick={() => setLegendOpen(s => !s)} title="Legend"><ListTree size={18} /></button>
-        <button className={`map-control-btn${tetraActive ? ' active' : ''}`} onClick={() => setTetraActive(s => !s)} title="Tetra View"><Hexagon size={18} /></button>
-        {site?.overlay_config?.info_widget_enabled && (
-          <button className={`map-control-btn${infoWidgetOpen ? ' active' : ''}`} onClick={() => setInfoWidgetOpen(true)} title="Site Info"><HelpCircle size={18} /></button>
-        )}
-        {/* Extension panel buttons — only shown on mobile (desktop uses sidebar tabs) */}
-        {isMobile && extensionPanels.length > 0 && <div className="map-controls-divider" />}
-        {isMobile && extensionPanels.map(ep => (
-          <button
-            key={ep.id}
-            className={`map-control-btn${activeExtPanel === ep.id ? ' active' : ''}`}
-            title={ep.label}
-            onClick={() => setActiveExtPanel(p => p === ep.id ? null : ep.id)}
-          >
-            {ep.icon}
-          </button>
-        ))}
+      {/* New chrome — MapShell renders site chip / zoom column / nav
+          gimbal / bottom widget rails. Wraps inside a sidebar-aware
+          container so it doesn't fight the existing left sidebar. */}
+      <div
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: sidebarWidth,
+          right: 0,
+          bottom: 0,
+          pointerEvents: 'none',
+          transition: 'left 0.2s ease',
+        }}
+      >
+        <MapShell
+          site={site ? { slug: siteId ?? '', name: site.name, subtitle: site.description ?? undefined } : null}
+          activeToolId={activeToolId}
+          onAction={onMapShellAction}
+          onZoomIn={zoomIn}
+          onZoomOut={zoomOut}
+          onHome={flyHome}
+          onToggle2D3D={toggleSceneMode}
+          onToggleBasemap={() => setBasemapOpen((o) => !o)}
+          onResetCamera={resetCamera}
+          onOpenSitePicker={() => { /* hooked up in a later commit */ }}
+          headingDeg={headingDeg}
+          is2D={is2D}
+        />
       </div>
+
+      {/* Site-info trigger (lives outside MapShell because it's
+          conditional on overlay_config). Rendered as a small floating
+          chip top-right of the bottom rails. */}
+      {site?.overlay_config?.info_widget_enabled && (
+        <button
+          className="map-control-btn"
+          style={{
+            position: 'absolute',
+            right: 16,
+            bottom: 18,
+            zIndex: 5,
+          }}
+          onClick={() => setInfoWidgetOpen(true)}
+          title="Site Info"
+        >
+          <HelpCircle size={18} />
+        </button>
+      )}
+
+      {/* Extension panels — mobile renders launcher icons in a strip */}
+      {isMobile && extensionPanels.length > 0 && (
+        <div
+          style={{
+            position: 'absolute',
+            right: 14,
+            bottom: 90,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 6,
+            zIndex: 5,
+          }}
+        >
+          {extensionPanels.map((ep) => (
+            <button
+              key={ep.id}
+              className={`map-control-btn${activeExtPanel === ep.id ? ' active' : ''}`}
+              title={ep.label}
+              onClick={() => setActiveExtPanel((p) => (p === ep.id ? null : ep.id))}
+            >
+              {ep.icon}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* "Coming soon" toast for not-yet-wired secondary widgets */}
+      {comingSoon && (
+        <div
+          style={{
+            position: 'absolute',
+            left: '50%',
+            bottom: 110,
+            transform: 'translateX(-50%)',
+            padding: '8px 16px',
+            background: 'rgba(17,20,29,0.95)',
+            border: '1px solid rgba(245,158,11,0.32)',
+            borderRadius: 999,
+            color: '#f59e0b',
+            fontSize: 12,
+            textTransform: 'uppercase',
+            letterSpacing: '0.06em',
+            boxShadow: '0 4px 14px rgba(0,0,0,0.32)',
+            zIndex: 10,
+            pointerEvents: 'none',
+          }}
+        >
+          {comingSoon} · landing soon
+        </div>
+      )}
 
       {/* Panels */}
       {basemapOpen && <BasemapWidget activeBasemap={activeBasemap} switchBasemap={switchBasemap} />}

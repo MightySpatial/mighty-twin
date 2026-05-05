@@ -28,10 +28,25 @@
   display: flex; align-items: center; justify-content: center;
   color: #fff; font-size: 14px; font-weight: 700;
 }
-.siteChip .meta { line-height: 1.2; }
-.siteChip .name { font-size: 14px; font-weight: 600; }
-.siteChip .sub { font-size: 11px; color: rgba(240,242,248,0.5); margin-top: 2px; }
-.siteChip .chev { color: rgba(240,242,248,0.3); margin-left: 4px; font-size: 12px; }
+.siteChipIcon {
+  width: 28px; height: 28px;
+  background: linear-gradient(135deg, #2453ff, #a78bfa);
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; font-size: 14px; font-weight: 700;
+}
+.siteChipMeta { display: flex; flex-direction: column; line-height: 1.2; min-width: 0; }
+.siteChipName {
+  font-size: 14px; font-weight: 600;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  max-width: 240px;
+}
+.siteChipSub {
+  font-size: 11px; color: rgba(240,242,248,0.5); margin-top: 2px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  max-width: 240px;
+}
+.siteChipChev { color: rgba(240,242,248,0.3); margin-left: 4px; font-size: 12px; }
 
 /* Left edge zoom column */
 .zoomCol {

@@ -126,12 +126,16 @@ export function MapShell({
           onClick={onOpenSitePicker}
           title="Site picker"
         >
-          <span className="icon">{site.name.slice(0, 1).toUpperCase()}</span>
-          <span className="meta">
-            <span className="name">{site.name}</span>
-            {site.subtitle ? <span className="sub">{site.subtitle}</span> : null}
+          <span className={styles.siteChipIcon}>
+            {site.name.slice(0, 1).toUpperCase()}
           </span>
-          <span className="chev">▾</span>
+          <span className={styles.siteChipMeta}>
+            <span className={styles.siteChipName}>{site.name}</span>
+            {site.subtitle ? (
+              <span className={styles.siteChipSub}>{site.subtitle}</span>
+            ) : null}
+          </span>
+          <span className={styles.siteChipChev}>▾</span>
         </button>
       )}
 
