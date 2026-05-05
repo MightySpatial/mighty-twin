@@ -1,0 +1,12 @@
+**/node_modules
+**/.git
+**/dist
+**/.turbo
+**/__pycache__
+**/*.pyc
+**/python
+**/infra
+**/mockups
+**/docs
+**/bin
+apps/api
