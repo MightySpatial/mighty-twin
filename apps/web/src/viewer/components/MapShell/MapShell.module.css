@@ -181,6 +181,141 @@
   opacity: 0.7;
 }
 
+/* Phone — collapse the bottom rails into a Tools FAB at bottom-left.
+   Tap → bottom sheet with the same tile grid. Site chip shrinks too.
+   The rest (zoom column, gimbal, scale bar) stays inline because it's
+   small enough not to dominate the viewport.
+
+   Two trigger paths:
+     1. .shellPhone class (driven by host phoneMode prop, e.g. forced
+        breakpoint dev override)
+     2. native @media (max-width: 640px) for real small viewports
+   The rules below are duplicated as-needed.
+*/
+.shellPhone .siteChip {
+  top: 10px;
+  left: 10px;
+  padding: 6px 10px 6px 6px;
+}
+.shellPhone .siteChipName { max-width: 130px; font-size: 12px; }
+.shellPhone .siteChipSub  { display: none; }
+.shellPhone .siteChipChev { display: none; }
+.shellPhone .zoomCol { left: 10px; gap: 2px; padding: 3px; }
+.shellPhone .zoomBtn { width: 28px; height: 28px; }
+.shellPhone .gimbal { width: 56px; height: 56px; right: 10px; top: 10px; }
+.shellPhone .rails { display: none; }
+.shellPhone .toolsFab { display: flex; }
+
+@media (max-width: 640px) {
+  .siteChip {
+    top: 10px;
+    left: 10px;
+    padding: 6px 10px 6px 6px;
+  }
+  .siteChipName { max-width: 130px; font-size: 12px; }
+  .siteChipSub  { display: none; }
+  .siteChipChev { display: none; }
+
+  .zoomCol { left: 10px; gap: 2px; padding: 3px; }
+  .zoomBtn { width: 28px; height: 28px; }
+
+  .gimbal { width: 56px; height: 56px; right: 10px; top: 10px; }
+
+  /* Hide the rails — Tools FAB takes over. */
+  .rails { display: none; }
+}
+
+/* Tools FAB — phone-only. Opens a slide-up sheet with the full widget
+   catalog. */
+.toolsFab {
+  display: none;
+}
+@media (max-width: 640px) {
+  .toolsFab {
+    display: flex;
+    position: absolute;
+    left: 14px;
+    bottom: 14px;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    background: rgba(17, 20, 29, 0.95);
+    backdrop-filter: blur(14px);
+    color: #f0f2f8;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.32);
+  }
+}
+
+/* Tools sheet — opens from the bottom on phone, full primary +
+   secondary tile grid in two rows for chunky touch targets. */
+.toolsSheetBackdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 40;
+  display: flex;
+  align-items: flex-end;
+}
+.toolsSheet {
+  width: 100%;
+  background: rgba(15, 15, 20, 0.98);
+  backdrop-filter: blur(16px);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  border-top-left-radius: 16px;
+  border-top-right-radius: 16px;
+  padding: 16px 16px 24px;
+  animation: toolsSheetSlide 220ms ease-out;
+}
+@keyframes toolsSheetSlide {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
+.toolsSheetHandle {
+  width: 36px;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: 2px;
+  margin: 0 auto 14px;
+}
+.toolsSheetSection { margin-bottom: 14px; }
+.toolsSheetSectionLabel {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: rgba(240, 242, 248, 0.45);
+  margin-bottom: 8px;
+}
+.toolsSheetGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+.toolsSheetTile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 14px 8px;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 10px;
+  color: rgba(240, 242, 248, 0.85);
+  font-size: 11px;
+  cursor: pointer;
+}
+.toolsSheetTile:active {
+  background: rgba(255, 255, 255, 0.07);
+}
+.toolsSheetTile.active {
+  background: rgba(45, 212, 191, 0.1);
+  border-color: rgba(45, 212, 191, 0.4);
+  color: #2dd4bf;
+}
+
 /* Public viewer banner — shown when site.is_public_pre_login is true
    and the visitor isn't authenticated. */
 .publicBanner {

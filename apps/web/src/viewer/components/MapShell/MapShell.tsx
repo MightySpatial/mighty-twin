@@ -21,7 +21,7 @@
  *  rails are filtered to widgets with ``publicVisible: true`` only.
  */
 
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import {
   Layers as LayersIcon,
   List as ListIcon,
@@ -39,6 +39,7 @@ import {
   Square,
   Globe,
   Map as MapIcon,
+  Settings as ToolsIcon,
 } from 'lucide-react'
 
 import {
@@ -89,6 +90,10 @@ export interface MapShellProps {
   is2D?: boolean
   /** Show the public banner (only when publicMode + not authenticated). */
   showPublicBanner?: boolean
+  /** When true, force the phone-mode chrome (Tools FAB instead of rails,
+   *  compact site chip, etc.) regardless of viewport width. The host app's
+   *  ShellContext breakpoint should drive this. */
+  phoneMode?: boolean
   /** Extra render slot for floating overlays (feature popup etc.) */
   children?: React.ReactNode
 }
@@ -108,6 +113,7 @@ export function MapShell({
   headingDeg = 0,
   is2D = false,
   showPublicBanner = false,
+  phoneMode = false,
   children,
 }: MapShellProps) {
   const widgets = useMemo<WidgetDef[]>(
@@ -117,8 +123,14 @@ export function MapShell({
   const primary = useMemo(() => widgetsForController(widgets, 'primary'), [widgets])
   const secondary = useMemo(() => widgetsForController(widgets, 'secondary'), [widgets])
 
+  // Phone-only: tools sheet open/closed.
+  const [toolsOpen, setToolsOpen] = useState(false)
+
   return (
-    <div className={styles.shell} aria-hidden="false">
+    <div
+      className={`${styles.shell} ${phoneMode ? styles.shellPhone : ''}`}
+      aria-hidden="false"
+    >
       {site && (
         <button
           type="button"
@@ -217,8 +229,85 @@ export function MapShell({
         </div>
       </div>
 
+      {/* Phone — Tools FAB substitutes for the bottom rails. Opens a
+          slide-up sheet with all widgets in a 4-column grid. */}
+      <button
+        type="button"
+        className={styles.toolsFab}
+        aria-label="Tools"
+        onClick={() => setToolsOpen(true)}
+      >
+        <ToolsIcon size={22} />
+      </button>
+      {toolsOpen && (
+        <div
+          className={styles.toolsSheetBackdrop}
+          onClick={() => setToolsOpen(false)}
+        >
+          <div className={styles.toolsSheet} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.toolsSheetHandle} />
+            <div className={styles.toolsSheetSection}>
+              <div className={styles.toolsSheetSectionLabel}>Primary</div>
+              <div className={styles.toolsSheetGrid}>
+                {primary.map((w) => (
+                  <SheetTile
+                    key={w.id}
+                    widget={w}
+                    active={activeToolId === w.id}
+                    onClick={() => {
+                      onAction(w.id)
+                      setToolsOpen(false)
+                    }}
+                  />
+                ))}
+              </div>
+            </div>
+            {!publicMode && secondary.length > 0 && (
+              <div className={styles.toolsSheetSection}>
+                <div className={styles.toolsSheetSectionLabel}>Secondary</div>
+                <div className={styles.toolsSheetGrid}>
+                  {secondary.map((w) => (
+                    <SheetTile
+                      key={w.id}
+                      widget={w}
+                      active={activeToolId === w.id}
+                      onClick={() => {
+                        onAction(w.id)
+                        setToolsOpen(false)
+                      }}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {children}
     </div>
+  )
+}
+
+function SheetTile({
+  widget,
+  active,
+  onClick,
+}: {
+  widget: WidgetDef
+  active: boolean
+  onClick: () => void
+}) {
+  const Icon = ICON_MAP[widget.icon]
+  return (
+    <button
+      type="button"
+      className={`${styles.toolsSheetTile} ${active ? styles.active : ''}`}
+      onClick={onClick}
+    >
+      {Icon ? <Icon size={20} /> : null}
+      {widget.label}
+    </button>
   )
 }
 

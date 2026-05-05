@@ -69,6 +69,9 @@ export function AppShell({
   }
   const orientation = useOrientation(forcedOrientation)
 
+  // Phone-only state: AI chat bottom sheet open/closed.
+  const [chatSheetOpen, setChatSheetOpen] = useState(false)
+
   const labels = {
     viewer: tabLabels?.viewer ?? 'Map',
     admin: tabLabels?.admin ?? 'Admin',
@@ -208,6 +211,42 @@ export function AppShell({
 
       {breakpoint === 'phone' && (
         <MobileBottomNav mode={mode} onModeChange={setMode} labels={labels} />
+      )}
+
+      {/* Phone — chat FAB + bottom-sheet substitute for the always-on rail.
+          Per the Mighty UX system rule #3: AI chat is structural, never
+          hidden behind a tab. On small screens it's a pulsing violet FAB
+          that opens a 60% bottom sheet on tap. */}
+      {rightRail && breakpoint === 'phone' && (
+        <>
+          <button
+            type="button"
+            className={styles.chatFab}
+            aria-label="Open Mighty AI"
+            onClick={() => setChatSheetOpen(true)}
+          >
+            <span className={styles.chatFabSparkle} aria-hidden>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5L12 3z" />
+                <path d="M19 15l.7 2.1L22 18l-2.3.9L19 21l-.7-2.1L16 18l2.3-.9L19 15z" />
+              </svg>
+            </span>
+          </button>
+          {chatSheetOpen && (
+            <div
+              className={styles.chatSheetBackdrop}
+              onClick={() => setChatSheetOpen(false)}
+            >
+              <div
+                className={styles.chatSheet}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className={styles.chatSheetHandle} />
+                {rightRail}
+              </div>
+            </div>
+          )}
+        </>
       )}
     </div>
   )

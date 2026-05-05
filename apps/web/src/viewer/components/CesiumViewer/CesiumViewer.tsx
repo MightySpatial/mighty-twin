@@ -187,18 +187,35 @@ export default function CesiumViewerComponent({
   }, [viewerRef, is2D])
 
   // Camera-heading + reset, used by the new nav gimbal in MapShell.
+  // Guard against viewer destroy: cesium throws when accessing .scene
+  // after destroy() so we keep our own listener-handle and try/catch
+  // cleanup. Re-runs whenever the viewer ref is set up (post-mount).
   const [headingDeg, setHeadingDeg] = useState(0)
   useEffect(() => {
     const viewer = viewerRef.current
     if (!viewer) return
-    const onPostRender = () => {
-      const h = CesiumMath.toDegrees(viewer.camera.heading)
-      // Reduce setState churn — only update when changed by ≥ 1 deg.
-      setHeadingDeg((prev) => (Math.abs(prev - h) > 0.5 ? h : prev))
+    let scene
+    try {
+      scene = viewer.scene
+    } catch {
+      return
     }
-    viewer.scene.postRender.addEventListener(onPostRender)
+    if (!scene) return
+    const onPostRender = () => {
+      try {
+        const h = CesiumMath.toDegrees(viewer.camera.heading)
+        setHeadingDeg((prev) => (Math.abs(prev - h) > 0.5 ? h : prev))
+      } catch {
+        /* viewer destroyed mid-render */
+      }
+    }
+    scene.postRender.addEventListener(onPostRender)
     return () => {
-      viewer.scene.postRender.removeEventListener(onPostRender)
+      try {
+        scene.postRender.removeEventListener(onPostRender)
+      } catch {
+        /* scene already disposed */
+      }
     }
   }, [viewerRef.current])
 
@@ -324,6 +341,7 @@ export default function CesiumViewerComponent({
           onOpenSitePicker={() => { /* hooked up in a later commit */ }}
           headingDeg={headingDeg}
           is2D={is2D}
+          phoneMode={isMobile}
         />
       </div>
 
