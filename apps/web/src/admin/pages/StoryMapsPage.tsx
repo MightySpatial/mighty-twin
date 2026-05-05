@@ -16,6 +16,7 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronUp,
+  ExternalLink,
   Globe,
   Loader,
   Lock,
@@ -54,6 +55,7 @@ interface StoryMap {
 }
 
 interface SiteListItem {
+  id: string
   slug: string
   name: string
 }
@@ -198,7 +200,7 @@ export default function StoryMapsPage() {
       {!loading && stories.length > 0 && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {stories.map((s) => {
-            const site = sites.find((x) => x.slug === s.site_id) // site_id is uuid not slug — fallback below
+            const site = sites.find((x) => x.id === s.site_id)
             return (
               <button
                 key={s.id}
@@ -424,6 +426,25 @@ function StoryMapEditor({
   const [savedAt, setSavedAt] = useState<number | null>(null)
   const [err, setErr] = useState<string | null>(null)
   const isDirty = JSON.stringify(draft) !== JSON.stringify(story)
+  const siteSlug = sites.find((s) => s.id === story.site_id)?.slug ?? null
+
+  function previewSlide(slide: Slide) {
+    if (!siteSlug) return
+    const c = slide.camera
+    const params = [
+      c.longitude,
+      c.latitude,
+      c.height,
+      c.heading ?? 0,
+      c.pitch ?? -45,
+      c.roll ?? 0,
+    ].join(',')
+    window.open(
+      `/viewer/sites/${siteSlug}?camera=${encodeURIComponent(params)}`,
+      '_blank',
+      'noopener,noreferrer',
+    )
+  }
 
   // Keep draft in sync if the parent gets a fresh server copy.
   useEffect(() => {
@@ -678,6 +699,18 @@ function StoryMapEditor({
                 >
                   {slide.title || '(untitled)'}
                 </span>
+                {siteSlug && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      previewSlide(slide)
+                    }}
+                    style={miniBtn(false)}
+                    title="Preview in viewer"
+                  >
+                    <ExternalLink size={11} />
+                  </button>
+                )}
                 <button
                   onClick={(e) => {
                     e.stopPropagation()
@@ -720,6 +753,15 @@ function StoryMapEditor({
         <Card title={activeSlide ? `Slide ${activeIdx + 1}` : 'No slide selected'}>
           {activeSlide ? (
             <>
+              {siteSlug && (
+                <button
+                  onClick={() => previewSlide(activeSlide)}
+                  style={{ ...ghostBtn, marginBottom: 10 }}
+                  title="Open the viewer at this slide's camera"
+                >
+                  <ExternalLink size={12} /> Preview in viewer
+                </button>
+              )}
               <Field label="Title">
                 <input
                   value={activeSlide.title}

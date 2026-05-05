@@ -80,6 +80,33 @@ export default function ViewerPage() {
     }
   }, [site])
 
+  // ?camera=lon,lat,height[,heading,pitch] — fly to the given camera
+  // without restoring any layer state. Used by the StoryMaps editor's
+  // "Preview slide" button. Strips the param after firing once.
+  const cameraParam = searchParams.get('camera')
+  useEffect(() => {
+    if (!cameraParam || !cesiumViewerRef.current) return
+    const parts = cameraParam.split(',').map((p) => parseFloat(p))
+    if (parts.length < 3 || parts.some((n) => Number.isNaN(n))) return
+    const [longitude, latitude, height, heading = 0, pitch = -45, roll = 0] = parts
+    try {
+      cesiumViewerRef.current.camera.flyTo({
+        destination: Cartesian3.fromDegrees(longitude, latitude, height),
+        orientation: {
+          heading: CesiumMath.toRadians(heading),
+          pitch: CesiumMath.toRadians(pitch),
+          roll: CesiumMath.toRadians(roll),
+        },
+        duration: 1.4,
+      })
+    } catch {
+      /* viewer mid-destroy */
+    }
+    searchParams.delete('camera')
+    setSearchParams(searchParams, { replace: true })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cameraParam, cesiumViewerRef.current])
+
   // Snapshot restore — when ?snapshot=ID is in the URL, fetch the
   // snapshot, fly the camera, and restore the saved layer visibility.
   // Strips the param after consuming so reload doesn't re-fly.
