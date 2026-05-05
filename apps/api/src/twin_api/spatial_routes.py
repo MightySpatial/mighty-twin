@@ -21,7 +21,7 @@ from fastapi import APIRouter, File, Form, HTTPException, Request, Response, Upl
 from pydantic import BaseModel, Field
 from sqlalchemy import func, select
 
-from mighty_models import DataSource, Layer, Site, Snapshot, User
+from mighty_models import DataSource, Layer, Site, Snapshot, StoryMap, User
 
 from .auth import AdminUser, CurrentUser
 from .db import DbSession
@@ -147,6 +147,102 @@ def delete_site(slug: str, _: AdminUser, db: DbSession) -> None:
         raise HTTPException(status_code=404, detail=f"Site {slug!r} not found")
     db.delete(site)
     db.commit()
+
+
+class SiteDuplicate(BaseModel):
+    new_slug: str | None = None
+    new_name: str | None = None
+
+
+@router.post("/sites/{slug}/duplicate", status_code=201)
+def duplicate_site(
+    slug: str, body: SiteDuplicate, _: AdminUser, db: DbSession
+) -> dict[str, Any]:
+    """Clone a site as a template. Copies the site row, every Layer, and
+    every StoryMap. Features, snapshots, and submissions are NOT cloned —
+    duplicate is for templating, not data forking. Existing DataSource
+    references are reused (the clone shares the catalog rows).
+    """
+    src = db.execute(select(Site).where(Site.slug == slug)).scalar_one_or_none()
+    if src is None:
+        raise HTTPException(status_code=404, detail=f"Site {slug!r} not found")
+
+    # Pick destination slug. If user supplied one, take it; otherwise
+    # derive ``slug-copy`` / ``slug-copy-2`` until unique.
+    if body.new_slug:
+        new_slug = body.new_slug.strip().lower()
+        clash = db.execute(
+            select(Site).where(Site.slug == new_slug)
+        ).scalar_one_or_none()
+        if clash is not None:
+            raise HTTPException(
+                status_code=409, detail=f"Slug {new_slug!r} already exists"
+            )
+    else:
+        new_slug = f"{src.slug}-copy"
+        i = 1
+        while (
+            db.execute(select(Site).where(Site.slug == new_slug)).scalar_one_or_none()
+            is not None
+        ):
+            i += 1
+            new_slug = f"{src.slug}-copy-{i}"
+
+    new_name = body.new_name or f"{src.name} (copy)"
+
+    clone = Site(
+        slug=new_slug,
+        name=new_name,
+        description=src.description,
+        storage_srid=src.storage_srid,
+        is_public_pre_login=False,  # never public until the admin says so
+        config=dict(src.config or {}),
+    )
+    db.add(clone)
+    db.flush()
+
+    # Layers — keep IDs distinct, otherwise FK cascades on the source
+    # would delete clone layers too.
+    src_layers = (
+        db.execute(select(Layer).where(Layer.site_id == src.id)).scalars().all()
+    )
+    for l in src_layers:
+        db.add(
+            Layer(
+                site_id=clone.id,
+                data_source_id=l.data_source_id,
+                feed_id=l.feed_id,
+                name=l.name,
+                type=l.type,
+                opacity=l.opacity,
+                visible=l.visible,
+                display_order=l.display_order,
+                style=dict(l.style or {}),
+                layer_metadata=dict(l.layer_metadata or {}),
+                materialisation=l.materialisation,
+            )
+        )
+
+    # Story maps
+    src_stories = (
+        db.execute(select(StoryMap).where(StoryMap.site_id == src.id))
+        .scalars()
+        .all()
+    )
+    for s in src_stories:
+        db.add(
+            StoryMap(
+                site_id=clone.id,
+                name=s.name,
+                description=s.description,
+                is_published=False,  # always start unpublished
+                slides=list(s.slides or []),
+            )
+        )
+
+    db.commit()
+    db.refresh(clone)
+    return _serialize_site(clone, layers=[])
 
 
 # ── Site package export (.mtsite) ───────────────────────────────────────

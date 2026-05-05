@@ -17,6 +17,7 @@ import { useMemo, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import {
   AlertCircle,
+  Copy,
   ExternalLink,
   Eye,
   Globe,
@@ -128,6 +129,22 @@ export default function SitesPage() {
       alert(`Delete failed: ${(e as Error).message}`)
     } finally {
       setDeleting(null)
+    }
+  }
+
+  const [duplicating, setDuplicating] = useState<string | null>(null)
+  async function duplicateSite(s: Site) {
+    setDuplicating(s.id)
+    try {
+      const out = (await apiFetch(`/api/spatial/sites/${s.slug}/duplicate`, {
+        method: 'POST',
+        body: JSON.stringify({}),
+      })) as { slug: string }
+      navigate(`/admin/sites/${out.slug}`)
+    } catch (e) {
+      alert(`Duplicate failed: ${(e as Error).message}`)
+    } finally {
+      setDuplicating(null)
     }
   }
 
@@ -332,8 +349,10 @@ export default function SitesPage() {
               key={s.id}
               site={s}
               deleting={deleting === s.id}
+              duplicating={duplicating === s.id}
               onOpen={() => navigate(`/admin/sites/${s.slug}`)}
               onDelete={() => deleteSite(s)}
+              onDuplicate={() => duplicateSite(s)}
             />
           ))}
         </div>
@@ -345,13 +364,17 @@ export default function SitesPage() {
 function SiteCard({
   site,
   deleting,
+  duplicating,
   onOpen,
   onDelete,
+  onDuplicate,
 }: {
   site: Site
   deleting: boolean
+  duplicating: boolean
   onOpen: () => void
   onDelete: () => void
+  onDuplicate: () => void
 }) {
   return (
     <div
@@ -478,6 +501,18 @@ function SiteCard({
         >
           <ExternalLink size={12} />
         </Link>
+        <button
+          onClick={onDuplicate}
+          disabled={duplicating}
+          style={iconBtn}
+          title="Duplicate site (clones layers + stories, not features)"
+        >
+          {duplicating ? (
+            <Loader size={12} className="spin" />
+          ) : (
+            <Copy size={12} />
+          )}
+        </button>
         <button onClick={onDelete} style={iconBtn} title="Delete site">
           <Trash2 size={12} color="#fb7185" />
         </button>
