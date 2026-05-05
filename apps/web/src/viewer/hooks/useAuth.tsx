@@ -160,13 +160,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await fetchUser()
   }
 
-  // OAuth redirects
+  // OAuth redirects — pass the user's current path as ``next`` so the
+  // callback can return them to where they came from after the
+  // identity-provider hop.
+  const oauthNext = encodeURIComponent(
+    window.location.pathname + window.location.search,
+  )
   const loginWithGoogle = () => {
-    window.location.href = `${API_URL}/api/auth/google`
+    window.location.href = `${API_URL}/api/auth/google?next=${oauthNext}`
   }
-
   const loginWithMicrosoft = () => {
-    window.location.href = `${API_URL}/api/auth/microsoft`
+    window.location.href = `${API_URL}/api/auth/microsoft?next=${oauthNext}`
   }
 
   // Logout

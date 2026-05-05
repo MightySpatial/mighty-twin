@@ -50,6 +50,19 @@ class Settings(BaseSettings):
     #: validators below refuse to boot with default secrets/dev stubs.
     environment: str = Field(default="development")
 
+    # ── OAuth (T+1330) ─────────────────────────────────────────────
+    #: Public origin of the frontend, used to redirect users back after
+    #: an OAuth callback. Defaults to allowed_origins[0] if not set.
+    oauth_redirect_origin: str = Field(default="")
+    #: Google OAuth (https://console.cloud.google.com → Credentials)
+    google_client_id: str = Field(default="")
+    google_client_secret: str = Field(default="")
+    #: Microsoft Entra (https://portal.azure.com → App registrations)
+    #: Tenant 'common' supports both work + personal accounts.
+    microsoft_tenant: str = Field(default="common")
+    microsoft_client_id: str = Field(default="")
+    microsoft_client_secret: str = Field(default="")
+
     @field_validator("jwt_secret")
     @classmethod
     def _reject_default_jwt_in_prod(cls, v: str) -> str:
