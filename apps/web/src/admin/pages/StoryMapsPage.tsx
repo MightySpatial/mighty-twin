@@ -13,6 +13,7 @@ import { useEffect, useMemo, useState } from 'react'
 import {
   AlertCircle,
   BookOpen,
+  Camera,
   ChevronDown,
   ChevronLeft,
   ChevronUp,
@@ -446,6 +447,49 @@ function StoryMapEditor({
     )
   }
 
+  function captureFromViewer() {
+    if (!siteSlug || activeIdx < 0) return
+    const raw = localStorage.getItem(`mighty:viewer-cam:${siteSlug}`)
+    if (!raw) {
+      alert(
+        `No camera captured yet for "${siteSlug}". Open the viewer in another tab and move the camera, then try again.`,
+      )
+      return
+    }
+    try {
+      const cam = JSON.parse(raw) as {
+        longitude: number
+        latitude: number
+        height: number
+        heading: number
+        pitch: number
+        roll: number
+        ts: number
+      }
+      const ageMins = (Date.now() - cam.ts) / 60_000
+      if (ageMins > 10) {
+        if (
+          !confirm(
+            `The captured camera is ${Math.round(ageMins)} min old. Use it anyway?`,
+          )
+        )
+          return
+      }
+      patchSlide(activeIdx, {
+        camera: {
+          longitude: cam.longitude,
+          latitude: cam.latitude,
+          height: cam.height,
+          heading: cam.heading,
+          pitch: cam.pitch,
+          roll: cam.roll,
+        },
+      })
+    } catch {
+      alert('Captured camera is corrupted — try moving the viewer again.')
+    }
+  }
+
   // Keep draft in sync if the parent gets a fresh server copy.
   useEffect(() => {
     setDraft(story)
@@ -754,13 +798,22 @@ function StoryMapEditor({
           {activeSlide ? (
             <>
               {siteSlug && (
-                <button
-                  onClick={() => previewSlide(activeSlide)}
-                  style={{ ...ghostBtn, marginBottom: 10 }}
-                  title="Open the viewer at this slide's camera"
-                >
-                  <ExternalLink size={12} /> Preview in viewer
-                </button>
+                <div style={{ display: 'flex', gap: 8, marginBottom: 10, flexWrap: 'wrap' }}>
+                  <button
+                    onClick={() => previewSlide(activeSlide)}
+                    style={ghostBtn}
+                    title="Open the viewer at this slide's camera"
+                  >
+                    <ExternalLink size={12} /> Preview in viewer
+                  </button>
+                  <button
+                    onClick={captureFromViewer}
+                    style={ghostBtn}
+                    title="Pull camera coords from the most recent viewer tab"
+                  >
+                    <Camera size={12} /> Capture from viewer
+                  </button>
+                </div>
               )}
               <Field label="Title">
                 <input

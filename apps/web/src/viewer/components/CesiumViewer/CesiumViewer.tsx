@@ -197,6 +197,53 @@ export default function CesiumViewerComponent({
     }
   }, [viewerRef, is2D])
 
+  // Camera capture for cross-tab editor flows (StoryMaps "Capture from
+  // viewer"). Writes the live camera to localStorage every ~500ms
+  // throttled, scoped to the active site slug. The Atlas editor reads
+  // this and pulls coords back into the slide form.
+  useEffect(() => {
+    const viewer = viewerRef.current
+    if (!viewer || !siteId) return
+    let scene
+    try {
+      scene = viewer.scene
+    } catch {
+      return
+    }
+    if (!scene) return
+    let lastWrite = 0
+    const onPost = () => {
+      const now = Date.now()
+      if (now - lastWrite < 500) return
+      lastWrite = now
+      try {
+        const cam = viewer.camera
+        const cart = cam.positionCartographic
+        if (!cart) return
+        const payload = {
+          longitude: CesiumMath.toDegrees(cart.longitude),
+          latitude: CesiumMath.toDegrees(cart.latitude),
+          height: cart.height,
+          heading: CesiumMath.toDegrees(cam.heading),
+          pitch: CesiumMath.toDegrees(cam.pitch),
+          roll: CesiumMath.toDegrees(cam.roll),
+          ts: now,
+        }
+        localStorage.setItem(`mighty:viewer-cam:${siteId}`, JSON.stringify(payload))
+      } catch {
+        /* viewer mid-destroy or quota exhausted */
+      }
+    }
+    scene.postRender.addEventListener(onPost)
+    return () => {
+      try {
+        scene.postRender.removeEventListener(onPost)
+      } catch {
+        /* scene already gone */
+      }
+    }
+  }, [viewerRef.current, siteId])
+
   // Camera-heading + reset, used by the new nav gimbal in MapShell.
   // Guard against viewer destroy: cesium throws when accessing .scene
   // after destroy() so we keep our own listener-handle and try/catch
