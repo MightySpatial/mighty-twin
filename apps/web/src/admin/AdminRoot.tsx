@@ -10,6 +10,7 @@ import DataSourcePage from './pages/DataSourcePage'
 import UploadPage from './pages/UploadPage'
 import LibraryPage from './pages/LibraryPage'
 import SubmissionsPage from './pages/SubmissionsPage'
+import StoryMapsPage from './pages/StoryMapsPage'
 import './styles/components.css'
 import './styles/global.css'
 
@@ -31,6 +32,7 @@ export function AdminRoot() {
           <Route path="data/:id" element={<DataSourcePage />} />
           <Route path="upload" element={<UploadPage />} />
           <Route path="library" element={<LibraryPage />} />
+          <Route path="stories" element={<StoryMapsPage />} />
           <Route path="submissions" element={<SubmissionsPage />} />
         </Route>
       </Routes>
