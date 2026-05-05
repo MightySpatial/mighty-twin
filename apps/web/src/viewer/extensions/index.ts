@@ -5,7 +5,11 @@
  */
 
 // Core extensions (ship with MightyTwin)
-import './underground'
+// Note: underground used to register here; the canonical surface is
+// now the Underground tab inside the Terrain rail widget (T+1230).
+// Leaving the extension file in place for reference but no longer
+// loaded — keeps the panel-strip from showing two ways to reach
+// the same controls.
 
 import './pipes'
 

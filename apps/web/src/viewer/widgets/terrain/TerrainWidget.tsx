@@ -11,7 +11,9 @@
 import { useState } from 'react'
 import {
   AlertCircle,
+  ArrowDownToLine,
   Copy,
+  Eye,
   Loader,
   Mountain,
   RefreshCw,
@@ -20,6 +22,7 @@ import {
 } from 'lucide-react'
 import ProfileChart from './ProfileChart'
 import type { SectionStatus, TerrainSection } from './useTerrain'
+import type { UndergroundState } from './useUnderground'
 
 interface Props {
   status: SectionStatus
@@ -34,9 +37,15 @@ interface Props {
   onClear: () => void
   onClose: () => void
   onHoverSample: (idx: number | null) => void
+  // Underground (T+1230)
+  underground: UndergroundState
+  onUndergroundEnable: () => void
+  onUndergroundDisable: () => void
+  onUndergroundSet: (patch: Partial<UndergroundState>) => void
+  onUndergroundReset: () => void
 }
 
-type Tab = 'section' | 'transparency'
+type Tab = 'section' | 'underground' | 'transparency'
 
 export default function TerrainWidget({
   status,
@@ -51,6 +60,11 @@ export default function TerrainWidget({
   onClear,
   onClose,
   onHoverSample,
+  underground,
+  onUndergroundEnable,
+  onUndergroundDisable,
+  onUndergroundSet,
+  onUndergroundReset,
 }: Props) {
   const [tab, setTab] = useState<Tab>('section')
   const [copied, setCopied] = useState(false)
@@ -166,6 +180,16 @@ export default function TerrainWidget({
         />
       )}
 
+      {tab === 'underground' && (
+        <UndergroundTab
+          state={underground}
+          onEnable={onUndergroundEnable}
+          onDisable={onUndergroundDisable}
+          onSet={onUndergroundSet}
+          onReset={onUndergroundReset}
+        />
+      )}
+
       {tab === 'transparency' && (
         <TransparencyTab globeAlpha={globeAlpha} onSetGlobeAlpha={onSetGlobeAlpha} />
       )}
@@ -186,6 +210,9 @@ function Tabs({ tab, onChange }: { tab: Tab; onChange: (t: Tab) => void }) {
     >
       <TabBtn active={tab === 'section'} onClick={() => onChange('section')}>
         Section
+      </TabBtn>
+      <TabBtn active={tab === 'underground'} onClick={() => onChange('underground')}>
+        Underground
       </TabBtn>
       <TabBtn active={tab === 'transparency'} onClick={() => onChange('transparency')}>
         Transparency
@@ -369,6 +396,264 @@ function SectionTab({
         </button>
       </div>
     </div>
+  )
+}
+
+// ── Underground tab ─────────────────────────────────────────────────────
+
+function UndergroundTab({
+  state,
+  onEnable,
+  onDisable,
+  onSet,
+  onReset,
+}: {
+  state: UndergroundState
+  onEnable: () => void
+  onDisable: () => void
+  onSet: (patch: Partial<UndergroundState>) => void
+  onReset: () => void
+}) {
+  const enabled = state.enabled
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      {/* Master toggle card */}
+      <div
+        style={{
+          padding: 12,
+          background: enabled ? 'rgba(167,139,250,0.10)' : 'rgba(255,255,255,0.03)',
+          border: `1px solid ${enabled ? 'rgba(167,139,250,0.4)' : 'rgba(255,255,255,0.07)'}`,
+          borderRadius: 10,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 12,
+        }}
+      >
+        <div
+          style={{
+            width: 36,
+            height: 36,
+            borderRadius: 9,
+            background: enabled ? 'rgba(167,139,250,0.22)' : 'rgba(255,255,255,0.06)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: enabled ? '#c4b5fd' : 'rgba(240,242,248,0.5)',
+            flexShrink: 0,
+          }}
+        >
+          <ArrowDownToLine size={18} />
+        </div>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontSize: 13, fontWeight: 600 }}>Underground mode</div>
+          <div style={{ fontSize: 11, color: 'rgba(240,242,248,0.55)', marginTop: 2 }}>
+            Translucent globe + reference floor + x-ray through terrain.
+          </div>
+        </div>
+        <ToggleSwitch
+          checked={enabled}
+          onChange={(v) => (v ? onEnable() : onDisable())}
+        />
+      </div>
+
+      {/* Floor controls — only meaningful when underground is on */}
+      <div
+        style={{
+          opacity: enabled ? 1 : 0.5,
+          pointerEvents: enabled ? 'auto' : 'none',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 12,
+        }}
+      >
+        <Row label="Show floor">
+          <ToggleSwitch
+            checked={state.floorEnabled}
+            onChange={(v) => onSet({ floorEnabled: v })}
+          />
+        </Row>
+
+        <SliderRow
+          label="Depth"
+          value={Math.abs(state.floorDepth)}
+          min={5}
+          max={500}
+          step={5}
+          unit="m"
+          onChange={(v) => onSet({ floorDepth: -v })}
+        />
+
+        <SliderRow
+          label="Floor opacity"
+          value={Math.round(state.floorOpacity * 100)}
+          min={20}
+          max={100}
+          step={1}
+          unit="%"
+          onChange={(v) => onSet({ floorOpacity: v / 100 })}
+        />
+
+        <Row label="X-ray terrain" sub="Subsurface 3D-Tiles render through the globe">
+          <ToggleSwitch
+            checked={state.xrayTerrain}
+            onChange={(v) => onSet({ xrayTerrain: v })}
+          />
+        </Row>
+      </div>
+
+      <button
+        onClick={onReset}
+        style={{
+          padding: '7px 12px',
+          background: 'rgba(255,255,255,0.04)',
+          border: '1px solid rgba(255,255,255,0.07)',
+          borderRadius: 7,
+          color: 'rgba(240,242,248,0.7)',
+          fontSize: 11,
+          cursor: 'pointer',
+          alignSelf: 'flex-start',
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: 6,
+        }}
+      >
+        <Eye size={11} /> Reset to surface mode
+      </button>
+    </div>
+  )
+}
+
+function Row({
+  label,
+  sub,
+  children,
+}: {
+  label: string
+  sub?: string
+  children: React.ReactNode
+}) {
+  return (
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 12,
+        padding: 10,
+        background: 'rgba(255,255,255,0.03)',
+        border: '1px solid rgba(255,255,255,0.07)',
+        borderRadius: 8,
+      }}
+    >
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: 12, fontWeight: 500 }}>{label}</div>
+        {sub && (
+          <div style={{ fontSize: 10, color: 'rgba(240,242,248,0.45)', marginTop: 2 }}>
+            {sub}
+          </div>
+        )}
+      </div>
+      {children}
+    </div>
+  )
+}
+
+function SliderRow({
+  label,
+  value,
+  min,
+  max,
+  step,
+  unit,
+  onChange,
+}: {
+  label: string
+  value: number
+  min: number
+  max: number
+  step: number
+  unit: string
+  onChange: (v: number) => void
+}) {
+  return (
+    <div
+      style={{
+        padding: 10,
+        background: 'rgba(255,255,255,0.03)',
+        border: '1px solid rgba(255,255,255,0.07)',
+        borderRadius: 8,
+      }}
+    >
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          marginBottom: 6,
+        }}
+      >
+        <span style={{ fontSize: 12, fontWeight: 500 }}>{label}</span>
+        <span
+          style={{
+            fontSize: 11,
+            fontFamily: 'monospace',
+            color: '#c4b5fd',
+          }}
+        >
+          {value}
+          {unit}
+        </span>
+      </div>
+      <input
+        type="range"
+        min={min}
+        max={max}
+        step={step}
+        value={value}
+        onChange={(e) => onChange(parseFloat(e.target.value))}
+        style={{ width: '100%', accentColor: '#a78bfa' }}
+      />
+    </div>
+  )
+}
+
+function ToggleSwitch({
+  checked,
+  onChange,
+}: {
+  checked: boolean
+  onChange: (v: boolean) => void
+}) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      onClick={() => onChange(!checked)}
+      style={{
+        width: 38,
+        height: 22,
+        borderRadius: 999,
+        background: checked ? '#a78bfa' : 'rgba(255,255,255,0.12)',
+        border: 'none',
+        cursor: 'pointer',
+        position: 'relative',
+        transition: 'background 160ms',
+        flexShrink: 0,
+      }}
+    >
+      <span
+        style={{
+          position: 'absolute',
+          top: 2,
+          left: checked ? 18 : 2,
+          width: 18,
+          height: 18,
+          borderRadius: '50%',
+          background: '#fff',
+          transition: 'left 160ms',
+        }}
+      />
+    </button>
   )
 }
 

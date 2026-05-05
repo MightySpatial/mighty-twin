@@ -29,7 +29,7 @@ import MeasureWidget, { useMeasure } from '../../widgets/measure'
 import { SnapshotWidget } from '../../widgets/snapshot'
 import { AttributeTableWidget } from '../../widgets/attribute-table'
 import { StrikeWidget, useStrike } from '../../widgets/strike'
-import { TerrainWidget, useTerrain } from '../../widgets/terrain'
+import { TerrainWidget, useTerrain, useUnderground } from '../../widgets/terrain'
 import { flyToTarget } from '../../utils/flyToTarget'
 import BasemapWidget, { useBasemap } from '../../widgets/basemap'
 import TransparencyWidget, { useGlobeTransparency } from '../../widgets/transparency'
@@ -343,6 +343,7 @@ export default function CesiumViewerComponent({
   // existing globe-transparency knob into a tab inside the same panel.
   const [terrainOpen, setTerrainOpen] = useState(false)
   const terrain = useTerrain(viewerRef)
+  const underground = useUnderground(viewerRef, globeAlpha, setGlobeAlpha)
 
   // Map MapShell action ids → existing widget state. Tools that aren't
   // implemented yet (design/table/story/strike) toggle a placeholder
@@ -740,7 +741,7 @@ export default function CesiumViewerComponent({
         />
       )}
 
-      {/* Terrain section + transparency */}
+      {/* Terrain section + underground + transparency */}
       {terrainOpen && (
         <TerrainWidget
           status={terrain.status}
@@ -754,6 +755,11 @@ export default function CesiumViewerComponent({
           onCancel={terrain.cancel}
           onClear={terrain.clear}
           onHoverSample={terrain.setCursor}
+          underground={underground.state}
+          onUndergroundEnable={underground.enable}
+          onUndergroundDisable={underground.disable}
+          onUndergroundSet={underground.set}
+          onUndergroundReset={underground.reset}
           onClose={() => {
             terrain.clear()
             setTerrainOpen(false)
