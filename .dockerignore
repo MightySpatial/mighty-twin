@@ -4,7 +4,6 @@
 **/.turbo
 **/__pycache__
 **/*.pyc
-**/python
 **/infra
 **/mockups
 **/docs
