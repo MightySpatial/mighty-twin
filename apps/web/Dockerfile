@@ -5,8 +5,10 @@ RUN corepack enable && corepack prepare pnpm@9.15.0 --activate
 
 WORKDIR /app
 
-# Copy monorepo workspace config + lockfile from repo root context
-COPY package.json pnpm-workspace.yaml pnpm-lock.yaml .npmrc ./
+# Copy monorepo workspace config + lockfile + root tsconfigs from repo root.
+# Workspace packages extend ../../tsconfig.base.json — vite/esbuild needs it
+# resolvable when bundling through workspace boundaries.
+COPY package.json pnpm-workspace.yaml pnpm-lock.yaml .npmrc tsconfig*.json ./
 
 # Copy all workspace packages (needed for workspace: protocol resolution)
 COPY packages/ ./packages/
