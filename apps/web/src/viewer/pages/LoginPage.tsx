@@ -212,6 +212,18 @@ export default function LoginPage() {
             {submitting ? 'Signing in…' : 'Sign in'}
             <ArrowRight size={14} />
           </button>
+
+          <div
+            style={{
+              marginTop: 14,
+              fontSize: 11,
+              color: 'rgba(240,242,248,0.45)',
+              textAlign: 'center',
+              lineHeight: 1.5,
+            }}
+          >
+            Forgot your password? Ask a workspace admin to reset it for you.
+          </div>
         </form>
 
         {oauthError && (
