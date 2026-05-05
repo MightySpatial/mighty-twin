@@ -226,6 +226,7 @@ export function useDesignState(viewer: CesiumViewerType | null) {
     setElevationConfig,
     // Layers
     layers,
+    setLayers,
     activeLayerId,
     setActiveLayerId,
     addLayer,
@@ -250,6 +251,7 @@ export function useDesignState(viewer: CesiumViewerType | null) {
     setTraverseDraft,
     // Features
     features,
+    setFeatures,
     selectedFeatureId,
     selectedFeature,
     featuresByLayer,

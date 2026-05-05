@@ -3,11 +3,13 @@
  * Rail navigation on the left, panel content on the right.
  * Orchestrates all design sub-panels.
  */
-import { useEffect } from 'react'
+import { useCallback, useEffect } from 'react'
 import type { Viewer as CesiumViewerType } from 'cesium'
+import { Check, CloudOff, Loader, RefreshCw } from 'lucide-react'
 import { RAIL_TABS } from './types'
 import type { DesignRailTab } from './types'
 import { useDesignState } from './useDesignState'
+import { useSketchPersistence } from './useSketchPersistence'
 import { useSolidTools } from './tools/useSolidTools'
 import { useMoveTool } from './tools/useMoveTool'
 import SketchLayersPanel from './panels/SketchLayersPanel'
@@ -28,6 +30,28 @@ interface DesignWidgetProps {
 export default function DesignWidget({ viewer, onClose, siteSlug = null }: DesignWidgetProps) {
   const state = useDesignState(viewer)
   const { activeTab, setActiveTab } = state
+
+  // Persistence: hydrate the design state from /api/me/sketch-layers
+  // on mount, then debounce-save back on every change. The hook
+  // handles the round-trip so the widget keeps its existing local
+  // state surface and we just pass an onHydrate callback.
+  const handleHydrate = useCallback(
+    (loadedLayers: typeof state.layers, loadedFeatures: typeof state.features) => {
+      state.setLayers(loadedLayers)
+      state.setFeatures(loadedFeatures)
+      if (loadedLayers.length > 0 && !state.activeLayerId) {
+        state.setActiveLayerId(loadedLayers[0].id)
+      }
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [],
+  )
+  const persistence = useSketchPersistence({
+    siteSlug,
+    layers: state.layers,
+    features: state.features,
+    onHydrate: handleHydrate,
+  })
 
   // Auto-activate 'select' tool when Edit tab is active
   useEffect(() => {
@@ -83,6 +107,14 @@ export default function DesignWidget({ viewer, onClose, siteSlug = null }: Desig
           <span className="design-panel-title">
             {RAIL_TABS.find(t => t.id === activeTab)?.label ?? 'Design'}
           </span>
+          {siteSlug && (
+            <SaveIndicator
+              status={persistence.status}
+              lastSavedAt={persistence.lastSavedAt}
+              lastError={persistence.lastError}
+              onRetry={persistence.saveNow}
+            />
+          )}
           <button className="ext-panel-close" onClick={onClose}>×</button>
         </div>
 
@@ -179,5 +211,66 @@ function DesignPlaceholder({ tab, description }: { tab: DesignRailTab; descripti
       <p className="design-placeholder-desc">{description}</p>
       <p className="design-placeholder-hint">Available in Sprint 2.</p>
     </div>
+  )
+}
+
+function SaveIndicator({
+  status,
+  lastSavedAt,
+  lastError,
+  onRetry,
+}: {
+  status: 'idle' | 'saving' | 'saved' | 'error'
+  lastSavedAt: number | null
+  lastError: string | null
+  onRetry: () => void
+}) {
+  const tint =
+    status === 'error' ? '#fb7185' : status === 'saving' ? '#9bb3ff' : '#34d399'
+  const icon =
+    status === 'saving' ? (
+      <Loader size={11} className="spin" />
+    ) : status === 'error' ? (
+      <CloudOff size={11} />
+    ) : (
+      <Check size={11} />
+    )
+  const label =
+    status === 'saving'
+      ? 'Saving…'
+      : status === 'error'
+      ? 'Save failed'
+      : lastSavedAt
+      ? 'Saved'
+      : 'Up to date'
+  const title = lastError
+    ? lastError
+    : lastSavedAt
+    ? `Last saved ${new Date(lastSavedAt).toLocaleTimeString()}`
+    : 'No unsaved changes'
+  return (
+    <span
+      title={title}
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 4,
+        marginLeft: 'auto',
+        padding: '2px 8px',
+        borderRadius: 999,
+        background: `${tint}1a`,
+        color: tint,
+        fontSize: 10,
+        fontWeight: 600,
+        textTransform: 'uppercase',
+        letterSpacing: '0.04em',
+        cursor: status === 'error' ? 'pointer' : 'default',
+      }}
+      onClick={status === 'error' ? onRetry : undefined}
+    >
+      {icon}
+      {label}
+      {status === 'error' && <RefreshCw size={10} />}
+    </span>
   )
 }

@@ -160,17 +160,98 @@ class SketchLayerUpsert(BaseModel):
 
 
 @router.get("/sketch-layers")
-def list_sketch_layers(user: CurrentUser, db: DbSession) -> list[dict[str, Any]]:
-    rows = (
-        db.execute(
-            select(SketchLayer)
-            .where(SketchLayer.user_id == user.id)
-            .order_by(SketchLayer.created_at.desc())
-        )
-        .scalars()
-        .all()
-    )
+def list_sketch_layers(
+    user: CurrentUser, db: DbSession, site_slug: str | None = None
+) -> list[dict[str, Any]]:
+    stmt = select(SketchLayer).where(SketchLayer.user_id == user.id)
+    if site_slug:
+        site = db.execute(select(Site).where(Site.slug == site_slug)).scalar_one_or_none()
+        if site is None:
+            return []
+        stmt = stmt.where(SketchLayer.site_id == site.id)
+    rows = db.execute(stmt.order_by(SketchLayer.created_at)).scalars().all()
     return [_serialize_sketch(s) for s in rows]
+
+
+class SketchLayerPut(BaseModel):
+    """PUT body — same shape as POST but we allow the client to pass
+    an explicit id so the frontend's local UUIDs become the row ids
+    (round-trip stability for the design widget's persistence loop)."""
+
+    id: str | None = None
+    name: str
+    color: str | None = None
+    visible: bool = True
+    locked: bool = False
+    features: list[dict[str, Any]] = Field(default_factory=list)
+    site_slug: str | None = None
+
+
+@router.put("/sketch-layers")
+def upsert_sketch_layers_bulk(
+    body: list[SketchLayerPut], user: CurrentUser, db: DbSession
+) -> list[dict[str, Any]]:
+    """Bulk upsert — replaces the user's sketch-layer set for the
+    bound site with the provided list. Layers in the DB but not in the
+    body are deleted (so client-side deletes propagate).
+
+    Every item in ``body`` must share the same site_slug; we resolve
+    it once and use the ID as the scope for the diff.
+    """
+    if not body:
+        return []
+    site_slug = body[0].site_slug
+    if any((it.site_slug or None) != site_slug for it in body):
+        raise HTTPException(
+            status_code=400,
+            detail="All sketch layers in a bulk upsert must share the same site_slug",
+        )
+    site_id: uuid.UUID | None = None
+    if site_slug:
+        site = db.execute(select(Site).where(Site.slug == site_slug)).scalar_one_or_none()
+        if site is None:
+            raise HTTPException(status_code=404, detail=f"Site {site_slug!r} not found")
+        site_id = site.id
+
+    # Existing rows scoped to (user, site).
+    stmt = select(SketchLayer).where(SketchLayer.user_id == user.id)
+    if site_id is None:
+        stmt = stmt.where(SketchLayer.site_id.is_(None))
+    else:
+        stmt = stmt.where(SketchLayer.site_id == site_id)
+    existing = {s.id: s for s in db.execute(stmt).scalars().all()}
+
+    out: list[dict[str, Any]] = []
+    seen: set[uuid.UUID] = set()
+    for item in body:
+        target_id = uuid.UUID(item.id) if item.id else uuid.uuid4()
+        seen.add(target_id)
+        row = existing.get(target_id)
+        if row is None:
+            row = SketchLayer(
+                id=target_id,
+                user_id=user.id,
+                site_id=site_id,
+                name=item.name,
+                color=item.color,
+                visible=item.visible,
+                locked=item.locked,
+                features=item.features,
+            )
+            db.add(row)
+        else:
+            row.name = item.name
+            row.color = item.color
+            row.visible = item.visible
+            row.locked = item.locked
+            row.features = item.features
+        out.append(_serialize_sketch(row))
+    # Delete rows the client didn't include.
+    for stale_id, stale_row in existing.items():
+        if stale_id not in seen:
+            db.delete(stale_row)
+    db.commit()
+    return out
 
 
 @router.post("/sketch-layers", status_code=201)

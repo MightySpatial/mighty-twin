@@ -6,8 +6,10 @@ import { registerExtension } from '../types'
 import type { PanelProps } from '../types'
 import { DesignWidget } from '../../widgets/design'
 
-function DesignPanel({ viewer, onClose }: PanelProps) {
-  return <DesignWidget viewer={viewer} onClose={onClose} />
+function DesignPanel({ viewer, context, onClose }: PanelProps) {
+  return (
+    <DesignWidget viewer={viewer} onClose={onClose} siteSlug={context.siteId || null} />
+  )
 }
 
 registerExtension({
