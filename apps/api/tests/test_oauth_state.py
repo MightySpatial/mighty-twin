@@ -48,9 +48,14 @@ def test_state_expired_rejects(monkeypatch):
 
 def test_state_tampered_signature_rejects():
     token = _state_token("/", "google")
-    # Flip the last char of the signature segment
+    # Flip a middle char of the signature segment. Avoid the last char:
+    # base64url's last position carries only 4 meaningful bits for a
+    # 32-byte HMAC, so swaps within the same nibble decode identically
+    # and look genuine to the verifier — flake-prone.
     head, payload, sig = token.rsplit(".", 2)
-    bad_sig = sig[:-1] + ("A" if sig[-1] != "A" else "B")
+    mid = len(sig) // 2
+    flipped = "A" if sig[mid] != "A" else "B"
+    bad_sig = sig[:mid] + flipped + sig[mid + 1 :]
     bad_token = f"{head}.{payload}.{bad_sig}"
     with pytest.raises(Exception):
         _verify_state(bad_token, "google")

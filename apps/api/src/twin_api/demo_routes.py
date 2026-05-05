@@ -22,7 +22,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from sqlalchemy import select, text
 
-from mighty_models import DataSource, Layer, Site
+from mighty_models import DataSource, Layer, Site, StoryMap
 
 from .auth import AdminUser
 from .db import DbSession
@@ -112,6 +112,18 @@ def load_demo(body: DemoBody, _: AdminUser, db: DbSession) -> dict[str, Any]:
             )
         db.delete(existing)
         db.flush()
+
+    # Clean up any DataSources tagged from a previous demo seed (FK is
+    # SET NULL on layer.data_source_id, so site delete leaves them
+    # orphaned otherwise).
+    orphaned = db.execute(
+        select(DataSource).where(DataSource.name.in_([
+            "Demo landmarks", "Demo route", "Demo zone",
+        ]))
+    ).scalars().all()
+    for ds in orphaned:
+        db.delete(ds)
+    db.flush()
 
     site = Site(
         slug=DEMO_SLUG,
@@ -263,12 +275,96 @@ def load_demo(body: DemoBody, _: AdminUser, db: DbSession) -> dict[str, Any]:
         ],
     )
 
+    # Starter story map — gives the user a guided tour the first time
+    # they open the demo site, so they discover stories without having to
+    # build one from scratch.
+    story = StoryMap(
+        id=uuid.uuid4(),
+        site_id=site.id,
+        name="Tour of the harbour",
+        description=(
+            "A four-slide walkthrough showing how MightyTwin renders points, "
+            "lines, and polygons. Edit, duplicate, or delete it whenever — "
+            "stories are just JSON."
+        ),
+        is_published=True,
+        slides=[
+            {
+                "title": "Welcome",
+                "narrative": (
+                    "This is the demo site — synthetic data around Sydney "
+                    "Harbour. Three layers, seven features. The same shape "
+                    "as a real project, just smaller."
+                ),
+                "camera": {
+                    "longitude": 151.215,
+                    "latitude": -33.862,
+                    "height": 4500,
+                    "heading": 0,
+                    "pitch": -45,
+                },
+                "duration": 5,
+            },
+            {
+                "title": "Landmark points",
+                "narrative": (
+                    "The Landmarks layer is a vector point layer — five "
+                    "named places. Click a point in the viewer to see its "
+                    "attributes, or open it in Atlas to edit them."
+                ),
+                "camera": {
+                    "longitude": 151.2153,
+                    "latitude": -33.8568,
+                    "height": 1400,
+                    "heading": 20,
+                    "pitch": -55,
+                },
+                "duration": 5,
+            },
+            {
+                "title": "Vector routes",
+                "narrative": (
+                    "Lines work the same way. The Harbour bridge route "
+                    "traces the bridge from pylon to pylon. Use the design "
+                    "widget to draw your own and they'll persist as features."
+                ),
+                "camera": {
+                    "longitude": 151.2106,
+                    "latitude": -33.8525,
+                    "height": 1100,
+                    "heading": 90,
+                    "pitch": -50,
+                },
+                "duration": 5,
+            },
+            {
+                "title": "Polygon zones",
+                "narrative": (
+                    "And polygons render with a stroke + fill. The Royal "
+                    "Botanic Garden boundary is one polygon feature. Tweak "
+                    "its colour from the layer style editor."
+                ),
+                "camera": {
+                    "longitude": 151.2175,
+                    "latitude": -33.8650,
+                    "height": 1600,
+                    "heading": 0,
+                    "pitch": -55,
+                },
+                "duration": 6,
+            },
+        ],
+    )
+    db.add(story)
+    db.flush()
+
     db.commit()
     return {
         "site_slug": DEMO_SLUG,
         "site_id": str(site.id),
         "layers": 3,
         "features": inserted,
+        "story_maps": 1,
     }
 
 
