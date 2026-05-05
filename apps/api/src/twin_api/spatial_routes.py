@@ -17,7 +17,7 @@ from __future__ import annotations
 import uuid
 from typing import Any
 
-from fastapi import APIRouter, HTTPException, Request, Response, status
+from fastapi import APIRouter, File, Form, HTTPException, Request, Response, UploadFile, status
 from pydantic import BaseModel, Field
 from sqlalchemy import func, select
 
@@ -25,7 +25,7 @@ from mighty_models import DataSource, Layer, Site, Snapshot, User
 
 from .auth import AdminUser, CurrentUser
 from .db import DbSession
-from .packages import export_site_package
+from .packages import PackageImportError, export_site_package, import_site_package
 
 router = APIRouter(prefix="/api/spatial", tags=["spatial"])
 
@@ -183,6 +183,41 @@ def export_site(
             "Content-Length": str(len(payload)),
         },
     )
+
+
+# ── Site package import (.mtsite) ───────────────────────────────────────
+
+
+@router.post("/sites/import", status_code=201)
+async def import_site_endpoint(
+    _: AdminUser,
+    db: DbSession,
+    file: UploadFile = File(...),
+    target_slug: str | None = Form(None),
+    overwrite_collision: bool = Form(False),
+) -> dict[str, Any]:
+    """Upload a .mtsite archive and provision a new site from it.
+
+    target_slug overrides the slug stored in the manifest (so two
+    imports of the same package can coexist as ``foo`` and ``foo-copy``).
+    Default is the manifest's slug; a 409 surfaces if it collides and
+    overwrite_collision wasn't set.
+    """
+    raw = await file.read()
+    if not raw:
+        raise HTTPException(status_code=400, detail="Empty upload")
+    try:
+        result = import_site_package(
+            db,
+            raw,
+            target_slug=target_slug,
+            overwrite_collision=overwrite_collision,
+        )
+    except PackageImportError as e:
+        msg = str(e)
+        status_code = 409 if "already exists" in msg else 400
+        raise HTTPException(status_code=status_code, detail=msg) from e
+    return result
 
 
 # ── Site snapshot gallery (admin / co-viewer) ───────────────────────────

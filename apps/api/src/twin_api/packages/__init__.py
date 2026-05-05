@@ -16,5 +16,12 @@ The format is designed so the same importer handles every source.
 
 from .manifest import PackageManifest, PACKAGE_SCHEMA_VERSION
 from .exporter import export_site_package
+from .importer import PackageImportError, import_site_package
 
-__all__ = ["PackageManifest", "PACKAGE_SCHEMA_VERSION", "export_site_package"]
+__all__ = [
+    "PackageManifest",
+    "PACKAGE_SCHEMA_VERSION",
+    "export_site_package",
+    "import_site_package",
+    "PackageImportError",
+]

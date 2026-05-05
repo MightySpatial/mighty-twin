@@ -13,7 +13,7 @@
  *  quick actions (delete, open in viewer).
  */
 
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import {
   AlertCircle,
@@ -21,12 +21,15 @@ import {
   Eye,
   Globe,
   Layers,
+  Loader,
   Lock,
+  Package,
   Plus,
   Search,
   Trash2,
+  Upload,
 } from 'lucide-react'
-import { apiFetch, useApiData } from '../hooks/useApi'
+import { apiFetch, API_URL, useApiData } from '../hooks/useApi'
 import { useBreakpoint } from '../hooks/useBreakpoint'
 
 interface Site {
@@ -48,6 +51,52 @@ export default function SitesPage() {
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState<'all' | 'public' | 'private'>('all')
   const [deleting, setDeleting] = useState<string | null>(null)
+  const [importing, setImporting] = useState(false)
+  const [importErr, setImportErr] = useState<string | null>(null)
+  const importInputRef = useRef<HTMLInputElement | null>(null)
+
+  async function handleImportFile(file: File, overwrite: boolean) {
+    setImporting(true)
+    setImportErr(null)
+    try {
+      const fd = new FormData()
+      fd.append('file', file)
+      if (overwrite) fd.append('overwrite_collision', 'true')
+      const token = localStorage.getItem('accessToken')
+      const res = await fetch(`${API_URL}/api/spatial/sites/import`, {
+        method: 'POST',
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        body: fd,
+      })
+      if (!res.ok) {
+        const text = await res.text().catch(() => '')
+        let detail = `Import failed (${res.status})`
+        try {
+          detail = JSON.parse(text)?.detail || detail
+        } catch {
+          /* keep default */
+        }
+        if (res.status === 409 && !overwrite) {
+          if (
+            confirm(
+              `${detail}\n\nReplace the existing site with the imported one? This deletes the current site's layers and features.`,
+            )
+          ) {
+            await handleImportFile(file, true)
+            return
+          }
+          throw new Error(detail)
+        }
+        throw new Error(detail)
+      }
+      const result = (await res.json()) as { site_slug: string }
+      navigate(`/admin/sites/${result.site_slug}`)
+    } catch (e) {
+      setImportErr((e as Error).message)
+    } finally {
+      setImporting(false)
+    }
+  }
 
   const filtered = useMemo(() => {
     return sites.filter((s) => {
@@ -97,10 +146,64 @@ export default function SitesPage() {
             {total} site{total === 1 ? '' : 's'} configured · {publicCount} public
           </p>
         </div>
-        <button onClick={() => navigate('/admin/sites/new')} style={primaryBtn}>
-          <Plus size={14} /> Add site
-        </button>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <input
+            ref={importInputRef}
+            type="file"
+            accept=".mtsite,.zip,application/zip"
+            style={{ display: 'none' }}
+            onChange={(e) => {
+              const f = e.target.files?.[0]
+              if (f) handleImportFile(f, false)
+              e.target.value = ''
+            }}
+          />
+          <button
+            onClick={() => importInputRef.current?.click()}
+            disabled={importing}
+            style={ghostHeaderBtn}
+            title="Import a .mtsite package"
+          >
+            {importing ? <Loader size={14} className="spin" /> : <Package size={14} />}
+            {importing ? 'Importing…' : 'Import'}
+          </button>
+          <button onClick={() => navigate('/admin/sites/new')} style={primaryBtn}>
+            <Plus size={14} /> Add site
+          </button>
+        </div>
       </header>
+
+      {importErr && (
+        <div
+          style={{
+            padding: 12,
+            background: 'rgba(251,113,133,0.06)',
+            border: '1px solid rgba(251,113,133,0.32)',
+            borderRadius: 8,
+            color: '#fca5a5',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            marginBottom: 14,
+          }}
+        >
+          <AlertCircle size={14} />
+          <span style={{ flex: 1 }}>Import failed: {importErr}</span>
+          <button
+            onClick={() => setImportErr(null)}
+            style={{
+              padding: 4,
+              background: 'transparent',
+              border: 'none',
+              color: 'rgba(240,242,248,0.5)',
+              cursor: 'pointer',
+              lineHeight: 0,
+            }}
+          >
+            ×
+          </button>
+        </div>
+      )}
 
       {/* Toolbar */}
       <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap' }}>
@@ -388,6 +491,20 @@ function FilterChip({
       {children}
     </button>
   )
+}
+
+const ghostHeaderBtn: React.CSSProperties = {
+  padding: '8px 14px',
+  background: 'rgba(255,255,255,0.04)',
+  border: '1px solid rgba(255,255,255,0.07)',
+  borderRadius: 8,
+  color: '#f0f2f8',
+  fontSize: 13,
+  fontWeight: 500,
+  cursor: 'pointer',
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: 6,
 }
 
 const primaryBtn: React.CSSProperties = {
