@@ -260,6 +260,12 @@ export default function ViewerPage() {
           onViewerReady={(v) => { cesiumViewerRef.current = v }}
           onLayerToggle={handleLayerToggle}
           onLayerOpacityChange={handleLayerOpacity}
+          onOpenStoryPicker={
+            storyMaps.length > 0
+              ? () => setStoryPickerOpen((o) => !o)
+              : undefined
+          }
+          storyActive={!!activeStoryMap}
         />
       </div>
 

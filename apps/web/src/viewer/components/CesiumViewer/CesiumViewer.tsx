@@ -68,6 +68,8 @@ export default function CesiumViewerComponent({
   onViewerReady,
   onLayerToggle,
   onLayerOpacityChange,
+  onOpenStoryPicker,
+  storyActive = false,
 }: CesiumViewerProps) {
   const { isMobile } = useBreakpoint()
   const [sidebarOpen, setSidebarOpen] = useState(!isMobile)
@@ -284,9 +286,10 @@ export default function CesiumViewerComponent({
     if (legendOpen) return 'legend'
     if (transparencyOpen) return 'terrain'
     if (snapOpen) return 'snap'
+    if (storyActive) return 'story'
     if (basemapOpen) return null  // basemap lives in zoom column, not bottom rail
     return null
-  }, [searchOpen, measureActive, sidebarOpen, isMobile, legendOpen, transparencyOpen, snapOpen, basemapOpen])
+  }, [searchOpen, measureActive, sidebarOpen, isMobile, legendOpen, transparencyOpen, snapOpen, storyActive, basemapOpen])
 
   const onMapShellAction = useCallback((id: string) => {
     switch (id) {
@@ -302,14 +305,17 @@ export default function CesiumViewerComponent({
         setTransparencyOpen((o) => !o); break
       case 'snap':
         setSnapOpen(true); break
+      case 'story':
+        if (onOpenStoryPicker) onOpenStoryPicker()
+        else setComingSoon(id)
+        break
       case 'design':
       case 'table':
-      case 'story':
       case 'strike':
         setComingSoon(id); break
       default: break
     }
-  }, [measureActive, cleanupMeasure, startMeasure])
+  }, [measureActive, cleanupMeasure, startMeasure, onOpenStoryPicker])
 
   // Sidebar width: tab rail (48px) + content panel (280px) when open
   const sidebarWidth = !isMobile && sidebarOpen ? 328 : !isMobile ? 48 : 0
