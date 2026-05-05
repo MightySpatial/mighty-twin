@@ -11,6 +11,11 @@ import { getExtensionPanels } from '../../extensions'
 import type { ViewerContext } from '../../extensions/types'
 import type { CesiumViewerProps } from './types'
 import { MapShell } from '../MapShell'
+import {
+  FeaturePopup,
+  FeatureAttributesDrawer,
+  useFeatureClick,
+} from '../FeaturePopup'
 
 import { useTokenFetch } from './hooks/useTokenFetch'
 import { useCesiumMount } from './hooks/useCesiumMount'
@@ -231,6 +236,22 @@ export default function CesiumViewerComponent({
     })
   }, [])
 
+  // Feature click → popup → drawer.
+  const { picked, anchor, clear: clearPicked } = useFeatureClick(viewerRef)
+  const [drawerOpen, setDrawerOpen] = useState(false)
+  useEffect(() => {
+    if (!picked) setDrawerOpen(false)
+  }, [picked])
+  const zoomToPicked = useCallback(() => {
+    const viewer = viewerRef.current
+    if (!viewer || !picked) return
+    try {
+      viewer.flyTo(picked.entity, { duration: 0.8 })
+    } catch {
+      /* entity may not have a flyable bounding sphere */
+    }
+  }, [picked, viewerRef])
+
   // Map MapShell action ids → existing widget state. Tools that aren't
   // implemented yet (snap/design/table/story/strike) toggle a placeholder
   // state we can wire later without ripping the rail apart.
@@ -343,6 +364,47 @@ export default function CesiumViewerComponent({
           is2D={is2D}
           phoneMode={isMobile}
         />
+      </div>
+
+      {/* Feature click — leader-line popup near the picked feature, full
+          attribute drawer on demand. Wraps inside the sidebar-aware
+          frame so the popup tracks the visible canvas, not the off-screen
+          left strip. */}
+      <div
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: sidebarWidth,
+          right: 0,
+          bottom: 0,
+          pointerEvents: 'none',
+          transition: 'left 0.2s ease',
+        }}
+      >
+        {picked && !drawerOpen && (
+          <div style={{ position: 'absolute', inset: 0, pointerEvents: 'auto' }}>
+            <FeaturePopup
+              picked={picked}
+              anchor={anchor}
+              isMobile={isMobile}
+              onClose={clearPicked}
+              onOpenDrawer={() => setDrawerOpen(true)}
+            />
+          </div>
+        )}
+        {picked && drawerOpen && (
+          <div style={{ position: 'absolute', inset: 0, pointerEvents: 'auto' }}>
+            <FeatureAttributesDrawer
+              picked={picked}
+              isMobile={isMobile}
+              onClose={() => {
+                setDrawerOpen(false)
+                clearPicked()
+              }}
+              onZoomTo={zoomToPicked}
+            />
+          </div>
+        )}
       </div>
 
       {/* Site-info trigger (lives outside MapShell because it's
