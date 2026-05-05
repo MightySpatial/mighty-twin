@@ -26,6 +26,7 @@ import { useLayerSync } from './hooks/useLayerSync'
 import { useSiteFocalPin } from './hooks/useSiteFocalPin'
 
 import MeasureWidget, { useMeasure } from '../../widgets/measure'
+import { SnapshotWidget } from '../../widgets/snapshot'
 import BasemapWidget, { useBasemap } from '../../widgets/basemap'
 import TransparencyWidget, { useGlobeTransparency } from '../../widgets/transparency'
 import SearchWidget from '../../widgets/search'
@@ -263,8 +264,11 @@ export default function CesiumViewerComponent({
     }
   }, [picked, viewerRef])
 
+  // Snapshot widget — opens via Snap rail tile.
+  const [snapOpen, setSnapOpen] = useState(false)
+
   // Map MapShell action ids → existing widget state. Tools that aren't
-  // implemented yet (snap/design/table/story/strike) toggle a placeholder
+  // implemented yet (design/table/story/strike) toggle a placeholder
   // state we can wire later without ripping the rail apart.
   const [comingSoon, setComingSoon] = useState<string | null>(null)
   useEffect(() => {
@@ -279,9 +283,10 @@ export default function CesiumViewerComponent({
     if (sidebarOpen && !isMobile) return 'layers'
     if (legendOpen) return 'legend'
     if (transparencyOpen) return 'terrain'
+    if (snapOpen) return 'snap'
     if (basemapOpen) return null  // basemap lives in zoom column, not bottom rail
     return null
-  }, [searchOpen, measureActive, sidebarOpen, isMobile, legendOpen, transparencyOpen, basemapOpen])
+  }, [searchOpen, measureActive, sidebarOpen, isMobile, legendOpen, transparencyOpen, snapOpen, basemapOpen])
 
   const onMapShellAction = useCallback((id: string) => {
     switch (id) {
@@ -296,6 +301,7 @@ export default function CesiumViewerComponent({
       case 'terrain':
         setTransparencyOpen((o) => !o); break
       case 'snap':
+        setSnapOpen(true); break
       case 'design':
       case 'table':
       case 'story':
@@ -586,6 +592,21 @@ export default function CesiumViewerComponent({
       {/* Tetra View */}
       {tetraActive && viewerRef.current && (
         <TetraView viewer={viewerRef.current} onClose={() => setTetraActive(false)} />
+      )}
+
+      {/* Snapshot capture modal */}
+      {snapOpen && (
+        <SnapshotWidget
+          viewerRef={viewerRef}
+          siteSlug={siteId ?? null}
+          layers={layers.map((l) => ({
+            id: l.id,
+            visible: l.visible ?? true,
+            opacity: l.opacity ?? 1,
+          }))}
+          isMobile={isMobile}
+          onClose={() => setSnapOpen(false)}
+        />
       )}
     </div>
   )
