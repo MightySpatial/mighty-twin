@@ -29,6 +29,7 @@ import {
 import { AttributeTable } from '@mightydt/ui'
 import { apiFetch, useApiData } from '../hooks/useApi'
 import { useBreakpoint } from '../hooks/useBreakpoint'
+import { useToast } from '../../viewer/hooks/useToast'
 
 interface DataSource {
   id: string
@@ -94,6 +95,7 @@ export default function DataSourcePage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { isPhone } = useBreakpoint()
+  const { addToast } = useToast()
 
   const { data: dsData, loading, error } = useApiData(
     id ? `/api/spatial/data-sources/${id}` : null,
@@ -157,7 +159,7 @@ export default function DataSourcePage() {
       await apiFetch(`/api/spatial/data-sources/${id}`, { method: 'DELETE' })
       navigate('/admin/data')
     } catch (e) {
-      alert(`Delete failed: ${(e as Error).message}`)
+      addToast('error', `Delete failed: ${(e as Error).message}`)
       setDeleting(false)
     }
   }

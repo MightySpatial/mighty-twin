@@ -28,6 +28,7 @@ import {
 } from 'lucide-react'
 import { apiFetch } from '../hooks/useApi'
 import { useBreakpoint } from '../hooks/useBreakpoint'
+import { useToast } from '../../viewer/hooks/useToast'
 
 type FeedKind =
   | 'geojson_url'
@@ -85,6 +86,7 @@ const KIND_META: Record<FeedKind, { label: string; tint: string }> = {
 
 export default function FeedsPage() {
   const { isPhone } = useBreakpoint()
+  const { addToast } = useToast()
   const [feeds, setFeeds] = useState<Feed[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -128,7 +130,7 @@ export default function FeedsPage() {
       await apiFetch(`/api/feeds/${f.id}`, { method: 'DELETE' })
       setFeeds((prev) => prev.filter((x) => x.id !== f.id))
     } catch (e) {
-      alert((e as Error).message)
+      addToast('error', (e as Error).message)
     }
   }
 

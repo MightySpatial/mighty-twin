@@ -30,6 +30,7 @@ import {
 } from 'lucide-react'
 import { apiFetch, useApiData } from '../hooks/useApi'
 import { useBreakpoint } from '../hooks/useBreakpoint'
+import { useToast } from '../../viewer/hooks/useToast'
 
 interface DataSource {
   id: string
@@ -71,6 +72,7 @@ function fmtBytes(b: number | null): string {
 export default function DataPage() {
   const navigate = useNavigate()
   const { isPhone } = useBreakpoint()
+  const { addToast } = useToast()
   const { data, loading, error, reload } = useApiData('/api/spatial/data-sources', [])
   const sources = (data as DataSource[]) ?? []
   const [search, setSearch] = useState('')
@@ -136,7 +138,7 @@ export default function DataPage() {
       await apiFetch(`/api/spatial/data-sources/${s.id}`, { method: 'DELETE' })
       reload()
     } catch (e) {
-      alert(`Delete failed: ${(e as Error).message}`)
+      addToast('error', `Delete failed: ${(e as Error).message}`)
     } finally {
       setDeleting(null)
     }

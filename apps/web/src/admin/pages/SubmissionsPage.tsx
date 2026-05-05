@@ -27,6 +27,7 @@ import {
 } from 'lucide-react'
 import { apiFetch } from '../hooks/useApi'
 import { useBreakpoint } from '../hooks/useBreakpoint'
+import { useToast } from '../../viewer/hooks/useToast'
 
 type Status = 'pending' | 'approved' | 'rejected' | 'promoted'
 
@@ -261,6 +262,7 @@ function SubmissionRow({
   sub: Submission
   onAfterAction: () => void
 }) {
+  const { addToast } = useToast()
   const [expanded, setExpanded] = useState(false)
   const [busy, setBusy] = useState(false)
   const meta = STATUS_META[sub.status]
@@ -276,9 +278,13 @@ function SubmissionRow({
         method: 'POST',
         body: JSON.stringify(reason ? { reason } : {}),
       })
+      addToast(
+        'success',
+        `Submission ${kind === 'approve' ? 'approved' : 'rejected'}.`,
+      )
       onAfterAction()
     } catch (e) {
-      alert(`${kind} failed: ${(e as Error).message}`)
+      addToast('error', `${kind} failed: ${(e as Error).message}`)
     } finally {
       setBusy(false)
     }

@@ -33,6 +33,7 @@ import {
 } from 'lucide-react'
 import { apiFetch } from '../hooks/useApi'
 import { useBreakpoint } from '../hooks/useBreakpoint'
+import { useToast } from '../../viewer/hooks/useToast'
 
 interface Folder {
   id: string
@@ -82,6 +83,7 @@ function fmtBytes(b: number | null): string {
 
 export default function LibraryPage() {
   const { isPhone } = useBreakpoint()
+  const { addToast } = useToast()
   const [tree, setTree] = useState<Folder[]>([])
   const [folderId, setFolderId] = useState<string | null>(null)
   const [items, setItems] = useState<Item[]>([])
@@ -144,7 +146,7 @@ export default function LibraryPage() {
       setShowNewFolder(false)
       await load()
     } catch (e) {
-      alert((e as Error).message)
+      addToast('error', (e as Error).message)
     }
   }
 
@@ -164,7 +166,7 @@ export default function LibraryPage() {
       setShowNewItem(false)
       await load()
     } catch (e) {
-      alert((e as Error).message)
+      addToast('error', (e as Error).message)
     }
   }
 
@@ -174,7 +176,7 @@ export default function LibraryPage() {
       await apiFetch(`/api/library/folders/${id}`, { method: 'DELETE' })
       await load()
     } catch (e) {
-      alert((e as Error).message)
+      addToast('error', (e as Error).message)
     }
   }
 
@@ -189,7 +191,7 @@ export default function LibraryPage() {
       setSelected(new Set())
       await load()
     } catch (e) {
-      alert((e as Error).message)
+      addToast('error', (e as Error).message)
     }
   }
 
@@ -207,7 +209,7 @@ export default function LibraryPage() {
       setSelected(new Set())
       await load()
     } catch (e) {
-      alert((e as Error).message)
+      addToast('error', (e as Error).message)
     }
   }
 

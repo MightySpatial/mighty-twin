@@ -24,6 +24,7 @@ import {
 } from 'lucide-react'
 import { API_URL } from '../hooks/useApi'
 import { useBreakpoint } from '../hooks/useBreakpoint'
+import { useToast } from '../../viewer/hooks/useToast'
 
 const ACCEPTED_EXTS = ['.csv', '.geojson', '.json', '.xlsx', '.xlsm']
 
@@ -84,6 +85,7 @@ function makeEntry(file: File): Entry {
 export default function UploadPage() {
   const navigate = useNavigate()
   const { isPhone } = useBreakpoint()
+  const { addToast } = useToast()
   const [entries, setEntries] = useState<Entry[]>([])
   const [dragging, setDragging] = useState(false)
   const inputRef = useRef<HTMLInputElement | null>(null)
@@ -110,11 +112,14 @@ export default function UploadPage() {
       const summary = rejected
         .slice(0, 3)
         .map((r) => `${r.name} — ${r.reason}`)
-        .join('\n')
-      alert(`Skipped ${rejected.length} file(s):\n${summary}`)
+        .join(' · ')
+      addToast(
+        'warning',
+        `Skipped ${rejected.length} file${rejected.length === 1 ? '' : 's'}: ${summary}`,
+      )
     }
     setEntries((prev) => [...prev, ...valid])
-  }, [])
+  }, [addToast])
 
   const updateEntry = (id: string, patch: Partial<Entry>) =>
     setEntries((prev) => prev.map((e) => (e.id === id ? { ...e, ...patch } : e)))

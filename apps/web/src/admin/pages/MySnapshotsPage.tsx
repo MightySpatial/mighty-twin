@@ -26,6 +26,7 @@ import {
 } from 'lucide-react'
 import { apiFetch } from '../hooks/useApi'
 import { useBreakpoint } from '../hooks/useBreakpoint'
+import { useToast } from '../../viewer/hooks/useToast'
 
 interface Snapshot {
   id: string
@@ -41,6 +42,7 @@ interface Snapshot {
 export default function MySnapshotsPage() {
   const navigate = useNavigate()
   const { isPhone } = useBreakpoint()
+  const { addToast } = useToast()
   const [snaps, setSnaps] = useState<Snapshot[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -98,7 +100,7 @@ export default function MySnapshotsPage() {
       })) as Snapshot
       setSnaps((prev) => prev.map((s) => (s.id === id ? { ...s, ...updated } : s)))
     } catch (e) {
-      alert((e as Error).message)
+      addToast('error', (e as Error).message)
     }
   }
 
@@ -108,13 +110,16 @@ export default function MySnapshotsPage() {
       await apiFetch(`/api/me/snapshots/${s.id}`, { method: 'DELETE' })
       setSnaps((prev) => prev.filter((x) => x.id !== s.id))
     } catch (e) {
-      alert((e as Error).message)
+      addToast('error', (e as Error).message)
     }
   }
 
   function openInViewer(s: Snapshot) {
     if (!s.site_slug) {
-      alert('This snap has no site context — try restoring from the viewer.')
+      addToast(
+        'warning',
+        'This snap has no site context — try restoring from the viewer.',
+      )
       return
     }
     window.open(

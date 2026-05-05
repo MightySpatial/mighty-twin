@@ -32,6 +32,7 @@ import {
 } from 'lucide-react'
 import { apiFetch, API_URL, useApiData } from '../hooks/useApi'
 import { useBreakpoint } from '../hooks/useBreakpoint'
+import { useToast } from '../../viewer/hooks/useToast'
 
 interface Site {
   id: string
@@ -46,6 +47,7 @@ interface Site {
 export default function SitesPage() {
   const navigate = useNavigate()
   const { isPhone } = useBreakpoint()
+  const { addToast } = useToast()
   const { data, loading, error, reload } = useApiData('/api/spatial/sites', [])
   const sites = (data as Site[]) ?? []
 
@@ -126,7 +128,7 @@ export default function SitesPage() {
       await apiFetch(`/api/spatial/sites/${s.slug}`, { method: 'DELETE' })
       reload()
     } catch (e) {
-      alert(`Delete failed: ${(e as Error).message}`)
+      addToast('error', `Delete failed: ${(e as Error).message}`)
     } finally {
       setDeleting(null)
     }
@@ -142,7 +144,7 @@ export default function SitesPage() {
       })) as { slug: string }
       navigate(`/admin/sites/${out.slug}`)
     } catch (e) {
-      alert(`Duplicate failed: ${(e as Error).message}`)
+      addToast('error', `Duplicate failed: ${(e as Error).message}`)
     } finally {
       setDuplicating(null)
     }
@@ -327,7 +329,7 @@ export default function SitesPage() {
               })) as { site_slug: string }
               navigate(`/admin/sites/${result.site_slug}`)
             } catch (e) {
-              alert(`Couldn't load demo: ${(e as Error).message}`)
+              addToast('error', `Couldn't load demo: ${(e as Error).message}`)
             }
           }}
         />
