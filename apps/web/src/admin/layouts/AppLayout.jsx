@@ -82,6 +82,23 @@ export default function AppLayout() {
             </div>
           </div>
 
+          {/* Quick search affordance — ⌘K opens the command palette
+              mounted at AdminRoot. Click also opens it via a synthetic
+              keydown so trackpad-first users have a discoverable path. */}
+          <button
+            type="button"
+            className="sidebar-cmdk"
+            onClick={() => {
+              window.dispatchEvent(
+                new KeyboardEvent('keydown', { key: 'k', metaKey: true }),
+              )
+            }}
+          >
+            <span className="sidebar-cmdk-icon">⌕</span>
+            <span className="sidebar-cmdk-label">Quick jump…</span>
+            <span className="sidebar-cmdk-kbd">⌘K</span>
+          </button>
+
           <nav className="sidebar-nav">
             <div className="nav-section">
               <span className="nav-section-title">Publisher</span>
