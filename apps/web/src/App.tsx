@@ -1,4 +1,4 @@
-import { lazy, Suspense } from 'react'
+import { lazy, Suspense, useEffect, useState } from 'react'
 import { Route, Routes, useLocation } from 'react-router-dom'
 import { AppShell } from '@mightyspatial/app-shell'
 import { SettingsShell, usePersistedSettings } from '@mightyspatial/settings-panels'
@@ -16,7 +16,10 @@ import {
 } from './admin/pages/EngineSettingsPanels'
 
 const LoginPage = lazy(() => import('./viewer/pages/LoginPage'))
+const SetupPage = lazy(() => import('./viewer/pages/SetupPage'))
 const PublicViewerPage = lazy(() => import('./viewer/pages/PublicViewerPage'))
+
+const API_URL = import.meta.env.VITE_API_URL || ''
 
 const loadingFallback = (
   <div
@@ -56,6 +59,26 @@ export function App() {
   const { isAuthenticated, isLoading } = useAuth()
   const { settings } = usePersistedSettings()
   const location = useLocation()
+  const [setupComplete, setSetupComplete] = useState<boolean | null>(null)
+
+  // Probe whether the workspace has been set up yet. Fresh installs
+  // have no admin user → /api/setup/status returns is_complete=false →
+  // we show the SetupPage instead of LoginPage.
+  useEffect(() => {
+    let cancelled = false
+    fetch(`${API_URL}/api/setup/status`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d: { is_complete?: boolean } | null) => {
+        if (cancelled) return
+        setSetupComplete(d?.is_complete !== false)
+      })
+      .catch(() => {
+        if (!cancelled) setSetupComplete(true)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   // Phase M: /p/<slug> is the unauthenticated public viewer. Bypass the
   // auth gate entirely — these routes have their own page-level shell.
@@ -70,9 +93,16 @@ export function App() {
     )
   }
 
-  if (isLoading) return loadingFallback
+  if (isLoading || setupComplete === null) return loadingFallback
 
   if (!isAuthenticated) {
+    if (!setupComplete) {
+      return (
+        <Suspense fallback={loadingFallback}>
+          <SetupPage onDone={() => setSetupComplete(true)} />
+        </Suspense>
+      )
+    }
     return (
       <Suspense fallback={loadingFallback}>
         <LoginPage />
