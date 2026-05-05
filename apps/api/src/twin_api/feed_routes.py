@@ -98,8 +98,38 @@ class FeedUpdate(BaseModel):
 
 @router.get("")
 def list_feeds(_: CurrentUser, db: DbSession) -> list[dict[str, Any]]:
+    """Catalog list. Joins through Layer to attach the layers each Feed
+    is bound to so the FeedsPage can show usage chips and warn before
+    deletions break things."""
     rows = db.execute(select(Feed).order_by(Feed.name)).scalars().all()
-    return [_serialize(r) for r in rows]
+    membership = db.execute(
+        select(
+            Layer.feed_id,
+            Layer.id,
+            Layer.name,
+            Site.slug,
+            Site.name,
+        )
+        .join(Site, Site.id == Layer.site_id)
+        .where(Layer.feed_id.is_not(None))
+    ).all()
+    layers_by_feed: dict[Any, list[dict[str, str]]] = {}
+    for feed_id, layer_id, layer_name, site_slug, site_name in membership:
+        bucket = layers_by_feed.setdefault(feed_id, [])
+        bucket.append(
+            {
+                "id": str(layer_id),
+                "name": layer_name,
+                "site_slug": site_slug,
+                "site_name": site_name,
+            }
+        )
+    out: list[dict[str, Any]] = []
+    for r in rows:
+        s = _serialize(r)
+        s["layers"] = layers_by_feed.get(r.id, [])
+        out.append(s)
+    return out
 
 
 @router.post("", status_code=201)

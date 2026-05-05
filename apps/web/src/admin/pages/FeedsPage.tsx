@@ -57,6 +57,9 @@ interface Feed {
   last_revision: string | null
   last_error: string | null
   enabled: boolean
+  /** Layers bound to this feed — joined on the server so the row can
+   *  show usage chips and warn before destructive actions break things. */
+  layers?: { id: string; name: string; site_slug: string; site_name: string }[]
 }
 
 interface SiteListItem {
@@ -344,6 +347,51 @@ export default function FeedsPage() {
                       ? `last fetched ${new Date(f.last_fetched_at).toLocaleString()}`
                       : 'never fetched'}
                   </div>
+                  {(f.layers?.length ?? 0) > 0 && (
+                    <div
+                      style={{
+                        marginTop: 6,
+                        display: 'flex',
+                        gap: 6,
+                        flexWrap: 'wrap',
+                      }}
+                    >
+                      {(f.layers ?? []).slice(0, 3).map((l) => (
+                        <a
+                          key={l.id}
+                          href={`/admin/sites/${encodeURIComponent(l.site_slug)}`}
+                          onClick={(e) => e.stopPropagation()}
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 4,
+                            padding: '2px 8px',
+                            background: 'rgba(36,83,255,0.10)',
+                            border: '1px solid rgba(36,83,255,0.28)',
+                            borderRadius: 999,
+                            color: '#9bb3ff',
+                            fontSize: 10,
+                            fontWeight: 500,
+                            textDecoration: 'none',
+                          }}
+                          title={`${l.name} · ${l.site_name}`}
+                        >
+                          {l.name} · {l.site_name}
+                        </a>
+                      ))}
+                      {(f.layers?.length ?? 0) > 3 && (
+                        <span
+                          style={{
+                            fontSize: 10,
+                            color: 'rgba(240,242,248,0.5)',
+                            alignSelf: 'center',
+                          }}
+                        >
+                          +{(f.layers?.length ?? 0) - 3} more
+                        </span>
+                      )}
+                    </div>
+                  )}
                 </div>
                 <button onClick={() => setPreviewFor(f)} style={iconBtn} title="Preview rows">
                   <Globe size={12} />
