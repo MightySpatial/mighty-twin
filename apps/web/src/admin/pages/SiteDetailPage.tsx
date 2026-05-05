@@ -610,7 +610,14 @@ export default function SiteDetailPage() {
             )}
           </Card>
 
-          <Card title={`Snap gallery (${snapshots.length})`}>
+          <Card
+            title={`Snap gallery (${snapshots.length})`}
+            action={
+              <Link to="/admin/snapshots" style={primaryBtn}>
+                <ImageIcon size={12} /> All snaps
+              </Link>
+            }
+          >
             {snapshotsLoading ? (
               <div style={{ color: 'rgba(240,242,248,0.5)' }}>Loading…</div>
             ) : snapshots.length === 0 ? (
@@ -639,7 +646,14 @@ export default function SiteDetailPage() {
             )}
           </Card>
 
-          <Card title={`Story maps (${storyMaps.length})`}>
+          <Card
+            title={`Story maps (${storyMaps.length})`}
+            action={
+              <Link to="/admin/stories" style={primaryBtn}>
+                <Plus size={12} /> Manage
+              </Link>
+            }
+          >
             {storyMaps.length === 0 ? (
               <Empty
                 icon={<Globe size={20} />}
@@ -649,7 +663,8 @@ export default function SiteDetailPage() {
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                 {storyMaps.map((sm) => (
-                  <div
+                  <Link
+                    to="/admin/stories"
                     key={sm.id}
                     style={{
                       display: 'flex',
@@ -659,7 +674,16 @@ export default function SiteDetailPage() {
                       background: 'rgba(255,255,255,0.03)',
                       border: '1px solid rgba(255,255,255,0.07)',
                       borderRadius: 8,
+                      color: '#f0f2f8',
+                      textDecoration: 'none',
+                      transition: 'border-color 120ms',
                     }}
+                    onMouseEnter={(e) =>
+                      (e.currentTarget.style.borderColor = 'rgba(167,139,250,0.4)')
+                    }
+                    onMouseLeave={(e) =>
+                      (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.07)')
+                    }
                   >
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontSize: 13, fontWeight: 500 }}>{sm.name}</div>
@@ -673,7 +697,7 @@ export default function SiteDetailPage() {
                     ) : (
                       <Lock size={14} color="rgba(240,242,248,0.4)" />
                     )}
-                  </div>
+                  </Link>
                 ))}
               </div>
             )}
