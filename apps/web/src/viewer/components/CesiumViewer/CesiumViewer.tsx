@@ -28,6 +28,7 @@ import { useSiteFocalPin } from './hooks/useSiteFocalPin'
 import MeasureWidget, { useMeasure } from '../../widgets/measure'
 import { SnapshotWidget } from '../../widgets/snapshot'
 import { AttributeTableWidget } from '../../widgets/attribute-table'
+import { StrikeWidget, useStrike } from '../../widgets/strike'
 import BasemapWidget, { useBasemap } from '../../widgets/basemap'
 import TransparencyWidget, { useGlobeTransparency } from '../../widgets/transparency'
 import SearchWidget from '../../widgets/search'
@@ -320,6 +321,10 @@ export default function CesiumViewerComponent({
   // Attribute table — opens via Table rail tile (T+1080).
   const [tableOpen, setTableOpen] = useState(false)
 
+  // Strike widget — opens via Strike rail tile (T+1110).
+  const [strikeOpen, setStrikeOpen] = useState(false)
+  const strike = useStrike(viewerRef)
+
   // Map MapShell action ids → existing widget state. Tools that aren't
   // implemented yet (design/table/story/strike) toggle a placeholder
   // state we can wire later without ripping the rail apart.
@@ -338,10 +343,11 @@ export default function CesiumViewerComponent({
     if (transparencyOpen) return 'terrain'
     if (snapOpen) return 'snap'
     if (tableOpen) return 'table'
+    if (strikeOpen) return 'strike'
     if (storyActive) return 'story'
     if (basemapOpen) return null  // basemap lives in zoom column, not bottom rail
     return null
-  }, [searchOpen, measureActive, sidebarOpen, isMobile, legendOpen, transparencyOpen, snapOpen, tableOpen, storyActive, basemapOpen])
+  }, [searchOpen, measureActive, sidebarOpen, isMobile, legendOpen, transparencyOpen, snapOpen, tableOpen, strikeOpen, storyActive, basemapOpen])
 
   const onMapShellAction = useCallback((id: string) => {
     switch (id) {
@@ -359,12 +365,13 @@ export default function CesiumViewerComponent({
         setSnapOpen(true); break
       case 'table':
         setTableOpen(true); break
+      case 'strike':
+        setStrikeOpen((o) => !o); break
       case 'story':
         if (onOpenStoryPicker) onOpenStoryPicker()
         else setComingSoon(id)
         break
       case 'design':
-      case 'strike':
         setComingSoon(id); break
       default: break
     }
@@ -691,6 +698,23 @@ export default function CesiumViewerComponent({
           layers={layers}
           isMobile={isMobile}
           onClose={() => setTableOpen(false)}
+        />
+      )}
+
+      {/* Strike & dip — three-point geological annotation */}
+      {strikeOpen && (
+        <StrikeWidget
+          active={strike.active}
+          pickedCount={strike.picked.length}
+          measurement={strike.measurement}
+          isMobile={isMobile}
+          onStart={strike.start}
+          onCancel={strike.cancel}
+          onClear={strike.clear}
+          onClose={() => {
+            strike.clear()
+            setStrikeOpen(false)
+          }}
         />
       )}
     </div>
