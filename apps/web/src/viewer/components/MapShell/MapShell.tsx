@@ -44,9 +44,11 @@ import {
 
 import {
   DEFAULT_WIDGETS,
+  applyWidgetOverrides,
   publicWidgets,
   widgetsForController,
   type WidgetDef,
+  type WidgetOverrides,
 } from './widgetRegistry'
 import styles from './MapShell.module.css'
 
@@ -94,6 +96,10 @@ export interface MapShellProps {
    *  compact site chip, etc.) regardless of viewport width. The host app's
    *  ShellContext breakpoint should drive this. */
   phoneMode?: boolean
+  /** Workspace widget overrides — disabled widgets get filtered out, and
+   *  controller/position changes get merged in. Pass null/undefined to
+   *  fall back to DEFAULT_WIDGETS unchanged. */
+  widgetOverrides?: WidgetOverrides | null
   /** Extra render slot for floating overlays (feature popup etc.) */
   children?: React.ReactNode
 }
@@ -114,12 +120,13 @@ export function MapShell({
   is2D = false,
   showPublicBanner = false,
   phoneMode = false,
+  widgetOverrides = null,
   children,
 }: MapShellProps) {
-  const widgets = useMemo<WidgetDef[]>(
-    () => (publicMode ? publicWidgets(DEFAULT_WIDGETS) : DEFAULT_WIDGETS),
-    [publicMode],
-  )
+  const widgets = useMemo<WidgetDef[]>(() => {
+    const base = publicMode ? publicWidgets(DEFAULT_WIDGETS) : DEFAULT_WIDGETS
+    return applyWidgetOverrides(base, widgetOverrides)
+  }, [publicMode, widgetOverrides])
   const primary = useMemo(() => widgetsForController(widgets, 'primary'), [widgets])
   const secondary = useMemo(() => widgetsForController(widgets, 'secondary'), [widgets])
 

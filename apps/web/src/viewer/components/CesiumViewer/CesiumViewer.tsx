@@ -6,6 +6,7 @@ import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import type { SiteConfigState } from '../../types/api'
 import { Cartesian3, Math as CesiumMath } from 'cesium'
 import { useBreakpoint } from '../../hooks/useBreakpoint'
+import { useWidgetLayout } from '../../hooks/useWidgetLayout'
 import { HelpCircle } from 'lucide-react'
 import { getExtensionPanels } from '../../extensions'
 import type { ViewerContext } from '../../extensions/types'
@@ -76,6 +77,7 @@ export default function CesiumViewerComponent({
   storyActive = false,
 }: CesiumViewerProps) {
   const { isMobile } = useBreakpoint()
+  const widgetOverrides = useWidgetLayout()
   const [sidebarOpen, setSidebarOpen] = useState(!isMobile)
   const [searchOpen, setSearchOpen] = useState(false)
   const [activeExtPanel, setActiveExtPanel] = useState<string | null>(null)
@@ -466,6 +468,7 @@ export default function CesiumViewerComponent({
           headingDeg={headingDeg}
           is2D={is2D}
           phoneMode={isMobile}
+          widgetOverrides={widgetOverrides}
         />
       </div>
 

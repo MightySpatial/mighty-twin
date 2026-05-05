@@ -31,7 +31,7 @@ from sqlalchemy import select
 
 from mighty_models import Setting
 
-from .auth import AdminUser
+from .auth import AdminUser, CurrentUser
 from .db import DbSession
 
 router = APIRouter(tags=["engine-settings"])
@@ -140,7 +140,10 @@ def put_branding(
 
 
 @router.get("/api/engine/widget-layout")
-def get_widget_layout(_: AdminUser, db: DbSession) -> dict[str, Any]:
+def get_widget_layout(_: CurrentUser, db: DbSession) -> dict[str, Any]:
+    """Workspace widget layout. Reads are open to any authenticated user
+    so the viewer can apply enable/disable overrides; only admins can
+    write."""
     return _read_or_default(db, "widget_layout", DEFAULT_WIDGET_LAYOUT)
 
 

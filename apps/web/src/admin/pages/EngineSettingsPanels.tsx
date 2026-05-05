@@ -743,6 +743,9 @@ interface WidgetOverride {
   position?: number
   loadMode?: 'floating' | 'sharePane' | 'drawer' | 'inline'
   defaultSize?: 'compact' | 'standard' | 'expanded'
+  /** Master switch — disabled widgets don't appear in the viewer at all,
+   *  regardless of controller. */
+  enabled?: boolean
 }
 
 type IconCmp = React.ComponentType<{ size?: number | string }>
@@ -780,6 +783,10 @@ export function WidgetLayoutPanel() {
     const o = overrides[id]?.position
     if (o !== undefined) return o
     return WIDGETS.findIndex((w) => w.id === id)
+  }
+  const isEnabled = (id: string): boolean => overrides[id]?.enabled !== false
+  const setEnabled = (id: string, v: boolean) => {
+    setOverrides((prev) => ({ ...prev, [id]: { ...prev[id], enabled: v } }))
   }
 
   const grouped = useMemo(() => {
@@ -827,18 +834,95 @@ export function WidgetLayoutPanel() {
     }
   }
 
+  const enabledCount = WIDGETS.filter((w) => isEnabled(w.id)).length
+
   return (
     <div style={pageStyle}>
       <div style={{ marginBottom: 18 }}>
-        <h2 style={{ margin: 0, fontSize: 20, fontWeight: 600 }}>Widget layout</h2>
+        <h2 style={{ margin: 0, fontSize: 20, fontWeight: 600 }}>Widgets</h2>
         <p style={cardDesc}>
-          Drag the widgets between zones with the chevron buttons. Primary is the cobalt-tinted bottom rail
-          (always visible); Secondary is the neutral row above (collapses behind "More ▾"); Hidden removes
-          the widget from this workspace.
+          Choose which viewer widgets are turned on for this workspace, and where each one
+          lives on the bottom rails. Disabled widgets disappear from the viewer entirely.
         </p>
       </div>
 
-      {/* Live mini preview */}
+      {/* Enabled features — master switches */}
+      <div
+        style={{
+          padding: 14,
+          background: 'rgba(255,255,255,0.03)',
+          border: '1px solid rgba(255,255,255,0.07)',
+          borderRadius: 10,
+          marginBottom: 14,
+        }}
+      >
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'baseline',
+            justifyContent: 'space-between',
+            marginBottom: 10,
+          }}
+        >
+          <div
+            style={{
+              fontSize: 11,
+              letterSpacing: '0.06em',
+              textTransform: 'uppercase',
+              color: 'rgba(240,242,248,0.45)',
+            }}
+          >
+            Enabled features
+          </div>
+          <div style={{ fontSize: 11, color: 'rgba(240,242,248,0.45)' }}>
+            {enabledCount} of {WIDGETS.length} on
+          </div>
+        </div>
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))',
+            gap: 6,
+          }}
+        >
+          {WIDGETS.map((w) => {
+            const Icon = w.icon
+            const on = isEnabled(w.id)
+            return (
+              <label
+                key={w.id}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  padding: '8px 10px',
+                  background: on
+                    ? 'rgba(36,83,255,0.08)'
+                    : 'rgba(255,255,255,0.02)',
+                  border: `1px solid ${
+                    on ? 'rgba(36,83,255,0.32)' : 'rgba(255,255,255,0.05)'
+                  }`,
+                  borderRadius: 7,
+                  cursor: 'pointer',
+                  opacity: on ? 1 : 0.55,
+                  transition: 'background 120ms, border-color 120ms, opacity 120ms',
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={on}
+                  onChange={(e) => setEnabled(w.id, e.target.checked)}
+                  style={{ accentColor: '#2453ff' }}
+                />
+                <Icon size={14} />
+                <span style={{ fontSize: 12, fontWeight: 500 }}>{w.label}</span>
+              </label>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* Live mini preview — disabled widgets filtered out so this matches the viewer. */}
       <div
         style={{
           padding: '14px 14px 18px',
@@ -852,10 +936,16 @@ export function WidgetLayoutPanel() {
           Bottom-rail preview
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
-          {grouped.secondary.length > 0 && (
-            <PreviewRail widgets={grouped.secondary} variant="secondary" />
+          {grouped.secondary.filter((w) => isEnabled(w.id)).length > 0 && (
+            <PreviewRail
+              widgets={grouped.secondary.filter((w) => isEnabled(w.id))}
+              variant="secondary"
+            />
           )}
-          <PreviewRail widgets={grouped.primary} variant="primary" />
+          <PreviewRail
+            widgets={grouped.primary.filter((w) => isEnabled(w.id))}
+            variant="primary"
+          />
         </div>
       </div>
 
@@ -866,11 +956,13 @@ export function WidgetLayoutPanel() {
             <ZoneRow
               key={w.id}
               widget={w}
+              enabled={isEnabled(w.id)}
               canUp={idx > 0}
               canDown={idx < grouped.primary.length - 1}
               onUp={() => move(w.id, -1)}
               onDown={() => move(w.id, 1)}
               onMoveTo={(c) => setController(w.id, c)}
+              onToggleEnabled={() => setEnabled(w.id, !isEnabled(w.id))}
               currentController="primary"
             />
           ))}
@@ -880,11 +972,13 @@ export function WidgetLayoutPanel() {
             <ZoneRow
               key={w.id}
               widget={w}
+              enabled={isEnabled(w.id)}
               canUp={idx > 0}
               canDown={idx < grouped.secondary.length - 1}
               onUp={() => move(w.id, -1)}
               onDown={() => move(w.id, 1)}
               onMoveTo={(c) => setController(w.id, c)}
+              onToggleEnabled={() => setEnabled(w.id, !isEnabled(w.id))}
               currentController="secondary"
             />
           ))}
@@ -894,11 +988,13 @@ export function WidgetLayoutPanel() {
             <ZoneRow
               key={w.id}
               widget={w}
+              enabled={isEnabled(w.id)}
               canUp={false}
               canDown={false}
               onUp={() => {}}
               onDown={() => {}}
               onMoveTo={(c) => setController(w.id, c)}
+              onToggleEnabled={() => setEnabled(w.id, !isEnabled(w.id))}
               currentController="none"
             />
           ))}
@@ -974,19 +1070,23 @@ function Zone({
 
 function ZoneRow({
   widget,
+  enabled,
   canUp,
   canDown,
   onUp,
   onDown,
   onMoveTo,
+  onToggleEnabled,
   currentController,
 }: {
   widget: { id: string; label: string; icon: IconCmp }
+  enabled: boolean
   canUp: boolean
   canDown: boolean
   onUp: () => void
   onDown: () => void
   onMoveTo: (c: Controller) => void
+  onToggleEnabled: () => void
   currentController: Controller
 }) {
   const Icon = widget.icon
@@ -1000,10 +1100,36 @@ function ZoneRow({
         background: 'rgba(255,255,255,0.04)',
         border: '1px solid rgba(255,255,255,0.05)',
         borderRadius: 6,
+        opacity: enabled ? 1 : 0.45,
       }}
     >
+      <button
+        type="button"
+        onClick={onToggleEnabled}
+        title={enabled ? 'Disable widget' : 'Enable widget'}
+        aria-label={enabled ? 'Disable widget' : 'Enable widget'}
+        style={{
+          width: 14,
+          height: 14,
+          borderRadius: 3,
+          border: `1px solid ${enabled ? '#2453ff' : 'rgba(255,255,255,0.2)'}`,
+          background: enabled ? '#2453ff' : 'transparent',
+          padding: 0,
+          cursor: 'pointer',
+          flexShrink: 0,
+        }}
+      />
       <Icon size={14} />
-      <span style={{ flex: 1, fontSize: 12, fontWeight: 500 }}>{widget.label}</span>
+      <span
+        style={{
+          flex: 1,
+          fontSize: 12,
+          fontWeight: 500,
+          textDecoration: enabled ? 'none' : 'line-through',
+        }}
+      >
+        {widget.label}
+      </span>
       <button
         type="button"
         onClick={onUp}

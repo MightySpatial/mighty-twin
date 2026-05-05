@@ -71,3 +71,40 @@ export function widgetsForController(
 export function publicWidgets(defs: WidgetDef[]): WidgetDef[] {
   return defs.filter((d) => d.publicVisible === true)
 }
+
+/** Workspace-level overrides written by Settings → Widgets. Each entry
+ *  is keyed by widget id; ``enabled === false`` removes it entirely;
+ *  ``controller`` and ``position`` move it between rails. */
+export interface WidgetOverrides {
+  [widgetId: string]: {
+    enabled?: boolean
+    controller?: WidgetController
+    position?: number
+  }
+}
+
+/** Apply admin-set overrides to the default widget catalogue.
+ *  - Widgets explicitly disabled (``enabled === false``) are dropped.
+ *  - Inline widgets (zoom/gimbal) are immune to override — they live at
+ *    fixed map-edge positions and shouldn't be hidden by mistake.
+ *  - controller / position overrides are merged in.
+ */
+export function applyWidgetOverrides(
+  defs: WidgetDef[],
+  overrides: WidgetOverrides | null | undefined,
+): WidgetDef[] {
+  if (!overrides) return defs
+  return defs.flatMap((d) => {
+    const o = overrides[d.id]
+    if (!o) return [d]
+    if (d.loadMode === 'inline') return [d]
+    if (o.enabled === false) return []
+    return [
+      {
+        ...d,
+        controller: o.controller ?? d.controller,
+        position: o.position ?? d.position,
+      },
+    ]
+  })
+}
