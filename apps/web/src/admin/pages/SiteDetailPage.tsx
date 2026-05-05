@@ -562,6 +562,7 @@ export default function SiteDetailPage() {
                   <SnapshotTile
                     key={s.id}
                     snap={s}
+                    siteSlug={site.slug}
                     onUnshare={() => unshareSnapshot(s)}
                   />
                 ))}
@@ -804,15 +805,33 @@ function LayerRow({
   )
 }
 
-function SnapshotTile({ snap, onUnshare }: { snap: SnapshotEntry; onUnshare: () => void }) {
+function SnapshotTile({
+  snap,
+  siteSlug,
+  onUnshare,
+}: {
+  snap: SnapshotEntry
+  siteSlug: string
+  onUnshare: () => void
+}) {
+  const openInViewer = () => {
+    window.open(
+      `/viewer/sites/${siteSlug}?snapshot=${snap.id}`,
+      '_blank',
+      'noopener,noreferrer',
+    )
+  }
   return (
     <div
+      onClick={openInViewer}
+      title="Open in viewer"
       style={{
         position: 'relative',
         background: 'rgba(255,255,255,0.03)',
         border: '1px solid rgba(255,255,255,0.07)',
         borderRadius: 10,
         overflow: 'hidden',
+        cursor: 'pointer',
       }}
     >
       <div
@@ -845,7 +864,10 @@ function SnapshotTile({ snap, onUnshare }: { snap: SnapshotEntry; onUnshare: () 
         </div>
       </div>
       <button
-        onClick={onUnshare}
+        onClick={(e) => {
+          e.stopPropagation()
+          onUnshare()
+        }}
         title="Remove from gallery"
         style={{
           position: 'absolute',

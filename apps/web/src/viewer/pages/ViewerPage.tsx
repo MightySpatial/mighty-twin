@@ -4,12 +4,12 @@
  * Loads site + layers from the real /api/spatial API.
  */
 import { useEffect, useState, useRef, useMemo, useCallback } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import CesiumViewer from '../components/CesiumViewer'
 import StoryMapPlayer, { StoryMap } from '../components/StoryMapPlayer'
 import { Menu, X, AlertCircle, Loader, BookOpen, ChevronDown, Globe } from 'lucide-react'
-import { Viewer as CesiumViewerType } from 'cesium'
+import { Viewer as CesiumViewerType, Cartesian3, Math as CesiumMath } from 'cesium'
 import { authFetch } from '../utils/authFetch'
 import { useSites } from '../hooks/useSites'
 import { useSite } from '../hooks/useSite'
@@ -52,6 +52,7 @@ const DEFAULT_CAMERA: CameraPosition = {
 export default function ViewerPage() {
   const { siteSlug } = useParams<{ siteSlug?: string }>()
   const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
   const { user, logout } = useAuth()
   const [menuOpen, setMenuOpen] = useState(false)
   const [layerStates, setLayerStates] = useState<Record<string, boolean>>({})
@@ -78,6 +79,91 @@ export default function ViewerPage() {
       setLayerOpacities(initOp)
     }
   }, [site])
+
+  // Snapshot restore — when ?snapshot=ID is in the URL, fetch the
+  // snapshot, fly the camera, and restore the saved layer visibility.
+  // Strips the param after consuming so reload doesn't re-fly.
+  const snapshotId = searchParams.get('snapshot')
+  useEffect(() => {
+    if (!snapshotId || !site || !cesiumViewerRef.current) return
+    let cancelled = false
+
+    const apply = async () => {
+      try {
+        const res = await authFetch(`${API_URL}/api/me/snapshots/${snapshotId}`)
+        if (!res.ok) {
+          // Fallback: search the gallery on this site (shared snapshots
+          // visible to other users are exposed via /api/spatial/sites/.../snapshots).
+          const galleryRes = await authFetch(
+            `${API_URL}/api/spatial/sites/${site.slug}/snapshots`,
+          )
+          if (!galleryRes.ok) throw new Error('Snapshot not found')
+          const gallery = (await galleryRes.json()) as { id: string }[]
+          if (!gallery.find((s) => s.id === snapshotId)) {
+            throw new Error('Snapshot not found in this site’s gallery')
+          }
+          // Gallery list doesn't include payload — bail with a friendly note.
+          addToast('error', 'Snapshot is in the gallery but its payload is private to its owner.')
+          return
+        }
+        const snap = (await res.json()) as {
+          payload?: {
+            camera?: {
+              longitude: number
+              latitude: number
+              height: number
+              heading?: number
+              pitch?: number
+              roll?: number
+            }
+            layers?: { id: string; visible: boolean; opacity?: number }[]
+          }
+        }
+        const cam = snap.payload?.camera
+        const viewer = cesiumViewerRef.current
+        if (!cancelled && viewer && cam) {
+          try {
+            viewer.camera.flyTo({
+              destination: Cartesian3.fromDegrees(cam.longitude, cam.latitude, cam.height),
+              orientation: {
+                heading: CesiumMath.toRadians(cam.heading ?? 0),
+                pitch: CesiumMath.toRadians(cam.pitch ?? -45),
+                roll: CesiumMath.toRadians(cam.roll ?? 0),
+              },
+              duration: 1.4,
+            })
+          } catch {
+            /* viewer mid-destroy */
+          }
+        }
+        const savedLayers = snap.payload?.layers ?? []
+        if (!cancelled && savedLayers.length > 0) {
+          const visMap: Record<string, boolean> = {}
+          const opMap: Record<string, number> = {}
+          for (const l of savedLayers) {
+            visMap[l.id] = l.visible
+            if (typeof l.opacity === 'number') opMap[l.id] = l.opacity
+          }
+          setLayerStates((prev) => ({ ...prev, ...visMap }))
+          setLayerOpacities((prev) => ({ ...prev, ...opMap }))
+        }
+        addToast('success', 'Restored from snapshot')
+      } catch (e) {
+        addToast('error', `Snapshot restore failed: ${(e as Error).message}`)
+      } finally {
+        if (!cancelled) {
+          // Clear the query param so reloads don't re-trigger.
+          searchParams.delete('snapshot')
+          setSearchParams(searchParams, { replace: true })
+        }
+      }
+    }
+    apply()
+    return () => {
+      cancelled = true
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [snapshotId, site, cesiumViewerRef.current])
 
   const handleLogout = () => {
     logout()
