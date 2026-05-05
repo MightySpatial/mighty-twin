@@ -276,7 +276,7 @@ export default function SitesPage() {
 
       {loading && <div style={{ color: 'rgba(240,242,248,0.5)' }}>Loading sites…</div>}
 
-      {!loading && filtered.length === 0 && (
+      {!loading && filtered.length === 0 && (search || filter !== 'all') && (
         <div
           style={{
             padding: 32,
@@ -289,14 +289,20 @@ export default function SitesPage() {
         >
           <Globe size={28} style={{ opacity: 0.4, marginBottom: 8 }} />
           <div style={{ fontWeight: 500, color: 'rgba(240,242,248,0.7)' }}>
-            {search || filter !== 'all' ? 'No matches' : 'No sites yet'}
+            No matches
           </div>
           <div style={{ fontSize: 12, marginTop: 4 }}>
-            {search || filter !== 'all'
-              ? 'Try a different filter or search term.'
-              : 'Create your first site to get started.'}
+            Try a different filter or search term.
           </div>
         </div>
+      )}
+
+      {!loading && sites.length === 0 && !search && filter === 'all' && (
+        <FirstSiteHero
+          isPhone={isPhone}
+          onCreate={() => navigate('/admin/sites/new')}
+          onImport={() => importInputRef.current?.click()}
+        />
       )}
 
       {/* Card grid */}
@@ -551,4 +557,168 @@ const iconBtn: React.CSSProperties = {
 const iconLink: React.CSSProperties = {
   ...iconBtn,
   textDecoration: 'none',
+}
+
+function FirstSiteHero({
+  isPhone,
+  onCreate,
+  onImport,
+}: {
+  isPhone: boolean
+  onCreate: () => void
+  onImport: () => void
+}) {
+  return (
+    <div
+      style={{
+        padding: isPhone ? 22 : 32,
+        background:
+          'linear-gradient(135deg, rgba(36,83,255,0.10), rgba(167,139,250,0.06))',
+        border: '1px solid rgba(36,83,255,0.32)',
+        borderRadius: 14,
+      }}
+    >
+      <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 14 }}>
+        <div
+          style={{
+            width: 52,
+            height: 52,
+            borderRadius: 13,
+            background: 'linear-gradient(135deg, #2453ff, #a78bfa)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: '#fff',
+            boxShadow: '0 6px 18px rgba(36,83,255,0.32)',
+            flexShrink: 0,
+          }}
+        >
+          <Globe size={22} />
+        </div>
+        <div>
+          <h2 style={{ margin: 0, fontSize: 18, fontWeight: 600 }}>
+            Welcome to MightyTwin
+          </h2>
+          <p
+            style={{
+              margin: '4px 0 0',
+              fontSize: 13,
+              color: 'rgba(240,242,248,0.7)',
+            }}
+          >
+            A site is a project — pick a starting point below.
+          </p>
+        </div>
+      </div>
+
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: isPhone ? '1fr' : 'repeat(3, 1fr)',
+          gap: 10,
+          marginTop: 14,
+        }}
+      >
+        <HeroOption
+          icon={<Plus size={18} />}
+          title="Create a new site"
+          subtitle="Empty canvas. Add layers + features yourself."
+          action="Create"
+          onClick={onCreate}
+          accent="#2453ff"
+        />
+        <HeroOption
+          icon={<Package size={18} />}
+          title="Import a .mtsite"
+          subtitle="Restore a site exported from Twin or Mighty Sheets."
+          action="Browse"
+          onClick={onImport}
+          accent="#a78bfa"
+        />
+        <HeroOption
+          icon={<Layers size={18} />}
+          title="Try the Locaters demo"
+          subtitle="Real underground utility data — three streets of pipes."
+          action="See setup script"
+          onClick={() =>
+            alert(
+              "Run from the repo root:\n\n  uv run python bin/seed_locaters.py\n\nDemo sites land at /admin/sites with one layer per utility type.",
+            )
+          }
+          accent="#34d399"
+        />
+      </div>
+    </div>
+  )
+}
+
+function HeroOption({
+  icon,
+  title,
+  subtitle,
+  action,
+  accent,
+  onClick,
+}: {
+  icon: React.ReactNode
+  title: string
+  subtitle: string
+  action: string
+  accent: string
+  onClick: () => void
+}) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        textAlign: 'left',
+        padding: 14,
+        background: 'rgba(255,255,255,0.03)',
+        border: '1px solid rgba(255,255,255,0.08)',
+        borderRadius: 11,
+        color: '#f0f2f8',
+        cursor: 'pointer',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 8,
+        font: 'inherit',
+        transition: 'background 120ms, border-color 120ms',
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.borderColor = `${accent}66`
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'
+      }}
+    >
+      <div
+        style={{
+          width: 32,
+          height: 32,
+          borderRadius: 8,
+          background: `${accent}22`,
+          color: accent,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        {icon}
+      </div>
+      <div style={{ fontSize: 13, fontWeight: 600 }}>{title}</div>
+      <div style={{ fontSize: 11, color: 'rgba(240,242,248,0.55)' }}>{subtitle}</div>
+      <div
+        style={{
+          marginTop: 4,
+          fontSize: 11,
+          fontWeight: 600,
+          color: accent,
+          textTransform: 'uppercase',
+          letterSpacing: '0.04em',
+        }}
+      >
+        {action} →
+      </div>
+    </button>
+  )
 }
