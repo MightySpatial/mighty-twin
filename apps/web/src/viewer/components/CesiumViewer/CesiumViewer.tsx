@@ -27,6 +27,7 @@ import { useSiteFocalPin } from './hooks/useSiteFocalPin'
 
 import MeasureWidget, { useMeasure } from '../../widgets/measure'
 import { SnapshotWidget } from '../../widgets/snapshot'
+import { AttributeTableWidget } from '../../widgets/attribute-table'
 import BasemapWidget, { useBasemap } from '../../widgets/basemap'
 import TransparencyWidget, { useGlobeTransparency } from '../../widgets/transparency'
 import SearchWidget from '../../widgets/search'
@@ -316,6 +317,9 @@ export default function CesiumViewerComponent({
   // Snapshot widget — opens via Snap rail tile.
   const [snapOpen, setSnapOpen] = useState(false)
 
+  // Attribute table — opens via Table rail tile (T+1080).
+  const [tableOpen, setTableOpen] = useState(false)
+
   // Map MapShell action ids → existing widget state. Tools that aren't
   // implemented yet (design/table/story/strike) toggle a placeholder
   // state we can wire later without ripping the rail apart.
@@ -333,10 +337,11 @@ export default function CesiumViewerComponent({
     if (legendOpen) return 'legend'
     if (transparencyOpen) return 'terrain'
     if (snapOpen) return 'snap'
+    if (tableOpen) return 'table'
     if (storyActive) return 'story'
     if (basemapOpen) return null  // basemap lives in zoom column, not bottom rail
     return null
-  }, [searchOpen, measureActive, sidebarOpen, isMobile, legendOpen, transparencyOpen, snapOpen, storyActive, basemapOpen])
+  }, [searchOpen, measureActive, sidebarOpen, isMobile, legendOpen, transparencyOpen, snapOpen, tableOpen, storyActive, basemapOpen])
 
   const onMapShellAction = useCallback((id: string) => {
     switch (id) {
@@ -352,12 +357,13 @@ export default function CesiumViewerComponent({
         setTransparencyOpen((o) => !o); break
       case 'snap':
         setSnapOpen(true); break
+      case 'table':
+        setTableOpen(true); break
       case 'story':
         if (onOpenStoryPicker) onOpenStoryPicker()
         else setComingSoon(id)
         break
       case 'design':
-      case 'table':
       case 'strike':
         setComingSoon(id); break
       default: break
@@ -673,6 +679,18 @@ export default function CesiumViewerComponent({
           }))}
           isMobile={isMobile}
           onClose={() => setSnapOpen(false)}
+        />
+      )}
+
+      {/* Attribute table modal — wraps the shared AttributeTable with a
+          layer picker so users land on the right rows for the active site. */}
+      {tableOpen && siteId && (
+        <AttributeTableWidget
+          siteSlug={siteId}
+          siteName={site?.name}
+          layers={layers}
+          isMobile={isMobile}
+          onClose={() => setTableOpen(false)}
         />
       )}
     </div>
