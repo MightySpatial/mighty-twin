@@ -21,6 +21,7 @@ import { ArrowLeft, Navigation } from 'lucide-react'
 import { useTokenFetch } from '../components/CesiumViewer/hooks/useTokenFetch'
 import { pointSymbolToDataUrl } from '../shared/pointSymbology'
 import { authFetch } from '../utils/authFetch'
+import { flyToTarget } from '../utils/flyToTarget'
 import SplashOverlay from '../components/SplashOverlay/SplashOverlay'
 import type { PublicSettings, OverlayConfig } from '../types/api'
 import type { PointSymbolType } from '../shared/pointSymbology'
@@ -264,14 +265,20 @@ export default function SitesMapPage() {
         if (entityId.startsWith('__site_pin_')) {
           const slug = entityId.replace('__site_pin_', '')
 
-          // If already selected, this is a second click — navigate
+          // If already selected, this is a second click — navigate.
+          // Use the bounding-sphere zoom so the camera frames the
+          // pin from a tilted angle rather than diving onto the
+          // address.
           if (selectedSlugRef.current === slug) {
             const site = sitesWithCamera.current.find(s => s.slug === slug)
             if (site) {
-              viewer.camera.flyTo({
-                destination: Cartesian3.fromDegrees(site.longitude, site.latitude, site.height ?? 800),
+              flyToTarget(viewer, {
+                longitude: site.longitude,
+                latitude: site.latitude,
+                height: 0,
+                range: site.height ?? 800,
                 duration: 1.5,
-                complete: () => navigateToSite(slug),
+                onComplete: () => navigateToSite(slug),
               })
             }
             return
@@ -301,10 +308,13 @@ export default function SitesMapPage() {
 
   const handleZoomTo = useCallback(() => {
     if (!selectedSite || !viewerRef.current || viewerRef.current.isDestroyed()) return
-    viewerRef.current.camera.flyTo({
-      destination: Cartesian3.fromDegrees(selectedSite.longitude, selectedSite.latitude, selectedSite.height ?? 800),
+    flyToTarget(viewerRef.current, {
+      longitude: selectedSite.longitude,
+      latitude: selectedSite.latitude,
+      height: 0,
+      range: selectedSite.height ?? 800,
       duration: 1.5,
-      complete: () => navigateToSite(selectedSite.slug),
+      onComplete: () => navigateToSite(selectedSite.slug),
     })
   }, [selectedSite, navigateToSite])
 

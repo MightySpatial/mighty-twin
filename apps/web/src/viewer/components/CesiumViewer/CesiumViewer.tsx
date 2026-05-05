@@ -30,6 +30,7 @@ import { SnapshotWidget } from '../../widgets/snapshot'
 import { AttributeTableWidget } from '../../widgets/attribute-table'
 import { StrikeWidget, useStrike } from '../../widgets/strike'
 import { TerrainWidget, useTerrain } from '../../widgets/terrain'
+import { flyToTarget } from '../../utils/flyToTarget'
 import BasemapWidget, { useBasemap } from '../../widgets/basemap'
 import TransparencyWidget, { useGlobeTransparency } from '../../widgets/transparency'
 import SearchWidget from '../../widgets/search'
@@ -166,16 +167,28 @@ export default function CesiumViewerComponent({
     return () => window.removeEventListener('keydown', onKey)
   }, [closeActivePanel, measureActive, startMeasure])
 
-  // Camera controls (stable references to avoid child re-renders)
+  // Camera controls (stable references to avoid child re-renders).
+  // flyHome uses the bounding-sphere pattern via flyToTarget so the
+  // user lands looking AT the home target at a tilted 45° from
+  // initialPosition.height range, rather than standing on the address
+  // staring past it.
   const flyHome = useCallback(() => {
-    viewerRef.current?.camera.flyTo({
-      destination: Cartesian3.fromDegrees(
-        initialPosition.longitude,
-        initialPosition.latitude,
-        initialPosition.height
-      ),
+    flyToTarget(viewerRef.current, {
+      longitude: initialPosition.longitude,
+      latitude: initialPosition.latitude,
+      height: 0,
+      range: initialPosition.height,
+      headingDeg: initialPosition.heading ?? 0,
+      pitchDeg: initialPosition.pitch ?? -45,
     })
-  }, [viewerRef, initialPosition.longitude, initialPosition.latitude, initialPosition.height])
+  }, [
+    viewerRef,
+    initialPosition.longitude,
+    initialPosition.latitude,
+    initialPosition.height,
+    initialPosition.heading,
+    initialPosition.pitch,
+  ])
   const zoomIn = useCallback(() => {
     const h = viewerRef.current?.camera.positionCartographic.height ?? 10000
     viewerRef.current?.camera.zoomIn(h * 0.4)
