@@ -20,13 +20,14 @@ promotion.
 
 from __future__ import annotations
 
+import json
 import uuid
 from datetime import datetime, timezone
 from typing import Any
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
-from sqlalchemy import select
+from sqlalchemy import select, text
 
 from mighty_models import Layer, SketchLayer, Site, Submission, User
 
@@ -292,18 +293,98 @@ def promote_submission(
             detail="Target layer must belong to the same site as the submission",
         )
 
-    # Phase T scope: record the promotion but defer actual feature
-    # materialisation into the layer's storage table to a follow-up
-    # commit (needs the spatial inserter helper). For now we mark the
-    # submission as 'promoted' and capture which layer it landed in plus
-    # the count, so the queue UI can show the resolved status.
+    site = db.get(Site, s.site_id)
+    if site is None:
+        raise HTTPException(status_code=500, detail="Site missing for submission")
+
+    inserted = _insert_features_into_layer(
+        db,
+        site_id=s.site_id,
+        layer_id=layer.id,
+        storage_srid=site.storage_srid,
+        features=list(s.features or []),
+    )
+
     s.status = "promoted"
     s.promoted_layer_id = layer.id
-    s.promoted_feature_count = len(s.features or [])
+    s.promoted_feature_count = inserted
     s.reviewed_by_id = admin.id
     s.reviewed_at = datetime.now(timezone.utc)
     db.commit()
     db.refresh(s)
-    site = db.get(Site, s.site_id)
     submitter = db.get(User, s.submitter_id) if s.submitter_id else None
     return _serialize(s, site, submitter)
+
+
+def _insert_features_into_layer(
+    db: DbSession,
+    *,
+    site_id: uuid.UUID,
+    layer_id: uuid.UUID,
+    storage_srid: int,
+    features: list[dict[str, Any]],
+) -> int:
+    """Insert each feature in ``features`` into the public.features table
+    bound to the given site + layer. Geometries are GeoJSON read from the
+    feature payload; we ST_GeomFromGeoJSON in 4326 and ST_Transform to
+    the site's storage SRID. Returns the number of rows successfully
+    inserted (silently skips features without a valid GeoJSON geometry).
+    """
+    if not features:
+        return 0
+    bind = db.get_bind()
+    is_postgis = bind.dialect.name == "postgresql"
+
+    inserted = 0
+    for f in features:
+        # Accept either GeoJSON Feature ({type:'Feature',geometry,properties})
+        # or a SketchFeature payload that already nested geojson under
+        # `geometry` as a dict.
+        geom = f.get("geometry") if isinstance(f, dict) else None
+        if not isinstance(geom, dict) or "type" not in geom or "coordinates" not in geom:
+            continue
+        properties = f.get("properties") if isinstance(f, dict) else None
+        if not isinstance(properties, dict):
+            properties = {}
+
+        new_id = uuid.uuid4()
+        if is_postgis:
+            stmt = text(
+                """
+                INSERT INTO features (id, site_id, layer_id, geom, properties)
+                VALUES (
+                    :id,
+                    :site_id,
+                    :layer_id,
+                    ST_Transform(ST_SetSRID(ST_GeomFromGeoJSON(:geojson), 4326), :storage_srid),
+                    CAST(:properties AS jsonb)
+                )
+                """
+            )
+        else:
+            # SpatiaLite path — kept dialect-aware so dev DBs work too.
+            stmt = text(
+                """
+                INSERT INTO features (id, site_id, layer_id, geom, properties)
+                VALUES (
+                    :id,
+                    :site_id,
+                    :layer_id,
+                    ST_Transform(GeomFromGeoJSON(:geojson), :storage_srid),
+                    :properties
+                )
+                """
+            )
+        db.execute(
+            stmt,
+            {
+                "id": str(new_id),
+                "site_id": str(site_id),
+                "layer_id": str(layer_id),
+                "geojson": json.dumps(geom),
+                "storage_srid": storage_srid,
+                "properties": json.dumps(properties),
+            },
+        )
+        inserted += 1
+    return inserted
