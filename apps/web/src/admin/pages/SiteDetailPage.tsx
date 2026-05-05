@@ -298,6 +298,21 @@ export default function SiteDetailPage() {
         >
           <ExternalLink size={14} /> {isPhone ? 'Viewer' : 'Open in viewer'}
         </a>
+        {site.is_public_pre_login && (
+          <button
+            onClick={() => {
+              const url = `${window.location.origin}/p/${site.slug}`
+              navigator.clipboard?.writeText(url).then(
+                () => addToast('success', `Public link copied — ${url}`),
+                () => addToast('error', 'Couldn\'t copy to clipboard'),
+              )
+            }}
+            style={ghostBtn}
+            title="Copy the public /p/<slug> URL — anyone with the link can view"
+          >
+            <Share2 size={14} /> {isPhone ? '' : 'Public link'}
+          </button>
+        )}
         <button
           onClick={exportPackage}
           disabled={exporting}
