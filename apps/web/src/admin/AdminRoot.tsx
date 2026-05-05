@@ -12,6 +12,7 @@ import LibraryPage from './pages/LibraryPage'
 import SubmissionsPage from './pages/SubmissionsPage'
 import StoryMapsPage from './pages/StoryMapsPage'
 import MySnapshotsPage from './pages/MySnapshotsPage'
+import FeedsPage from './pages/FeedsPage'
 import './styles/components.css'
 import './styles/global.css'
 
@@ -35,6 +36,7 @@ export function AdminRoot() {
           <Route path="library" element={<LibraryPage />} />
           <Route path="stories" element={<StoryMapsPage />} />
           <Route path="snapshots" element={<MySnapshotsPage />} />
+          <Route path="feeds" element={<FeedsPage />} />
           <Route path="submissions" element={<SubmissionsPage />} />
         </Route>
       </Routes>
