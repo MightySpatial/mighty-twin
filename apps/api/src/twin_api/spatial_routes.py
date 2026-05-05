@@ -602,7 +602,23 @@ def get_data_source(ds_id: str, _: CurrentUser, db: DbSession) -> dict[str, Any]
     ).scalar_one_or_none()
     if ds is None:
         raise HTTPException(status_code=404, detail="DataSource not found")
-    return _serialize_ds(ds)
+    out = _serialize_ds(ds)
+    # Layers (with site context) that already reference this data source.
+    bindings = db.execute(
+        select(Layer.id, Layer.name, Site.slug, Site.name)
+        .join(Site, Site.id == Layer.site_id)
+        .where(Layer.data_source_id == ds.id)
+    ).all()
+    out["layers"] = [
+        {
+            "id": str(layer_id),
+            "name": layer_name,
+            "site_slug": site_slug,
+            "site_name": site_name,
+        }
+        for layer_id, layer_name, site_slug, site_name in bindings
+    ]
+    return out
 
 
 @router.get("/data-sources/{ds_id}/attributes")

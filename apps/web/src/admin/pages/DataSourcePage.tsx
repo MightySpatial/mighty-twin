@@ -39,6 +39,8 @@ interface DataSource {
   url: string | null
   size_bytes: number | null
   attributes: Record<string, unknown> | unknown[]
+  /** Layers in any site that already reference this data source. */
+  layers?: { id: string; name: string; site_slug: string; site_name: string }[]
 }
 
 interface SiteListItem {
@@ -419,6 +421,42 @@ export default function DataSourcePage() {
 
         {/* Right: add to site */}
         <div>
+          {ds.layers && ds.layers.length > 0 && (
+            <Card title={`In use by ${ds.layers.length} layer${ds.layers.length === 1 ? '' : 's'}`}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {ds.layers.map((l) => (
+                  <a
+                    key={l.id}
+                    href={`/admin/sites/${encodeURIComponent(l.site_slug)}`}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: 10,
+                      padding: '8px 10px',
+                      background: 'rgba(255,255,255,0.03)',
+                      border: '1px solid rgba(255,255,255,0.07)',
+                      borderRadius: 7,
+                      color: '#f0f2f8',
+                      textDecoration: 'none',
+                      fontSize: 13,
+                    }}
+                    onMouseEnter={(e) =>
+                      (e.currentTarget.style.borderColor = 'rgba(36,83,255,0.4)')
+                    }
+                    onMouseLeave={(e) =>
+                      (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.07)')
+                    }
+                  >
+                    <span style={{ flex: 1, minWidth: 0 }}>{l.name}</span>
+                    <span style={{ fontSize: 11, color: 'rgba(167,139,250,0.85)' }}>
+                      {l.site_name} ↗
+                    </span>
+                  </a>
+                ))}
+              </div>
+            </Card>
+          )}
           <Card title="Add to site">
             <p
               style={{
