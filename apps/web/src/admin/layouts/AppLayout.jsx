@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { useShellContext } from '@mightyspatial/app-shell'
 import { useBreakpoint } from '../hooks/useBreakpoint'
+import { apiFetch } from '../hooks/useApi'
 import { LayoutDashboard, MapPin, Database, FolderOpen, Upload, Inbox, Menu, X, ChevronRight } from 'lucide-react'
 import './AppLayout.css'
 
@@ -10,7 +11,7 @@ const NAV_ITEMS = [
   { path: '/admin/sites', icon: MapPin, label: 'Sites' },
   { path: '/admin/data', icon: Database, label: 'Data' },
   { path: '/admin/library', icon: FolderOpen, label: 'Library' },
-  { path: '/admin/submissions', icon: Inbox, label: 'Submissions' },
+  { path: '/admin/submissions', icon: Inbox, label: 'Submissions', badgeKey: 'submissions_pending' },
   { path: '/admin/upload', icon: Upload, label: 'Upload' },
 ]
 
@@ -20,13 +21,44 @@ const NAV_ITEMS = [
  *  moved to the top-level Settings tab. */
 export default function AppLayout() {
   const { isPhone, isTablet, isDesktop } = useBreakpoint()
-  const { setMode } = useShellContext()
+  // setMode reserved for shell-driven layout overrides — not used here yet,
+  // pulling from useShellContext keeps the import intact for the badge poll.
+  useShellContext()
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [badges, setBadges] = useState({})
   const location = useLocation()
+
+  // Poll Atlas overview every 60s for badge counts (pending submissions etc).
+  // Cheap aggregate read — same endpoint OverviewPage uses, so the cache is
+  // shared across the session.
+  useEffect(() => {
+    let cancelled = false
+    const load = () => {
+      apiFetch('/api/atlas/overview')
+        .then((d) => {
+          if (cancelled) return
+          setBadges(d?.counts ?? {})
+        })
+        .catch(() => undefined)
+    }
+    load()
+    const id = setInterval(load, 60_000)
+    return () => {
+      cancelled = true
+      clearInterval(id)
+    }
+  }, [])
 
   const getPageTitle = () => {
     const current = NAV_ITEMS.find(item => location.pathname.startsWith(item.path))
     return current?.label || 'Atlas'
+  }
+
+  const renderBadge = (item) => {
+    if (!item.badgeKey) return null
+    const n = badges[item.badgeKey] || 0
+    if (!n) return null
+    return <span className="nav-badge">{n}</span>
   }
 
   return (
@@ -52,6 +84,7 @@ export default function AppLayout() {
                 >
                   <item.icon size={20} />
                   <span>{item.label}</span>
+                  {renderBadge(item)}
                 </NavLink>
               ))}
             </div>
@@ -83,6 +116,7 @@ export default function AppLayout() {
                 >
                   <item.icon size={20} />
                   <span>{item.label}</span>
+                  {renderBadge(item)}
                   <ChevronRight size={18} className="nav-link-chevron" />
                 </NavLink>
               ))}
@@ -125,7 +159,10 @@ export default function AppLayout() {
                 to={item.path}
                 className={({ isActive }) => `bottom-nav-item ${isActive ? 'active' : ''}`}
               >
-                <item.icon size={24} />
+                <span className="bottom-nav-icon-wrap">
+                  <item.icon size={22} />
+                  {renderBadge(item)}
+                </span>
                 <span>{item.label}</span>
               </NavLink>
             ))}
