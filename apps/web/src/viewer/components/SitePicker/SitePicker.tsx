@@ -31,6 +31,9 @@ interface Props {
   sites: SiteEntry[]
   currentSlug: string | null
   loading?: boolean
+  /** When true, the popover renders as a phone-friendly bottom sheet
+   *  with a backdrop instead of a top-left popover. */
+  isMobile?: boolean
   onClose: () => void
   onSelect: (slug: string) => void
 }
@@ -52,6 +55,7 @@ export default function SitePicker({
   sites,
   currentSlug,
   loading,
+  isMobile = false,
   onClose,
   onSelect,
 }: Props) {
@@ -108,10 +112,26 @@ export default function SitePicker({
     return { recent, all }
   }, [sites, query, recentSlugs, currentSlug])
 
-  return (
-    <div
-      ref={containerRef}
-      style={{
+  const containerStyle: React.CSSProperties = isMobile
+    ? {
+        position: 'fixed',
+        left: 0,
+        right: 0,
+        bottom: 0,
+        maxHeight: '70vh',
+        background: 'rgba(15,15,20,0.98)',
+        backdropFilter: 'blur(16px)',
+        borderTop: '1px solid rgba(255,255,255,0.08)',
+        borderTopLeftRadius: 16,
+        borderTopRightRadius: 16,
+        boxShadow: '0 -16px 40px rgba(0,0,0,0.5)',
+        zIndex: 60,
+        display: 'flex',
+        flexDirection: 'column',
+        overflow: 'hidden',
+        animation: 'spickerSlide 220ms ease-out',
+      }
+    : {
         position: 'absolute',
         top: 60,
         left: 14,
@@ -127,14 +147,43 @@ export default function SitePicker({
         flexDirection: 'column',
         overflow: 'hidden',
         animation: 'spickerIn 160ms ease-out',
-      }}
-    >
+      }
+
+  return (
+    <>
       <style>{`
         @keyframes spickerIn {
           from { opacity: 0; transform: translateY(-4px); }
           to   { opacity: 1; transform: translateY(0); }
         }
+        @keyframes spickerSlide {
+          from { transform: translateY(100%); }
+          to   { transform: translateY(0); }
+        }
       `}</style>
+      {isMobile && (
+        <div
+          onClick={onClose}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,0.45)',
+            zIndex: 59,
+          }}
+        />
+      )}
+      <div ref={containerRef} style={containerStyle}>
+        {isMobile && (
+          <div
+            style={{
+              width: 36,
+              height: 4,
+              borderRadius: 2,
+              background: 'rgba(255,255,255,0.18)',
+              margin: '8px auto 0',
+            }}
+          />
+        )}
       <div
         style={{
           padding: 12,
@@ -225,7 +274,8 @@ export default function SitePicker({
           </div>
         )}
       </div>
-    </div>
+      </div>
+    </>
   )
 }
 

@@ -456,6 +456,7 @@ export default function CesiumViewerComponent({
               sites={pickerSites}
               currentSlug={siteId ?? null}
               loading={pickerLoading}
+              isMobile={isMobile}
               onClose={() => setPickerOpen(false)}
               onSelect={(slug) => {
                 pushRecentSite(slug)
