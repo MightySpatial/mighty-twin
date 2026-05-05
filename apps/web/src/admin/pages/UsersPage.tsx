@@ -14,7 +14,6 @@
  */
 
 import { useEffect, useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import {
   AlertCircle,
   Eye,
@@ -60,7 +59,6 @@ function initials(name: string): string {
 }
 
 export default function UsersPage() {
-  const navigate = useNavigate()
   const { isPhone } = useBreakpoint()
   const { data, loading, error, reload, setData } = useApiData('/api/auth/users', [])
   const users = (data as User[]) ?? []
@@ -69,6 +67,7 @@ export default function UsersPage() {
   const [busyId, setBusyId] = useState<string | null>(null)
   const [editingName, setEditingName] = useState<string | null>(null)
   const [nameDraft, setNameDraft] = useState('')
+  const [inviteOpen, setInviteOpen] = useState(false)
 
   const filtered = useMemo(() => {
     return users.filter((u) => {
@@ -153,7 +152,7 @@ export default function UsersPage() {
             {users.filter((u) => u.is_active).length} active
           </p>
         </div>
-        <button onClick={() => navigate('/admin/users/new')} style={primaryBtn}>
+        <button onClick={() => setInviteOpen(true)} style={primaryBtn}>
           <Plus size={14} /> Invite user
         </button>
       </header>
@@ -400,8 +399,208 @@ export default function UsersPage() {
           })}
         </div>
       )}
+
+      {inviteOpen && (
+        <InviteModal
+          onClose={() => setInviteOpen(false)}
+          onCreated={(u) => {
+            setData([u, ...users])
+            setInviteOpen(false)
+          }}
+        />
+      )}
     </div>
   )
+}
+
+function InviteModal({
+  onClose,
+  onCreated,
+}: {
+  onClose: () => void
+  onCreated: (u: User) => void
+}) {
+  const [email, setEmail] = useState('')
+  const [name, setName] = useState('')
+  const [password, setPassword] = useState('')
+  const [role, setRole] = useState<Role>('viewer')
+  const [busy, setBusy] = useState(false)
+  const [err, setErr] = useState<string | null>(null)
+
+  async function create() {
+    if (!email.trim() || !name.trim() || password.length < 8) {
+      setErr('Email + name required; password must be 8+ characters.')
+      return
+    }
+    setBusy(true)
+    setErr(null)
+    try {
+      const out = (await apiFetch('/api/auth/users', {
+        method: 'POST',
+        body: JSON.stringify({
+          email: email.trim(),
+          name: name.trim(),
+          password,
+          role,
+        }),
+      })) as User
+      onCreated(out)
+    } catch (e) {
+      setErr((e as Error).message)
+      setBusy(false)
+    }
+  }
+
+  return (
+    <div
+      onClick={onClose}
+      style={{
+        position: 'fixed',
+        inset: 0,
+        background: 'rgba(0,0,0,0.5)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 100,
+      }}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          width: 380,
+          maxWidth: 'calc(100vw - 32px)',
+          background: '#15151c',
+          border: '1px solid rgba(255,255,255,0.08)',
+          borderRadius: 12,
+          padding: 18,
+          color: '#f0f2f8',
+        }}
+      >
+        <h2 style={{ margin: '0 0 6px', fontSize: 16, fontWeight: 600 }}>Invite user</h2>
+        <p style={{ margin: '0 0 14px', fontSize: 12, color: 'rgba(240,242,248,0.55)' }}>
+          The user logs in with this password and can change it later.
+        </p>
+        <ModalField label="Email">
+          <input
+            autoFocus
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="user@example.com"
+            style={modalInput}
+          />
+        </ModalField>
+        <ModalField label="Display name">
+          <input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Jane Smith"
+            style={modalInput}
+          />
+        </ModalField>
+        <ModalField label="Initial password">
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="Min 8 characters"
+            style={modalInput}
+          />
+        </ModalField>
+        <ModalField label="Role">
+          <select
+            value={role}
+            onChange={(e) => setRole(e.target.value as Role)}
+            style={modalInput}
+          >
+            <option value="viewer">Viewer — read-only</option>
+            <option value="creator">Creator — edit content</option>
+            <option value="admin">Admin — full access</option>
+          </select>
+        </ModalField>
+        {err && (
+          <div
+            style={{
+              padding: 8,
+              background: 'rgba(251,113,133,0.06)',
+              border: '1px solid rgba(251,113,133,0.32)',
+              borderRadius: 7,
+              color: '#fca5a5',
+              fontSize: 11,
+              marginBottom: 12,
+            }}
+          >
+            {err}
+          </div>
+        )}
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+          <button onClick={onClose} disabled={busy} style={modalGhost}>
+            Cancel
+          </button>
+          <button
+            onClick={create}
+            disabled={busy || !email.trim() || !name.trim() || password.length < 8}
+            style={{
+              ...primaryBtn,
+              opacity:
+                busy || !email.trim() || !name.trim() || password.length < 8 ? 0.5 : 1,
+            }}
+          >
+            {busy ? <Loader size={12} className="spin" /> : <Plus size={12} />}
+            Create user
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function ModalField({
+  label,
+  children,
+}: {
+  label: string
+  children: React.ReactNode
+}) {
+  return (
+    <div style={{ marginBottom: 10 }}>
+      <div
+        style={{
+          fontSize: 11,
+          textTransform: 'uppercase',
+          letterSpacing: '0.04em',
+          color: 'rgba(240,242,248,0.55)',
+          marginBottom: 4,
+        }}
+      >
+        {label}
+      </div>
+      {children}
+    </div>
+  )
+}
+
+const modalInput: React.CSSProperties = {
+  width: '100%',
+  padding: '8px 10px',
+  background: 'rgba(255,255,255,0.04)',
+  border: '1px solid rgba(255,255,255,0.07)',
+  borderRadius: 7,
+  color: '#f0f2f8',
+  fontSize: 13,
+  outline: 'none',
+  boxSizing: 'border-box',
+  fontFamily: 'inherit',
+}
+
+const modalGhost: React.CSSProperties = {
+  padding: '7px 12px',
+  background: 'rgba(255,255,255,0.04)',
+  border: '1px solid rgba(255,255,255,0.07)',
+  borderRadius: 7,
+  color: '#f0f2f8',
+  fontSize: 12,
+  cursor: 'pointer',
 }
 
 function ToggleSwitch({

@@ -177,6 +177,13 @@ class UserUpdate(BaseModel):
     avatar: str | None = None
 
 
+class UserCreate(BaseModel):
+    email: str
+    name: str
+    password: str
+    role: Literal["admin", "creator", "viewer"] = "viewer"
+
+
 # ── Router ──────────────────────────────────────────────────────────────
 
 
@@ -230,6 +237,33 @@ def me(user: CurrentUser) -> UserOut:
 def list_users(_: AdminUser, db: DbSession) -> list[UserOut]:
     users = db.execute(select(User).order_by(User.email)).scalars().all()
     return [UserOut.from_user(u) for u in users]
+
+
+@router.post("/users", status_code=201)
+def create_user(body: UserCreate, _: AdminUser, db: DbSession) -> UserOut:
+    email = body.email.strip().lower()
+    if not email or "@" not in email:
+        raise HTTPException(status_code=400, detail="Invalid email")
+    if len(body.password) < 8:
+        raise HTTPException(
+            status_code=400, detail="Password must be at least 8 characters"
+        )
+    existing = db.execute(
+        select(User).where(User.email == email)
+    ).scalar_one_or_none()
+    if existing is not None:
+        raise HTTPException(status_code=409, detail="Email already registered")
+    user = User(
+        email=email,
+        name=body.name.strip() or email,
+        hashed_password=hash_password(body.password),
+        role=body.role,
+        is_active=True,
+    )
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+    return UserOut.from_user(user)
 
 
 @router.patch("/users/{user_id}")
