@@ -11,11 +11,21 @@ from datetime import datetime, timedelta, timezone
 from typing import Any
 
 from fastapi import APIRouter
-from sqlalchemy import case, func, select
+from sqlalchemy import case, func, select, text
 
-from mighty_models import DataSource, Layer, Site, Snapshot, StoryMap, Submission, User
+from mighty_models import (
+    DataSource,
+    Layer,
+    LibraryItem,
+    Site,
+    Snapshot,
+    StoryMap,
+    Submission,
+    User,
+)
 
-from .auth import CurrentUser
+from . import __version__ as API_VERSION
+from .auth import AdminUser, CurrentUser
 from .db import DbSession
 
 router = APIRouter(prefix="/api/atlas", tags=["atlas-analytics"])
@@ -140,3 +150,66 @@ def overview(_: CurrentUser, db: DbSession) -> dict[str, Any]:
         "recent_snapshots": recent,
         "generated_at": now.isoformat(),
     }
+
+
+@router.get("/diagnostics")
+def diagnostics(_: AdminUser, db: DbSession) -> dict[str, Any]:
+    """System diagnostics for the Settings → Diagnostics panel.
+
+    Reports the bits an on-prem operator usually wants to confirm before
+    raising a support ticket: API version, DB engine + PostGIS version,
+    Alembic revision, and asset / feature totals. All read-only — destructive
+    operations (re-index, vacuum, backup) are deliberately not exposed
+    here yet.
+    """
+    bind = db.get_bind()
+    dialect = bind.dialect.name
+    out: dict[str, Any] = {
+        "api": {
+            "version": API_VERSION,
+            "database_dialect": dialect,
+        },
+        "checked_at": datetime.now(timezone.utc).isoformat(),
+    }
+
+    # DB version + PostGIS version (when running against PostgreSQL)
+    db_info: dict[str, Any] = {}
+    try:
+        if dialect == "postgresql":
+            db_info["postgresql"] = (
+                db.execute(text("SELECT version()")).scalar() or ""
+            ).split(" on ")[0]
+            try:
+                db_info["postgis"] = (
+                    db.execute(text("SELECT PostGIS_Version()")).scalar() or ""
+                ).split(" ")[0]
+            except Exception:
+                db_info["postgis"] = None
+            db_info["alembic_revision"] = db.execute(
+                text("SELECT version_num FROM alembic_version LIMIT 1")
+            ).scalar()
+        else:
+            db_info["sqlite"] = db.execute(
+                text("SELECT sqlite_version()")
+            ).scalar()
+    except Exception as e:  # pragma: no cover — diagnostic, never fatal
+        db_info["error"] = str(e)
+    out["database"] = db_info
+
+    # Asset totals: features (geometry rows) + library uploads
+    try:
+        out["assets"] = {
+            "features": int(
+                db.execute(text("SELECT COUNT(*) FROM features")).scalar() or 0
+            ),
+            "library_items": int(
+                db.execute(select(func.count(LibraryItem.id))).scalar() or 0
+            ),
+            "data_sources": int(
+                db.execute(select(func.count(DataSource.id))).scalar() or 0
+            ),
+        }
+    except Exception as e:  # pragma: no cover
+        out["assets"] = {"error": str(e)}
+
+    return out

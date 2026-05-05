@@ -7,6 +7,7 @@ import { ViewerRoot } from './viewer/ViewerRoot'
 import { AdminRoot } from './admin/AdminRoot'
 import UsersPage from './admin/pages/UsersPage'
 import SystemSettingsPage from './admin/pages/SystemSettingsPage'
+import DiagnosticsPanel from './admin/pages/DiagnosticsPanel'
 import AISettings from './ai/AISettings'
 import ChatPanel from './ai/ChatPanel'
 import {
@@ -49,6 +50,7 @@ const TWIN_SETTINGS_SECTIONS = [
   { id: 'autodetect', label: 'Autodetect', panel: <AutodetectRulesPanel /> },
   { id: 'widgets', label: 'Widgets', panel: <WidgetLayoutPanel /> },
   { id: 'system', label: 'System', panel: <SystemSettingsPage /> },
+  { id: 'diagnostics', label: 'Diagnostics', panel: <DiagnosticsPanel /> },
 ]
 
 /** Auth gate: when not authenticated, the entire screen is the login
