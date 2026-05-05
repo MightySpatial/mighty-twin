@@ -29,6 +29,7 @@ import MeasureWidget, { useMeasure } from '../../widgets/measure'
 import { SnapshotWidget } from '../../widgets/snapshot'
 import { AttributeTableWidget } from '../../widgets/attribute-table'
 import { StrikeWidget, useStrike } from '../../widgets/strike'
+import { TerrainWidget, useTerrain } from '../../widgets/terrain'
 import BasemapWidget, { useBasemap } from '../../widgets/basemap'
 import TransparencyWidget, { useGlobeTransparency } from '../../widgets/transparency'
 import SearchWidget from '../../widgets/search'
@@ -325,6 +326,11 @@ export default function CesiumViewerComponent({
   const [strikeOpen, setStrikeOpen] = useState(false)
   const strike = useStrike(viewerRef)
 
+  // Terrain section — opens via Terrain rail tile (T+1170). Folds the
+  // existing globe-transparency knob into a tab inside the same panel.
+  const [terrainOpen, setTerrainOpen] = useState(false)
+  const terrain = useTerrain(viewerRef)
+
   // Map MapShell action ids → existing widget state. Tools that aren't
   // implemented yet (design/table/story/strike) toggle a placeholder
   // state we can wire later without ripping the rail apart.
@@ -340,14 +346,14 @@ export default function CesiumViewerComponent({
     if (measureActive) return 'measure'
     if (sidebarOpen && !isMobile) return 'layers'
     if (legendOpen) return 'legend'
-    if (transparencyOpen) return 'terrain'
+    if (terrainOpen) return 'terrain'
     if (snapOpen) return 'snap'
     if (tableOpen) return 'table'
     if (strikeOpen) return 'strike'
     if (storyActive) return 'story'
     if (basemapOpen) return null  // basemap lives in zoom column, not bottom rail
     return null
-  }, [searchOpen, measureActive, sidebarOpen, isMobile, legendOpen, transparencyOpen, snapOpen, tableOpen, strikeOpen, storyActive, basemapOpen])
+  }, [searchOpen, measureActive, sidebarOpen, isMobile, legendOpen, transparencyOpen, terrainOpen, snapOpen, tableOpen, strikeOpen, storyActive, basemapOpen])
 
   const onMapShellAction = useCallback((id: string) => {
     switch (id) {
@@ -360,7 +366,7 @@ export default function CesiumViewerComponent({
       case 'legend':
         setLegendOpen((o) => !o); break
       case 'terrain':
-        setTransparencyOpen((o) => !o); break
+        setTerrainOpen((o) => !o); break
       case 'snap':
         setSnapOpen(true); break
       case 'table':
@@ -607,6 +613,9 @@ export default function CesiumViewerComponent({
 
       {/* Panels */}
       {basemapOpen && <BasemapWidget activeBasemap={activeBasemap} switchBasemap={switchBasemap} />}
+      {/* Globe-transparency lives inside the Terrain panel as a tab; the
+          legacy standalone widget is kept for Esc-close compatibility
+          but isn't reachable from the rail anymore. */}
       {transparencyOpen && <TransparencyWidget globeAlpha={globeAlpha} setGlobeAlpha={setGlobeAlpha} onClose={() => setTransparencyOpen(false)} />}
 
       {/* Measure */}
@@ -714,6 +723,27 @@ export default function CesiumViewerComponent({
           onClose={() => {
             strike.clear()
             setStrikeOpen(false)
+          }}
+        />
+      )}
+
+      {/* Terrain section + transparency */}
+      {terrainOpen && (
+        <TerrainWidget
+          status={terrain.status}
+          pickedCount={terrain.pickedCount}
+          section={terrain.section}
+          error={terrain.error}
+          isMobile={isMobile}
+          globeAlpha={globeAlpha}
+          onSetGlobeAlpha={setGlobeAlpha}
+          onStart={terrain.start}
+          onCancel={terrain.cancel}
+          onClear={terrain.clear}
+          onHoverSample={terrain.setCursor}
+          onClose={() => {
+            terrain.clear()
+            setTerrainOpen(false)
           }}
         />
       )}
