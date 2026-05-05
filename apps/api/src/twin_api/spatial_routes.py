@@ -19,7 +19,7 @@ from typing import Any
 
 from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, Field
-from sqlalchemy import select
+from sqlalchemy import func, select
 
 from mighty_models import DataSource, Layer, Site, Snapshot, User
 
@@ -67,8 +67,18 @@ class SiteUpdate(BaseModel):
 
 @router.get("/sites")
 def list_sites(_: CurrentUser, db: DbSession) -> list[dict[str, Any]]:
+    counts = dict(
+        db.execute(
+            select(Layer.site_id, func.count(Layer.id)).group_by(Layer.site_id)
+        ).all()
+    )
     sites = db.execute(select(Site).order_by(Site.name)).scalars().all()
-    return [_serialize_site(s) for s in sites]
+    out: list[dict[str, Any]] = []
+    for s in sites:
+        row = _serialize_site(s)
+        row["layer_count"] = int(counts.get(s.id, 0))
+        out.append(row)
+    return out
 
 
 @router.get("/sites/{slug}")

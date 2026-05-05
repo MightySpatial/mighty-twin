@@ -16,6 +16,9 @@ import {
   FeatureAttributesDrawer,
   useFeatureClick,
 } from '../FeaturePopup'
+import { SitePicker, pushRecentSite } from '../SitePicker'
+import { useSites } from '../../hooks/useSites'
+import { useNavigate } from 'react-router-dom'
 
 import { useTokenFetch } from './hooks/useTokenFetch'
 import { useCesiumMount } from './hooks/useCesiumMount'
@@ -236,6 +239,14 @@ export default function CesiumViewerComponent({
     })
   }, [])
 
+  // Site picker — popover from the MapShell site chip.
+  const navigate = useNavigate()
+  const [pickerOpen, setPickerOpen] = useState(false)
+  const { sites: pickerSites, loading: pickerLoading } = useSites()
+  useEffect(() => {
+    if (siteId) pushRecentSite(siteId)
+  }, [siteId])
+
   // Feature click → popup → drawer.
   const { picked, anchor, clear: clearPicked } = useFeatureClick(viewerRef)
   const [drawerOpen, setDrawerOpen] = useState(false)
@@ -359,12 +370,43 @@ export default function CesiumViewerComponent({
           onToggle2D3D={toggleSceneMode}
           onToggleBasemap={() => setBasemapOpen((o) => !o)}
           onResetCamera={resetCamera}
-          onOpenSitePicker={() => { /* hooked up in a later commit */ }}
+          onOpenSitePicker={() => setPickerOpen((o) => !o)}
           headingDeg={headingDeg}
           is2D={is2D}
           phoneMode={isMobile}
         />
       </div>
+
+      {/* Site picker — popover from MapShell site chip. Rendered inside
+          the sidebar-aware frame so it doesn't bleed under the left
+          sidebar on desktop. */}
+      {pickerOpen && (
+        <div
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: sidebarWidth,
+            right: 0,
+            bottom: 0,
+            zIndex: 30,
+            pointerEvents: 'none',
+          }}
+        >
+          <div style={{ pointerEvents: 'auto' }}>
+            <SitePicker
+              sites={pickerSites}
+              currentSlug={siteId ?? null}
+              loading={pickerLoading}
+              onClose={() => setPickerOpen(false)}
+              onSelect={(slug) => {
+                pushRecentSite(slug)
+                setPickerOpen(false)
+                navigate(`/sites/${slug}`)
+              }}
+            />
+          </div>
+        </div>
+      )}
 
       {/* Feature click — leader-line popup near the picked feature, full
           attribute drawer on demand. Wraps inside the sidebar-aware
