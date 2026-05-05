@@ -4,6 +4,7 @@ import AppLayout from './layouts/AppLayout'
 import OverviewPage from './pages/OverviewPage'
 import SitesPage from './pages/SitesPage'
 import SiteNewPage from './pages/SiteNewPage'
+import CommandPalette from './components/CommandPalette'
 import './styles/components.css'
 import './styles/global.css'
 
@@ -33,6 +34,7 @@ const pageFallback = (
 export function AdminRoot() {
   return (
     <div className="admin-root">
+      <CommandPalette />
       <Suspense fallback={pageFallback}>
         <Routes>
           <Route path="/admin" element={<AppLayout />}>
