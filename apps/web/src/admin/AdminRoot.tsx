@@ -4,6 +4,7 @@ import OverviewPage from './pages/OverviewPage'
 import SitesPage from './pages/SitesPage'
 import SiteNewPage from './pages/SiteNewPage'
 import SiteDetailPage from './pages/SiteDetailPage'
+import SiteAddLayerPage from './pages/SiteAddLayerPage'
 import DataPage from './pages/DataPage'
 import DataSourcePage from './pages/DataSourcePage'
 import UploadPage from './pages/UploadPage'
@@ -25,6 +26,7 @@ export function AdminRoot() {
           <Route path="sites" element={<SitesPage />} />
           <Route path="sites/new" element={<SiteNewPage />} />
           <Route path="sites/:slug" element={<SiteDetailPage />} />
+          <Route path="sites/:slug/add-layer" element={<SiteAddLayerPage />} />
           <Route path="data" element={<DataPage />} />
           <Route path="data/:id" element={<DataSourcePage />} />
           <Route path="upload" element={<UploadPage />} />
