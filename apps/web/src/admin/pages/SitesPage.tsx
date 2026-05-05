@@ -42,7 +42,11 @@ interface Site {
   is_public_pre_login: boolean
   layer_count: number
   primary_color?: string
+  created_at: string | null
+  updated_at: string | null
 }
+
+type SortKey = 'name' | 'newest' | 'oldest' | 'updated'
 
 export default function SitesPage() {
   const navigate = useNavigate()
@@ -53,6 +57,7 @@ export default function SitesPage() {
 
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState<'all' | 'public' | 'private'>('all')
+  const [sortKey, setSortKey] = useState<SortKey>('name')
   const [deleting, setDeleting] = useState<string | null>(null)
   const [importing, setImporting] = useState(false)
   const [importErr, setImportErr] = useState<string | null>(null)
@@ -108,7 +113,7 @@ export default function SitesPage() {
   }
 
   const filtered = useMemo(() => {
-    return sites.filter((s) => {
+    const out = sites.filter((s) => {
       if (filter === 'public' && !s.is_public_pre_login) return false
       if (filter === 'private' && s.is_public_pre_login) return false
       const q = search.toLowerCase()
@@ -119,7 +124,23 @@ export default function SitesPage() {
         (s.description ?? '').toLowerCase().includes(q)
       )
     })
-  }, [sites, search, filter])
+    const tsCreated = (s: Site) => (s.created_at ? Date.parse(s.created_at) : 0)
+    const tsUpdated = (s: Site) => (s.updated_at ? Date.parse(s.updated_at) : 0)
+    out.sort((a, b) => {
+      switch (sortKey) {
+        case 'newest':
+          return tsCreated(b) - tsCreated(a)
+        case 'oldest':
+          return tsCreated(a) - tsCreated(b)
+        case 'updated':
+          return tsUpdated(b) - tsUpdated(a)
+        case 'name':
+        default:
+          return a.name.localeCompare(b.name)
+      }
+    })
+    return out
+  }, [sites, search, filter, sortKey])
 
   async function deleteSite(s: Site) {
     if (!confirm(`Delete site "${s.name}"? This removes all of its layers.`)) return
@@ -269,6 +290,25 @@ export default function SitesPage() {
         <FilterChip active={filter === 'private'} onClick={() => setFilter('private')}>
           <Lock size={11} /> Private
         </FilterChip>
+        <select
+          value={sortKey}
+          onChange={(e) => setSortKey(e.target.value as SortKey)}
+          aria-label="Sort sites"
+          style={{
+            padding: '7px 10px',
+            background: 'rgba(255,255,255,0.04)',
+            border: '1px solid rgba(255,255,255,0.07)',
+            borderRadius: 8,
+            color: 'rgba(240,242,248,0.8)',
+            fontSize: 12,
+            cursor: 'pointer',
+          }}
+        >
+          <option value="name">Sort: Name</option>
+          <option value="newest">Sort: Newest</option>
+          <option value="oldest">Sort: Oldest</option>
+          <option value="updated">Sort: Recently updated</option>
+        </select>
       </div>
 
       {error && (

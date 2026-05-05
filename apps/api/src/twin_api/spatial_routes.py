@@ -47,6 +47,8 @@ def _serialize_site(s: Site, layers: list[Layer] | None = None) -> dict[str, Any
         "description": s.description,
         "storage_srid": s.storage_srid,
         "is_public_pre_login": bool(s.is_public_pre_login),
+        "created_at": s.created_at.isoformat() if s.created_at else None,
+        "updated_at": s.updated_at.isoformat() if s.updated_at else None,
         **(s.config or {}),
     }
     if layers is not None:
