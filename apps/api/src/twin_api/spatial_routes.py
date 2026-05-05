@@ -17,7 +17,7 @@ from __future__ import annotations
 import uuid
 from typing import Any
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, Request, Response, status
 from pydantic import BaseModel, Field
 from sqlalchemy import func, select
 
@@ -25,6 +25,7 @@ from mighty_models import DataSource, Layer, Site, Snapshot, User
 
 from .auth import AdminUser, CurrentUser
 from .db import DbSession
+from .packages import export_site_package
 
 router = APIRouter(prefix="/api/spatial", tags=["spatial"])
 
@@ -140,6 +141,48 @@ def delete_site(slug: str, _: AdminUser, db: DbSession) -> None:
         raise HTTPException(status_code=404, detail=f"Site {slug!r} not found")
     db.delete(site)
     db.commit()
+
+
+# ── Site package export (.mtsite) ───────────────────────────────────────
+
+
+@router.get("/sites/{slug}/export")
+def export_site(
+    slug: str,
+    user: AdminUser,
+    db: DbSession,
+    request: Request,
+    include_features: bool = True,
+    include_assets: bool = True,
+    include_library: bool = True,
+) -> Response:
+    """Stream a .mtsite zip archive of the site.
+
+    Query params let callers thin the package down for catalog-only
+    federation use cases (skip features) or low-bandwidth transfers
+    (skip assets). Defaults are full-fat.
+    """
+    site = db.execute(select(Site).where(Site.slug == slug)).scalar_one_or_none()
+    if site is None:
+        raise HTTPException(status_code=404, detail=f"Site {slug!r} not found")
+    twin_url = str(request.base_url).rstrip("/")
+    payload = export_site_package(
+        db,
+        site,
+        exported_by=user,
+        twin_url=twin_url,
+        include_features=include_features,
+        include_assets=include_assets,
+        include_library=include_library,
+    )
+    return Response(
+        content=payload,
+        media_type="application/zip",
+        headers={
+            "Content-Disposition": f'attachment; filename="{slug}.mtsite"',
+            "Content-Length": str(len(payload)),
+        },
+    )
 
 
 # ── Site snapshot gallery (admin / co-viewer) ───────────────────────────

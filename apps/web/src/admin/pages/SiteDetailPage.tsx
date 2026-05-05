@@ -28,6 +28,7 @@ import {
   Image as ImageIcon,
   Loader,
   Lock,
+  Package,
   Pencil,
   Plus,
   Save,
@@ -136,6 +137,38 @@ export default function SiteDetailPage() {
       navigate('/admin/sites')
     } catch (e) {
       alert(`Delete failed: ${(e as Error).message}`)
+    }
+  }
+
+  const [exporting, setExporting] = useState(false)
+  async function exportPackage() {
+    if (!site) return
+    setExporting(true)
+    try {
+      const token = localStorage.getItem('accessToken')
+      const res = await fetch(
+        `${import.meta.env.VITE_API_URL || ''}/api/spatial/sites/${site.slug}/export`,
+        {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        },
+      )
+      if (!res.ok) {
+        const t = await res.text().catch(() => '')
+        throw new Error(t || `Export failed (${res.status})`)
+      }
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `${site.slug}.mtsite`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+    } catch (e) {
+      alert(`Export failed: ${(e as Error).message}`)
+    } finally {
+      setExporting(false)
     }
   }
 
@@ -256,6 +289,15 @@ export default function SiteDetailPage() {
         >
           <ExternalLink size={14} /> {isPhone ? 'Viewer' : 'Open in viewer'}
         </a>
+        <button
+          onClick={exportPackage}
+          disabled={exporting}
+          style={ghostBtn}
+          title="Download a .mtsite package of this site"
+        >
+          {exporting ? <Loader size={14} className="spin" /> : <Package size={14} />}
+          {isPhone ? '' : exporting ? 'Exporting…' : 'Export'}
+        </button>
         <button onClick={deleteSite} style={dangerBtn}>
           <Trash2 size={14} /> {isPhone ? '' : 'Delete site'}
         </button>
