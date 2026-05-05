@@ -6,7 +6,6 @@ import { useNavigate } from 'react-router-dom'
 import { apiFetch } from '../hooks/useApi'
 import { ChevronLeft, UserPlus, Loader, AlertCircle } from 'lucide-react'
 import '../styles/components.css'
-import './SiteDetailPage.css'
 
 const ROLES = [
   { value: 'viewer',  label: 'Viewer',  hint: 'Can view sites and data, no editing.' },

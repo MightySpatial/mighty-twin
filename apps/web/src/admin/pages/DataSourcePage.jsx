@@ -8,7 +8,6 @@ import { useApiData, apiFetch } from '../hooks/useApi'
 import { ChevronLeft, Plus, Loader, AlertCircle, Trash2, CheckCircle, Table2 } from 'lucide-react'
 import { AttributeTable } from '@mightydt/ui'
 import '../styles/components.css'
-import './SiteDetailPage.css'
 
 const TYPE_META = {
   vector:     { label: 'Vector',      icon: '📍' },
