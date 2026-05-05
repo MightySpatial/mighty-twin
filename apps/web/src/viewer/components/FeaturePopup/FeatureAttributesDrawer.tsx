@@ -1,37 +1,77 @@
-/** FeatureAttributesDrawer — full-attribute side drawer.
+/** FeatureAttributesDrawer — full-attribute side drawer + edit mode (T+1050).
  *
  *  Slides in from the right on desktop / tablet, takes the bottom 80%
  *  of the viewport on phone. Renders every attribute as a key-value
  *  row, copy-on-click, and a search box to filter rows.
  *
- *  Pairs with FeaturePopup: popup is the lightweight summary; drawer
- *  is the full read-only inspector. Editing UX is a separate, future
- *  surface (Design widget already covers sketch features).
+ *  Edit mode (when a site slug + database UUID id are available)
+ *  swaps key/value rows for editable inputs, lets users add new
+ *  attribute keys, delete rows, and save via PATCH /api/spatial/
+ *  sites/{slug}/features/{id}. Cancel reverts to the original bag.
  */
 
 import { useEffect, useMemo, useState } from 'react'
-import { Copy, Search, X, MapPin } from 'lucide-react'
+import {
+  Check,
+  Copy,
+  Loader,
+  MapPin,
+  Pencil,
+  Plus,
+  Search,
+  Trash2,
+  X,
+} from 'lucide-react'
 import type { PickedFeature } from './useFeatureClick'
+
+const API_URL = import.meta.env.VITE_API_URL || ''
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 interface Props {
   picked: PickedFeature
   isMobile: boolean
+  /** Site slug — required for edit + delete. When omitted the drawer
+   *  stays read-only (e.g. on the public viewer). */
+  siteSlug?: string | null
+  /** Disable edit mode even when siteSlug is set (e.g. viewer role). */
+  readOnly?: boolean
   onClose: () => void
   onZoomTo?: () => void
+  /** Called after a successful PATCH so the host can re-fetch and
+   *  refresh the picked feature (or remove it after a delete). */
+  onChanged?: (next: { properties: Record<string, unknown> } | null) => void
 }
 
-export default function FeatureAttributesDrawer({ picked, isMobile, onClose, onZoomTo }: Props) {
+type DraftEntry = { key: string; value: string; deleted?: boolean }
+
+export default function FeatureAttributesDrawer({
+  picked,
+  isMobile,
+  siteSlug,
+  readOnly = false,
+  onClose,
+  onZoomTo,
+  onChanged,
+}: Props) {
+  const featureId = picked.id
+  const isEditable = !!(siteSlug && !readOnly && UUID_RE.test(featureId))
+
   const [search, setSearch] = useState('')
   const [copied, setCopied] = useState<string | null>(null)
+  const [editing, setEditing] = useState(false)
+  const [draft, setDraft] = useState<DraftEntry[]>([])
+  const [busy, setBusy] = useState(false)
+  const [err, setErr] = useState<string | null>(null)
 
-  // ESC closes
+  // ESC closes — but only when not editing (editing has its own cancel)
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose()
+      if (e.key === 'Escape' && !editing) onClose()
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [onClose])
+  }, [onClose, editing])
 
   const allRows = useMemo(
     () =>
@@ -58,6 +98,106 @@ export default function FeatureAttributesDrawer({ picked, isMobile, onClose, onZ
       },
       () => undefined,
     )
+  }
+
+  function startEdit() {
+    setDraft(
+      Object.entries(picked.attributes).map(([k, v]) => ({
+        key: k,
+        value: typeof v === 'object' ? JSON.stringify(v) : String(v ?? ''),
+      })),
+    )
+    setErr(null)
+    setEditing(true)
+  }
+
+  function cancelEdit() {
+    setDraft([])
+    setErr(null)
+    setEditing(false)
+  }
+
+  async function saveEdit() {
+    if (!siteSlug) return
+    // Build properties bag from non-deleted rows; coerce numeric/bool
+    // strings back to native types so the JSONB column doesn't fill
+    // with stringified scalars.
+    const props: Record<string, unknown> = {}
+    const seenKeys = new Set<string>()
+    for (const row of draft) {
+      if (row.deleted) continue
+      const k = row.key.trim()
+      if (!k) continue
+      if (seenKeys.has(k)) {
+        setErr(`Duplicate key "${k}"`)
+        return
+      }
+      seenKeys.add(k)
+      props[k] = coerce(row.value)
+    }
+    setBusy(true)
+    setErr(null)
+    try {
+      const token = localStorage.getItem('accessToken')
+      const res = await fetch(
+        `${API_URL}/api/spatial/sites/${siteSlug}/features/${featureId}`,
+        {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          body: JSON.stringify({
+            properties: props,
+            replace_properties: true,
+          }),
+        },
+      )
+      if (!res.ok) {
+        const body = await res.text().catch(() => '')
+        let msg = `Save failed (${res.status})`
+        try {
+          msg = JSON.parse(body)?.detail || msg
+        } catch {
+          /* keep default */
+        }
+        throw new Error(msg)
+      }
+      const updated = (await res.json()) as { properties: Record<string, unknown> }
+      onChanged?.({ properties: updated.properties || {} })
+      setEditing(false)
+      setDraft([])
+    } catch (e) {
+      setErr((e as Error).message)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function deleteFeature() {
+    if (!siteSlug) return
+    if (!confirm('Delete this feature? This can\'t be undone.')) return
+    setBusy(true)
+    setErr(null)
+    try {
+      const token = localStorage.getItem('accessToken')
+      const res = await fetch(
+        `${API_URL}/api/spatial/sites/${siteSlug}/features/${featureId}`,
+        {
+          method: 'DELETE',
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        },
+      )
+      if (!res.ok && res.status !== 204) {
+        throw new Error(`Delete failed (${res.status})`)
+      }
+      onChanged?.(null)
+      onClose()
+    } catch (e) {
+      setErr((e as Error).message)
+    } finally {
+      setBusy(false)
+    }
   }
 
   const drawerStyle: React.CSSProperties = isMobile
@@ -145,8 +285,12 @@ export default function FeatureAttributesDrawer({ picked, isMobile, onClose, onZ
                 marginTop: 4,
               }}
             >
-              {picked.source ?? 'Feature'} · {allRows.length} attribute
-              {allRows.length === 1 ? '' : 's'}
+              {picked.source ?? 'Feature'} ·{' '}
+              {editing ? draft.filter((r) => !r.deleted).length : allRows.length}{' '}
+              attribute
+              {(editing ? draft.filter((r) => !r.deleted).length : allRows.length) === 1
+                ? ''
+                : 's'}
             </div>
           </div>
           <button
@@ -166,23 +310,97 @@ export default function FeatureAttributesDrawer({ picked, isMobile, onClose, onZ
         </div>
 
         {/* Action row */}
-        {onZoomTo && (
+        {(onZoomTo || isEditable) && !editing && (
           <div
             style={{
               padding: '10px 16px',
               borderBottom: '1px solid rgba(255,255,255,0.05)',
               display: 'flex',
               gap: 8,
+              flexWrap: 'wrap',
+            }}
+          >
+            {onZoomTo && (
+              <button
+                onClick={onZoomTo}
+                style={{
+                  padding: '6px 10px',
+                  background: 'rgba(45,212,191,0.10)',
+                  border: '1px solid rgba(45,212,191,0.32)',
+                  borderRadius: 6,
+                  color: '#2dd4bf',
+                  fontSize: 11,
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6,
+                }}
+              >
+                <MapPin size={12} /> Zoom to feature
+              </button>
+            )}
+            {isEditable && (
+              <>
+                <button
+                  onClick={startEdit}
+                  style={{
+                    padding: '6px 10px',
+                    background: 'rgba(36,83,255,0.12)',
+                    border: '1px solid rgba(36,83,255,0.32)',
+                    borderRadius: 6,
+                    color: '#9bb3ff',
+                    fontSize: 11,
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 6,
+                  }}
+                >
+                  <Pencil size={12} /> Edit attributes
+                </button>
+                <button
+                  onClick={deleteFeature}
+                  disabled={busy}
+                  style={{
+                    padding: '6px 10px',
+                    background: 'rgba(251,113,133,0.10)',
+                    border: '1px solid rgba(251,113,133,0.32)',
+                    borderRadius: 6,
+                    color: '#fb7185',
+                    fontSize: 11,
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    marginLeft: 'auto',
+                  }}
+                >
+                  <Trash2 size={12} /> Delete feature
+                </button>
+              </>
+            )}
+          </div>
+        )}
+
+        {/* Edit-mode action bar */}
+        {editing && (
+          <div
+            style={{
+              padding: '10px 16px',
+              borderBottom: '1px solid rgba(255,255,255,0.05)',
+              display: 'flex',
+              gap: 8,
+              alignItems: 'center',
             }}
           >
             <button
-              onClick={onZoomTo}
+              onClick={() => setDraft((d) => [...d, { key: '', value: '' }])}
               style={{
                 padding: '6px 10px',
-                background: 'rgba(45,212,191,0.10)',
-                border: '1px solid rgba(45,212,191,0.32)',
+                background: 'rgba(255,255,255,0.04)',
+                border: '1px solid rgba(255,255,255,0.07)',
                 borderRadius: 6,
-                color: '#2dd4bf',
+                color: '#f0f2f8',
                 fontSize: 11,
                 cursor: 'pointer',
                 display: 'inline-flex',
@@ -190,13 +408,64 @@ export default function FeatureAttributesDrawer({ picked, isMobile, onClose, onZ
                 gap: 6,
               }}
             >
-              <MapPin size={12} /> Zoom to feature
+              <Plus size={12} /> Add attribute
+            </button>
+            <div style={{ flex: 1 }} />
+            <button
+              onClick={cancelEdit}
+              disabled={busy}
+              style={{
+                padding: '6px 10px',
+                background: 'transparent',
+                border: '1px solid rgba(255,255,255,0.12)',
+                borderRadius: 6,
+                color: 'rgba(240,242,248,0.7)',
+                fontSize: 11,
+                cursor: 'pointer',
+              }}
+            >
+              Cancel
+            </button>
+            <button
+              onClick={saveEdit}
+              disabled={busy}
+              style={{
+                padding: '6px 12px',
+                background: '#2453ff',
+                border: 'none',
+                borderRadius: 6,
+                color: '#fff',
+                fontSize: 11,
+                fontWeight: 500,
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                opacity: busy ? 0.5 : 1,
+              }}
+            >
+              {busy ? <Loader size={12} className="spin" /> : <Check size={12} />}
+              {busy ? 'Saving…' : 'Save'}
             </button>
           </div>
         )}
 
-        {/* Search */}
-        {allRows.length > 4 && (
+        {err && (
+          <div
+            style={{
+              padding: '8px 16px',
+              background: 'rgba(251,113,133,0.06)',
+              borderBottom: '1px solid rgba(251,113,133,0.32)',
+              color: '#fca5a5',
+              fontSize: 11,
+            }}
+          >
+            {err}
+          </div>
+        )}
+
+        {/* Search (read-only) */}
+        {!editing && allRows.length > 4 && (
           <div
             style={{
               padding: '10px 16px',
@@ -241,7 +510,25 @@ export default function FeatureAttributesDrawer({ picked, isMobile, onClose, onZ
             padding: 8,
           }}
         >
-          {rows.length === 0 ? (
+          {editing ? (
+            draft.map((row, i) => (
+              <EditRow
+                key={i}
+                row={row}
+                onKey={(k) =>
+                  setDraft((d) => d.map((x, j) => (j === i ? { ...x, key: k } : x)))
+                }
+                onValue={(v) =>
+                  setDraft((d) => d.map((x, j) => (j === i ? { ...x, value: v } : x)))
+                }
+                onDelete={() =>
+                  setDraft((d) =>
+                    d.map((x, j) => (j === i ? { ...x, deleted: !x.deleted } : x)),
+                  )
+                }
+              />
+            ))
+          ) : rows.length === 0 ? (
             <div
               style={{
                 padding: 32,
@@ -340,4 +627,111 @@ function Row({
       </div>
     </div>
   )
+}
+
+function EditRow({
+  row,
+  onKey,
+  onValue,
+  onDelete,
+}: {
+  row: DraftEntry
+  onKey: (k: string) => void
+  onValue: (v: string) => void
+  onDelete: () => void
+}) {
+  return (
+    <div
+      style={{
+        padding: '8px 10px',
+        margin: '0 4px 4px',
+        background: row.deleted ? 'rgba(251,113,133,0.06)' : 'rgba(255,255,255,0.03)',
+        border: `1px solid ${row.deleted ? 'rgba(251,113,133,0.32)' : 'rgba(255,255,255,0.05)'}`,
+        borderRadius: 6,
+        opacity: row.deleted ? 0.5 : 1,
+      }}
+    >
+      <div style={{ display: 'flex', gap: 6, marginBottom: 4 }}>
+        <input
+          value={row.key}
+          onChange={(e) => onKey(e.target.value)}
+          placeholder="key"
+          disabled={row.deleted}
+          style={{
+            flex: 1,
+            padding: '4px 6px',
+            background: 'rgba(255,255,255,0.04)',
+            border: '1px solid rgba(255,255,255,0.07)',
+            borderRadius: 4,
+            color: '#f0f2f8',
+            fontSize: 11,
+            fontFamily: 'monospace',
+            outline: 'none',
+          }}
+        />
+        <button
+          onClick={onDelete}
+          style={{
+            padding: 4,
+            background: 'transparent',
+            border: '1px solid rgba(255,255,255,0.07)',
+            borderRadius: 4,
+            color: row.deleted ? '#fb7185' : 'rgba(240,242,248,0.5)',
+            cursor: 'pointer',
+            display: 'inline-flex',
+            alignItems: 'center',
+          }}
+          title={row.deleted ? 'Undo delete' : 'Delete row'}
+        >
+          <Trash2 size={11} />
+        </button>
+      </div>
+      <textarea
+        value={row.value}
+        onChange={(e) => onValue(e.target.value)}
+        placeholder="value"
+        disabled={row.deleted}
+        rows={2}
+        style={{
+          width: '100%',
+          padding: '4px 6px',
+          background: 'rgba(255,255,255,0.04)',
+          border: '1px solid rgba(255,255,255,0.07)',
+          borderRadius: 4,
+          color: '#f0f2f8',
+          fontSize: 12,
+          outline: 'none',
+          boxSizing: 'border-box',
+          resize: 'vertical',
+          fontFamily: 'inherit',
+        }}
+      />
+    </div>
+  )
+}
+
+function coerce(raw: string): unknown {
+  const s = raw.trim()
+  if (s === '') return ''
+  const lower = s.toLowerCase()
+  if (lower === 'true') return true
+  if (lower === 'false') return false
+  if (lower === 'null') return null
+  // Try JSON for nested values (arrays, objects, numbers)
+  if ((s.startsWith('{') && s.endsWith('}')) || (s.startsWith('[') && s.endsWith(']'))) {
+    try {
+      return JSON.parse(s)
+    } catch {
+      return s
+    }
+  }
+  if (/^-?\d+$/.test(s)) {
+    const n = parseInt(s, 10)
+    if (Number.isSafeInteger(n)) return n
+  }
+  if (/^-?\d*\.\d+$/.test(s) || /^-?\d+(\.\d+)?[eE][+-]?\d+$/.test(s)) {
+    const n = parseFloat(s)
+    if (!Number.isNaN(n)) return n
+  }
+  return raw
 }

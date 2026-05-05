@@ -498,12 +498,25 @@ export default function CesiumViewerComponent({
           <div style={{ position: 'absolute', inset: 0, pointerEvents: 'auto' }}>
             <FeatureAttributesDrawer
               picked={picked}
+              siteSlug={siteId ?? null}
               isMobile={isMobile}
               onClose={() => {
                 setDrawerOpen(false)
                 clearPicked()
               }}
               onZoomTo={zoomToPicked}
+              onChanged={(next) => {
+                if (next === null) {
+                  // feature deleted — entity will be removed by the
+                  // layer reload that ViewerPage triggers on navigate
+                  setDrawerOpen(false)
+                  clearPicked()
+                }
+                // attribute updates: the next click will re-pick fresh
+                // from the GeoJsonDataSource (which is reloaded by
+                // useLayerSync on URL/visibility changes); for now we
+                // close + reopen the drawer fresh on the next click.
+              }}
             />
           </div>
         )}
