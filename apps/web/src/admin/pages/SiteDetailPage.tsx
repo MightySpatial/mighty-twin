@@ -29,6 +29,7 @@ import {
   Loader,
   Lock,
   Package,
+  Palette,
   Pencil,
   Plus,
   Save,
@@ -38,6 +39,7 @@ import {
 } from 'lucide-react'
 import { apiFetch, useApiData } from '../hooks/useApi'
 import { useBreakpoint } from '../hooks/useBreakpoint'
+import LayerStyleEditor from '../components/LayerStyleEditor'
 
 interface Layer {
   id: string
@@ -46,6 +48,7 @@ interface Layer {
   visible: boolean
   opacity: number
   order: number
+  style?: Record<string, unknown> | null
 }
 
 interface SnapshotEntry {
@@ -89,6 +92,7 @@ export default function SiteDetailPage() {
   const [snapshotsLoading, setSnapshotsLoading] = useState(false)
   const [editingName, setEditingName] = useState(false)
   const [nameDraft, setNameDraft] = useState('')
+  const [stylingLayer, setStylingLayer] = useState<Layer | null>(null)
 
   const [storyMaps, setStoryMaps] = useState<{ id: string; name: string; is_published: boolean; slides?: unknown[] }[]>([])
 
@@ -575,6 +579,7 @@ export default function SiteDetailPage() {
                       canDown={idx < sorted.length - 1}
                       onToggle={() => toggleLayerVisible(l)}
                       onDelete={() => deleteLayer(l)}
+                      onStyle={() => setStylingLayer(l)}
                       onMove={(dir) => moveLayer(l, dir, sorted)}
                     />
                   ))
@@ -653,6 +658,18 @@ export default function SiteDetailPage() {
           </Card>
         </div>
       </div>
+
+      {stylingLayer && (
+        <LayerStyleEditor
+          siteSlug={site.slug}
+          layer={stylingLayer}
+          onClose={() => setStylingLayer(null)}
+          onSaved={() => {
+            setStylingLayer(null)
+            reload()
+          }}
+        />
+      )}
     </div>
   )
 }
@@ -769,6 +786,7 @@ function LayerRow({
   canDown,
   onToggle,
   onDelete,
+  onStyle,
   onMove,
 }: {
   layer: Layer
@@ -776,8 +794,12 @@ function LayerRow({
   canDown: boolean
   onToggle: () => void
   onDelete: () => void
+  onStyle: () => void
   onMove: (dir: 'up' | 'down') => void
 }) {
+  const swatch = (layer.style as Record<string, unknown> | null)?.strokeColor as
+    | string
+    | undefined
   return (
     <div
       style={{
@@ -837,6 +859,32 @@ function LayerRow({
           {layer.opacity < 1 && <span>{Math.round(layer.opacity * 100)}%</span>}
         </div>
       </div>
+      <button
+        onClick={onStyle}
+        style={iconBtn}
+        title="Edit style"
+      >
+        <span
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 4,
+          }}
+        >
+          {swatch && (
+            <span
+              style={{
+                width: 12,
+                height: 12,
+                borderRadius: 3,
+                background: swatch,
+                border: '1px solid rgba(255,255,255,0.15)',
+              }}
+            />
+          )}
+          <Palette size={14} />
+        </span>
+      </button>
       <button onClick={onToggle} style={iconBtn} title={layer.visible ? 'Hide' : 'Show'}>
         {layer.visible ? <Eye size={14} /> : <EyeOff size={14} />}
       </button>
