@@ -154,6 +154,8 @@ class UserOut(BaseModel):
     name: str
     role: str
     avatar: str | None = None
+    is_active: bool = True
+    created_at: str | None = None
 
     @classmethod
     def from_user(cls, user: User) -> "UserOut":
@@ -163,7 +165,16 @@ class UserOut(BaseModel):
             name=user.name,
             role=user.role,
             avatar=user.avatar_url,
+            is_active=bool(user.is_active),
+            created_at=user.created_at.isoformat() if user.created_at else None,
         )
+
+
+class UserUpdate(BaseModel):
+    name: str | None = None
+    role: Literal["admin", "creator", "viewer"] | None = None
+    is_active: bool | None = None
+    avatar: str | None = None
 
 
 # ── Router ──────────────────────────────────────────────────────────────
@@ -219,3 +230,51 @@ def me(user: CurrentUser) -> UserOut:
 def list_users(_: AdminUser, db: DbSession) -> list[UserOut]:
     users = db.execute(select(User).order_by(User.email)).scalars().all()
     return [UserOut.from_user(u) for u in users]
+
+
+@router.patch("/users/{user_id}")
+def update_user(
+    user_id: str, body: UserUpdate, admin: AdminUser, db: DbSession
+) -> UserOut:
+    target = db.execute(
+        select(User).where(User.id == uuid.UUID(user_id))
+    ).scalar_one_or_none()
+    if target is None:
+        raise HTTPException(status_code=404, detail="User not found")
+    # Admins can't strip their own admin role or deactivate themselves —
+    # otherwise a single admin could lock the workspace.
+    if target.id == admin.id:
+        if body.role is not None and body.role != "admin":
+            raise HTTPException(
+                status_code=400,
+                detail="You can't demote yourself from admin",
+            )
+        if body.is_active is False:
+            raise HTTPException(
+                status_code=400,
+                detail="You can't deactivate yourself",
+            )
+    if body.name is not None:
+        target.name = body.name
+    if body.role is not None:
+        target.role = body.role
+    if body.is_active is not None:
+        target.is_active = body.is_active
+    if body.avatar is not None:
+        target.avatar_url = body.avatar or None
+    db.commit()
+    db.refresh(target)
+    return UserOut.from_user(target)
+
+
+@router.delete("/users/{user_id}", status_code=204)
+def delete_user(user_id: str, admin: AdminUser, db: DbSession) -> None:
+    target = db.execute(
+        select(User).where(User.id == uuid.UUID(user_id))
+    ).scalar_one_or_none()
+    if target is None:
+        raise HTTPException(status_code=404, detail="User not found")
+    if target.id == admin.id:
+        raise HTTPException(status_code=400, detail="You can't delete yourself")
+    db.delete(target)
+    db.commit()
