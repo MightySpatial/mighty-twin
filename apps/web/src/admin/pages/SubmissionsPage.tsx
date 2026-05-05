@@ -14,6 +14,7 @@
  */
 
 import { useEffect, useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import {
   CheckCircle2,
   ChevronDown,
@@ -324,7 +325,15 @@ function SubmissionRow({
               fontSize: 14,
             }}
           >
-            {sub.site_name}
+            <Link
+              to={`/admin/sites/${encodeURIComponent(sub.site_slug)}`}
+              onClick={(e) => e.stopPropagation()}
+              style={{ color: '#f0f2f8', textDecoration: 'none' }}
+              onMouseEnter={(e) => (e.currentTarget.style.textDecoration = 'underline')}
+              onMouseLeave={(e) => (e.currentTarget.style.textDecoration = 'none')}
+            >
+              {sub.site_name}
+            </Link>
             <span
               style={{
                 padding: '1px 8px',

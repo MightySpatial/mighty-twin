@@ -253,7 +253,33 @@ export default function StoryMapsPage() {
                     }}
                   >
                     {s.slides.length} slide{s.slides.length === 1 ? '' : 's'}
-                    {site && <> · {site.name}</>}
+                    {site && (
+                      <>
+                        {' · '}
+                        <span
+                          role="link"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            window.location.assign(
+                              `/admin/sites/${encodeURIComponent(site.slug)}`,
+                            )
+                          }}
+                          style={{
+                            color: 'rgba(167,139,250,0.85)',
+                            cursor: 'pointer',
+                            textDecoration: 'none',
+                          }}
+                          onMouseEnter={(e) =>
+                            (e.currentTarget.style.textDecoration = 'underline')
+                          }
+                          onMouseLeave={(e) =>
+                            (e.currentTarget.style.textDecoration = 'none')
+                          }
+                        >
+                          {site.name}
+                        </span>
+                      </>
+                    )}
                   </div>
                 </div>
                 <span
