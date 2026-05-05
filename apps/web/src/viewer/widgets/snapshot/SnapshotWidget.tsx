@@ -49,10 +49,10 @@ export default function SnapshotWidget({
     const p = capturePayload(layers)
     setPayload(p)
     setThumbnail(p.thumbnail_url)
-    // Default name = "Snapshot" + local time
+    // Default name = "Snap" + local time
     const t = new Date()
     setName(
-      `Snapshot ${t.toLocaleDateString()} ${t.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`,
+      `Snap ${t.toLocaleDateString()} ${t.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`,
     )
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
@@ -166,7 +166,7 @@ export default function SnapshotWidget({
               color: '#f0f2f8',
             }}
           >
-            <Camera size={16} /> New snapshot
+            <Camera size={16} /> New snap
           </h2>
           <button
             onClick={onClose}
@@ -230,7 +230,7 @@ export default function SnapshotWidget({
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="Snapshot name"
+            placeholder="Snap name"
             style={inputStyle}
             autoFocus
           />
@@ -313,7 +313,7 @@ export default function SnapshotWidget({
             }}
           >
             {busy ? <Loader size={12} className="spin" /> : <Camera size={12} />}
-            {busy ? 'Saving…' : 'Save snapshot'}
+            {busy ? 'Saving…' : 'Save snap'}
           </button>
         </div>
       </div>

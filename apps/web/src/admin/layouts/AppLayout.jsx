@@ -13,7 +13,7 @@ const NAV_ITEMS = [
   { path: '/admin/feeds', icon: Radio, label: 'Feeds' },
   { path: '/admin/library', icon: FolderOpen, label: 'Library' },
   { path: '/admin/stories', icon: BookOpen, label: 'Stories' },
-  { path: '/admin/snapshots', icon: Camera, label: 'Snapshots' },
+  { path: '/admin/snapshots', icon: Camera, label: 'Snaps' },
   { path: '/admin/submissions', icon: Inbox, label: 'Submissions', badgeKey: 'submissions_pending' },
   { path: '/admin/upload', icon: Upload, label: 'Upload' },
 ]

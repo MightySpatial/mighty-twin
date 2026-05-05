@@ -18,6 +18,7 @@ import EditPanel from './panels/EditPanel'
 import HistoryPanel from './panels/HistoryPanel'
 import StylePanel from './panels/StylePanel'
 import SubmitPanel from './panels/SubmitPanel'
+import DownloadPanel from './panels/DownloadPanel'
 import './DesignWidget.css'
 
 interface DesignWidgetProps {
@@ -191,9 +192,10 @@ export default function DesignWidget({ viewer, onClose, siteSlug = null }: Desig
           )}
 
           {activeTab === 'download' && (
-            <DesignPlaceholder
-              tab="download"
-              description="Export sketch data as GeoJSON or IFC."
+            <DownloadPanel
+              viewer={viewer}
+              layers={state.layers}
+              features={state.features}
             />
           )}
         </div>

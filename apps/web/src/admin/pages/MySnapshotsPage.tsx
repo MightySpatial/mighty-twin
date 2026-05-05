@@ -103,7 +103,7 @@ export default function MySnapshotsPage() {
   }
 
   async function deleteSnap(s: Snapshot) {
-    if (!confirm(`Delete "${s.name}"? This can't be undone.`)) return
+    if (!confirm(`Delete snap "${s.name}"? This can't be undone.`)) return
     try {
       await apiFetch(`/api/me/snapshots/${s.id}`, { method: 'DELETE' })
       setSnaps((prev) => prev.filter((x) => x.id !== s.id))
@@ -114,7 +114,7 @@ export default function MySnapshotsPage() {
 
   function openInViewer(s: Snapshot) {
     if (!s.site_slug) {
-      alert('This snapshot has no site context — try restoring from the viewer.')
+      alert('This snap has no site context — try restoring from the viewer.')
       return
     }
     window.open(
@@ -155,7 +155,7 @@ export default function MySnapshotsPage() {
         }}
       >
         <div>
-          <h1 style={{ margin: 0, fontSize: 24, fontWeight: 600 }}>My snapshots</h1>
+          <h1 style={{ margin: 0, fontSize: 24, fontWeight: 600 }}>My snaps</h1>
           <p style={{ margin: '4px 0 0', color: 'rgba(240,242,248,0.5)', fontSize: 13 }}>
             Saved camera + layer views you've taken — click any tile to fly back.
           </p>
@@ -181,7 +181,7 @@ export default function MySnapshotsPage() {
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search snapshots…"
+            placeholder="Search snaps…"
             style={{
               flex: 1,
               background: 'transparent',
@@ -268,7 +268,7 @@ export default function MySnapshotsPage() {
         >
           <Camera size={28} style={{ opacity: 0.4, marginBottom: 8 }} />
           <div style={{ fontWeight: 500, color: 'rgba(240,242,248,0.7)' }}>
-            {snaps.length === 0 ? 'No snapshots yet' : 'No matches'}
+            {snaps.length === 0 ? 'No snaps yet' : 'No matches'}
           </div>
           <div style={{ fontSize: 12, marginTop: 4 }}>
             {snaps.length === 0 ? (
@@ -450,7 +450,7 @@ export default function MySnapshotsPage() {
                 <button
                   onClick={() => deleteSnap(s)}
                   style={iconBtn}
-                  title="Delete snapshot"
+                  title="Delete snap"
                 >
                   <Trash2 size={11} color="#fb7185" />
                 </button>

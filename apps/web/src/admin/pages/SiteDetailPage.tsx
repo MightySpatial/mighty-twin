@@ -420,7 +420,7 @@ export default function SiteDetailPage() {
               {storyMaps.length} story map{storyMaps.length === 1 ? '' : 's'}
             </Chip>
             <Chip>
-              {snapshots.length} snapshot{snapshots.length === 1 ? '' : 's'}
+              {snapshots.length} snap{snapshots.length === 1 ? '' : 's'}
             </Chip>
             <Chip>EPSG:{site.storage_srid}</Chip>
           </div>
@@ -588,14 +588,14 @@ export default function SiteDetailPage() {
             )}
           </Card>
 
-          <Card title={`Snapshot gallery (${snapshots.length})`}>
+          <Card title={`Snap gallery (${snapshots.length})`}>
             {snapshotsLoading ? (
               <div style={{ color: 'rgba(240,242,248,0.5)' }}>Loading…</div>
             ) : snapshots.length === 0 ? (
               <Empty
                 icon={<ImageIcon size={20} />}
-                title="No snapshots in the gallery"
-                hint="Users can share their snapshots to this gallery from the viewer."
+                title="No snaps in the gallery"
+                hint="Users can share their snaps to this gallery from the viewer."
               />
             ) : (
               <div

@@ -100,12 +100,12 @@ export default function OverviewPage() {
         <Stat label="Layers" value={data.counts.layers} />
         <Stat label="Data sources" value={data.counts.data_sources} />
         <Stat label="Story maps" value={data.counts.story_maps} />
-        <Stat label="Snapshots" value={data.counts.snapshots} />
+        <Stat label="Snaps" value={data.counts.snapshots} />
       </section>
 
       <section style={gridSection}>
-        <Stat label="Snapshots · last 24h" value={data.activity.snapshots_last_24h} accent="#34d399" />
-        <Stat label="Snapshots · last 7d" value={data.activity.snapshots_last_7d} accent="#34d399" />
+        <Stat label="Snaps · last 24h" value={data.activity.snapshots_last_24h} accent="#34d399" />
+        <Stat label="Snaps · last 7d" value={data.activity.snapshots_last_7d} accent="#34d399" />
         <Stat label="Users added · last 7d" value={data.activity.users_added_last_7d} accent="#a78bfa" />
         <Stat label="Sites added · last 7d" value={data.activity.sites_added_last_7d} accent="#2dd4bf" />
       </section>
@@ -174,7 +174,7 @@ export default function OverviewPage() {
                     {s.name}
                   </Link>
                   <span style={{ color: 'rgba(240,242,248,0.5)', fontSize: 12 }}>
-                    {s.snapshots_30d} snapshot{s.snapshots_30d === 1 ? '' : 's'}
+                    {s.snapshots_30d} snap{s.snapshots_30d === 1 ? '' : 's'}
                   </span>
                 </li>
               ))}
@@ -182,7 +182,7 @@ export default function OverviewPage() {
           )}
         </Card>
 
-        <Card title="Recent snapshots">
+        <Card title="Recent snaps">
           {data.recent_snapshots.length === 0 ? (
             <Empty>No snapshots taken yet.</Empty>
           ) : (
