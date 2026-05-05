@@ -106,10 +106,12 @@ export default function CommandPalette() {
       apiFetch('/me/snapshots') as Promise<
         { id: string; name: string; site_slug: string | null }[]
       >,
+      apiFetch('/api/feeds') as Promise<
+        { id: string; name: string; kind: string }[]
+      >,
     ])
-      .then(([sites, stories, dss, snaps]) => {
+      .then(([sites, stories, dss, snaps, feeds]) => {
         const out: PaletteItem[] = []
-        const siteBySlug = new Map<string, string>()
         if (sites.status === 'fulfilled') {
           for (const s of sites.value) {
             out.push({
@@ -120,7 +122,6 @@ export default function CommandPalette() {
               icon: MapPin,
               to: `/admin/sites/${s.slug}`,
             })
-            siteBySlug.set(s.id, s.slug)
           }
         }
         if (stories.status === 'fulfilled') {
@@ -154,6 +155,18 @@ export default function CommandPalette() {
               group: 'Snaps',
               icon: Camera,
               to: '/admin/snapshots',
+            })
+          }
+        }
+        if (feeds.status === 'fulfilled') {
+          for (const f of feeds.value) {
+            out.push({
+              id: `feed:${f.id}`,
+              label: f.name,
+              group: 'Feeds',
+              hint: f.kind,
+              icon: Radio,
+              to: '/admin/feeds',
             })
           }
         }
