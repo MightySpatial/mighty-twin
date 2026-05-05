@@ -45,7 +45,7 @@ export const DEFAULT_ELEVATION_CONFIG: ElevationConfig = {
   offset: 0,
 }
 
-export type DesignRailTab = 'layers' | 'sketch' | 'edit' | 'style' | 'history' | 'download'
+export type DesignRailTab = 'layers' | 'sketch' | 'edit' | 'style' | 'history' | 'submit' | 'download'
 
 export interface AttributeField {
   id: number
@@ -153,5 +153,6 @@ export const RAIL_TABS: { id: DesignRailTab; label: string; icon: string }[] = [
   { id: 'edit', label: 'Edit', icon: '⊞' },
   { id: 'style', label: 'Style', icon: '◐' },
   { id: 'history', label: 'History', icon: '☰' },
+  { id: 'submit', label: 'Submit', icon: '↗' },
   { id: 'download', label: 'Export', icon: '↓' },
 ]

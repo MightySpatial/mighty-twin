@@ -15,14 +15,17 @@ import DrawPanel from './panels/DrawPanel'
 import EditPanel from './panels/EditPanel'
 import HistoryPanel from './panels/HistoryPanel'
 import StylePanel from './panels/StylePanel'
+import SubmitPanel from './panels/SubmitPanel'
 import './DesignWidget.css'
 
 interface DesignWidgetProps {
   viewer: CesiumViewerType
   onClose: () => void
+  /** Site slug — needed for the Submit tab (one-shot moderation send). */
+  siteSlug?: string | null
 }
 
-export default function DesignWidget({ viewer, onClose }: DesignWidgetProps) {
+export default function DesignWidget({ viewer, onClose, siteSlug = null }: DesignWidgetProps) {
   const state = useDesignState(viewer)
   const { activeTab, setActiveTab } = state
 
@@ -143,6 +146,15 @@ export default function DesignWidget({ viewer, onClose }: DesignWidgetProps) {
               onSelect={state.selectFeature}
               onDelete={state.removeFeature}
               onToggleCollapse={state.toggleLayerCollapse}
+            />
+          )}
+
+          {activeTab === 'submit' && (
+            <SubmitPanel
+              viewer={viewer}
+              layers={state.layers}
+              features={state.features}
+              siteSlug={siteSlug}
             />
           )}
 
