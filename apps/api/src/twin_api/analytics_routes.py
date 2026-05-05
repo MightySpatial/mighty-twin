@@ -13,7 +13,7 @@ from typing import Any
 from fastapi import APIRouter
 from sqlalchemy import func, select
 
-from mighty_models import DataSource, Layer, Site, Snapshot, StoryMap, User
+from mighty_models import DataSource, Layer, Site, Snapshot, StoryMap, Submission, User
 
 from .auth import CurrentUser
 from .db import DbSession
@@ -43,6 +43,11 @@ def overview(_: CurrentUser, db: DbSession) -> dict[str, Any]:
         "data_sources": db.execute(select(func.count(DataSource.id))).scalar() or 0,
         "story_maps": db.execute(select(func.count(StoryMap.id))).scalar() or 0,
         "snapshots": db.execute(select(func.count(Snapshot.id))).scalar() or 0,
+        "submissions_pending":
+            db.execute(
+                select(func.count(Submission.id)).where(Submission.status == "pending")
+            ).scalar() or 0,
+        "submissions_total": db.execute(select(func.count(Submission.id))).scalar() or 0,
     }
 
     activity = {

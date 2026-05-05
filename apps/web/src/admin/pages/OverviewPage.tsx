@@ -19,6 +19,8 @@ interface Overview {
     data_sources: number
     story_maps: number
     snapshots: number
+    submissions_pending: number
+    submissions_total: number
   }
   activity: {
     snapshots_last_7d: number
@@ -86,6 +88,55 @@ export default function OverviewPage() {
         <Stat label="Users added · last 7d" value={data.activity.users_added_last_7d} accent="#a78bfa" />
         <Stat label="Sites added · last 7d" value={data.activity.sites_added_last_7d} accent="#2dd4bf" />
       </section>
+
+      {/* Submissions queue card — only renders when there's something to action. */}
+      {data.counts.submissions_pending > 0 && (
+        <Link
+          to="/admin/submissions"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 14,
+            padding: 16,
+            marginBottom: 18,
+            background:
+              'linear-gradient(135deg, rgba(245,158,11,0.10), rgba(245,158,11,0.04))',
+            border: '1px solid rgba(245,158,11,0.32)',
+            borderRadius: 12,
+            color: '#f0f2f8',
+            textDecoration: 'none',
+            transition: 'transform 120ms',
+          }}
+        >
+          <div
+            style={{
+              width: 44,
+              height: 44,
+              borderRadius: 10,
+              background: 'rgba(245,158,11,0.18)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#f59e0b',
+              fontSize: 20,
+              fontWeight: 700,
+            }}
+          >
+            {data.counts.submissions_pending}
+          </div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 14, fontWeight: 600, color: '#f0f2f8' }}>
+              {data.counts.submissions_pending} submission
+              {data.counts.submissions_pending === 1 ? '' : 's'} awaiting review
+            </div>
+            <div style={{ fontSize: 12, color: 'rgba(240,242,248,0.5)', marginTop: 2 }}>
+              {data.counts.submissions_total} submission
+              {data.counts.submissions_total === 1 ? '' : 's'} total — click to open the queue
+            </div>
+          </div>
+          <span style={{ fontSize: 12, color: '#f59e0b' }}>Review →</span>
+        </Link>
+      )}
 
       <section style={twoCol}>
         <Card title="Top sites · last 30 days">
