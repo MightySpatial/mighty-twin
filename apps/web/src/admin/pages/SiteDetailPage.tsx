@@ -228,6 +228,19 @@ export default function SiteDetailPage() {
     }
   }
 
+  async function renameLayer(layer: Layer, newName: string) {
+    if (!slug) return
+    try {
+      await apiFetch(`/api/spatial/sites/${slug}/layers/${layer.id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ name: newName }),
+      })
+      reload()
+    } catch (e) {
+      addToast('error', `Rename failed: ${(e as Error).message}`)
+    }
+  }
+
   async function deleteLayer(layer: Layer) {
     if (!slug) return
     if (!confirm(`Remove layer "${layer.name}" from this site?`)) return
@@ -603,6 +616,7 @@ export default function SiteDetailPage() {
                       onStyle={() => setStylingLayer(l)}
                       onImport={() => setImportingLayer(l)}
                       onMove={(dir) => moveLayer(l, dir, sorted)}
+                      onRename={(newName) => renameLayer(l, newName)}
                     />
                   ))
                 })()}
@@ -854,6 +868,7 @@ function LayerRow({
   onStyle,
   onImport,
   onMove,
+  onRename,
 }: {
   layer: Layer
   canUp: boolean
@@ -863,10 +878,20 @@ function LayerRow({
   onStyle: () => void
   onImport: () => void
   onMove: (dir: 'up' | 'down') => void
+  onRename: (newName: string) => void
 }) {
+  const [editingName, setEditingName] = useState(false)
+  const [draft, setDraft] = useState(layer.name)
+  useEffect(() => setDraft(layer.name), [layer.name])
   const swatch = (layer.style as Record<string, unknown> | null)?.strokeColor as
     | string
     | undefined
+  function commitName() {
+    setEditingName(false)
+    const next = draft.trim()
+    if (next && next !== layer.name) onRename(next)
+    else setDraft(layer.name)
+  }
   return (
     <div
       style={{
@@ -913,7 +938,47 @@ function LayerRow({
         </button>
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 13, fontWeight: 500 }}>{layer.name}</div>
+        {editingName ? (
+          <input
+            autoFocus
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onBlur={commitName}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') commitName()
+              if (e.key === 'Escape') {
+                setEditingName(false)
+                setDraft(layer.name)
+              }
+            }}
+            style={{
+              width: '100%',
+              padding: '2px 6px',
+              background: 'rgba(255,255,255,0.04)',
+              border: '1px solid rgba(36,83,255,0.4)',
+              borderRadius: 4,
+              color: '#f0f2f8',
+              fontSize: 13,
+              fontWeight: 500,
+            }}
+          />
+        ) : (
+          <div
+            onClick={() => setEditingName(true)}
+            title="Click to rename"
+            style={{
+              fontSize: 13,
+              fontWeight: 500,
+              cursor: 'text',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 4,
+            }}
+          >
+            {layer.name}
+            <Pencil size={9} color="rgba(240,242,248,0.3)" />
+          </div>
+        )}
         <div
           style={{
             fontSize: 11,
