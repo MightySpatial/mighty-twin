@@ -21,7 +21,7 @@ from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 
-from mighty_models import DataSource, Layer, Site
+from mighty_models import DataSource, Layer, Site, Snapshot, User
 
 from .auth import AdminUser, CurrentUser
 from .db import DbSession
@@ -130,6 +130,51 @@ def delete_site(slug: str, _: AdminUser, db: DbSession) -> None:
         raise HTTPException(status_code=404, detail=f"Site {slug!r} not found")
     db.delete(site)
     db.commit()
+
+
+# ── Site snapshot gallery (admin / co-viewer) ───────────────────────────
+
+
+@router.get("/sites/{slug}/snapshots")
+def list_site_snapshots(
+    slug: str, _: CurrentUser, db: DbSession, limit: int = 24
+) -> list[dict[str, Any]]:
+    """Snapshots associated with a site that the user can see.
+
+    Right now: any snapshot ``shared_to_gallery`` for the site, plus any
+    snapshot owned by the requesting user. Admin users see everything.
+    The endpoint is stable across roles so the SiteDetailPage can render
+    a single gallery without separate admin/non-admin code paths.
+    """
+    site = db.execute(select(Site).where(Site.slug == slug)).scalar_one_or_none()
+    if site is None:
+        raise HTTPException(status_code=404, detail=f"Site {slug!r} not found")
+
+    rows = (
+        db.execute(
+            select(Snapshot, User)
+            .join(User, User.id == Snapshot.user_id, isouter=True)
+            .where(Snapshot.site_id == site.id)
+            .where(Snapshot.shared_to_gallery.is_(True))
+            .order_by(Snapshot.created_at.desc())
+            .limit(limit)
+        )
+        .all()
+    )
+    out: list[dict[str, Any]] = []
+    for snap, owner in rows:
+        out.append(
+            {
+                "id": str(snap.id),
+                "name": snap.name,
+                "description": snap.description,
+                "thumbnail_url": (snap.payload or {}).get("thumbnail_url"),
+                "owner_name": owner.name if owner else "Unknown",
+                "shared_to_gallery": bool(snap.shared_to_gallery),
+                "created_at": snap.created_at.isoformat() if snap.created_at else None,
+            }
+        )
+    return out
 
 
 # ── Layers (nested under sites) ─────────────────────────────────────────
