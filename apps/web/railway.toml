@@ -1,3 +1,4 @@
+# mighty-twin viewer service (React/Vite → nginx)
 [build]
 builder = "DOCKERFILE"
 dockerfilePath = "apps/web/Dockerfile"
