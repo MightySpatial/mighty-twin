@@ -116,6 +116,18 @@ if _VIEWER_DIST.is_dir():
             name="viewer-assets",
         )
 
+    # vite-plugin-cesium copies Cesium's Workers/Assets/Widgets/ThirdParty
+    # trees to dist/cesium/. Serve them via StaticFiles so MIME types
+    # (especially application/javascript for .js workers) are set correctly,
+    # rather than letting the SPA catch-all reach them.
+    _CESIUM_DIR = _VIEWER_DIST / "cesium"
+    if _CESIUM_DIR.is_dir():
+        app.mount(
+            "/viewer/cesium",
+            StaticFiles(directory=_CESIUM_DIR),
+            name="viewer-cesium",
+        )
+
     _INDEX_HTML = _VIEWER_DIST / "index.html"
 
     @app.get("/viewer", include_in_schema=False)
