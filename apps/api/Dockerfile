@@ -6,8 +6,9 @@
 # ---- Stage 1: viewer-builder -----------------------------------------------
 FROM node:22-alpine3.21 AS viewer-builder
 
-# corepack avoids the npm-install OOM seen on Railway's constrained builders.
-RUN corepack enable && corepack prepare pnpm@9.15.0 --activate
+# Install pnpm via npm — corepack prepare fails on Railway US East
+# builders (see commit 205445b on apps/web/Dockerfile).
+RUN npm install -g pnpm@9.15.0
 
 WORKDIR /repo
 
