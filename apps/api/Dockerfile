@@ -4,7 +4,7 @@
 ## then copies the prebuilt viewer dist so FastAPI can serve it at /viewer.
 
 # ---- Stage 1: viewer-builder -----------------------------------------------
-FROM node:22-alpine3.21 AS viewer-builder
+FROM node:22-alpine AS viewer-builder
 
 # Install pnpm via npm — corepack prepare fails on Railway US East
 # builders (see commit 205445b on apps/web/Dockerfile).
