@@ -1,7 +1,7 @@
 FROM node:22-alpine3.21 AS build
 
-# Use corepack to activate pnpm (avoids npm install OOM on constrained builders)
-RUN corepack enable && corepack prepare pnpm@9.15.0 --activate
+# Install pnpm via npm (reliable on all Railway builders)
+RUN npm install -g pnpm@9.15.0
 
 WORKDIR /app
 
