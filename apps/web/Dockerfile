@@ -26,6 +26,9 @@ RUN pnpm --filter @mighty-twin/web build
 
 FROM nginx:alpine
 COPY --from=build /app/apps/web/dist /usr/share/nginx/html
-# Vite base='/viewer/' references /viewer/assets/* but builds assets to /assets/
-RUN mv /usr/share/nginx/html/assets /usr/share/nginx/html/viewer/assets
+# Vite base='/viewer/' references /viewer/assets/* but builds assets to /assets/.
+# mkdir first because Vite doesn't emit a viewer/ subdir — it only prepends the
+# URL prefix in index.html — so mv would otherwise fail with no-such-directory.
+RUN mkdir -p /usr/share/nginx/html/viewer \
+    && mv /usr/share/nginx/html/assets /usr/share/nginx/html/viewer/assets
 EXPOSE 80
