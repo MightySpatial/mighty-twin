@@ -13,7 +13,8 @@
 
 import './pipes'
 
-import './design'
+// Design moved out of the left sidebar — it now mounts as a right-side
+// overlay opened from the bottom rail. See CesiumViewer.tsx (`designOpen`).
 
 // Future extensions (uncomment when ready):
 // import './measure'

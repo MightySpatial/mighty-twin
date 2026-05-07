@@ -7,11 +7,12 @@ import { useCallback, useEffect } from 'react'
 import type { Viewer as CesiumViewerType } from 'cesium'
 import { Check, CloudOff, Loader, RefreshCw } from 'lucide-react'
 import { RAIL_TABS } from './types'
-import type { DesignRailTab } from './types'
+import type { DesignRailTab, ElevationDatum } from './types'
 import { useDesignState } from './useDesignState'
 import { useSketchPersistence } from './useSketchPersistence'
 import { useSolidTools } from './tools/useSolidTools'
 import { useMoveTool } from './tools/useMoveTool'
+import { useBreakpoint } from '../../hooks/useBreakpoint'
 import SketchLayersPanel from './panels/SketchLayersPanel'
 import DrawPanel from './panels/DrawPanel'
 import EditPanel from './panels/EditPanel'
@@ -20,6 +21,13 @@ import StylePanel from './panels/StylePanel'
 import SubmitPanel from './panels/SubmitPanel'
 import DownloadPanel from './panels/DownloadPanel'
 import './DesignWidget.css'
+
+/** Glyph index for the mobile mini-controller header. Keys mirror
+ *  DesignTool — anything missing falls through to the pencil. */
+const TOOL_ICON: Record<string, string> = {
+  point: '📍', line: '📏', polygon: '⬡', rectangle: '▭',
+  circle: '○', traverse: '↗', box: '⬛', pit: '⬇', cylinder: '⬤', select: '↖',
+}
 
 interface DesignWidgetProps {
   viewer: CesiumViewerType
@@ -31,6 +39,7 @@ interface DesignWidgetProps {
 export default function DesignWidget({ viewer, onClose, siteSlug = null }: DesignWidgetProps) {
   const state = useDesignState(viewer)
   const { activeTab, setActiveTab } = state
+  const { isPhone } = useBreakpoint()
 
   // Persistence: hydrate the design state from /api/me/sketch-layers
   // on mount, then debounce-save back on every change. The hook
@@ -84,6 +93,120 @@ export default function DesignWidget({ viewer, onClose, siteSlug = null }: Desig
   })
 
   const groups = state.featuresByLayer
+
+  // Mobile mini-mode — when a tool is active on phones we collapse the
+  // entire widget to a 25vh controller pinned to the bottom of the
+  // viewport so the user has the map to interact with. Mirrors the way
+  // the design widget shrinks on touch devices in the spec.
+  const isMiniMode = isPhone && state.activeTool !== null
+
+  if (isMiniMode) {
+    const tool = state.activeTool!
+    const handleDone = () => {
+      if (state.solidDraft) {
+        confirmSolidPlacement()
+        return
+      }
+      state.setActiveTool(null)
+    }
+    return (
+      <div
+        style={{
+          position: 'fixed',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          zIndex: 60,
+          height: '25vh',
+          background: 'rgba(18,22,30,0.95)',
+          backdropFilter: 'blur(8px)',
+          borderTop: '1px solid rgba(255,255,255,0.1)',
+          display: 'flex',
+          flexDirection: 'column',
+          padding: '12px 16px',
+          color: 'rgba(255,255,255,0.9)',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+          <span style={{ fontSize: 20 }}>{TOOL_ICON[tool] ?? '✏️'}</span>
+          <span style={{ fontWeight: 600, fontSize: 14, textTransform: 'capitalize' }}>{tool}</span>
+          <div style={{ flex: 1 }} />
+          <button
+            onClick={() => state.setActiveTool(null)}
+            style={{
+              padding: '4px 12px',
+              borderRadius: 6,
+              border: '1px solid rgba(255,255,255,0.2)',
+              background: 'none',
+              color: 'inherit',
+              cursor: 'pointer',
+            }}
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleDone}
+            style={{
+              padding: '4px 12px',
+              borderRadius: 6,
+              background: 'var(--accent, #4f8ef7)',
+              border: 'none',
+              color: '#fff',
+              cursor: 'pointer',
+              marginLeft: 6,
+            }}
+          >
+            Done
+          </button>
+        </div>
+        <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+          <label style={{ fontSize: 12, opacity: 0.7 }}>Datum</label>
+          <select
+            value={state.elevationConfig.datum}
+            onChange={(e) =>
+              state.setElevationConfig({
+                ...state.elevationConfig,
+                datum: e.target.value as ElevationDatum,
+              })
+            }
+            style={{
+              background: 'rgba(255,255,255,0.07)',
+              border: '1px solid rgba(255,255,255,0.15)',
+              borderRadius: 4,
+              color: 'inherit',
+              padding: '3px 6px',
+              fontSize: 12,
+            }}
+          >
+            <option value="terrain">Terrain</option>
+            <option value="ellipsoid">Ellipsoid</option>
+            <option value="mga2020">MGA2020</option>
+            <option value="custom_terrain">Custom terrain</option>
+          </select>
+          <label style={{ fontSize: 12, opacity: 0.7 }}>Offset</label>
+          <input
+            type="number"
+            value={state.elevationConfig.offset}
+            onChange={(e) =>
+              state.setElevationConfig({
+                ...state.elevationConfig,
+                offset: Number(e.target.value),
+              })
+            }
+            style={{
+              width: 80,
+              background: 'rgba(255,255,255,0.07)',
+              border: '1px solid rgba(255,255,255,0.15)',
+              borderRadius: 4,
+              color: 'inherit',
+              padding: '3px 6px',
+              fontSize: 12,
+            }}
+          />
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="design-widget">

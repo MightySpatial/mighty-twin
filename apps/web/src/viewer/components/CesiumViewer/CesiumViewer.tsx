@@ -40,6 +40,7 @@ import LegendWidget from '../../widgets/legend'
 import SplashOverlay from '../SplashOverlay/SplashOverlay'
 import TetraView from '../TetraView/TetraView'
 import ViewerSidebar from '../ViewerSidebar'
+import { DesignWidget } from '../../widgets/design'
 
 // Mobile-only floating layer panel
 function MobileLayers({ layers, layersLoading, onLayerToggle, onLayerOpacityChange }: {
@@ -144,6 +145,11 @@ export default function CesiumViewerComponent({
     if (legendOpen) { setLegendOpen(false); return }
     if (sidebarOpen) { setSidebarOpen(false); return }
   }, [measureActive, measureResult, searchOpen, activeExtPanel, basemapOpen, transparencyOpen, legendOpen, sidebarOpen, cleanupMeasure, setMeasureResult, setBasemapOpen, setTransparencyOpen])
+
+  const closeDesign = useCallback(() => {
+    setDesignOpen(false)
+    window.dispatchEvent(new CustomEvent('design:close'))
+  }, [])
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -347,8 +353,13 @@ export default function CesiumViewerComponent({
   const terrain = useTerrain(viewerRef)
   const underground = useUnderground(viewerRef, globeAlpha, setGlobeAlpha)
 
+  // Design widget — right-side overlay (was a sidebar tab). Dispatches
+  // design:open / design:close on the window so the AI ChatPanel can
+  // minimise itself out of the way.
+  const [designOpen, setDesignOpen] = useState(false)
+
   // Map MapShell action ids → existing widget state. Tools that aren't
-  // implemented yet (design/table/story/strike) toggle a placeholder
+  // implemented yet (table/story/strike) toggle a placeholder
   // state we can wire later without ripping the rail apart.
   const [comingSoon, setComingSoon] = useState<string | null>(null)
   useEffect(() => {
@@ -367,9 +378,10 @@ export default function CesiumViewerComponent({
     if (tableOpen) return 'table'
     if (strikeOpen) return 'strike'
     if (storyActive) return 'story'
+    if (designOpen) return 'design'
     if (basemapOpen) return null  // basemap lives in zoom column, not bottom rail
     return null
-  }, [searchOpen, measureActive, sidebarOpen, isMobile, legendOpen, transparencyOpen, terrainOpen, snapOpen, tableOpen, strikeOpen, storyActive, basemapOpen])
+  }, [searchOpen, measureActive, sidebarOpen, isMobile, legendOpen, transparencyOpen, terrainOpen, snapOpen, tableOpen, strikeOpen, storyActive, basemapOpen, designOpen])
 
   const onMapShellAction = useCallback((id: string) => {
     switch (id) {
@@ -394,7 +406,12 @@ export default function CesiumViewerComponent({
         else setComingSoon(id)
         break
       case 'design':
-        setComingSoon(id); break
+        setDesignOpen(prev => {
+          const next = !prev
+          window.dispatchEvent(new CustomEvent(next ? 'design:open' : 'design:close'))
+          return next
+        })
+        break
       default: break
     }
   }, [measureActive, cleanupMeasure, startMeasure, onOpenStoryPicker])
@@ -742,6 +759,54 @@ export default function CesiumViewerComponent({
             setStrikeOpen(false)
           }}
         />
+      )}
+
+      {/* Design widget — right-side overlay (replaces the old left-rail
+          extension panel). Slides in over the canvas; ChatPanel listens
+          for design:open / design:close to minimise itself out of the
+          way. The widget reaches viewer via the prop. */}
+      {designOpen && viewerRef.current && (
+        <div
+          style={{
+            position: 'absolute',
+            top: 0,
+            right: 0,
+            bottom: 0,
+            width: 420,
+            zIndex: 50,
+            background: 'rgba(18, 22, 30, 0.97)',
+            backdropFilter: 'blur(12px)',
+            borderLeft: '1px solid rgba(255,255,255,0.08)',
+            display: 'flex',
+            flexDirection: 'column',
+            boxShadow: '-8px 0 40px rgba(0,0,0,0.4)',
+            animation: 'slideInRight 200ms ease',
+          }}
+        >
+          <button
+            onClick={closeDesign}
+            title="Close"
+            aria-label="Close design"
+            style={{
+              position: 'absolute',
+              top: 10,
+              right: 10,
+              zIndex: 1,
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              color: 'rgba(255,255,255,0.5)',
+              fontSize: 18,
+            }}
+          >
+            ✕
+          </button>
+          <DesignWidget
+            viewer={viewerRef.current}
+            onClose={closeDesign}
+            siteSlug={siteId ?? null}
+          />
+        </div>
       )}
 
       {/* Terrain section + underground + transparency */}

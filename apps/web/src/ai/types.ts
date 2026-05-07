@@ -34,6 +34,8 @@ export interface AIProviderConfig {
 export interface AISettings {
   active: AIProvider
   byProvider: Partial<Record<AIProvider, AIProviderConfig>>
+  /** Right-rail Mighty AI panel visibility. Defaults to true. */
+  aiPanelVisible?: boolean
 }
 
 export interface AgentPreset {

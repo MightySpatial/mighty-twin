@@ -9,7 +9,7 @@
  */
 
 import { useEffect, useRef, useState } from 'react'
-import { Sparkles, Send } from 'lucide-react'
+import { Sparkles, Send, ChevronsRight, ChevronUp } from 'lucide-react'
 import { chat, MissingApiKeyError } from './client'
 import { loadSettings } from './storage'
 import type { AIMessage } from './types'
@@ -23,6 +23,7 @@ export default function ChatPanel() {
   const [turns, setTurns] = useState<ChatTurn[]>([])
   const [input, setInput] = useState('')
   const [pending, setPending] = useState(false)
+  const [isMinimised, setIsMinimised] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
   const abortRef = useRef<AbortController | null>(null)
 
@@ -33,6 +34,19 @@ export default function ChatPanel() {
 
   // Cancel any in-flight request on unmount.
   useEffect(() => () => abortRef.current?.abort(), [])
+
+  // External minimise control: design widget overlay opens → minimise to
+  // give the canvas + design tools room to breathe; closes → expand back.
+  useEffect(() => {
+    const onOpen = () => setIsMinimised(true)
+    const onClose = () => setIsMinimised(false)
+    window.addEventListener('design:open', onOpen)
+    window.addEventListener('design:close', onClose)
+    return () => {
+      window.removeEventListener('design:open', onOpen)
+      window.removeEventListener('design:close', onClose)
+    }
+  }, [])
 
   const send = async () => {
     const text = input.trim()
@@ -84,6 +98,81 @@ export default function ChatPanel() {
   const cfg = settings.byProvider[settings.active]
   const modelLabel = cfg?.model || 'unconfigured'
 
+  const lastTurn = [...turns].reverse().find((t) => t.role === 'assistant')
+
+  if (isMinimised) {
+    return (
+      <aside
+        style={{
+          width: 360,
+          height: '100%',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'flex-end',
+          background: 'rgba(15,15,20,0.94)',
+          borderLeft: '1px solid rgba(255,255,255,0.08)',
+        }}
+      >
+        {lastTurn && (
+          <div
+            style={{
+              padding: '8px 12px',
+              fontSize: 12,
+              opacity: 0.6,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+              color: 'rgba(255,255,255,0.9)',
+            }}
+            title={lastTurn.content}
+          >
+            {lastTurn.content}
+          </div>
+        )}
+        <div
+          style={{
+            display: 'flex',
+            gap: 8,
+            padding: '8px 12px',
+            borderTop: '1px solid rgba(255,255,255,0.1)',
+          }}
+        >
+          <input
+            style={{
+              flex: 1,
+              background: 'rgba(255,255,255,0.07)',
+              border: '1px solid rgba(255,255,255,0.15)',
+              borderRadius: 6,
+              padding: '6px 10px',
+              color: 'inherit',
+              fontSize: 13,
+            }}
+            placeholder="Ask Mighty AI…"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') send()
+            }}
+          />
+          <button
+            onClick={() => setIsMinimised(false)}
+            title="Expand"
+            aria-label="Expand"
+            style={{
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              color: 'rgba(255,255,255,0.5)',
+              padding: '4px 6px',
+            }}
+          >
+            <ChevronUp size={16} />
+          </button>
+        </div>
+      </aside>
+    )
+  }
+
   return (
     <aside
       style={{
@@ -120,6 +209,20 @@ export default function ChatPanel() {
             {settings.active} · {modelLabel}
           </div>
         </div>
+        <button
+          onClick={() => setIsMinimised(true)}
+          title="Minimise"
+          aria-label="Minimise"
+          style={{
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            color: 'rgba(255,255,255,0.5)',
+            padding: '4px 6px',
+          }}
+        >
+          <ChevronsRight size={16} />
+        </button>
       </header>
 
       <div ref={scrollRef} style={{ flex: 1, overflow: 'auto', padding: '12px 14px' }}>

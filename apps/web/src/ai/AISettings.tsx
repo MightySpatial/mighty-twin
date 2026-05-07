@@ -38,6 +38,8 @@ export default function AISettings() {
 
   const activeCfg = s.byProvider[s.active] ?? {}
 
+  const aiPanelVisible = s.aiPanelVisible !== false
+
   return (
     <div style={{ padding: 20, maxWidth: 760 }}>
       <h2 style={{ marginTop: 0 }}>AI</h2>
@@ -46,6 +48,32 @@ export default function AISettings() {
         go directly to the provider you pick. Keys stay in your browser's
         localStorage.
       </p>
+
+      <label
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 10,
+          padding: '10px 12px',
+          marginTop: 12,
+          borderRadius: 6,
+          border: '1px solid rgba(255,255,255,0.06)',
+          background: 'rgba(255,255,255,0.02)',
+          cursor: 'pointer',
+          fontSize: 13,
+          color: 'rgba(255,255,255,0.85)',
+        }}
+      >
+        <input
+          type="checkbox"
+          checked={aiPanelVisible}
+          onChange={(e) => update({ aiPanelVisible: e.target.checked })}
+        />
+        <span>Show Mighty AI panel</span>
+        <span style={{ marginLeft: 'auto', fontSize: 11, color: 'rgba(255,255,255,0.5)' }}>
+          Right-rail in Map and Atlas. Reload to apply.
+        </span>
+      </label>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginTop: 16 }}>
         <div>

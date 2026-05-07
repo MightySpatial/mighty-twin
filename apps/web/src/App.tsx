@@ -11,6 +11,7 @@ import DiagnosticsPanel from './admin/pages/DiagnosticsPanel'
 import ProfilePanel from './admin/pages/ProfilePanel'
 import AISettings from './ai/AISettings'
 import ChatPanel from './ai/ChatPanel'
+import { loadAiPanelVisible } from './ai/storage'
 import {
   AutodetectRulesPanel,
   BrandingPanel,
@@ -64,6 +65,21 @@ export function App() {
   const { settings } = usePersistedSettings()
   const location = useLocation()
   const [setupComplete, setSetupComplete] = useState<boolean | null>(null)
+  const [aiPanelVisible, setAiPanelVisible] = useState(() => loadAiPanelVisible())
+
+  // Re-read whenever the user leaves the settings route (most edits happen
+  // there) and on cross-tab storage events. Avoids forcing a full reload
+  // after toggling the panel off/on.
+  useEffect(() => {
+    if (!location.pathname.startsWith('/settings')) {
+      setAiPanelVisible(loadAiPanelVisible())
+    }
+  }, [location.pathname])
+  useEffect(() => {
+    const onStorage = () => setAiPanelVisible(loadAiPanelVisible())
+    window.addEventListener('storage', onStorage)
+    return () => window.removeEventListener('storage', onStorage)
+  }, [])
 
   // Probe whether the workspace has been set up yet. Fresh installs
   // have no admin user → /api/setup/status returns is_complete=false →
@@ -122,7 +138,7 @@ export function App() {
       settingsContent={<SettingsShell extraSections={TWIN_SETTINGS_SECTIONS} />}
       tabLabels={{ viewer: 'Map', admin: 'Atlas' }}
       showDeveloperTools={settings.dev.enabled}
-      rightRail={<ChatPanel />}
+      rightRail={aiPanelVisible ? <ChatPanel /> : null}
     />
   )
 }
