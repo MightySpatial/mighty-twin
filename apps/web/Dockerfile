@@ -1,4 +1,4 @@
-FROM node:22-alpine AS build
+FROM node:22-alpine3.21 AS build
 
 # Use corepack to activate pnpm (avoids npm install OOM on constrained builders)
 RUN corepack enable && corepack prepare pnpm@9.15.0 --activate
@@ -24,6 +24,6 @@ RUN pnpm install --frozen-lockfile
 # Build the web app
 RUN pnpm --filter @mighty-twin/web build
 
-FROM nginx:alpine
+FROM nginx:1.27-alpine
 COPY --from=build /app/apps/web/dist /usr/share/nginx/html
 EXPOSE 80
