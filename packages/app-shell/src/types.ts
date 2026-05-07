@@ -1,12 +1,7 @@
 import type { ComponentType, ReactNode } from 'react'
 
 /** All supported view modes. Derived from the URL. */
-export type ViewMode =
-  | 'viewer-only'
-  | 'admin-only'
-  | 'split-viewer'
-  | 'split-admin'
-  | 'settings'
+export type ViewMode = 'viewer-only' | 'admin-only' | 'settings'
 
 export type Breakpoint = 'phone' | 'tablet' | 'desktop'
 
@@ -55,12 +50,6 @@ export interface AppShellProps {
 
   /** Labels shown in the top bar. Defaults: Viewer / Admin / Settings. */
   tabLabels?: { viewer?: string; admin?: string; settings?: string }
-
-  /** Side-pane width in desktop split mode. Default 420. */
-  sidePaneWidth?: number
-
-  /** Tablet drawer width. Default 320. */
-  drawerWidth?: number
 
   /** Default mode when URL is bare. Default 'viewer-only'. */
   defaultMode?: ViewMode

@@ -7,18 +7,14 @@ interface TopBarProps {
   breakpoint: Breakpoint
   onModeChange: (mode: ViewMode) => void
   labels: { viewer: string; admin: string; settings: string }
-  /** Optional dev-only breakpoint override. When set, an extra toggle group
-   *  appears in the top bar so developers can flip between phone / tablet /
-   *  desktop layouts without resizing the browser. */
+  /** Optional dev-only breakpoint override. */
   forcedBreakpoint?: Breakpoint | null
   onForcedBreakpointChange?: (bp: Breakpoint | null) => void
-  /** Dev-only orientation override (meaningful on tablet). */
   forcedOrientation?: Orientation | null
   onForcedOrientationChange?: (o: Orientation | null) => void
 }
 
-/** Desktop/tablet top bar. Renders brand + three tabs + split-mode toggle.
- *  Phone layout omits the bar entirely (handled by MobileTabSwitcher). */
+/** Desktop/tablet top bar. Three flat tabs: Map, Atlas, Settings. */
 export function TopBar({
   brand,
   mode,
@@ -34,25 +30,6 @@ export function TopBar({
 
   const Icon = brand.icon
 
-  // Middle "both panes" button — invertible. Clicking it while already in
-  // split mode swaps which pane is primary (split-viewer ↔ split-admin),
-  // and the rendered label flips so reading direction (left=primary)
-  // matches the actual layout.
-  const splitActive = mode === 'split-viewer' || mode === 'split-admin'
-  const adminPrimary = mode === 'split-admin'
-  const splitLeftLabel = adminPrimary ? labels.admin : labels.viewer
-  const splitRightLabel = adminPrimary ? labels.viewer : labels.admin
-  const handleSplitClick = () => {
-    if (mode === 'split-viewer') return onModeChange('split-admin')
-    if (mode === 'split-admin') return onModeChange('split-viewer')
-    // Entering from a non-split mode: keep the side you came from primary.
-    if (mode === 'admin-only') return onModeChange('split-admin')
-    return onModeChange('split-viewer')
-  }
-  const splitTitle = splitActive
-    ? `Swap — ${adminPrimary ? labels.viewer : labels.admin} primary`
-    : `${labels.viewer} + ${labels.admin} side by side`
-
   return (
     <header className={styles.topbar}>
       <button type="button" className={styles.brand} onClick={brand.onClick}>
@@ -60,55 +37,32 @@ export function TopBar({
         <span>{brand.name}</span>
       </button>
 
-      {/* Layout slider — three positions for the Map↔Atlas axis:
-          [Map] [Map | Atlas] [Atlas]   ·   ⚙ Settings
-          The middle button is "both panes visible" and invertible — see
-          handleSplitClick above. Phone gets a [Map][Atlas][Settings]
-          bottom nav — handled upstream by MobileBottomNav, not here. */}
-      <div className={styles.splitGroup} role="group" aria-label="Layout">
+      <div className={styles.tabGroup} role="group" aria-label="Layout">
         <button
           type="button"
-          className={`${styles.splitBtn} ${mode === 'viewer-only' ? styles.splitBtnActive : ''}`}
+          className={`${styles.tabBtn} ${mode === 'viewer-only' ? styles.tabBtnActive : ''}`}
           onClick={() => onModeChange('viewer-only')}
-          title={`${labels.viewer} only`}
+          title={labels.viewer}
         >
           {labels.viewer}
         </button>
         <button
           type="button"
-          className={`${styles.splitBtn} ${styles.splitBtnDual} ${
-            splitActive ? styles.splitBtnActive : ''
-          }`}
-          onClick={handleSplitClick}
-          title={splitTitle}
-          aria-label={`${splitLeftLabel} and ${splitRightLabel}${
-            splitActive ? ' — click to swap' : ''
-          }`}
-        >
-          <span>{splitLeftLabel}</span>
-          <span className={styles.splitDivider} aria-hidden>|</span>
-          <span>{splitRightLabel}</span>
-        </button>
-        <button
-          type="button"
-          className={`${styles.splitBtn} ${mode === 'admin-only' ? styles.splitBtnActive : ''}`}
+          className={`${styles.tabBtn} ${mode === 'admin-only' ? styles.tabBtnActive : ''}`}
           onClick={() => onModeChange('admin-only')}
-          title={`${labels.admin} only`}
+          title={labels.admin}
         >
           {labels.admin}
         </button>
+        <button
+          type="button"
+          className={`${styles.tabBtn} ${mode === 'settings' ? styles.tabBtnActive : ''}`}
+          onClick={() => onModeChange('settings')}
+          title={labels.settings}
+        >
+          ⚙ {labels.settings}
+        </button>
       </div>
-
-      {/* Settings — separate from the layout slider since it isn't on the
-          Map↔Atlas axis. Gear icon + label. */}
-      <button
-        type="button"
-        className={`${styles.settingsBtn} ${mode === 'settings' ? styles.settingsBtnActive : ''}`}
-        onClick={() => onModeChange('settings')}
-        title="Settings"
-      >
-        ⚙ {labels.settings}
-      </button>
 
       <div className={styles.spacer} />
 
@@ -146,9 +100,6 @@ export function TopBar({
         </div>
       )}
 
-      {/* Orientation toggle — only meaningful on tablet (portrait-mode
-          tablets stack split panes vertically instead of overlaying a
-          drawer). Gated on showDeveloperTools via the parent prop. */}
       {onForcedOrientationChange && breakpoint === 'tablet' && (
         <div className={styles.bpGroup} role="group" aria-label="Orientation">
           {(['portrait', 'landscape'] as const).map((o) => (

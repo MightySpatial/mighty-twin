@@ -27,7 +27,8 @@ import styles from './AppShell.module.css'
 /**
  * The responsive app shell. Renders top bar + viewer surface + admin/settings
  * panes per current view mode and breakpoint. The viewer surface mounts once
- * and is never unmounted.
+ * and is never unmounted — when in Atlas/Settings on desktop, it renders as
+ * a floating phone-sized preview so map edits are visible live.
  */
 export function AppShell({
   brand,
@@ -35,8 +36,6 @@ export function AppShell({
   adminContent,
   settingsContent,
   tabLabels,
-  sidePaneWidth = 420,
-  drawerWidth = 320,
   defaultMode = 'viewer-only',
   onModeChange,
   showDeveloperTools = false,
@@ -45,10 +44,6 @@ export function AppShell({
 }: AppShellProps) {
   const { mode, setMode } = useViewMode()
 
-  // Dev-only breakpoint override. Initial value from the URL (so a shared
-  // link preserves the override); updates persist back to the URL without
-  // reload. In production, this state stays null and the breakpoint is
-  // fully auto-detected.
   const [forcedBreakpoint, setForcedBreakpointState] = useState<Breakpoint | null>(() =>
     readForcedBreakpoint(),
   )
@@ -59,7 +54,6 @@ export function AppShell({
 
   const breakpoint = useBreakpoint({ override: forcedBreakpoint })
 
-  // Dev-only orientation override, same shape as breakpoint.
   const [forcedOrientation, setForcedOrientationState] = useState<Orientation | null>(() =>
     readForcedOrientation(),
   )
@@ -69,7 +63,6 @@ export function AppShell({
   }
   const orientation = useOrientation(forcedOrientation)
 
-  // Phone-only state: AI chat bottom sheet open/closed.
   const [chatSheetOpen, setChatSheetOpen] = useState(false)
 
   const labels = {
@@ -78,7 +71,6 @@ export function AppShell({
     settings: tabLabels?.settings ?? 'Settings',
   }
 
-  // Apply defaultMode when landing on unknown routes ('/').
   useEffect(() => {
     if (window.location.pathname === '/') {
       setMode(defaultMode)
@@ -90,41 +82,30 @@ export function AppShell({
     onModeChange?.(mode)
   }, [mode, onModeChange])
 
-  // Determine layout classes
   const layoutClass = useMemo(
-    () => computeLayoutClass(mode, breakpoint, orientation),
-    [mode, breakpoint, orientation],
+    () => computeLayoutClass(mode, breakpoint),
+    [mode, breakpoint],
   )
 
+  // Phone: show one pane at a time. Desktop/tablet: viewer is always
+  // rendered (full-screen in Map mode, mini-preview in Atlas/Settings).
+  const isDesktopOrTablet = breakpoint !== 'phone'
   const showViewer =
-    breakpoint !== 'phone'
-      ? mode === 'viewer-only' || mode === 'split-viewer' || mode === 'split-admin'
-      : mode === 'viewer-only' || mode === 'split-viewer' || mode === 'split-admin'
-
-  const showAdmin =
-    breakpoint !== 'phone'
-      ? mode === 'admin-only' || mode === 'split-viewer' || mode === 'split-admin'
-      : mode === 'admin-only'
-
+    breakpoint === 'phone' ? mode === 'viewer-only' : true
+  const showAdmin = mode === 'admin-only'
   const showSettings = mode === 'settings'
+  const isPreview = isDesktopOrTablet && (mode === 'admin-only' || mode === 'settings')
 
-  // Observe the active viewer-surface element so we can report paneSize
   const viewerObs = useResizeObserver<HTMLDivElement>()
   const adminObs = useResizeObserver<HTMLDivElement>()
 
-  // Roles/display-mode are per-pane; consumers inside the viewer subtree see
-  // one value, consumers inside the admin pane see another. We track per-pane
-  // context by rendering two separate providers below.
+  const viewerPaneRole: PaneRole = mode === 'viewer-only' ? 'primary' : isPreview ? 'side' : null
+  const viewerDisplayMode: DisplayMode =
+    mode === 'viewer-only' && breakpoint !== 'phone' ? 'full' : 'compact'
 
   const rootContent = (
     <div
       className={`${styles.root} ${breakpoint === 'phone' ? styles.rootPhone : ''} ${layoutClass}`}
-      style={
-        {
-          '--side-pane-width': `${sidePaneWidth}px`,
-          '--drawer-width': `${drawerWidth}px`,
-        } as React.CSSProperties
-      }
     >
       {breakpoint === 'phone' ? (
         <MobileHeader
@@ -148,34 +129,16 @@ export function AppShell({
 
       <div className={styles.bodyShell}>
       <div className={styles.body}>
-        {/* Viewer surface — always rendered to preserve Cesium instance. */}
-        <div
-          ref={viewerObs.ref}
-          className={`${styles.viewerSurface} ${!showViewer ? styles.viewerSurfaceHidden : ''}`}
-        >
-          <PaneContextProvider
-            mode={mode}
-            breakpoint={paneBreakpointFor('viewer', mode, breakpoint)}
-            orientation={orientation}
-            setMode={setMode}
-            paneSize={viewerObs.size}
-            paneRole={paneRoleFor('viewer', mode)}
-            displayMode={displayModeFor('viewer', mode, breakpoint)}
-          >
-            {viewer}
-          </PaneContextProvider>
-        </div>
-
         {showAdmin && (
           <div ref={adminObs.ref} className={styles.adminPane}>
             <PaneContextProvider
               mode={mode}
-              breakpoint={paneBreakpointFor('admin', mode, breakpoint)}
+              breakpoint={breakpoint}
               orientation={orientation}
               setMode={setMode}
               paneSize={adminObs.size}
-              paneRole={paneRoleFor('admin', mode)}
-              displayMode={displayModeFor('admin', mode, breakpoint)}
+              paneRole="primary"
+              displayMode="full"
             >
               {adminContent}
             </PaneContextProvider>
@@ -198,6 +161,34 @@ export function AppShell({
           </div>
         )}
 
+        {/* Viewer surface — mounted once, never unmounted, so the Cesium
+            instance survives mode changes. In Atlas/Settings on desktop
+            it shrinks to a floating phone-sized preview so map edits are
+            visible live. */}
+        <div
+          ref={viewerObs.ref}
+          className={`${styles.viewerSurface} ${
+            isPreview ? styles.viewerSurfacePreview : ''
+          } ${!showViewer ? styles.viewerSurfaceHidden : ''}`}
+          aria-label={isPreview ? 'Live map preview' : undefined}
+        >
+          <PaneContextProvider
+            mode={mode}
+            breakpoint={isPreview ? 'phone' : breakpoint}
+            orientation={orientation}
+            setMode={setMode}
+            paneSize={viewerObs.size}
+            paneRole={viewerPaneRole}
+            displayMode={viewerDisplayMode}
+          >
+            {viewer}
+          </PaneContextProvider>
+          {isPreview && (
+            <div className={styles.previewLabel} aria-hidden>
+              Live preview
+            </div>
+          )}
+        </div>
       </div>
       {rightRail && breakpoint !== 'phone' && (
         <div
@@ -213,10 +204,6 @@ export function AppShell({
         <MobileBottomNav mode={mode} onModeChange={setMode} labels={labels} />
       )}
 
-      {/* Phone — chat FAB + bottom-sheet substitute for the always-on rail.
-          Per the Mighty UX system rule #3: AI chat is structural, never
-          hidden behind a tab. On small screens it's a pulsing violet FAB
-          that opens a 60% bottom sheet on tap. */}
       {rightRail && breakpoint === 'phone' && (
         <>
           <button
@@ -251,10 +238,6 @@ export function AppShell({
     </div>
   )
 
-  // When a breakpoint is explicitly forced (via the dev toggle), frame the
-  // shell inside a device-sized stage so devs see how the app actually looks
-  // at that viewport. Without a forced breakpoint, the shell fills the
-  // browser naturally.
   if (forcedBreakpoint === 'phone') {
     return (
       <div className={styles.stage}>
@@ -316,60 +299,11 @@ function PaneContextProvider({
   return <ShellContextProvider value={value}>{children}</ShellContextProvider>
 }
 
-function computeLayoutClass(mode: string, bp: string, orient: Orientation): string {
+function computeLayoutClass(mode: string, bp: string): string {
   if (bp === 'phone') {
     if (mode === 'admin-only') return styles.phoneAdmin ?? ''
     if (mode === 'settings') return styles.phoneSettings ?? ''
     return styles.phoneViewer ?? ''
   }
-  if (mode === 'split-viewer') {
-    if (bp === 'desktop') return styles.splitViewerDesktop ?? ''
-    return orient === 'portrait'
-      ? (styles.splitViewerTabletPortrait ?? '')
-      : (styles.splitViewerTablet ?? '')
-  }
-  if (mode === 'split-admin') {
-    if (bp === 'desktop') return styles.splitAdminDesktop ?? ''
-    return orient === 'portrait'
-      ? (styles.splitAdminTabletPortrait ?? '')
-      : (styles.splitAdminTablet ?? '')
-  }
   return ''
-}
-
-function paneRoleFor(pane: 'viewer' | 'admin', mode: string): PaneRole {
-  if (mode === 'split-viewer') return pane === 'viewer' ? 'primary' : 'side'
-  if (mode === 'split-admin') return pane === 'admin' ? 'primary' : 'side'
-  if (mode === 'viewer-only' && pane === 'viewer') return 'primary'
-  if (mode === 'admin-only' && pane === 'admin') return 'primary'
-  return null
-}
-
-function displayModeFor(
-  pane: 'viewer' | 'admin',
-  mode: string,
-  breakpoint: string,
-): DisplayMode {
-  if (breakpoint === 'phone') return 'compact'
-  const role = paneRoleFor(pane, mode)
-  return role === 'side' ? 'compact' : 'full'
-}
-
-/** Per-pane breakpoint. Key principle: in split modes, the SIDE pane
- *  renders as if it were a phone (so admin/viewer content uses their
- *  phone layouts instead of a cramped desktop layout). The primary pane
- *  keeps the host breakpoint. */
-function paneBreakpointFor(
-  pane: 'viewer' | 'admin',
-  mode: string,
-  breakpoint: Breakpoint,
-): Breakpoint {
-  // If the whole viewport is phone, everything is phone.
-  if (breakpoint === 'phone') return 'phone'
-  const role = paneRoleFor(pane, mode)
-  // In a split, the side pane is narrow — treat it as a phone so content
-  // (MockAdmin chips + cards, compact Measure widget) uses the mobile
-  // layout.
-  if (role === 'side') return 'phone'
-  return breakpoint
 }

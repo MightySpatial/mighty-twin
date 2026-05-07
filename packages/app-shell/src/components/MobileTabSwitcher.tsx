@@ -57,7 +57,7 @@ export function MobileBottomNav({
   onModeChange,
   labels,
 }: Omit<MobileTabSwitcherProps, 'brand'>) {
-  const isViewer = mode === 'viewer-only' || mode === 'split-viewer' || mode === 'split-admin'
+  const isViewer = mode === 'viewer-only'
   const isAdmin = mode === 'admin-only'
   const isSettings = mode === 'settings'
 

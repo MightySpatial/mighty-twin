@@ -93,10 +93,6 @@
   grid-template-rows: 48px 1fr 64px;
 }
 
-/* bodyShell — flex container that lets an optional right rail
-   (always-on AI chat per the Mighty UX system) sit beside the body
-   without disturbing the body's existing absolute-positioned pane
-   layout. */
 .bodyShell {
   display: flex;
   min-height: 0;
@@ -117,13 +113,11 @@
   overflow: hidden;
 }
 
-/* Phone — Mighty AI FAB + bottom sheet. Per UX rule #3 the chat is
-   structural; on phone we substitute a pulsing violet→magenta FAB above
-   the bottom-nav (right corner) and slide a 60% sheet up on tap. */
+/* Phone — Mighty AI FAB + bottom sheet. */
 .chatFab {
   position: fixed;
   right: 14px;
-  bottom: 80px; /* clear of MobileBottomNav (64px high) */
+  bottom: 80px;
   width: 52px;
   height: 52px;
   border-radius: 50%;
@@ -201,11 +195,48 @@
   position: absolute;
   inset: 0;
   z-index: 0;
-  transition: clip-path 180ms ease;
+  transition: inset 200ms ease, box-shadow 200ms ease, border-radius 200ms ease;
 }
 
 .viewerSurfaceHidden {
   display: none;
+}
+
+/* Live preview — phone-sized floating viewport in the bottom-right corner.
+   Layered over the admin/settings pane so map edits are visible while the
+   user works in Atlas or Settings on desktop. The Cesium instance is the
+   same one rendered fullscreen in Map mode — no second viewer. */
+.viewerSurfacePreview {
+  inset: auto 24px 24px auto;
+  width: 320px;
+  height: 580px;
+  max-height: calc(100% - 48px);
+  z-index: 6;
+  border-radius: 22px;
+  overflow: hidden;
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.08),
+    0 0 0 8px rgba(15, 15, 20, 0.9),
+    0 0 0 9px rgba(255, 255, 255, 0.05),
+    0 24px 60px rgba(0, 0, 0, 0.55);
+  background: #0f0f14;
+}
+
+.previewLabel {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 3px 10px;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.85);
+  background: rgba(99, 102, 241, 0.55);
+  border-radius: 999px;
+  pointer-events: none;
+  z-index: 1;
+  font-weight: 600;
 }
 
 /* Admin pane — mounted only when admin is visible. */
@@ -226,92 +257,10 @@
   overflow: auto;
 }
 
-/* Split layouts — desktop */
-.splitViewerDesktop .viewerSurface {
-  right: var(--side-pane-width, 420px);
-}
-.splitViewerDesktop .adminPane {
-  left: auto;
-  width: var(--side-pane-width, 420px);
-  border-left: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.splitAdminDesktop .viewerSurface {
-  left: auto;
-  width: var(--side-pane-width, 420px);
-  border-left: 1px solid rgba(255, 255, 255, 0.08);
-}
-.splitAdminDesktop .adminPane {
-  right: var(--side-pane-width, 420px);
-}
-
-/* Split layouts — tablet LANDSCAPE (overlay drawer on the right/left).
-   The side pane content renders in phone mode (per paneBreakpointFor). */
-.splitViewerTablet .viewerSurface {
-  inset: 0;
-}
-.splitViewerTablet .adminPane {
-  left: auto;
-  width: var(--drawer-width, 320px);
-  box-shadow: -8px 0 24px rgba(0, 0, 0, 0.3);
-}
-
-.splitAdminTablet .viewerSurface {
-  right: auto;
-  width: var(--drawer-width, 320px);
-  box-shadow: 8px 0 24px rgba(0, 0, 0, 0.3);
-  z-index: 3; /* overlay over admin */
-}
-.splitAdminTablet .adminPane {
-  inset: 0;
-}
-
-/* Split layouts — tablet PORTRAIT (vertical stack).
-   V+A: viewer on top, admin on bottom. A+V: the reverse.
-   The minor pane gets ~45% height and renders in phone mode. */
-.splitViewerTabletPortrait .viewerSurface {
-  bottom: 45%;
-  inset: 0 0 45% 0;
-}
-.splitViewerTabletPortrait .adminPane {
-  top: auto;
-  height: 45%;
-  inset: auto 0 0 0;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.3);
-}
-
-.splitAdminTabletPortrait .viewerSurface {
-  top: auto;
-  height: 45%;
-  inset: auto 0 0 0;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.3);
-}
-.splitAdminTabletPortrait .adminPane {
-  bottom: 45%;
-  inset: 0 0 45% 0;
-}
-
-/* Phone: settings pane above viewer-admin stack; single pane active at a time */
+/* Phone: single pane active at a time; the floating preview is desktop-only. */
 .phoneViewer .adminPane,
 .phoneViewer .settingsPane { display: none; }
 .phoneAdmin .viewerSurface { display: none; }
 .phoneAdmin .settingsPane { display: none; }
 .phoneSettings .viewerSurface { display: none; }
 .phoneSettings .adminPane { display: none; }
-
-.tooNarrowHint {
-  position: absolute;
-  bottom: 16px;
-  left: 50%;
-  transform: translateX(-50%);
-  padding: 8px 14px;
-  background: rgba(15, 15, 20, 0.94);
-  border: 1px solid rgba(99, 102, 241, 0.4);
-  border-radius: 10px;
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.85);
-  z-index: 10;
-  pointer-events: none;
-}

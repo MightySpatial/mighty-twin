@@ -6,9 +6,9 @@ export function pathnameToMode(pathname: string): ViewMode {
     return 'viewer-only'
   }
   if (pathname.startsWith('/admin')) return 'admin-only'
-  if (pathname === '/split/admin' || pathname.startsWith('/split/admin/')) return 'split-admin'
-  if (pathname === '/split' || pathname.startsWith('/split/')) return 'split-viewer'
   if (pathname.startsWith('/settings')) return 'settings'
+  // Legacy split routes resolve to admin (Atlas).
+  if (pathname.startsWith('/split')) return 'admin-only'
   return 'viewer-only'
 }
 
@@ -19,10 +19,6 @@ export function modeToPathname(mode: ViewMode): string {
       return '/viewer'
     case 'admin-only':
       return '/admin'
-    case 'split-viewer':
-      return '/split'
-    case 'split-admin':
-      return '/split/admin'
     case 'settings':
       return '/settings'
   }
@@ -34,7 +30,6 @@ export function modeToPathname(mode: ViewMode): string {
  *  stays useful. */
 export function shouldPush(from: ViewMode, to: ViewMode): boolean {
   if (from === to) return false
-  // Settings transitions are always push — users expect back to leave settings.
   if (from === 'settings' || to === 'settings') return true
   return false
 }

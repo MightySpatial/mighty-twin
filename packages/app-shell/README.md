@@ -5,7 +5,9 @@ Provides:
 
 - Top-bar with brand + tabs (Viewer · Admin · Settings)
 - Responsive layout: desktop inline / tablet drawer / phone bottom-tabs
-- Five view modes: `viewer-only`, `admin-only`, `split-viewer`, `split-admin`, `settings`
+- Three view modes: `viewer-only`, `admin-only`, `settings`. On desktop in the
+  Atlas (admin) and Settings views, the always-mounted viewer renders as a
+  floating phone-sized live preview so map edits stay visible.
 - URL-driven routing so deep links and browser back/forward just work
 - A stable viewer container that **never unmounts** — Cesium is constructed once
   per session and the shell clips/resizes its container via CSS + `ResizeObserver`
