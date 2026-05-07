@@ -13,8 +13,8 @@ COPY package.json pnpm-workspace.yaml pnpm-lock.yaml .npmrc tsconfig*.json ./
 # Copy all workspace packages (needed for workspace: protocol resolution)
 COPY packages/ ./packages/
 
-# Copy the web app source
-COPY apps/web/ ./apps/web/
+# Copy the web app sourc
+COPY ./apps/web/ ./apps/web/
 
 # Full install so workspace packages (e.g. settings-panels) get their own
 # transitive deps (react, @types/react) symlinked — needed for tsc to resolve
