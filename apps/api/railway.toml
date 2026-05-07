@@ -2,8 +2,10 @@
 builder = "DOCKERFILE"
 dockerfilePath = "Dockerfile"
 
+# startCommand intentionally omitted — Dockerfile CMD runs alembic
+# migrations then boots uvicorn, and overriding it here would skip the
+# migration step.
 [deploy]
-startCommand = "uv run uvicorn twin_api.main:app --host 0.0.0.0 --port $PORT"
 healthcheckPath = "/health"
 healthcheckTimeout = 30
 restartPolicyType = "ON_FAILURE"

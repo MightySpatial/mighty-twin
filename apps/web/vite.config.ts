@@ -3,7 +3,10 @@ import react from '@vitejs/plugin-react'
 import cesium from 'vite-plugin-cesium'
 import path from 'node:path'
 
-export default defineConfig({
+export default defineConfig(({ command }) => ({
+  // Production build is served from /viewer/ by FastAPI. Dev server keeps
+  // the root so http://localhost:3002 still works without a path prefix.
+  base: command === 'build' ? '/viewer/' : '/',
   plugins: [react(), cesium()],
   resolve: {
     alias: {
@@ -26,4 +29,4 @@ export default defineConfig({
       },
     },
   },
-})
+}))

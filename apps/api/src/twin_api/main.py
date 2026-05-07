@@ -10,9 +10,12 @@ from __future__ import annotations
 
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 
 from mighty_db import get_engine, get_session_factory
 
@@ -98,3 +101,34 @@ app.include_router(demo_router)
 # pattern so adding placeholders for future phases stays one-line).
 if settings.dev_stubs_enabled:
     app.include_router(dev_stubs_router)
+
+
+# Bundled viewer (built by the API Dockerfile's first stage and copied to
+# /app/apps/web/dist). This file is at /app/apps/api/src/twin_api/main.py;
+# parents[3] is /app/apps, so /apps/web/dist sits next to /apps/api.
+_VIEWER_DIST = Path(__file__).resolve().parents[3] / "web" / "dist"
+if _VIEWER_DIST.is_dir():
+    _ASSETS_DIR = _VIEWER_DIST / "assets"
+    if _ASSETS_DIR.is_dir():
+        app.mount(
+            "/viewer/assets",
+            StaticFiles(directory=_ASSETS_DIR),
+            name="viewer-assets",
+        )
+
+    _INDEX_HTML = _VIEWER_DIST / "index.html"
+
+    @app.get("/viewer", include_in_schema=False)
+    @app.get("/viewer/", include_in_schema=False)
+    async def _viewer_root() -> FileResponse:
+        return FileResponse(_INDEX_HTML)
+
+    @app.get("/viewer/{path:path}", include_in_schema=False)
+    async def _viewer_spa(path: str) -> FileResponse:
+        candidate = (_VIEWER_DIST / path).resolve()
+        if (
+            _VIEWER_DIST.resolve() in candidate.parents
+            and candidate.is_file()
+        ):
+            return FileResponse(candidate)
+        return FileResponse(_INDEX_HTML)
