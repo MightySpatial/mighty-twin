@@ -26,4 +26,6 @@ RUN pnpm --filter @mighty-twin/web build
 
 FROM nginx:alpine
 COPY --from=build /app/apps/web/dist /usr/share/nginx/html
+# Vite base='/viewer/' references /viewer/assets/* but builds assets to /assets/
+RUN mv /usr/share/nginx/html/assets /usr/share/nginx/html/viewer/assets
 EXPOSE 80
