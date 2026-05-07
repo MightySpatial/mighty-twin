@@ -24,6 +24,6 @@ RUN pnpm install --frozen-lockfile
 # Build the web app
 RUN pnpm --filter @mighty-twin/web build
 
-FROM nginx:1.27-alpine
+FROM nginx:alpine
 COPY --from=build /app/apps/web/dist /usr/share/nginx/html
 EXPOSE 80
