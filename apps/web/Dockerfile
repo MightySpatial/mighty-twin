@@ -1,4 +1,4 @@
-FROM node:22-alpine3.21 AS build
+FROM node:22-alpine AS build
 
 # Install pnpm via npm (reliable on all Railway builders)
 RUN npm install -g pnpm@9.15.0
