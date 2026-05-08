@@ -230,58 +230,11 @@
   background: transparent;
 }
 
-/* ── Mobile: floating action buttons, no dark rail ───────────────────────────
-   The rail container becomes transparent — each tab button floats
-   independently as its own pill, matching the Layers button style.
-   Content panel, site chip, and collapse toggle are all hidden. */
+/* ── Mobile: sidebar fully hidden — primary tools rendered as standalone
+   floating buttons in CesiumViewer (same pattern as layer-toggle-btn). */
 
 @media (max-width: 767px) {
   .viewer-sidebar {
-    top: 62px; /* clear topBar pill + comfortable gap */
-  }
-
-  /* Strip the dark column — just the floating buttons */
-  .sidebar-tabs {
-    background: transparent;
-    border: none;
-    backdrop-filter: none;
-    gap: 6px;
-    padding: 0 6px;
-  }
-
-  /* Each tab gets its own floating pill background */
-  .sidebar-tab {
-    background: rgba(10, 10, 16, 0.92);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 10px;
-    backdrop-filter: blur(14px);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.32);
-  }
-  .sidebar-tab:hover {
-    background: rgba(30, 30, 42, 0.96);
-  }
-  .sidebar-tab--active {
-    background: rgba(99, 102, 241, 0.22);
-    border-color: rgba(99, 102, 241, 0.35);
-  }
-
-  /* Thin divider between groups — hide, buttons already have their own spacing */
-  .sidebar-tab-divider {
-    display: none;
-  }
-
-  /* No content panel on mobile */
-  .viewer-sidebar--open .sidebar-content {
-    display: none;
-  }
-
-  /* Site chip is in the MapShell topBar on mobile */
-  .sidebar-site-chip {
-    display: none;
-  }
-
-  /* Nothing to collapse on mobile */
-  .sidebar-collapse-btn {
     display: none;
   }
 }

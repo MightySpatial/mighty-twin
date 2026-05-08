@@ -245,7 +245,7 @@
 
 .layer-toggle-btn {
   position: absolute;
-  top: 16px;
+  top: 60px; /* pushed down to clear the topBar pill */
   left: 16px;
   width: 44px;
   height: 44px;
@@ -264,6 +264,41 @@
 
 .layer-toggle-btn:hover { background: rgba(30, 30, 42, 0.95); border-color: rgba(255,255,255,0.2); }
 .layer-toggle-btn:active { background: rgba(99, 102, 241, 0.25); border-color: rgba(99, 102, 241, 0.5); }
+
+/* ── Mobile primary tool buttons (Search, Measure, Legend) ───────────────────
+   Same style as layer-toggle-btn, stacked below it. Each button is
+   position: absolute so they float independently over the map. */
+.mobile-tool-btn {
+  position: absolute;
+  left: 16px;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  background: rgba(15, 15, 20, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  color: rgba(255, 255, 255, 0.85);
+  cursor: pointer;
+  z-index: 10;
+  transition: background 0.15s;
+  backdrop-filter: blur(8px);
+  font: inherit;
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.mobile-tool-btn:hover { background: rgba(30, 30, 42, 0.95); border-color: rgba(255,255,255,0.2); }
+.mobile-tool-btn--active {
+  background: rgba(99, 102, 241, 0.25);
+  border-color: rgba(99, 102, 241, 0.5);
+  color: #a5b4fc;
+}
+/* top values are set inline in CesiumViewer.tsx (110/160/210px) */
 
 /* ── Layer Panel ────────────────────────────────────────────────────────────── */
 

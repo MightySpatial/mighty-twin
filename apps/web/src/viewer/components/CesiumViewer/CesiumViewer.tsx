@@ -7,7 +7,7 @@ import type { SiteConfigState } from '../../types/api'
 import { Cartesian3, Math as CesiumMath } from 'cesium'
 import { useBreakpoint } from '../../hooks/useBreakpoint'
 import { useWidgetLayout } from '../../hooks/useWidgetLayout'
-import { HelpCircle } from 'lucide-react'
+import { HelpCircle, Search as SearchIcon, Ruler, List as LegendIcon } from 'lucide-react'
 import { getExtensionPanels } from '../../extensions'
 import type { ViewerContext } from '../../extensions/types'
 import type { CesiumViewerProps } from './types'
@@ -740,13 +740,47 @@ export default function CesiumViewerComponent({
       {/* Legend */}
       {legendOpen && <LegendWidget layers={layers} onClose={() => setLegendOpen(false)} />}
 
-      {/* Mobile: legacy floating layers panel */}
+      {/* Mobile: floating layers panel (layer-toggle-btn at top: 60px) */}
       {isMobile && <MobileLayers
         layers={layers}
         layersLoading={layersLoading}
         onLayerToggle={onLayerToggle}
         onLayerOpacityChange={onLayerOpacityChange}
       />}
+
+      {/* Mobile: primary tool buttons — Search, Measure, Legend stacked
+          below the Layers button, same floating pill style. */}
+      {isMobile && (
+        <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
+          <button
+            className={`mobile-tool-btn${searchOpen ? ' mobile-tool-btn--active' : ''}`}
+            style={{ pointerEvents: 'auto', top: 110 }}
+            onClick={() => setSearchOpen(o => !o)}
+            title="Search"
+          >
+            <SearchIcon size={18} />
+            <span>Search</span>
+          </button>
+          <button
+            className={`mobile-tool-btn${measureActive ? ' mobile-tool-btn--active' : ''}`}
+            style={{ pointerEvents: 'auto', top: 160 }}
+            onClick={() => measureActive ? cleanupMeasure() : startMeasure()}
+            title="Measure"
+          >
+            <Ruler size={18} />
+            <span>Measur</span>
+          </button>
+          <button
+            className={`mobile-tool-btn${legendOpen ? ' mobile-tool-btn--active' : ''}`}
+            style={{ pointerEvents: 'auto', top: 210 }}
+            onClick={() => setLegendOpen(o => !o)}
+            title="Legend"
+          >
+            <LegendIcon size={18} />
+            <span>Legend</span>
+          </button>
+        </div>
+      )}
 
       {/* Mobile: floating extension panel */}
       {isMobile && activeExtPanel && viewerRef.current && (() => {
