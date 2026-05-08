@@ -63,7 +63,7 @@ function MobileLayers({ layers, layersLoading, onLayerToggle, onLayerOpacityChan
   )
 }
 
-import { useMaiDock } from '../../../../ai/MaiContext'
+import { useMaiDock } from '../../../ai/MaiContext'
 import './CesiumViewer.css'
 
 export default function CesiumViewerComponent({
