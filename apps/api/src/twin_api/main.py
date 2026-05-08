@@ -16,10 +16,12 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
+from sqlalchemy import select
 
 from mighty_db import get_engine, get_session_factory
+from mighty_models import User
 
-from .auth import router as auth_router
+from .auth import hash_password, router as auth_router
 from .config import get_settings
 from .dev_stubs import router as dev_stubs_router
 from .settings_routes import settings_router, system_router
@@ -40,6 +42,22 @@ from .feature_import_routes import router as feature_import_router
 from .demo_routes import router as demo_router
 
 
+def _seed_admin(session_factory) -> None:
+    with session_factory() as db:
+        count = db.execute(select(User)).first()
+        if count is not None:
+            return
+        admin = User(
+            email="admin@mightyspatial.com",
+            name="Admin",
+            hashed_password=hash_password("admin123"),
+            role="admin",
+            is_active=True,
+        )
+        db.add(admin)
+        db.commit()
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     settings = get_settings()
@@ -47,6 +65,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     session_factory = get_session_factory(engine)
     app.state.engine = engine
     app.state.session_factory = session_factory
+    _seed_admin(session_factory)
     try:
         yield
     finally:
