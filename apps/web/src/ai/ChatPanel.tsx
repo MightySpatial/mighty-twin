@@ -147,7 +147,7 @@ export default function ChatPanel() {
               color: 'inherit',
               fontSize: 13,
             }}
-            placeholder="Ask Mighty AI…"
+            placeholder="Ask Mai (Mighty AI)…"
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => {
@@ -195,7 +195,7 @@ export default function ChatPanel() {
       >
         <Sparkles size={18} color="#a78bfa" />
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ color: '#fff', fontSize: 13, fontWeight: 600 }}>Mighty AI</div>
+          <div style={{ color: '#fff', fontSize: 13, fontWeight: 600 }}>Mai (Mighty AI)</div>
           <div
             style={{
               fontSize: 11,
@@ -254,7 +254,7 @@ export default function ChatPanel() {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={onKeyDown}
-          placeholder="Ask Mighty AI…"
+          placeholder="Ask Mai (Mighty AI)…"
           style={{
             flex: 1,
             padding: '8px 10px',

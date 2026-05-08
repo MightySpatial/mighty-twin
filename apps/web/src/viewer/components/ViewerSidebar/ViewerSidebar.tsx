@@ -4,7 +4,7 @@
  * On mobile, falls back to the traditional floating layer panel.
  */
 import { useState } from 'react'
-import { Layers, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Layers, ChevronLeft, ChevronRight, Mountain } from 'lucide-react'
 import type { Layer } from '../CesiumViewer/types'
 import type { ViewerContext, PanelProps } from '../../extensions/types'
 import type { Viewer as CesiumViewerType } from 'cesium'
@@ -42,6 +42,10 @@ interface ViewerSidebarProps {
   sidebarOpen: boolean
   setSidebarOpen: (open: boolean) => void
   isMobile: boolean
+  // Terrain panel — when provided, adds a Terrain tab to the ribbon
+  terrainPanel?: React.ReactNode
+  terrainTabActive?: boolean
+  onTerrainTabClick?: () => void
 }
 
 function LayerSkeleton() {
@@ -73,6 +77,9 @@ export default function ViewerSidebar({
   sidebarOpen,
   setSidebarOpen,
   isMobile,
+  terrainPanel,
+  terrainTabActive = false,
+  onTerrainTabClick,
 }: ViewerSidebarProps) {
   const [attrLayerId, setAttrLayerId] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<string>('layers')
@@ -162,9 +169,27 @@ export default function ViewerSidebar({
               title={tab.label}
             >
               <span className="sidebar-tab-icon">{tab.icon}</span>
-              {sidebarOpen && <span className="sidebar-tab-label">{tab.label}</span>}
+              <span className="sidebar-tab-label">
+                {sidebarOpen ? tab.label : tab.label.slice(0, 6)}
+              </span>
             </button>
           ))}
+          {/* Terrain tab — only when terrain panel is provided */}
+          {terrainPanel && (
+            <button
+              className={`sidebar-tab${terrainTabActive ? ' sidebar-tab--active' : ''}`}
+              onClick={() => {
+                onTerrainTabClick?.()
+                if (!terrainTabActive) setSidebarOpen(true)
+              }}
+              title="Terrain"
+            >
+              <span className="sidebar-tab-icon"><Mountain size={16} /></span>
+              <span className="sidebar-tab-label">
+                {sidebarOpen ? 'Terrain' : 'Terr'}
+              </span>
+            </button>
+          )}
           {/* Collapse toggle */}
           <button
             className="sidebar-collapse-btn"
@@ -178,15 +203,25 @@ export default function ViewerSidebar({
         {/* Panel Content */}
         {sidebarOpen && (
           <div className="sidebar-content">
-            <div className="sidebar-content-header">
-              <span className="sidebar-content-title">{currentTab.label}</span>
-              {currentTab.id === 'layers' && layers.length > 0 && (
-                <span className="layer-count-badge">{layers.length}</span>
-              )}
-            </div>
-            <div className="sidebar-content-body">
-              {currentTab.content}
-            </div>
+            {terrainTabActive && terrainPanel ? (
+              // Terrain panel takes the full content area — no header chrome,
+              // the widget has its own tab bar inside.
+              <div className="sidebar-content-body" style={{ overflow: 'hidden' }}>
+                {terrainPanel}
+              </div>
+            ) : (
+              <>
+                <div className="sidebar-content-header">
+                  <span className="sidebar-content-title">{currentTab.label}</span>
+                  {currentTab.id === 'layers' && layers.length > 0 && (
+                    <span className="layer-count-badge">{layers.length}</span>
+                  )}
+                </div>
+                <div className="sidebar-content-body">
+                  {currentTab.content}
+                </div>
+              </>
+            )}
           </div>
         )}
       </div>

@@ -8,21 +8,32 @@
  *      umbrella since both features are about cutting through terrain)
  */
 
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import {
   AlertCircle,
   ArrowDownToLine,
   Copy,
   Eye,
+  Layers,
   Loader,
   Mountain,
+  MousePointer,
   RefreshCw,
+  Route,
   Trash2,
   X,
 } from 'lucide-react'
 import ProfileChart from './ProfileChart'
-import type { SectionStatus, TerrainSection } from './useTerrain'
+import type { SectionStatus, TerrainSection, LineEndpoints } from './useTerrain'
 import type { UndergroundState } from './useUnderground'
+import { Cartographic, JulianDate, Math as CesiumMath } from 'cesium'
+import type { Viewer as CesiumViewerType } from 'cesium'
+
+/** A line-type layer from the layers list that can be used as a section source. */
+export interface LineLayer {
+  id: string
+  name: string
+}
 
 interface Props {
   status: SectionStatus
@@ -30,13 +41,22 @@ interface Props {
   section: TerrainSection | null
   error: string | null
   isMobile: boolean
+  /** When true, renders as an inline panel (no absolute positioning)
+   *  for embedding inside the sidebar. */
+  sidebarMode?: boolean
   globeAlpha: number
   onSetGlobeAlpha: (a: number) => void
   onStart: () => void
+  /** Start a section from two known endpoints (skip click-to-pick). */
+  onStartFromLine: (line: LineEndpoints) => void
   onCancel: () => void
   onClear: () => void
   onClose: () => void
   onHoverSample: (idx: number | null) => void
+  /** Cesium viewer ref — used to read sketch polylines and selected entity. */
+  viewerRef?: React.MutableRefObject<CesiumViewerType | null>
+  /** Vector layers available as section line sources. */
+  lineLayers?: LineLayer[]
   // Underground (T+1230)
   underground: UndergroundState
   onUndergroundEnable: () => void
@@ -53,13 +73,17 @@ export default function TerrainWidget({
   section,
   error,
   isMobile,
+  sidebarMode = false,
   globeAlpha,
   onSetGlobeAlpha,
   onStart,
+  onStartFromLine,
   onCancel,
   onClear,
   onClose,
   onHoverSample,
+  viewerRef,
+  lineLayers = [],
   underground,
   onUndergroundEnable,
   onUndergroundDisable,
@@ -68,6 +92,7 @@ export default function TerrainWidget({
 }: Props) {
   const [tab, setTab] = useState<Tab>('section')
   const [copied, setCopied] = useState(false)
+  const [assetMode, setAssetMode] = useState(false)
 
   function copyCsv() {
     if (!section) return
@@ -86,85 +111,90 @@ export default function TerrainWidget({
     )
   }
 
-  return (
-    <div
-      style={
-        isMobile
-          ? {
-              position: 'fixed',
-              left: 0,
-              right: 0,
-              bottom: 0,
-              maxHeight: '70vh',
-              zIndex: 35,
-              background: 'rgba(15,15,20,0.97)',
-              backdropFilter: 'blur(14px)',
-              borderTop: '1px solid rgba(255,255,255,0.08)',
-              borderTopLeftRadius: 16,
-              borderTopRightRadius: 16,
-              padding: 14,
-              color: '#f0f2f8',
-              display: 'flex',
-              flexDirection: 'column',
-              animation: 'terrainSlide 220ms ease-out',
-            }
-          : {
-              position: 'absolute',
-              right: 14,
-              top: 110,
-              width: 560,
-              maxWidth: 'calc(100vw - 28px)',
-              zIndex: 35,
-              background: 'rgba(15,15,20,0.97)',
-              backdropFilter: 'blur(14px)',
-              border: '1px solid rgba(255,255,255,0.08)',
-              borderRadius: 12,
-              padding: 14,
-              color: '#f0f2f8',
-              boxShadow: '0 16px 40px rgba(0,0,0,0.45)',
-              display: 'flex',
-              flexDirection: 'column',
-              animation: 'terrainFade 160ms ease-out',
-            }
+  const containerStyle: React.CSSProperties = sidebarMode
+    ? {
+        // Inline sidebar panel — fills available height, no floating chrome
+        display: 'flex',
+        flexDirection: 'column',
+        height: '100%',
+        color: '#f0f2f8',
+        overflow: 'hidden',
       }
-    >
+    : isMobile
+      ? {
+          position: 'fixed',
+          left: 0,
+          right: 0,
+          bottom: 0,
+          maxHeight: '70vh',
+          zIndex: 35,
+          background: 'rgba(15,15,20,0.97)',
+          backdropFilter: 'blur(14px)',
+          borderTop: '1px solid rgba(255,255,255,0.08)',
+          borderTopLeftRadius: 16,
+          borderTopRightRadius: 16,
+          padding: 14,
+          color: '#f0f2f8',
+          display: 'flex',
+          flexDirection: 'column',
+          animation: 'terrainSlide 220ms ease-out',
+        }
+      : {
+          position: 'absolute',
+          right: 14,
+          top: 110,
+          width: 560,
+          maxWidth: 'calc(100vw - 28px)',
+          zIndex: 35,
+          background: 'rgba(15,15,20,0.97)',
+          backdropFilter: 'blur(14px)',
+          border: '1px solid rgba(255,255,255,0.08)',
+          borderRadius: 12,
+          padding: 14,
+          color: '#f0f2f8',
+          boxShadow: '0 16px 40px rgba(0,0,0,0.45)',
+          display: 'flex',
+          flexDirection: 'column',
+          animation: 'terrainFade 160ms ease-out',
+        }
+
+  return (
+    <div style={containerStyle}>
       <style>{`
         @keyframes terrainSlide { from { transform: translateY(100%); } to { transform: translateY(0); } }
         @keyframes terrainFade { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
       `}</style>
 
-      {/* Header */}
+      {/* Header — compact in sidebar mode */}
       <div
         style={{
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          marginBottom: 12,
+          padding: sidebarMode ? '10px 12px 8px' : '0 0 12px',
+          borderBottom: sidebarMode ? '1px solid rgba(255,255,255,0.06)' : 'none',
+          flexShrink: 0,
         }}
       >
-        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-          <Mountain size={16} color="#9bb3ff" />
-          <span style={{ fontSize: 14, fontWeight: 600 }}>Terrain</span>
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+          <Mountain size={14} color="#9bb3ff" />
+          <span style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'rgba(255,255,255,0.5)' }}>Terrain</span>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           <Tabs tab={tab} onChange={setTab} />
-          <button
-            onClick={onClose}
-            style={{
-              padding: 4,
-              background: 'transparent',
-              border: 'none',
-              color: 'rgba(240,242,248,0.5)',
-              cursor: 'pointer',
-              lineHeight: 0,
-            }}
-            title="Close"
-          >
-            <X size={14} />
-          </button>
+          {!sidebarMode && (
+            <button
+              onClick={onClose}
+              style={{ padding: 4, background: 'transparent', border: 'none', color: 'rgba(240,242,248,0.5)', cursor: 'pointer', lineHeight: 0 }}
+              title="Close"
+            >
+              <X size={14} />
+            </button>
+          )}
         </div>
       </div>
 
+      <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: sidebarMode ? '10px 12px' : 0 }}>
       {tab === 'section' && (
         <SectionTab
           status={status}
@@ -172,7 +202,11 @@ export default function TerrainWidget({
           section={section}
           error={error}
           copied={copied}
+          assetMode={assetMode}
+          onToggleAssetMode={() => setAssetMode(a => !a)}
+          viewerRef={viewerRef}
           onStart={onStart}
+          onStartFromLine={onStartFromLine}
           onCancel={onCancel}
           onClear={onClear}
           onCopyCsv={copyCsv}
@@ -193,6 +227,7 @@ export default function TerrainWidget({
       {tab === 'transparency' && (
         <TransparencyTab globeAlpha={globeAlpha} onSetGlobeAlpha={onSetGlobeAlpha} />
       )}
+      </div>
     </div>
   )
 }
@@ -249,6 +284,8 @@ function TabBtn({
   )
 }
 
+type LineSource = 'pick' | 'sketch' | 'selected'
+
 // ── Section tab ─────────────────────────────────────────────────────────
 
 function SectionTab({
@@ -257,7 +294,11 @@ function SectionTab({
   section,
   error,
   copied,
+  assetMode,
+  onToggleAssetMode,
+  viewerRef,
   onStart,
+  onStartFromLine,
   onCancel,
   onClear,
   onCopyCsv,
@@ -268,84 +309,127 @@ function SectionTab({
   section: TerrainSection | null
   error: string | null
   copied: boolean
+  assetMode: boolean
+  onToggleAssetMode: () => void
+  viewerRef?: React.MutableRefObject<CesiumViewerType | null>
   onStart: () => void
+  onStartFromLine: (line: LineEndpoints) => void
   onCancel: () => void
   onClear: () => void
   onCopyCsv: () => void
   onHoverSample: (idx: number | null) => void
 }) {
+  const [source, setSource] = useState<LineSource>('pick')
+
+  // Try to run a section from a selected entity or sketch line.
+  const runFromSource = useCallback(() => {
+    const viewer = viewerRef?.current
+    if (!viewer) return
+    try {
+      const now = JulianDate.now()
+      if (source === 'selected') {
+        const sel = viewer.selectedEntity
+        if (!sel?.polyline) return
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const positions = sel.polyline.positions?.getValue(now) as any[]
+        if (!positions || positions.length < 2) return
+        const a = Cartographic.fromCartesian(positions[0])
+        const b = Cartographic.fromCartesian(positions[positions.length - 1])
+        onStartFromLine({
+          start: { longitude: CesiumMath.toDegrees(a.longitude), latitude: CesiumMath.toDegrees(a.latitude) },
+          end: { longitude: CesiumMath.toDegrees(b.longitude), latitude: CesiumMath.toDegrees(b.latitude) },
+        })
+      } else if (source === 'sketch') {
+        // Find the first polyline entity whose name suggests it's a sketch
+        const sketches = viewer.entities.values.filter(
+          e => e.polyline && (e.name?.toLowerCase().includes('sketch') || e.name?.toLowerCase().includes('line')),
+        )
+        if (sketches.length === 0) return
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const positions = sketches[0].polyline!.positions?.getValue(now) as any[]
+        if (!positions || positions.length < 2) return
+        const a = Cartographic.fromCartesian(positions[0])
+        const b = Cartographic.fromCartesian(positions[positions.length - 1])
+        onStartFromLine({
+          start: { longitude: CesiumMath.toDegrees(a.longitude), latitude: CesiumMath.toDegrees(a.latitude) },
+          end: { longitude: CesiumMath.toDegrees(b.longitude), latitude: CesiumMath.toDegrees(b.latitude) },
+        })
+      }
+    } catch { /* entity read failed */ }
+  }, [source, viewerRef, onStartFromLine])
+
   // Pre-section / picking states share a CTA pane
   if (!section) {
     const remaining = Math.max(0, 2 - pickedCount)
     return (
-      <div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        {/* Line source selector */}
+        <div style={{ display: 'flex', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 8, padding: 2, gap: 2 }}>
+          {([
+            { id: 'pick', icon: <MousePointer size={11} />, label: 'Pick' },
+            { id: 'sketch', icon: <Route size={11} />, label: 'Sketch' },
+            { id: 'selected', icon: <Layers size={11} />, label: 'Selected' },
+          ] as { id: LineSource; icon: React.ReactNode; label: string }[]).map(s => (
+            <button
+              key={s.id}
+              onClick={() => setSource(s.id)}
+              style={{
+                flex: 1,
+                padding: '5px 6px',
+                background: source === s.id ? 'rgba(36,83,255,0.22)' : 'transparent',
+                border: 'none',
+                borderRadius: 6,
+                color: source === s.id ? '#9bb3ff' : 'rgba(240,242,248,0.55)',
+                fontSize: 10,
+                fontWeight: 600,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 4,
+                textTransform: 'uppercase',
+                letterSpacing: '0.04em',
+              }}
+            >
+              {s.icon}{s.label}
+            </button>
+          ))}
+        </div>
+
         {error && (
-          <div
-            style={{
-              padding: 10,
-              background: 'rgba(251,113,133,0.06)',
-              border: '1px solid rgba(251,113,133,0.32)',
-              borderRadius: 8,
-              color: '#fca5a5',
-              fontSize: 12,
-              marginBottom: 10,
-              display: 'flex',
-              alignItems: 'center',
-              gap: 6,
-            }}
-          >
+          <div style={{ padding: 10, background: 'rgba(251,113,133,0.06)', border: '1px solid rgba(251,113,133,0.32)', borderRadius: 8, color: '#fca5a5', fontSize: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
             <AlertCircle size={12} /> {error}
           </div>
         )}
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 12,
-            padding: 14,
-            background: 'rgba(36,83,255,0.06)',
-            border: '1px solid rgba(36,83,255,0.32)',
-            borderRadius: 10,
-            marginBottom: 12,
-          }}
-        >
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: 14, background: 'rgba(36,83,255,0.06)', border: '1px solid rgba(36,83,255,0.32)', borderRadius: 10 }}>
           <Mountain size={20} color="#9bb3ff" />
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: 13, fontWeight: 500 }}>
-              {status === 'idle' && 'Click two points to cross-section the terrain.'}
-              {status === 'picking' && remaining > 0 && (
-                <>
-                  Pick the {pickedCount === 0 ? 'first' : 'second'} point on the
-                  globe ({remaining} remaining).
-                </>
+              {source === 'pick' && status === 'idle' && 'Click two points to cross-section.'}
+              {source === 'pick' && status === 'picking' && remaining > 0 && (
+                <>Pick the {pickedCount === 0 ? 'first' : 'second'} point ({remaining} left).</>
               )}
-              {status === 'sampling' && (
-                <>
-                  Sampling terrain at 200 intervals…
-                </>
-              )}
+              {source === 'pick' && status === 'sampling' && 'Sampling terrain…'}
+              {source === 'sketch' && 'Use the first sketch line from the Design widget.'}
+              {source === 'selected' && 'Click a line feature on the map, then run.'}
             </div>
             <div style={{ fontSize: 11, color: 'rgba(240,242,248,0.55)', marginTop: 2 }}>
-              We sample the live terrain provider and chart elevation vs distance.
+              {source === 'pick' ? 'Samples the live terrain provider at 200 intervals.' : 'Section runs end-to-end along the chosen geometry.'}
             </div>
           </div>
           {status === 'sampling' && <Loader size={16} className="spin" color="#9bb3ff" />}
         </div>
+
         <div style={{ display: 'flex', gap: 8 }}>
-          {status === 'idle' && (
-            <button onClick={onStart} style={primaryBtn}>
-              Start sectioning
-            </button>
-          )}
-          {status === 'picking' && (
-            <button onClick={onCancel} style={ghostBtn}>
-              Cancel pick
-            </button>
-          )}
-          {status === 'error' && (
-            <button onClick={onStart} style={primaryBtn}>
-              <RefreshCw size={12} /> Retry
-            </button>
+          {source === 'pick' ? (
+            <>
+              {status === 'idle' && <button onClick={onStart} style={primaryBtn}>Start sectioning</button>}
+              {status === 'picking' && <button onClick={onCancel} style={ghostBtn}>Cancel pick</button>}
+              {status === 'error' && <button onClick={onStart} style={primaryBtn}><RefreshCw size={12} /> Retry</button>}
+            </>
+          ) : (
+            <button onClick={runFromSource} style={primaryBtn}><Route size={12} /> Run section</button>
           )}
         </div>
       </div>
@@ -355,6 +439,27 @@ function SectionTab({
   // Section ready — chart + stats
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+      {/* Asset mode toggle */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 0' }}>
+        <span style={{ fontSize: 11, color: 'rgba(240,242,248,0.55)' }}>Asset intersections</span>
+        <button
+          onClick={onToggleAssetMode}
+          style={{
+            padding: '3px 10px',
+            background: assetMode ? 'rgba(36,83,255,0.20)' : 'rgba(255,255,255,0.06)',
+            border: `1px solid ${assetMode ? 'rgba(36,83,255,0.4)' : 'rgba(255,255,255,0.08)'}`,
+            borderRadius: 6,
+            color: assetMode ? '#9bb3ff' : 'rgba(240,242,248,0.55)',
+            fontSize: 10,
+            fontWeight: 600,
+            cursor: 'pointer',
+            textTransform: 'uppercase',
+            letterSpacing: '0.04em',
+          }}
+        >
+          {assetMode ? 'On' : 'Off'}
+        </button>
+      </div>
       <ProfileChart samples={section.samples} onHoverSample={onHoverSample} />
 
       <div

@@ -62,6 +62,11 @@ export interface TerrainSection {
 
 export type SectionStatus = 'idle' | 'picking' | 'sampling' | 'ready' | 'error'
 
+export interface LineEndpoints {
+  start: { longitude: number; latitude: number }
+  end: { longitude: number; latitude: number }
+}
+
 interface UseTerrainReturn {
   status: SectionStatus
   pickedCount: number
@@ -69,6 +74,8 @@ interface UseTerrainReturn {
   error: string | null
   /** Begin a new section pick — clears any previous state. */
   start: () => void
+  /** Run a section immediately from two known lon/lat endpoints. */
+  startFromLine: (line: LineEndpoints) => void
   /** Abort an in-progress pick. */
   cancel: () => void
   /** Remove the section + on-globe annotations entirely. */
@@ -245,6 +252,39 @@ export function useTerrain(viewerRef: React.MutableRefObject<Viewer | null>): Us
     [],
   )
 
+  const startFromLine = useCallback(
+    ({ start, end }: LineEndpoints) => {
+      const viewer = viewerRef.current
+      if (!viewer) return
+      cancel()
+      clearAnnotations()
+      setSection(null)
+      setError(null)
+      setStatus('sampling')
+
+      const cartoA = Cartographic.fromDegrees(start.longitude, start.latitude)
+      const cartoB = Cartographic.fromDegrees(end.longitude, end.latitude)
+
+      // Endpoint markers
+      for (const pt of [start, end]) {
+        const m = viewer.entities.add({
+          position: Cartesian3.fromDegrees(pt.longitude, pt.latitude),
+          point: {
+            pixelSize: 10,
+            color: Color.fromCssColorString('#f59e0b'),
+            outlineColor: Color.fromCssColorString('#0f0f14'),
+            outlineWidth: 2,
+            heightReference: HeightReference.NONE,
+          },
+        })
+        entitiesRef.current.push(m)
+      }
+      setPickedCount(2)
+      runSample(viewer, cartoA, cartoB)
+    },
+    [viewerRef, cancel, clearAnnotations, runSample],
+  )
+
   const setCursor = useCallback(
     (sampleIndex: number | null) => {
       const viewer = viewerRef.current
@@ -286,7 +326,7 @@ export function useTerrain(viewerRef: React.MutableRefObject<Viewer | null>): Us
     }
   }, [])
 
-  return { status, pickedCount, section, error, start, cancel, clear, setCursor }
+  return { status, pickedCount, section, error, start, startFromLine, cancel, clear, setCursor }
 }
 
 function computeStats(samples: SamplePoint[]): SectionStats {

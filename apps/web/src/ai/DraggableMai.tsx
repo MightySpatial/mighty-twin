@@ -38,7 +38,11 @@ function saveFabPos(p: { x: number; y: number }) {
 }
 
 function defaultDesktopPos() {
-  return { x: Math.max(0, window.innerWidth - 380), y: 64 }
+  // Default: bottom-right, above the bottom rail (~120px from bottom).
+  return {
+    x: Math.max(0, window.innerWidth - 380),
+    y: Math.max(0, window.innerHeight - 500),
+  }
 }
 function defaultFabPos() {
   return { x: window.innerWidth - 70, y: window.innerHeight - 152 }
@@ -116,12 +120,12 @@ function MaiDocked() {
         <Sparkles size={14} color="#a78bfa" style={{ flexShrink: 0 }} />
         {!expanded && (
           <span style={{ flex: 1, fontSize: 13, color: 'rgba(240,242,248,0.45)' }}>
-            Ask Mighty AI…
+            Ask Mai…
           </span>
         )}
         {expanded && (
           <span style={{ flex: 1, fontSize: 12, fontWeight: 600, color: '#f0f2f8' }}>
-            Mighty AI
+            Mai (Mighty AI)
           </span>
         )}
         {expanded

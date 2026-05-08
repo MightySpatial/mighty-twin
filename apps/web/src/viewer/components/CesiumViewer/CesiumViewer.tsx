@@ -405,7 +405,12 @@ export default function CesiumViewerComponent({
       case 'legend':
         setLegendOpen((o) => !o); break
       case 'terrain':
-        setTerrainOpen((o) => !o); break
+        setTerrainOpen((o) => {
+          // Opening terrain on desktop → auto-open sidebar to show the panel
+          if (!o && !isMobile) setSidebarOpen(true)
+          return !o
+        })
+        break
       case 'snap':
         setSnapOpen(true); break
       case 'table':
@@ -427,8 +432,37 @@ export default function CesiumViewerComponent({
     }
   }, [measureActive, cleanupMeasure, startMeasure, onOpenStoryPicker])
 
-  // Sidebar width: tab rail (48px) + content panel (280px) when open
-  const sidebarWidth = !isMobile && sidebarOpen ? 328 : !isMobile ? 48 : 0
+  // Sidebar width: tab rail (64px) + content panel (280px) when open
+  const sidebarWidth = !isMobile && sidebarOpen ? 344 : !isMobile ? 64 : 0
+
+  // Terrain panel rendered inline for the sidebar
+  const terrainSidebarPanel = terrainOpen ? (
+    <TerrainWidget
+      sidebarMode
+      status={terrain.status}
+      pickedCount={terrain.pickedCount}
+      section={terrain.section}
+      error={terrain.error}
+      isMobile={isMobile}
+      globeAlpha={globeAlpha}
+      onSetGlobeAlpha={setGlobeAlpha}
+      onStart={terrain.start}
+      onStartFromLine={terrain.startFromLine}
+      onCancel={terrain.cancel}
+      onClear={terrain.clear}
+      onHoverSample={terrain.setCursor}
+      viewerRef={viewerRef}
+      underground={underground.state}
+      onUndergroundEnable={underground.enable}
+      onUndergroundDisable={underground.disable}
+      onUndergroundSet={underground.set}
+      onUndergroundReset={underground.reset}
+      onClose={() => {
+        terrain.clear()
+        setTerrainOpen(false)
+      }}
+    />
+  ) : null
 
   return (
     <div className="cesium-container">
@@ -449,6 +483,9 @@ export default function CesiumViewerComponent({
           sidebarOpen={sidebarOpen}
           setSidebarOpen={setSidebarOpen}
           isMobile={isMobile}
+          terrainPanel={terrainSidebarPanel}
+          terrainTabActive={terrainOpen}
+          onTerrainTabClick={() => setTerrainOpen(o => !o)}
         />
       )}
 
@@ -820,8 +857,8 @@ export default function CesiumViewerComponent({
         </div>
       )}
 
-      {/* Terrain section + underground + transparency */}
-      {terrainOpen && (
+      {/* Terrain widget — mobile only; desktop version lives in the sidebar */}
+      {terrainOpen && isMobile && (
         <TerrainWidget
           status={terrain.status}
           pickedCount={terrain.pickedCount}
@@ -831,9 +868,11 @@ export default function CesiumViewerComponent({
           globeAlpha={globeAlpha}
           onSetGlobeAlpha={setGlobeAlpha}
           onStart={terrain.start}
+          onStartFromLine={terrain.startFromLine}
           onCancel={terrain.cancel}
           onClear={terrain.clear}
           onHoverSample={terrain.setCursor}
+          viewerRef={viewerRef}
           underground={underground.state}
           onUndergroundEnable={underground.enable}
           onUndergroundDisable={underground.disable}
