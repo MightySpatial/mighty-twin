@@ -21,7 +21,7 @@ from mighty_db import get_engine, get_session_factory
 from mighty_models import User
 
 from .auth import router as auth_router
-from .bootstrap import ensure_admin_user, run_migrations
+from .bootstrap import ensure_admin_user
 from .config import get_settings
 from .dev_stubs import router as dev_stubs_router
 from .settings_routes import settings_router, system_router
@@ -45,10 +45,9 @@ from .demo_routes import router as demo_router
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     settings = get_settings()
-    # Apply migrations before the engine pool warms up — fresh Railway
-    # DBs ship with no schema, and the deploy command no longer runs
-    # `alembic upgrade head` itself.
-    run_migrations(settings.database_url)
+    # Migrations are handled by the Railway pre-deploy command
+    # (`cd /app/apps/api && uv run alembic upgrade head`) — running them
+    # again here causes FastAPI merged_lifespan recursion on startup.
     engine = get_engine(settings.database_url, pool_pre_ping=True)
     session_factory = get_session_factory(engine)
     app.state.engine = engine
