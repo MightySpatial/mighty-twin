@@ -243,25 +243,29 @@ export function MapShell({
         >
           <div className={styles.toolsSheet} onClick={(e) => e.stopPropagation()}>
             <div className={styles.toolsSheetHandle} />
-            <div className={styles.toolsSheetSection}>
-              <div className={styles.toolsSheetSectionLabel}>Primary</div>
-              <div className={styles.toolsSheetGrid}>
-                {primary.map((w) => (
-                  <SheetTile
-                    key={w.id}
-                    widget={w}
-                    active={activeToolId === w.id}
-                    onClick={() => {
-                      onAction(w.id)
-                      setToolsOpen(false)
-                    }}
-                  />
-                ))}
+            {/* Primary tools — exclude Layers (accessible via sidebar on desktop,
+                and via the dedicated Layers FAB on mobile) */}
+            {primary.filter(w => w.id !== 'layers').length > 0 && (
+              <div className={styles.toolsSheetSection}>
+                <div className={styles.toolsSheetSectionLabel}>Tools</div>
+                <div className={styles.toolsSheetGrid}>
+                  {primary.filter(w => w.id !== 'layers').map((w) => (
+                    <SheetTile
+                      key={w.id}
+                      widget={w}
+                      active={activeToolId === w.id}
+                      onClick={() => {
+                        onAction(w.id)
+                        setToolsOpen(false)
+                      }}
+                    />
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
             {!publicMode && secondary.length > 0 && (
               <div className={styles.toolsSheetSection}>
-                <div className={styles.toolsSheetSectionLabel}>Secondary</div>
+                <div className={styles.toolsSheetSectionLabel}>Widgets</div>
                 <div className={styles.toolsSheetGrid}>
                   {secondary.map((w) => (
                     <SheetTile
@@ -277,52 +281,6 @@ export function MapShell({
                 </div>
               </div>
             )}
-            {/* Camera controls row — replaces the hidden topBar buttons on phone */}
-            <div className={styles.toolsSheetSection}>
-              <div className={styles.toolsSheetSectionLabel}>Camera</div>
-              <div className={styles.toolsCameraRow}>
-                <button
-                  type="button"
-                  className={styles.toolsCameraBtn}
-                  onClick={() => { onZoomIn(); setToolsOpen(false) }}
-                >
-                  <ZoomIn size={18} />
-                  <span>Zoom In</span>
-                </button>
-                <button
-                  type="button"
-                  className={styles.toolsCameraBtn}
-                  onClick={() => { onZoomOut(); setToolsOpen(false) }}
-                >
-                  <ZoomOut size={18} />
-                  <span>Zoom Out</span>
-                </button>
-                <button
-                  type="button"
-                  className={styles.toolsCameraBtn}
-                  onClick={() => { onHome(); setToolsOpen(false) }}
-                >
-                  <HomeIcon size={18} />
-                  <span>Home</span>
-                </button>
-                <button
-                  type="button"
-                  className={styles.toolsCameraBtn}
-                  onClick={() => { onToggle2D3D(); setToolsOpen(false) }}
-                >
-                  {is2D ? <Globe size={18} /> : <Square size={18} />}
-                  <span>{is2D ? '3D' : '2D'}</span>
-                </button>
-                <button
-                  type="button"
-                  className={styles.toolsCameraBtn}
-                  onClick={() => { onToggleBasemap(); setToolsOpen(false) }}
-                >
-                  <MapIcon size={18} />
-                  <span>Basemap</span>
-                </button>
-              </div>
-            </div>
           </div>
         </div>
       )}
