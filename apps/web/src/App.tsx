@@ -11,6 +11,7 @@ import DiagnosticsPanel from './admin/pages/DiagnosticsPanel'
 import ProfilePanel from './admin/pages/ProfilePanel'
 import AISettings from './ai/AISettings'
 import { DraggableMai } from './ai/DraggableMai'
+import { MaiProvider } from './ai/MaiContext'
 import { loadAiPanelVisible } from './ai/storage'
 import {
   AutodetectRulesPanel,
@@ -131,7 +132,7 @@ export function App() {
   }
 
   return (
-    <>
+    <MaiProvider>
       <AppShell
         brand={{ name: 'MightyTwin' }}
         viewer={<ViewerRoot />}
@@ -141,8 +142,9 @@ export function App() {
         showDeveloperTools={settings.dev.enabled}
         rightRail={null}
       />
-      {/* Floating repositionable AI panel — draggable on desktop, FAB+sheet on phone */}
+      {/* Floating repositionable AI panel — draggable on desktop, FAB+sheet on phone.
+          Switches to docked bottom-bar when a viewer widget panel is open. */}
       {aiPanelVisible && <DraggableMai />}
-    </>
+    </MaiProvider>
   )
 }

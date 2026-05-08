@@ -59,6 +59,10 @@ export function useCesiumMount(
     return () => {
       destroyedRef.current = true
       onCleanup?.()
+      // Stop Cesium's render loop before destroy so in-flight postRender
+      // callbacks don't fire after the widget is gone (avoids
+      // "this._cesiumWidget.scene is undefined" crashes on tab switch).
+      try { viewer.useDefaultRenderLoop = false } catch { /* already gone */ }
       viewer.destroy()
       viewerRef.current = null
     }

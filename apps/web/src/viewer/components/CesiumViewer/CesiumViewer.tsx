@@ -63,6 +63,7 @@ function MobileLayers({ layers, layersLoading, onLayerToggle, onLayerOpacityChan
   )
 }
 
+import { useMaiDock } from '../../../../ai/MaiContext'
 import './CesiumViewer.css'
 
 export default function CesiumViewerComponent({
@@ -357,6 +358,12 @@ export default function CesiumViewerComponent({
   // design:open / design:close on the window so the AI ChatPanel can
   // minimise itself out of the way.
   const [designOpen, setDesignOpen] = useState(false)
+
+  // Signal to Mai that a panel is open → it docks at the bottom of the sidebar.
+  const { setDocked } = useMaiDock()
+  useEffect(() => {
+    setDocked(!isMobile && (sidebarOpen || designOpen))
+  }, [sidebarOpen, designOpen, isMobile, setDocked])
 
   // Map MapShell action ids → existing widget state. Tools that aren't
   // implemented yet (table/story/strike) toggle a placeholder

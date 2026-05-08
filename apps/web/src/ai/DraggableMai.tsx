@@ -10,8 +10,9 @@
 
 import { useRef, useState, useEffect, useCallback } from 'react'
 import { createPortal } from 'react-dom'
-import { Sparkles } from 'lucide-react'
+import { Sparkles, ChevronUp, ChevronDown } from 'lucide-react'
 import ChatPanel from './ChatPanel'
+import { useMaiDock } from './MaiContext'
 
 const POS_KEY = 'mighty:mai:pos'
 const FAB_KEY = 'mighty:mai:fab'
@@ -43,9 +44,13 @@ function defaultFabPos() {
   return { x: window.innerWidth - 70, y: window.innerHeight - 152 }
 }
 
-/** Top-level entry point — renders the right widget for the current breakpoint. */
+/** Top-level entry point — renders the right widget for the current breakpoint.
+ *  When `docked` is true (a sidebar widget is open), switches to a compact
+ *  bottom bar anchored to the sidebar area instead of a floating panel. */
 export function DraggableMai() {
   const [isPhone, setIsPhone] = useState(() => window.innerWidth < 768)
+  const { docked } = useMaiDock()
+
   useEffect(() => {
     const mq = window.matchMedia('(max-width: 767px)')
     const onChange = (e: MediaQueryListEvent) => setIsPhone(e.matches)
@@ -53,7 +58,87 @@ export function DraggableMai() {
     return () => mq.removeEventListener('change', onChange)
   }, [])
 
-  return isPhone ? <MaiFab /> : <MaiDesktop />
+  if (isPhone) return <MaiFab />
+  if (docked) return <MaiDocked />
+  return <MaiDesktop />
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+   DOCKED: collapsible bar pinned to the bottom of the left sidebar
+   Collapsed → single slim input-bar row (~48 px).
+   Expanded  → bottom ~1/3 of sidebar height with full ChatPanel.
+─────────────────────────────────────────────────────────────────────────── */
+// Sidebar is 328 px wide when open (matches CesiumViewer sidebarWidth).
+const SIDEBAR_W = 328
+
+function MaiDocked() {
+  const [expanded, setExpanded] = useState(false)
+
+  return createPortal(
+    <div
+      style={{
+        position: 'fixed',
+        left: 0,
+        bottom: 0,
+        width: SIDEBAR_W,
+        zIndex: 8000,
+        display: 'flex',
+        flexDirection: 'column',
+        background: 'rgba(13,14,20,0.97)',
+        backdropFilter: 'blur(16px)',
+        borderTop: '1px solid rgba(255,255,255,0.09)',
+        borderRight: '1px solid rgba(255,255,255,0.06)',
+        transition: 'height 220ms cubic-bezier(0.22,1,0.36,1)',
+        overflow: 'hidden',
+        height: expanded ? '38vh' : 48,
+        boxShadow: expanded ? '0 -8px 32px rgba(0,0,0,0.4)' : 'none',
+      }}
+    >
+      {/* Collapsed bar / header when expanded */}
+      <button
+        type="button"
+        onClick={() => setExpanded((e) => !e)}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
+          height: 48,
+          flexShrink: 0,
+          padding: '0 12px',
+          background: 'transparent',
+          border: 'none',
+          color: '#f0f2f8',
+          cursor: 'pointer',
+          textAlign: 'left',
+          width: '100%',
+        }}
+      >
+        <Sparkles size={14} color="#a78bfa" style={{ flexShrink: 0 }} />
+        {!expanded && (
+          <span style={{ flex: 1, fontSize: 13, color: 'rgba(240,242,248,0.45)' }}>
+            Ask Mighty AI…
+          </span>
+        )}
+        {expanded && (
+          <span style={{ flex: 1, fontSize: 12, fontWeight: 600, color: '#f0f2f8' }}>
+            Mighty AI
+          </span>
+        )}
+        {expanded
+          ? <ChevronDown size={14} color="rgba(240,242,248,0.4)" />
+          : <ChevronUp size={14} color="rgba(240,242,248,0.4)" />
+        }
+      </button>
+
+      {/* Chat content — only meaningful when expanded */}
+      {expanded && (
+        <div style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
+          <ChatPanel />
+        </div>
+      )}
+    </div>,
+    document.body,
+  )
 }
 
 /* ──────────────────────────────────────────────────────────────────────────

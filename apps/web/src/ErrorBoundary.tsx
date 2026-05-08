@@ -24,6 +24,18 @@ export class ErrorBoundary extends Component<Props, State> {
   componentDidCatch(error: Error, info: { componentStack?: string }) {
     // eslint-disable-next-line no-console
     console.error('[ErrorBoundary]', error, info.componentStack)
+
+    // Vite lazy-chunk failure: the chunk hash changed after a deploy and
+    // the browser has a stale reference. Force a single hard reload to
+    // pull fresh chunks. Guard with sessionStorage to prevent reload loops.
+    const isChunkError =
+      error.message.includes('Importing a module script failed') ||
+      error.message.includes('Failed to fetch dynamically imported module') ||
+      error.name === 'ChunkLoadError'
+    if (isChunkError && !sessionStorage.getItem('chunkReloadOnce')) {
+      sessionStorage.setItem('chunkReloadOnce', '1')
+      window.location.reload()
+    }
   }
 
   reset = () => this.setState({ error: null })
