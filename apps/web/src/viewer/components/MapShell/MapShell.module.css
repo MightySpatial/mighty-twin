@@ -208,16 +208,20 @@
    The rules below are duplicated as-needed.
 */
 .shellPhone .topBar { top: 10px; left: 10px; padding: 3px; border-radius: 10px; }
-.shellPhone .siteChipName { max-width: 90px; font-size: 12px; }
-.shellPhone .barBtn { width: 28px; height: 28px; }
+.shellPhone .siteChipName { max-width: 120px; font-size: 12px; }
+/* Phone: hide zoom/nav buttons — pinch-to-zoom and the tools sheet cover them */
+.shellPhone .barBtn { display: none; }
+.shellPhone .barDiv { display: none; }
 .shellPhone .gimbal { width: 32px; height: 32px; right: 10px; top: 10px; }
 .shellPhone .rails { display: none; }
 .shellPhone .toolsFab { display: flex; }
 
 @media (max-width: 640px) {
   .topBar { top: 10px; left: 10px; padding: 3px; border-radius: 10px; }
-  .siteChipName { max-width: 90px; font-size: 12px; }
-  .barBtn { width: 28px; height: 28px; }
+  .siteChipName { max-width: 120px; font-size: 12px; }
+  /* Phone: hide zoom/nav buttons — pinch-to-zoom and the tools sheet cover them */
+  .barBtn { display: none; }
+  .barDiv { display: none; }
   .gimbal { width: 32px; height: 32px; right: 10px; top: 10px; }
 
   /* Hide the rails — Tools FAB takes over. */
@@ -293,6 +297,35 @@
   grid-template-columns: repeat(4, 1fr);
   gap: 8px;
 }
+/* Camera controls row inside tools sheet */
+.toolsCameraRow {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.toolsCameraBtn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 10px;
+  color: rgba(240, 242, 248, 0.85);
+  font-size: 10px;
+  font: inherit;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  flex: 1;
+  min-width: 52px;
+}
+.toolsCameraBtn:active {
+  background: rgba(255, 255, 255, 0.07);
+}
+
 .toolsSheetTile {
   display: flex;
   flex-direction: column;

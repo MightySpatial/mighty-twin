@@ -284,6 +284,52 @@ export function MapShell({
                 </div>
               </div>
             )}
+            {/* Camera controls row — replaces the hidden topBar buttons on phone */}
+            <div className={styles.toolsSheetSection}>
+              <div className={styles.toolsSheetSectionLabel}>Camera</div>
+              <div className={styles.toolsCameraRow}>
+                <button
+                  type="button"
+                  className={styles.toolsCameraBtn}
+                  onClick={() => { onZoomIn(); setToolsOpen(false) }}
+                >
+                  <ZoomIn size={18} />
+                  <span>Zoom In</span>
+                </button>
+                <button
+                  type="button"
+                  className={styles.toolsCameraBtn}
+                  onClick={() => { onZoomOut(); setToolsOpen(false) }}
+                >
+                  <ZoomOut size={18} />
+                  <span>Zoom Out</span>
+                </button>
+                <button
+                  type="button"
+                  className={styles.toolsCameraBtn}
+                  onClick={() => { onHome(); setToolsOpen(false) }}
+                >
+                  <HomeIcon size={18} />
+                  <span>Home</span>
+                </button>
+                <button
+                  type="button"
+                  className={styles.toolsCameraBtn}
+                  onClick={() => { onToggle2D3D(); setToolsOpen(false) }}
+                >
+                  {is2D ? <Globe size={18} /> : <Square size={18} />}
+                  <span>{is2D ? '3D' : '2D'}</span>
+                </button>
+                <button
+                  type="button"
+                  className={styles.toolsCameraBtn}
+                  onClick={() => { onToggleBasemap(); setToolsOpen(false) }}
+                >
+                  <MapIcon size={18} />
+                  <span>Basemap</span>
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}
