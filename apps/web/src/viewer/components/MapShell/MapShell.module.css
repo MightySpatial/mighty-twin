@@ -6,19 +6,27 @@
 .shell { position: absolute; inset: 0; pointer-events: none; }
 .shell > * { pointer-events: auto; }
 
-/* ── Top-left inline bar — site chip + map controls in one pill ───────── */
+/* ── Top-left site chip pill — mobile only.
+   Camera controls have moved to the ViewerSidebar tab rail.
+   On desktop the site chip lives in the sidebar ribbon. */
 .topBar {
   position: absolute;
-  top: 14px; left: 14px;
-  display: inline-flex; align-items: center; gap: 2px;
-  padding: 4px;
+  top: 10px; left: 10px;
+  display: inline-flex; align-items: center;
+  padding: 3px;
   background: rgba(17,20,29,0.90);
   backdrop-filter: blur(14px);
   border: 1px solid rgba(255,255,255,0.08);
-  border-radius: 12px;
+  border-radius: 10px;
   box-shadow: 0 4px 14px rgba(0,0,0,0.32);
-  max-width: calc(100vw - 70px); /* don't bleed under the compass */
 }
+
+/* Desktop: chip lives in sidebar — hide the topBar pill entirely */
+.topBarMobileOnly { display: none; }
+@media (max-width: 767px) {
+  .topBarMobileOnly { display: inline-flex; }
+}
+.shellPhone .topBarMobileOnly { display: inline-flex; }
 
 /* Site chip — inline button inside topBar */
 .siteChip {
@@ -47,35 +55,14 @@
 }
 .siteChipChev { color: rgba(240,242,248,0.35); font-size: 10px; flex-shrink: 0; }
 
-/* Mobile-only site chip: visible only when sidebar is hidden (≤640px / phoneMode).
-   On desktop the chip lives in the sidebar ribbon instead. */
-.siteChipMobile { display: none; }
-@media (max-width: 640px) {
-  .siteChipMobile { display: inline-flex; }
-}
-.shellPhone .siteChipMobile { display: inline-flex; }
-
-/* Divider that only shows on desktop (between chip-less topBar and nav buttons it's unneeded on phone) */
+/* Keep these classes defined so any stray references don't break */
+.siteChipMobile { display: inline-flex; }
 .barDivDesktop { display: none; }
-
-/* Thin vertical divider between sections */
 .barDiv { width: 1px; height: 20px; background: rgba(255,255,255,0.08); margin: 0 2px; flex-shrink: 0; }
-
-/* Individual bar icon buttons */
-.barBtn {
-  width: 30px; height: 30px;
-  display: flex; align-items: center; justify-content: center;
-  border: none; background: transparent;
-  border-radius: 7px;
-  color: rgba(240,242,248,0.7);
-  cursor: pointer;
-  flex-shrink: 0;
-}
-.barBtn:hover { background: rgba(255,255,255,0.07); color: #f0f2f8; }
-.barBtn.active { color: #2dd4bf; }
+.barBtn { display: none; } /* camera buttons live in ViewerSidebar now */
 
 /* ── Legacy aliases (kept for any stray references) */
-.zoomCol { display: none; } /* replaced by topBar */
+.zoomCol { display: none; }
 .zoomBtn { display: none; }
 .zoomDiv { display: none; }
 .siteChipMeta { display: none; }
@@ -223,19 +210,13 @@
      2. native @media (max-width: 640px) for real small viewports
    The rules below are duplicated as-needed.
 */
-.shellPhone .topBar { top: 10px; left: 10px; padding: 3px; border-radius: 10px; }
 .shellPhone .siteChipName { max-width: 96px; font-size: 12px; }
-/* Camera buttons stay visible on phone — user wants floating controls in topBar */
-.shellPhone .barBtn { width: 26px; height: 26px; }
 .shellPhone .gimbal { width: 32px; height: 32px; right: 10px; top: 10px; }
 .shellPhone .rails { display: none; }
 .shellPhone .toolsFab { display: flex; }
 
 @media (max-width: 640px) {
-  .topBar { top: 10px; left: 10px; padding: 3px; border-radius: 10px; }
   .siteChipName { max-width: 96px; font-size: 12px; }
-  /* Compact buttons on phone so they all fit in the topBar pill */
-  .barBtn { width: 26px; height: 26px; }
   .gimbal { width: 32px; height: 32px; right: 10px; top: 10px; }
 
   /* Hide the rails — Tools FAB takes over. */

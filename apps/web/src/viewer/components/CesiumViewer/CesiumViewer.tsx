@@ -489,32 +489,37 @@ export default function CesiumViewerComponent({
 
   return (
     <div className="cesium-container">
-      {/* Sidebar — docked left on desktop */}
-      {!isMobile && (
-        <ViewerSidebar
-          layers={layers}
-          layersLoading={layersLoading}
-          onLayerToggle={onLayerToggle}
-          onLayerOpacityChange={onLayerOpacityChange}
-          extensionPanels={extensionPanels}
-          activeExtPanel={activeExtPanel}
-          setActiveExtPanel={setActiveExtPanel}
-          viewer={viewerRef.current}
-          siteId={siteId ?? ''}
-          siteConfigState={siteConfigState}
-          setSiteConfigState={setSiteConfigState}
-          sidebarOpen={sidebarOpen}
-          setSidebarOpen={setSidebarOpen}
-          isMobile={isMobile}
-          terrainPanel={terrainSidebarPanel}
-          terrainTabActive={terrainOpen}
-          onTerrainTabClick={() => setTerrainOpen(o => !o)}
-          activeWidgetId={activeToolId}
-          onWidgetTabClick={onMapShellAction}
-          site={site ? { slug: siteId ?? '', name: site.name } : null}
-          onOpenSitePicker={() => setPickerOpen(o => !o)}
-        />
-      )}
+      {/* Sidebar — left rail on both desktop (full) and mobile (rail-only,
+          positioned below topBar). Camera controls live here on both sizes. */}
+      <ViewerSidebar
+        layers={layers}
+        layersLoading={layersLoading}
+        onLayerToggle={onLayerToggle}
+        onLayerOpacityChange={onLayerOpacityChange}
+        extensionPanels={extensionPanels}
+        activeExtPanel={activeExtPanel}
+        setActiveExtPanel={setActiveExtPanel}
+        viewer={viewerRef.current}
+        siteId={siteId ?? ''}
+        siteConfigState={siteConfigState}
+        setSiteConfigState={setSiteConfigState}
+        sidebarOpen={sidebarOpen}
+        setSidebarOpen={setSidebarOpen}
+        isMobile={isMobile}
+        terrainPanel={terrainSidebarPanel}
+        terrainTabActive={terrainOpen}
+        onTerrainTabClick={() => setTerrainOpen(o => !o)}
+        activeWidgetId={activeToolId}
+        onWidgetTabClick={onMapShellAction}
+        site={site ? { slug: siteId ?? '', name: site.name } : null}
+        onOpenSitePicker={() => setPickerOpen(o => !o)}
+        onZoomIn={zoomIn}
+        onZoomOut={zoomOut}
+        onHome={flyHome}
+        onToggle2D3D={toggleSceneMode}
+        onToggleBasemap={() => setBasemapOpen(o => !o)}
+        is2D={is2D}
+      />
 
       {/* Cesium canvas — offset by sidebar width */}
       <div

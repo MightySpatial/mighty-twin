@@ -230,10 +230,25 @@
   background: transparent;
 }
 
-/* ── Mobile: sidebar hidden, use legacy floating panel ──────────────────────── */
+/* ── Mobile: sidebar rail visible, pushed below the topBar site chip ─────────
+   Content panel is suppressed — mobile uses the rail as a vertical action
+   column only (camera controls + widget action tabs). The site chip and
+   collapse toggle are hidden; the topBar pill handles site selection. */
 
 @media (max-width: 767px) {
   .viewer-sidebar {
+    top: 52px; /* clears MapShell topBar (site chip pill ~42px + 10px gap) */
+  }
+  /* No content panel expansion on mobile */
+  .viewer-sidebar--open .sidebar-content {
+    display: none;
+  }
+  /* Site chip lives in MapShell topBar on mobile — hide from sidebar */
+  .sidebar-site-chip {
+    display: none;
+  }
+  /* Collapse button has nothing to collapse on mobile — hide it */
+  .sidebar-collapse-btn {
     display: none;
   }
 }
