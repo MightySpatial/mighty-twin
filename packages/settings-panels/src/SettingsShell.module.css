@@ -9,6 +9,7 @@
 .nav {
   border-right: 1px solid rgba(255, 255, 255, 0.06);
   padding: 24px 12px;
+  overflow-y: auto;
 }
 
 .navTitle {
@@ -49,6 +50,7 @@
 .content {
   padding: 32px 40px;
   overflow: auto;
+  min-width: 0;
 }
 
 .panel h2 {
@@ -161,4 +163,96 @@
   color: rgba(255, 255, 255, 0.5);
   font-size: 12px;
   max-width: 640px;
+}
+
+/* ─── Mobile (≤480px) ────────────────────────────────────────────────────── */
+/* Stack to a single column. Side nav becomes a horizontal scroll strip
+   of pill chips. Field rows wrap to label-above-input so 360px / 414px
+   inputs no longer push off-screen. */
+@media (max-width: 480px) {
+  .shell {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr;
+    overflow: hidden;
+  }
+
+  .nav {
+    border-right: none;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 10px 12px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    background: rgba(15, 15, 20, 0.92);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    flex-wrap: nowrap;
+  }
+  .nav::-webkit-scrollbar { display: none; }
+
+  .navTitle {
+    display: none;
+  }
+
+  .navItem {
+    flex: 0 0 auto;
+    width: auto;
+    padding: 10px 14px;
+    min-height: 44px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    white-space: nowrap;
+    font-size: 13px;
+    display: inline-flex;
+    align-items: center;
+  }
+
+  .navItemActive {
+    background: rgba(45, 212, 191, 0.16);
+    border-color: rgba(45, 212, 191, 0.45);
+    color: #2dd4bf;
+  }
+
+  .content {
+    padding: 20px 16px 32px;
+  }
+
+  .panel h2 {
+    font-size: 18px;
+  }
+
+  .panel .panelDesc {
+    font-size: 13px;
+    margin-bottom: 18px;
+  }
+
+  .field {
+    grid-template-columns: 1fr;
+    gap: 8px;
+    padding: 14px 0;
+    max-width: 100%;
+  }
+
+  .input,
+  .select {
+    width: 100%;
+    max-width: 100%;
+    min-height: 44px;
+    padding: 10px 12px;
+    border-radius: 12px;
+    font-size: 16px; /* prevent iOS zoom on focus */
+  }
+
+  .toggle {
+    justify-self: start;
+  }
+
+  .skeletonNote {
+    max-width: 100%;
+  }
 }
