@@ -162,3 +162,130 @@
   font-size: 12px;
   max-width: 640px;
 }
+
+/* ── Widget host panel ──────────────────────────────────────────────────── */
+
+.widgetSection {
+  margin-bottom: 20px;
+}
+
+.widgetSectionHeader {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.widgetSectionLabel {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.widgetSectionHint {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.widgetGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 8px;
+  max-width: 720px;
+}
+
+.widgetToggleCard {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background 100ms, border-color 100ms, opacity 100ms;
+  opacity: 0.65;
+}
+
+.widgetToggleCard:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.widgetToggleCardOn {
+  background: rgba(99, 102, 241, 0.07);
+  border-color: rgba(99, 102, 241, 0.28);
+  opacity: 1;
+}
+
+.widgetToggleCardBody {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.widgetToggleCardName {
+  font-size: 13px;
+  font-weight: 500;
+  color: #f5f5f7;
+}
+
+.widgetToggleCardDesc {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.45);
+  line-height: 1.4;
+}
+
+/* Pill toggle used in widget cards */
+.togglePill {
+  position: relative;
+  display: inline-block;
+  width: 36px;
+  height: 20px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.12);
+  flex-shrink: 0;
+  transition: background 160ms ease;
+}
+
+.togglePillOn {
+  background: #6366f1;
+}
+
+.toggleKnob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  transition: transform 160ms ease;
+}
+
+.togglePillOn .toggleKnob {
+  transform: translateX(16px);
+}
+
+/* Visually hidden input (for checkbox semantics) */
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+.panelFootnote {
+  margin-top: 16px;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.35);
+  max-width: 640px;
+}

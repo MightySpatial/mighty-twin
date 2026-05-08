@@ -140,11 +140,38 @@
 .railDivider { width: 1px; height: 24px; background: rgba(255,255,255,0.07); margin: 0 4px; }
 .moreToggle {
   display: inline-flex; align-items: center; gap: 4px;
-  padding: 4px 10px; font-size: 10px;
-  color: rgba(240,242,248,0.5);
+  padding: 6px 10px; font-size: 10px;
+  color: rgba(240,242,248,0.55);
   text-transform: uppercase; letter-spacing: 0.05em;
-  background: transparent; border: none;
+  background: transparent; border: 1px solid transparent;
+  border-radius: 8px;
   cursor: pointer; font: inherit;
+  white-space: nowrap;
+}
+.moreToggle:hover { color: #f0f2f8; background: rgba(255,255,255,0.04); }
+.moreToggleOpen {
+  color: #f0f2f8;
+  background: rgba(255,255,255,0.06);
+  border-color: rgba(255,255,255,0.08);
+}
+
+/* Popover panel that appears above the "More" button */
+.morePopover {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  right: 0;
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 4px;
+  padding: 6px;
+  background: rgba(17,20,29,0.97);
+  backdrop-filter: blur(14px);
+  border: 1px solid rgba(255,255,255,0.10);
+  border-radius: 14px;
+  box-shadow: 0 8px 28px rgba(0,0,0,0.5);
+  z-index: 10;
+  white-space: nowrap;
 }
 
 /* Customer brand zone (rendered in app shell topbar via slot) */

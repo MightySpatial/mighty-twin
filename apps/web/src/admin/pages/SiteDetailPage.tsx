@@ -461,13 +461,15 @@ export default function SiteDetailPage() {
           </div>
         </div>
 
-        {/* Public toggle (right side of header) */}
-        <PublicToggle
-          isPublic={site.is_public_pre_login}
-          slug={site.slug}
-          saving={savingField === 'public'}
-          onChange={(v) => patch({ is_public_pre_login: v }, 'public')}
-        />
+        {/* Public toggle — full-width below name on phone, right-docked on desktop */}
+        <div style={{ width: isPhone ? '100%' : undefined }}>
+          <PublicToggle
+            isPublic={site.is_public_pre_login}
+            slug={site.slug}
+            saving={savingField === 'public'}
+            onChange={(v) => patch({ is_public_pre_login: v }, 'public')}
+          />
+        </div>
       </header>
 
       {/* Main columns */}
@@ -774,7 +776,7 @@ function PublicToggle({
         background: isPublic ? 'rgba(34,197,94,0.08)' : 'rgba(255,255,255,0.03)',
         border: `1px solid ${isPublic ? 'rgba(34,197,94,0.32)' : 'rgba(255,255,255,0.07)'}`,
         borderRadius: 10,
-        minWidth: 240,
+        width: '100%',
       }}
     >
       <div
