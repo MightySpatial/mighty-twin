@@ -130,27 +130,24 @@ export function MapShell({
   widgetOverrides = null,
   children,
 }: MapShellProps) {
-  // Long-press detection for gimbal → look-around
-  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // Hold-to-look-around on the compass:
+  //   pointerdown → start look-around immediately
+  //   pointerup   → detected globally (parent wires window listener), restores orbit
+  //   short tap (no drag) → treated as reset-north by the parent
+  const pointerDownTime = useRef<number>(0)
 
-  const handleGimbalPointerDown = () => {
-    longPressTimer.current = setTimeout(() => {
-      longPressTimer.current = null
-      onToggleLookAround?.()
-    }, 500)
+  const handleGimbalPointerDown = (e: React.PointerEvent) => {
+    e.currentTarget.setPointerCapture(e.pointerId)
+    pointerDownTime.current = Date.now()
+    onToggleLookAround?.()   // parent immediately enables look mode + wires pointerup cleanup
   }
+  // pointerup on the button fires when released (even after drag, because of capture)
   const handleGimbalPointerUp = () => {
-    if (longPressTimer.current) {
-      clearTimeout(longPressTimer.current)
-      longPressTimer.current = null
-      // Short press → reset north
+    const held = Date.now() - pointerDownTime.current
+    // Parent's window pointerup listener already stopped look-around.
+    // If it was a quick tap (< 250 ms, no real drag), also reset north.
+    if (held < 250) {
       onResetCamera?.()
-    }
-  }
-  const handleGimbalPointerLeave = () => {
-    if (longPressTimer.current) {
-      clearTimeout(longPressTimer.current)
-      longPressTimer.current = null
     }
   }
 
@@ -217,8 +214,7 @@ export function MapShell({
         className={`${styles.gimbal} ${lookAroundActive ? styles.gimbalActive : ''}`}
         onPointerDown={handleGimbalPointerDown}
         onPointerUp={handleGimbalPointerUp}
-        onPointerLeave={handleGimbalPointerLeave}
-        title={lookAroundActive ? 'Look-around ON — tap to exit' : 'Tap: face north · Hold: look around'}
+        title={lookAroundActive ? 'Looking around — release to orbit' : 'Tap: face north · Hold + drag: look around'}
       >
         <svg viewBox="0 0 36 36" width="36" height="36">
           <g transform={`rotate(${headingDeg} 18 18)`}>

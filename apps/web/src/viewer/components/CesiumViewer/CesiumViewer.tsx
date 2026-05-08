@@ -314,28 +314,27 @@ export default function CesiumViewerComponent({
     })
   }, [])
 
-  // Look-around mode: long-press the compass to switch between globe-orbit
-  // (default) and first-person free-look (camera position fixed, drag rotates view).
+  // Look-around mode: hold compass → first-person free-look, release anywhere → restore orbit.
   const [lookAroundActive, setLookAroundActive] = useState(false)
   const toggleLookAround = useCallback(() => {
     const viewer = viewerRef.current
     if (!viewer) return
     const ctrl = viewer.scene.screenSpaceCameraController
-    setLookAroundActive(prev => {
-      if (prev) {
-        // Restore default orbit behaviour
+    // Enable first-person look immediately
+    ctrl.enableRotate = false
+    ctrl.enableTilt = false
+    ctrl.enableLook = true
+    setLookAroundActive(true)
+    // Single window pointerup restores orbit mode
+    const stop = () => {
+      try {
         ctrl.enableRotate = true
         ctrl.enableTilt = true
         ctrl.enableLook = false
-        return false
-      } else {
-        // First-person look: fix position, drag rotates the view direction
-        ctrl.enableRotate = false
-        ctrl.enableTilt = false
-        ctrl.enableLook = true
-        return true
-      }
-    })
+      } catch { /* viewer may have been destroyed */ }
+      setLookAroundActive(false)
+    }
+    window.addEventListener('pointerup', stop, { once: true })
   }, [])
 
   // Site picker — popover from the MapShell site chip.
