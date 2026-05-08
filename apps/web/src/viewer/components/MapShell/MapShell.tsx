@@ -145,50 +145,46 @@ export function MapShell({
       className={`${styles.shell} ${phoneMode ? styles.shellPhone : ''}`}
       aria-hidden="false"
     >
-      {/* Left column — site chip stacked above zoom controls */}
-      <div className={styles.leftCol}>
+      {/* Top-left bar — site chip + map controls inline in one pill */}
+      <div className={styles.topBar}>
         {site && (
-          <button
-            type="button"
-            className={styles.siteChip}
-            onClick={onOpenSitePicker}
-            title="Site picker"
-          >
-            <span className={styles.siteChipIcon}>
-              {site.name.slice(0, 1).toUpperCase()}
-            </span>
-            <span className={styles.siteChipMeta}>
+          <>
+            <button
+              type="button"
+              className={styles.siteChip}
+              onClick={onOpenSitePicker}
+              title="Switch site"
+            >
+              <span className={styles.siteChipIcon}>
+                {site.name.slice(0, 1).toUpperCase()}
+              </span>
               <span className={styles.siteChipName}>{site.name}</span>
-              {site.subtitle ? (
-                <span className={styles.siteChipSub}>{site.subtitle}</span>
-              ) : null}
-            </span>
-            <span className={styles.siteChipChev}>▾</span>
-          </button>
+              <span className={styles.siteChipChev}>▾</span>
+            </button>
+            <div className={styles.barDiv} />
+          </>
         )}
 
-        <div className={styles.zoomCol}>
-          <button className={styles.zoomBtn} onClick={onZoomIn} title="Zoom in">
-            <ZoomIn size={18} />
-          </button>
-          <button className={styles.zoomBtn} onClick={onZoomOut} title="Zoom out">
-            <ZoomOut size={18} />
-          </button>
-          <div className={styles.zoomDiv} />
-          <button className={styles.zoomBtn} onClick={onHome} title="Home">
-            <HomeIcon size={18} />
-          </button>
-          <button
-            className={`${styles.zoomBtn} ${is2D ? styles.active : ''}`}
-            onClick={onToggle2D3D}
-            title={is2D ? 'Switch to 3D' : 'Switch to 2D'}
-          >
-            {is2D ? <Globe size={18} /> : <Square size={18} />}
-          </button>
-          <button className={styles.zoomBtn} onClick={onToggleBasemap} title="Basemap">
-            <MapIcon size={18} />
-          </button>
-        </div>
+        <button className={styles.barBtn} onClick={onZoomIn} title="Zoom in">
+          <ZoomIn size={16} />
+        </button>
+        <button className={styles.barBtn} onClick={onZoomOut} title="Zoom out">
+          <ZoomOut size={16} />
+        </button>
+        <div className={styles.barDiv} />
+        <button className={styles.barBtn} onClick={onHome} title="Home">
+          <HomeIcon size={16} />
+        </button>
+        <button
+          className={`${styles.barBtn} ${is2D ? styles.active : ''}`}
+          onClick={onToggle2D3D}
+          title={is2D ? 'Switch to 3D' : 'Switch to 2D'}
+        >
+          {is2D ? <Globe size={16} /> : <Square size={16} />}
+        </button>
+        <button className={styles.barBtn} onClick={onToggleBasemap} title="Basemap">
+          <MapIcon size={16} />
+        </button>
       </div>
 
       {/* Compact needle compass — tap to recenter north */}
