@@ -314,6 +314,30 @@ export default function CesiumViewerComponent({
     })
   }, [])
 
+  // Look-around mode: long-press the compass to switch between globe-orbit
+  // (default) and first-person free-look (camera position fixed, drag rotates view).
+  const [lookAroundActive, setLookAroundActive] = useState(false)
+  const toggleLookAround = useCallback(() => {
+    const viewer = viewerRef.current
+    if (!viewer) return
+    const ctrl = viewer.scene.screenSpaceCameraController
+    setLookAroundActive(prev => {
+      if (prev) {
+        // Restore default orbit behaviour
+        ctrl.enableRotate = true
+        ctrl.enableTilt = true
+        ctrl.enableLook = false
+        return false
+      } else {
+        // First-person look: fix position, drag rotates the view direction
+        ctrl.enableRotate = false
+        ctrl.enableTilt = false
+        ctrl.enableLook = true
+        return true
+      }
+    })
+  }, [])
+
   // Site picker — popover from the MapShell site chip.
   const navigate = useNavigate()
   const [pickerOpen, setPickerOpen] = useState(false)
@@ -533,6 +557,8 @@ export default function CesiumViewerComponent({
           onToggle2D3D={toggleSceneMode}
           onToggleBasemap={() => setBasemapOpen((o) => !o)}
           onResetCamera={resetCamera}
+          onToggleLookAround={toggleLookAround}
+          lookAroundActive={lookAroundActive}
           onOpenSitePicker={() => setPickerOpen((o) => !o)}
           headingDeg={headingDeg}
           is2D={is2D}

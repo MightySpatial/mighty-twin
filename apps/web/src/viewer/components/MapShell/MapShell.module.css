@@ -98,6 +98,11 @@
 .gimbal:hover { background: rgba(22,26,37,0.95); }
 .gimbal svg { display: block; }
 .gimbalText { display: none; }
+/* Look-around active: teal ring + slightly brighter background */
+.gimbalActive {
+  border-color: #2dd4bf !important;
+  box-shadow: 0 0 0 2px rgba(45,212,191,0.35), 0 2px 8px rgba(0,0,0,0.28) !important;
+}
 
 /* Bottom widget rails (primary + secondary) */
 .rails {

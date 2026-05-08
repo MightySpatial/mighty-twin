@@ -21,7 +21,7 @@
  *  rails are filtered to widgets with ``publicVisible: true`` only.
  */
 
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import {
   Layers as LayersIcon,
   List as ListIcon,
@@ -81,6 +81,10 @@ export interface MapShellProps {
   onToggle2D3D: () => void
   onToggleBasemap: () => void
   onResetCamera?: () => void
+  /** Long-press on compass — toggles first-person look-around mode. */
+  onToggleLookAround?: () => void
+  /** True when look-around mode is active (gimbal turns teal). */
+  lookAroundActive?: boolean
   /** Site chip click — opens the site picker popover (impl out-of-scope). */
   onOpenSitePicker?: () => void
   /** Phase M: hide non-essential widgets when site is public-pre-login. */
@@ -115,6 +119,8 @@ export function MapShell({
   onToggle2D3D,
   onToggleBasemap,
   onResetCamera,
+  onToggleLookAround,
+  lookAroundActive = false,
   onOpenSitePicker,
   publicMode = false,
   headingDeg = 0,
@@ -124,6 +130,30 @@ export function MapShell({
   widgetOverrides = null,
   children,
 }: MapShellProps) {
+  // Long-press detection for gimbal → look-around
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const handleGimbalPointerDown = () => {
+    longPressTimer.current = setTimeout(() => {
+      longPressTimer.current = null
+      onToggleLookAround?.()
+    }, 500)
+  }
+  const handleGimbalPointerUp = () => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current)
+      longPressTimer.current = null
+      // Short press → reset north
+      onResetCamera?.()
+    }
+  }
+  const handleGimbalPointerLeave = () => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current)
+      longPressTimer.current = null
+    }
+  }
+
   const widgets = useMemo<WidgetDef[]>(() => {
     const base = publicMode ? publicWidgets(DEFAULT_WIDGETS) : DEFAULT_WIDGETS
     return applyWidgetOverrides(base, widgetOverrides)
@@ -181,17 +211,19 @@ export function MapShell({
         </button>
       </div>
 
-      {/* Compact needle compass — tap to recenter north */}
+      {/* Compact needle compass — tap = face north, hold = look-around mode */}
       <button
         type="button"
-        className={styles.gimbal}
-        onClick={onResetCamera}
-        title="Tap to face north"
+        className={`${styles.gimbal} ${lookAroundActive ? styles.gimbalActive : ''}`}
+        onPointerDown={handleGimbalPointerDown}
+        onPointerUp={handleGimbalPointerUp}
+        onPointerLeave={handleGimbalPointerLeave}
+        title={lookAroundActive ? 'Look-around ON — tap to exit' : 'Tap: face north · Hold: look around'}
       >
         <svg viewBox="0 0 36 36" width="36" height="36">
           <g transform={`rotate(${headingDeg} 18 18)`}>
-            {/* North needle — teal */}
-            <polygon points="18,5 15,18 21,18" fill="#2dd4bf" />
+            {/* North needle — teal (brighter when look-around active) */}
+            <polygon points="18,5 15,18 21,18" fill={lookAroundActive ? '#ffffff' : '#2dd4bf'} />
             {/* South needle — muted */}
             <polygon points="18,31 15,18 21,18" fill="rgba(240,242,248,0.28)" />
           </g>
