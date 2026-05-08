@@ -8,6 +8,7 @@ implementations land phase by phase; routes not yet built come from
 
 from __future__ import annotations
 
+import logging
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -42,20 +43,36 @@ from .feature_import_routes import router as feature_import_router
 from .demo_routes import router as demo_router
 
 
+log = logging.getLogger(__name__)
+
+BOOTSTRAP_ADMIN_EMAIL = "admin@mightyspatial.com"
+BOOTSTRAP_ADMIN_PASSWORD = "admin123"
+
+
 def _seed_admin(session_factory) -> None:
+    """Create the bootstrap admin if it doesn't already exist. Idempotent
+    — leaves an existing row alone (password, role, and active flag are
+    not overwritten). Belt-and-braces alongside the alembic seed."""
     with session_factory() as db:
-        count = db.execute(select(User)).first()
-        if count is not None:
+        existing = db.execute(
+            select(User).where(User.email == BOOTSTRAP_ADMIN_EMAIL)
+        ).scalar_one_or_none()
+        if existing is not None:
             return
-        admin = User(
-            email="admin@mightyspatial.com",
-            name="Admin",
-            hashed_password=hash_password("admin123"),
-            role="admin",
-            is_active=True,
+        db.add(
+            User(
+                email=BOOTSTRAP_ADMIN_EMAIL,
+                name="Admin",
+                hashed_password=hash_password(BOOTSTRAP_ADMIN_PASSWORD),
+                role="admin",
+                is_active=True,
+            )
         )
-        db.add(admin)
         db.commit()
+        log.warning(
+            "Seeded bootstrap admin %s — change the password.",
+            BOOTSTRAP_ADMIN_EMAIL,
+        )
 
 
 @asynccontextmanager
