@@ -3,10 +3,12 @@ import react from '@vitejs/plugin-react'
 import cesium from 'vite-plugin-cesium'
 import path from 'node:path'
 
-export default defineConfig(({ command }) => ({
-  // Production build is served from /viewer/ by FastAPI. Dev server keeps
-  // the root so http://localhost:3002 still works without a path prefix.
-  base: command === 'build' ? '/viewer/' : '/',
+export default defineConfig({
+  // Absolute base. The SPA mounts at /viewer in FastAPI but its assets
+  // (and Cesium runtime) load from /assets and /cesium at the host root —
+  // vite-plugin-cesium expects base='/' to emit the runtime under
+  // dist/cesium/ and reference it at /cesium/* unprefixed.
+  base: '/',
   plugins: [react(), cesium()],
   resolve: {
     alias: {
@@ -29,4 +31,4 @@ export default defineConfig(({ command }) => ({
       },
     },
   },
-}))
+})

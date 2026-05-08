@@ -106,24 +106,28 @@ if settings.dev_stubs_enabled:
 # Bundled viewer (built by the API Dockerfile's first stage and copied to
 # /app/apps/web/dist). This file is at /app/apps/api/src/twin_api/main.py;
 # parents[3] is /app/apps, so /apps/web/dist sits next to /apps/api.
+#
+# Vite is configured with base='/' so the bundle references its assets and
+# the Cesium runtime as absolute paths (/assets/* and /cesium/*). We mount
+# both at the host root and serve the SPA shell at /viewer.
 _VIEWER_DIST = Path(__file__).resolve().parents[3] / "web" / "dist"
 if _VIEWER_DIST.is_dir():
     _ASSETS_DIR = _VIEWER_DIST / "assets"
     if _ASSETS_DIR.is_dir():
         app.mount(
-            "/viewer/assets",
+            "/assets",
             StaticFiles(directory=_ASSETS_DIR),
             name="viewer-assets",
         )
 
-    # vite-plugin-cesium copies Cesium's Workers/Assets/Widgets/ThirdParty
-    # trees to dist/cesium/. Serve them via StaticFiles so MIME types
-    # (especially application/javascript for .js workers) are set correctly,
-    # rather than letting the SPA catch-all reach them.
+    # vite-plugin-cesium emits the Cesium runtime
+    # (Workers/, Assets/, Widgets/, ThirdParty/) under dist/cesium/, and the
+    # bundle requests it at /cesium/* with base='/'. Serving via StaticFiles
+    # gives correct Content-Type for the worker scripts.
     _CESIUM_DIR = _VIEWER_DIST / "cesium"
     if _CESIUM_DIR.is_dir():
         app.mount(
-            "/viewer/cesium",
+            "/cesium",
             StaticFiles(directory=_CESIUM_DIR),
             name="viewer-cesium",
         )
@@ -132,15 +136,9 @@ if _VIEWER_DIST.is_dir():
 
     @app.get("/viewer", include_in_schema=False)
     @app.get("/viewer/", include_in_schema=False)
-    async def _viewer_root() -> FileResponse:
-        return FileResponse(_INDEX_HTML)
-
     @app.get("/viewer/{path:path}", include_in_schema=False)
-    async def _viewer_spa(path: str) -> FileResponse:
-        candidate = (_VIEWER_DIST / path).resolve()
-        if (
-            _VIEWER_DIST.resolve() in candidate.parents
-            and candidate.is_file()
-        ):
-            return FileResponse(candidate)
+    async def _viewer_shell() -> FileResponse:
+        # All /viewer paths return the SPA shell; React Router handles
+        # client-side routing from there. Static assets/cesium load from
+        # /assets and /cesium at the host root, not from /viewer/*.
         return FileResponse(_INDEX_HTML)
