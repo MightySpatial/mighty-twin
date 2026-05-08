@@ -1,25 +1,35 @@
-/** Design Download panel — T+1310.
+/** Design Export panel.
  *
- *  Replaces the V1 "Available in Sprint 2" placeholder. Exports the
- *  current sketch state as either:
+ *  Renders into the "Export" rail tab (formerly "Download"). Active
+ *  formats:
+ *    - GeoJSON · combined (single FeatureCollection)
+ *    - GeoJSON · per layer (one file per visible layer)
+ *    - CSV (one row per feature with centroid lon/lat/alt + properties)
+ *    - Design state · JSON (full round-trip dump)
  *
- *    - GeoJSON FeatureCollection (one collection per visible layer,
- *      bundled into a single FeatureCollection with _layer_id on
- *      each feature's properties for round-trip)
- *    - GeoJSON per-layer (one file per visible layer in a zip)
- *    - Plain JSON (full SketchLayer + SketchFeature dump for round-
- *      trip into another Twin via Sketch persistence)
+ *  Stubbed (UI shown, button disabled) until the backend writers land:
+ *    - Shapefile, KML, DXF, GeoPackage, IFC
+ *  These match the formats v1 supports — see MightyDT/src/components/
+ *  design-widget/tabs/DownloadTab.vue.
  *
- *  Reuses serializeSketchLayers from T+420 — the same function that
- *  builds the submission payload — so Download and Submit see the
- *  exact same bytes.
+ *  All active formats use `serializeSketchLayers` from T+420 so Export
+ *  and Submit see the same bytes for the GeoJSON-shaped formats.
  */
 
 import { useMemo, useState } from 'react'
-import { Download, Loader, Map as MapIcon, Code, X } from 'lucide-react'
+import {
+  Download,
+  Loader,
+  Map as MapIcon,
+  Code,
+  Table,
+  Layers,
+  Box,
+  X,
+} from 'lucide-react'
 import type { Viewer } from 'cesium'
 import type { SketchFeature, SketchLayer } from '../types'
-import { serializeSketchLayers } from '../serializeFeatures'
+import { serializeSketchLayers, type GeoJSONFeature } from '../serializeFeatures'
 
 interface Props {
   viewer: Viewer | null
@@ -27,23 +37,104 @@ interface Props {
   features: SketchFeature[]
 }
 
-type Format = 'geojson_combined' | 'geojson_per_layer' | 'json_state'
+type ActiveFormat = 'geojson_combined' | 'geojson_per_layer' | 'csv' | 'json_state'
+type StubFormat = 'shapefile' | 'kml' | 'dxf' | 'geopackage' | 'ifc'
+type Format = ActiveFormat | StubFormat
+
+const ACTIVE_FORMATS: ActiveFormat[] = [
+  'geojson_combined',
+  'geojson_per_layer',
+  'csv',
+  'json_state',
+]
+const STUB_FORMATS: StubFormat[] = ['shapefile', 'kml', 'dxf', 'geopackage', 'ifc']
+
+interface FormatMeta {
+  id: Format
+  title: string
+  subtitle: string
+  icon: React.ReactNode
+  active: boolean
+}
+
+const FORMAT_META: Record<Format, FormatMeta> = {
+  geojson_combined: {
+    id: 'geojson_combined',
+    title: 'GeoJSON · combined',
+    subtitle: 'One FeatureCollection across visible layers',
+    icon: <MapIcon size={14} />,
+    active: true,
+  },
+  geojson_per_layer: {
+    id: 'geojson_per_layer',
+    title: 'GeoJSON · per layer',
+    subtitle: 'One file per visible layer (sequential downloads)',
+    icon: <Layers size={14} />,
+    active: true,
+  },
+  csv: {
+    id: 'csv',
+    title: 'CSV',
+    subtitle: 'Centroid lon/lat/alt + feature properties',
+    icon: <Table size={14} />,
+    active: true,
+  },
+  json_state: {
+    id: 'json_state',
+    title: 'Design state · JSON',
+    subtitle: 'Full sketch state for round-trip into another Twin',
+    icon: <Code size={14} />,
+    active: true,
+  },
+  shapefile: {
+    id: 'shapefile',
+    title: 'Shapefile',
+    subtitle: 'ESRI .shp + .dbf + .prj bundle',
+    icon: <Layers size={14} />,
+    active: false,
+  },
+  kml: {
+    id: 'kml',
+    title: 'KML',
+    subtitle: 'Google Earth / OGC KML',
+    icon: <MapIcon size={14} />,
+    active: false,
+  },
+  dxf: {
+    id: 'dxf',
+    title: 'DXF',
+    subtitle: 'AutoCAD drawing exchange',
+    icon: <Box size={14} />,
+    active: false,
+  },
+  geopackage: {
+    id: 'geopackage',
+    title: 'GeoPackage',
+    subtitle: 'OGC GeoPackage SQLite container',
+    icon: <Layers size={14} />,
+    active: false,
+  },
+  ifc: {
+    id: 'ifc',
+    title: 'IFC (BIM)',
+    subtitle: 'Industry Foundation Classes — buildingSMART',
+    icon: <Box size={14} />,
+    active: false,
+  },
+}
 
 export default function DownloadPanel({ viewer, layers, features }: Props) {
-  const [format, setFormat] = useState<Format>('geojson_combined')
+  const [format, setFormat] = useState<ActiveFormat>('geojson_combined')
   const [downloading, setDownloading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const summary = useMemo(() => {
     const visibleLayers = layers.filter((l) => l.visible)
-    const visibleFeatureIds = new Set<string>()
-    for (const f of features) {
-      const layer = visibleLayers.find((l) => l.id === f.layerId)
-      if (layer) visibleFeatureIds.add(f.id)
-    }
+    const visibleIds = new Set(visibleLayers.map((l) => l.id))
+    const featureCount = features.filter((f) => visibleIds.has(f.layerId)).length
     return {
       visibleLayers,
-      featureCount: visibleFeatureIds.size,
+      featureCount,
       totalLayers: layers.length,
       totalFeatures: features.length,
     }
@@ -89,10 +180,6 @@ export default function DownloadPanel({ viewer, layers, features }: Props) {
         if (visibleLayers.length === 0) {
           throw new Error('No visible layers to download.')
         }
-        // No JSZip dep — write per-layer files one at a time. Browsers
-        // serialise these into the same downloads folder; users get a
-        // small batch of named files which is fine for dev / power
-        // users. (A real zip is a future iteration.)
         let writtenAny = false
         for (const layer of visibleLayers) {
           const layerFeatures = features.filter((f) => f.layerId === layer.id)
@@ -113,8 +200,26 @@ export default function DownloadPanel({ viewer, layers, features }: Props) {
         if (!writtenAny) {
           throw new Error('No serialisable features in any visible layer.')
         }
+      } else if (format === 'csv') {
+        const { features: gjFeatures, skipped } = serializeSketchLayers(
+          layers,
+          features,
+          viewer,
+        )
+        if (gjFeatures.length === 0) {
+          throw new Error(
+            skipped > 0
+              ? `${skipped} feature(s) couldn't be serialised — usually means the entity has no realised geometry yet.`
+              : 'No features to download.',
+          )
+        }
+        trigger(
+          `mighty-twin-design-${stamp}.csv`,
+          featuresToCsv(gjFeatures),
+          'text/csv',
+        )
       } else {
-        // Full state dump for round-trip
+        // json_state — full state dump for round-trip
         const payload = {
           schema: 1,
           exported_at: new Date().toISOString(),
@@ -135,93 +240,75 @@ export default function DownloadPanel({ viewer, layers, features }: Props) {
   }
 
   return (
-    <div style={{ padding: 14, color: '#f0f2f8' }}>
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 10,
-          padding: 12,
-          background: 'rgba(36,83,255,0.06)',
-          border: '1px solid rgba(36,83,255,0.32)',
-          borderRadius: 10,
-          marginBottom: 12,
-        }}
-      >
-        <Download size={18} color="#9bb3ff" />
+    <div className="export-panel">
+      <div className="export-summary">
+        <span className="export-summary-icon">
+          <Download size={16} />
+        </span>
         <div style={{ flex: 1 }}>
-          <div style={{ fontSize: 13, fontWeight: 500 }}>
+          <div className="export-summary-title">
             {summary.featureCount} feature{summary.featureCount === 1 ? '' : 's'} ready
           </div>
-          <div style={{ fontSize: 11, color: 'rgba(240,242,248,0.55)', marginTop: 2 }}>
+          <div className="export-summary-sub">
             From {summary.visibleLayers.length} visible / {summary.totalLayers} total
             layer{summary.totalLayers === 1 ? '' : 's'}
           </div>
         </div>
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 12 }}>
-        <FormatRow
-          active={format === 'geojson_combined'}
-          icon={<MapIcon size={16} />}
-          title="GeoJSON · combined"
-          subtitle="One FeatureCollection with all visible features"
-          onClick={() => setFormat('geojson_combined')}
-        />
-        <FormatRow
-          active={format === 'geojson_per_layer'}
-          icon={<MapIcon size={16} />}
-          title="GeoJSON · per layer"
-          subtitle="One file per visible layer (sequential downloads)"
-          onClick={() => setFormat('geojson_per_layer')}
-        />
-        <FormatRow
-          active={format === 'json_state'}
-          icon={<Code size={16} />}
-          title="Design state · JSON"
-          subtitle="Full sketch state for round-trip into another Twin"
-          onClick={() => setFormat('json_state')}
-        />
+      <div className="export-formats">
+        {ACTIVE_FORMATS.map((id) => {
+          const meta = FORMAT_META[id]
+          return (
+            <button
+              key={id}
+              className={`export-format-row${format === id ? ' active' : ''}`}
+              onClick={() => setFormat(id)}
+            >
+              <span className="export-format-icon">{meta.icon}</span>
+              <span className="export-format-text">
+                <div className="export-format-title">{meta.title}</div>
+                <div className="export-format-sub">{meta.subtitle}</div>
+              </span>
+            </button>
+          )
+        })}
+      </div>
+
+      <div>
+        <div className="draw-section-label">Coming soon</div>
+        <div className="export-formats">
+          {STUB_FORMATS.map((id) => {
+            const meta = FORMAT_META[id]
+            return (
+              <button
+                key={id}
+                className="export-format-row"
+                disabled
+                title="Backend writer not yet wired — coming soon"
+              >
+                <span className="export-format-icon">{meta.icon}</span>
+                <span className="export-format-text">
+                  <div className="export-format-title">{meta.title}</div>
+                  <div className="export-format-sub">{meta.subtitle}</div>
+                </span>
+                <span className="export-soon-tag">Soon</span>
+              </button>
+            )
+          })}
+        </div>
       </div>
 
       {error && (
-        <div
-          style={{
-            padding: 10,
-            background: 'rgba(251,113,133,0.06)',
-            border: '1px solid rgba(251,113,133,0.32)',
-            borderRadius: 7,
-            color: '#fca5a5',
-            fontSize: 11,
-            marginBottom: 12,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 6,
-          }}
-        >
+        <div className="export-error">
           <X size={12} /> {error}
         </div>
       )}
 
       <button
+        className="export-download-btn"
         onClick={download}
         disabled={downloading || summary.featureCount === 0}
-        style={{
-          width: '100%',
-          padding: '10px',
-          background: summary.featureCount > 0 ? '#2453ff' : 'rgba(255,255,255,0.04)',
-          border: 'none',
-          borderRadius: 8,
-          color: summary.featureCount > 0 ? '#fff' : 'rgba(240,242,248,0.4)',
-          fontSize: 13,
-          fontWeight: 500,
-          cursor:
-            downloading || summary.featureCount === 0 ? 'not-allowed' : 'pointer',
-          display: 'inline-flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: 6,
-        }}
       >
         {downloading ? (
           <>
@@ -237,61 +324,90 @@ export default function DownloadPanel({ viewer, layers, features }: Props) {
   )
 }
 
-function FormatRow({
-  active,
-  icon,
-  title,
-  subtitle,
-  onClick,
-}: {
-  active: boolean
-  icon: React.ReactNode
-  title: string
-  subtitle: string
-  onClick: () => void
-}) {
-  return (
-    <button
-      onClick={onClick}
-      style={{
-        textAlign: 'left',
-        padding: 10,
-        background: active ? 'rgba(36,83,255,0.10)' : 'rgba(255,255,255,0.03)',
-        border: `1px solid ${active ? 'rgba(36,83,255,0.4)' : 'rgba(255,255,255,0.07)'}`,
-        borderRadius: 8,
-        color: '#f0f2f8',
-        cursor: 'pointer',
-        display: 'flex',
-        alignItems: 'center',
-        gap: 10,
-        font: 'inherit',
-      }}
-    >
-      <div
-        style={{
-          width: 28,
-          height: 28,
-          borderRadius: 6,
-          background: active ? 'rgba(36,83,255,0.18)' : 'rgba(255,255,255,0.06)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          color: active ? '#9bb3ff' : 'rgba(240,242,248,0.7)',
-          flexShrink: 0,
-        }}
-      >
-        {icon}
-      </div>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 12, fontWeight: 500 }}>{title}</div>
-        <div style={{ fontSize: 10, color: 'rgba(240,242,248,0.5)', marginTop: 1 }}>
-          {subtitle}
-        </div>
-      </div>
-    </button>
-  )
-}
-
 function slugify(s: string): string {
   return (s || 'sketch').toLowerCase().replace(/[^a-z0-9-]+/g, '-').replace(/^-+|-+$/g, '') || 'sketch'
+}
+
+/** Convert a GeoJSON FeatureCollection-style array to CSV.
+ *  Each row has lon/lat/alt of the geometry centroid plus a stable
+ *  set of property columns derived from the union of every feature's
+ *  properties (excluding the nested `_design` metadata bag, which we
+ *  keep in a single JSON-stringified column for round-trip). */
+function featuresToCsv(gjFeatures: GeoJSONFeature[]): string {
+  // Collect property keys (skip the nested _design bag)
+  const keys = new Set<string>()
+  for (const f of gjFeatures) {
+    for (const k of Object.keys(f.properties)) {
+      if (k !== '_design') keys.add(k)
+    }
+  }
+  const propColumns = Array.from(keys).sort()
+  const header = ['feature_id', 'lon', 'lat', 'alt', ...propColumns, '_design']
+  const rows: string[] = [header.map(csvCell).join(',')]
+  for (const f of gjFeatures) {
+    const [lon, lat, alt] = centroid(f)
+    const row: string[] = [
+      String(f.id ?? ''),
+      lon == null ? '' : lon.toFixed(7),
+      lat == null ? '' : lat.toFixed(7),
+      alt == null ? '' : alt.toFixed(3),
+    ]
+    for (const k of propColumns) {
+      row.push(stringifyCell(f.properties[k]))
+    }
+    row.push(JSON.stringify(f.properties._design ?? null))
+    rows.push(row.map(csvCell).join(','))
+  }
+  return rows.join('\n')
+}
+
+function centroid(f: GeoJSONFeature): [number | null, number | null, number | null] {
+  const g = f.geometry
+  if (g.type === 'Point') {
+    const [x, y, z] = g.coordinates
+    return [x, y, z ?? null]
+  }
+  if (g.type === 'LineString') {
+    return averageCoords(g.coordinates)
+  }
+  if (g.type === 'Polygon') {
+    // Use first ring (outer) for centroid
+    return averageCoords(g.coordinates[0] ?? [])
+  }
+  return [null, null, null]
+}
+
+function averageCoords(
+  coords: [number, number, number?][],
+): [number | null, number | null, number | null] {
+  if (coords.length === 0) return [null, null, null]
+  let sx = 0
+  let sy = 0
+  let sz = 0
+  let zCount = 0
+  for (const [x, y, z] of coords) {
+    sx += x
+    sy += y
+    if (z != null) {
+      sz += z
+      zCount++
+    }
+  }
+  return [
+    sx / coords.length,
+    sy / coords.length,
+    zCount > 0 ? sz / zCount : null,
+  ]
+}
+
+function stringifyCell(v: unknown): string {
+  if (v == null) return ''
+  if (typeof v === 'object') return JSON.stringify(v)
+  return String(v)
+}
+
+/** RFC 4180-ish escaping: quote anything containing comma, quote, or newline. */
+function csvCell(s: string): string {
+  if (/[",\n\r]/.test(s)) return `"${s.replace(/"/g, '""')}"`
+  return s
 }
