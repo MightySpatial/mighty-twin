@@ -1,0 +1,38 @@
+{
+  "name": "@mightyspatial/widget-sdk",
+  "version": "2.0.0",
+  "description": "Third-party, sandboxed (postMessage-based) widget SDK for Mighty platform apps",
+  "license": "UNLICENSED",
+  "keywords": ["mighty", "widget", "sdk", "cesium", "gis", "postmessage"],
+  "author": "Mighty Spatial",
+  "type": "module",
+  "main": "dist/index.cjs",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": ["dist", "README.md"],
+  "scripts": {
+    "build": "tsup src/index.ts --format cjs,esm --dts --clean",
+    "dev": "tsup src/index.ts --format cjs,esm --dts --watch",
+    "lint": "eslint src",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist .turbo"
+  },
+  "dependencies": {
+    "@types/geojson": "^7946.0.14"
+  },
+  "devDependencies": {
+    "tsup": "^8.3.0",
+    "typescript": "^5.7.2"
+  },
+  "publishConfig": {
+    "access": "restricted",
+    "registry": "https://npm.pkg.github.com"
+  }
+}

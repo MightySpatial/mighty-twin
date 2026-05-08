@@ -33,7 +33,7 @@ export function useCesiumMount(
       sceneModePicker: false,
       selectionIndicator: false,
       navigationHelpButton: false,
-      infoBox: true,
+      infoBox: false,
       terrain: Terrain.fromWorldTerrain(),
       creditContainer: document.createElement('div'),
     })

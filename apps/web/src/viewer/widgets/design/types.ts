@@ -5,7 +5,31 @@
 
 export type SolidTool = 'box' | 'pit' | 'cylinder'
 
-export type DesignTool = 'select' | 'point' | 'line' | 'polygon' | 'rectangle' | 'circle' | 'traverse' | SolidTool | null
+/** Phase-I primitives ported from DT v1. Parameter panels in
+ *  apps/web/src/viewer/widgets/design/tools/parameters/ accept user
+ *  input but full geometry generation is staged — each gets fully
+ *  active as it's exercised in user testing. */
+export type DesignPrimitive =
+  | 'curve'
+  | 'sphere'
+  | 'ellipse'
+  | 'polygonN'
+  | 'loft'
+  | 'pipe'
+  | 'cone'
+  | 'extrude'
+
+export type DesignTool =
+  | 'select'
+  | 'point'
+  | 'line'
+  | 'polygon'
+  | 'rectangle'
+  | 'circle'
+  | 'traverse'
+  | SolidTool
+  | DesignPrimitive
+  | null
 
 export type ElevationMode = 'terrain' | 'none' | 'entry'
 
@@ -21,7 +45,7 @@ export const DEFAULT_ELEVATION_CONFIG: ElevationConfig = {
   offset: 0,
 }
 
-export type DesignRailTab = 'layers' | 'sketch' | 'edit' | 'style' | 'history' | 'download'
+export type DesignRailTab = 'layers' | 'sketch' | 'edit' | 'style' | 'history' | 'submit' | 'download'
 
 export interface AttributeField {
   id: number
@@ -129,5 +153,6 @@ export const RAIL_TABS: { id: DesignRailTab; label: string; icon: string }[] = [
   { id: 'edit', label: 'Edit', icon: '⊞' },
   { id: 'style', label: 'Style', icon: '◐' },
   { id: 'history', label: 'History', icon: '☰' },
+  { id: 'submit', label: 'Submit', icon: '↗' },
   { id: 'download', label: 'Export', icon: '↓' },
 ]

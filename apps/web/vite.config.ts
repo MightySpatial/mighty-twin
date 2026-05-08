@@ -4,6 +4,11 @@ import cesium from 'vite-plugin-cesium'
 import path from 'node:path'
 
 export default defineConfig({
+  // Absolute base. The SPA mounts at /viewer in FastAPI but its assets
+  // (and Cesium runtime) load from /assets and /cesium at the host root —
+  // vite-plugin-cesium expects base='/' to emit the runtime under
+  // dist/cesium/ and reference it at /cesium/* unprefixed.
+  base: '/',
   plugins: [react(), cesium()],
   resolve: {
     alias: {
@@ -15,11 +20,11 @@ export default defineConfig({
     port: 3002,
     proxy: {
       '/api': {
-        // VM where MightyTwin v1's FastAPI runs. When the VM is down,
-        // the TCP connection attempt hangs for 30+ seconds at the OS
-        // level. The timeout below cuts that to 5s so the dev-mode
-        // mock auth in useAuth can kick in quickly.
-        target: 'http://192.168.64.3:5003',
+        // Local apps/api FastAPI on port 5003. Twin uses 5003 to coexist
+        // with MightyDT on 5001 (DT runs natively at the same time).
+        // Phase A wired /api/sites against real Postgres; auth + settings
+        // are stub responses from twin_api.dev_stubs until Phase B/C land.
+        target: process.env.VITE_API_PROXY_TARGET ?? 'http://127.0.0.1:5003',
         changeOrigin: true,
         timeout: 5000,
         proxyTimeout: 5000,

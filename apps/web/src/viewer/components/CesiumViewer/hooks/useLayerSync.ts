@@ -3,6 +3,7 @@ import {
   Viewer as CesiumViewerType,
   GeoJsonDataSource,
   Cesium3DTileset,
+  Cesium3DTileStyle,
   ImageryLayer,
   WebMapServiceImageryProvider,
   WebMapTileServiceImageryProvider,
@@ -163,12 +164,25 @@ export function useLayerSync(
       }
 
       if (layer.type === '3d-tiles') {
-        if (!tilesMapRef.current.has(layer.id)) {
+        const existing = tilesMapRef.current.get(layer.id)
+        if (!existing) {
           Cesium3DTileset.fromUrl(layer.url).then(ts => {
             if (!viewerRef.current) return
             viewer.scene.primitives.add(ts)
             tilesMapRef.current.set(layer.id, ts)
+            applyTilesetOpacity(ts, layer.opacity ?? 1)
+            // Auto-frame the tileset on first load — gives Atlas users
+            // immediate visual feedback that the layer landed where
+            // they expected.
+            try {
+              viewer.flyTo(ts, { duration: 1.4 })
+            } catch {
+              /* tileset bounding sphere not ready */
+            }
           }).catch(console.error)
+        } else {
+          existing.show = true
+          applyTilesetOpacity(existing, layer.opacity ?? 1)
         }
       }
 
@@ -209,4 +223,26 @@ export function useLayerSync(
   }, [sortedLayers, activeIds, siteId, viewerRef])
 
   return { imgMapRef, dsMapRef, tilesMapRef, extHandleMapRef }
+}
+
+/** Apply a 0..1 opacity to a Cesium3DTileset by setting its style.
+ *  This isn't a true alpha — it's a colour multiplier on the tileset's
+ *  RGBA — but it's the only knob Cesium gives us short of switching
+ *  to a custom material per tile.
+ *
+ *  When opacity >= 0.999 we clear the style entirely so the tileset
+ *  renders with its native materials. */
+function applyTilesetOpacity(ts: Cesium3DTileset, opacity: number) {
+  try {
+    if (opacity >= 0.999) {
+      ts.style = undefined as never
+      return
+    }
+    const a = Math.max(0, Math.min(1, opacity)).toFixed(3)
+    ts.style = new Cesium3DTileStyle({
+      color: `color('white', ${a})`,
+    })
+  } catch {
+    /* tileset disposed */
+  }
 }

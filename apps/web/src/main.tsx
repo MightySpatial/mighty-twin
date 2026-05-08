@@ -4,6 +4,7 @@ import { BrowserRouter } from 'react-router-dom'
 import { usePersistedSettings } from '@mightyspatial/settings-panels'
 import { AuthProvider } from './viewer/hooks/useAuth'
 import { ToastProvider } from './viewer/hooks/useToast'
+import { ErrorBoundary } from './ErrorBoundary'
 import './styles.css'
 import { App } from './App'
 
@@ -25,13 +26,15 @@ function ThemeAttrs() {
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <BrowserRouter>
-      <AuthProvider>
-        <ToastProvider>
-          <ThemeAttrs />
-          <App />
-        </ToastProvider>
-      </AuthProvider>
-    </BrowserRouter>
+    <ErrorBoundary>
+      <BrowserRouter>
+        <AuthProvider>
+          <ToastProvider>
+            <ThemeAttrs />
+            <App />
+          </ToastProvider>
+        </AuthProvider>
+      </BrowserRouter>
+    </ErrorBoundary>
   </StrictMode>,
 )

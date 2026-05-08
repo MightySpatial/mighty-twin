@@ -1,7 +1,8 @@
 import { useState, useCallback } from 'react'
-import { Viewer as CesiumViewerType, Cartesian3 } from 'cesium'
+import { Viewer as CesiumViewerType } from 'cesium'
 import { X } from 'lucide-react'
 import type { NominatimResult } from '../../types/api'
+import { flyToTarget } from '../../utils/flyToTarget'
 
 interface SearchWidgetProps {
   viewerRef: React.RefObject<CesiumViewerType | null>
@@ -27,16 +28,24 @@ export default function SearchWidget({ viewerRef, searchOpen, setSearchOpen }: S
         const { lon, lat, boundingbox } = results[0]
         if (boundingbox) {
           const [south, north, west, east] = boundingbox.map(Number)
-          viewer.camera.flyTo({
-            destination: Cartesian3.fromDegrees(
-              (west + east) / 2,
-              (south + north) / 2,
-              50000
-            ),
+          // Pick a range that frames the bbox: ~half its diagonal in
+          // metres. Falls back to 10 km if the math degenerates.
+          const widthMetres =
+            Math.cos(((south + north) / 2) * (Math.PI / 180)) *
+            (east - west) *
+            111_320
+          const heightMetres = (north - south) * 111_320
+          const diag = Math.hypot(widthMetres, heightMetres)
+          flyToTarget(viewer, {
+            longitude: (west + east) / 2,
+            latitude: (south + north) / 2,
+            range: diag > 100 ? diag * 1.4 : 10_000,
           })
         } else {
-          viewer.camera.flyTo({
-            destination: Cartesian3.fromDegrees(Number(lon), Number(lat), 10000),
+          flyToTarget(viewer, {
+            longitude: Number(lon),
+            latitude: Number(lat),
+            range: 4500,
           })
         }
       }

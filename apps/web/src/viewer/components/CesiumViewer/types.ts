@@ -26,4 +26,11 @@ export interface CesiumViewerProps {
   onViewerReady?: (viewer: CesiumViewerType) => void
   onLayerToggle?: (layerId: string) => void
   onLayerOpacityChange?: (layerId: string, opacity: number) => void
+  /** Called when the user activates the Story rail tile.
+   *  The host owns story-map state (picker, current slide, layer
+   *  visibility flips) so the viewer just signals the intent. */
+  onOpenStoryPicker?: () => void
+  /** True when a story map is currently active — used to highlight
+   *  the Story rail tile in the bottom rail. */
+  storyActive?: boolean
 }

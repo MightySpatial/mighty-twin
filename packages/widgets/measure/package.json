@@ -1,0 +1,66 @@
+{
+  "name": "@mightyspatial/widget-measure",
+  "version": "0.1.0",
+  "description": "Measure widget — distance and area on the globe",
+  "license": "UNLICENSED",
+  "sideEffects": ["**/*.css"],
+  "type": "module",
+  "main": "./src/index.ts",
+  "module": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "import": "./src/index.ts"
+    },
+    "./register": {
+      "types": "./src/register.ts",
+      "import": "./src/register.ts"
+    },
+    "./guide.html": "./guide/guide.html",
+    "./guide.md": "./guide/guide.md",
+    "./spec.md": "./spec.md",
+    "./preview": {
+      "types": "./preview/preview.tsx",
+      "import": "./preview/preview.tsx"
+    }
+  },
+  "files": ["src", "guide", "preview", "spec.md", "dist", "README.md"],
+  "scripts": {
+    "build": "tsc --project tsconfig.build.json",
+    "dev": "tsc --project tsconfig.build.json --watch",
+    "lint": "eslint src preview",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "clean": "rm -rf dist .turbo"
+  },
+  "dependencies": {
+    "@mightyspatial/tokens": "workspace:*",
+    "@mightyspatial/types": "workspace:*"
+  },
+  "peerDependencies": {
+    "@mightyspatial/cesium-core": "workspace:*",
+    "@mightyspatial/widget-host": "workspace:*",
+    "cesium": ">=1.126",
+    "react": ">=18"
+  },
+  "devDependencies": {
+    "@mightyspatial/cesium-core": "workspace:*",
+    "@mightyspatial/widget-host": "workspace:*",
+    "@testing-library/react": "^16.1.0",
+    "@types/react": "^18.3.0",
+    "cesium": "^1.126.0",
+    "jsdom": "^25.0.1",
+    "lucide-react": "^0.468.0",
+    "react": "^18.3.1",
+    "vitest": "^2.1.8"
+  },
+  "publishConfig": {
+    "access": "restricted",
+    "registry": "https://npm.pkg.github.com",
+    "main": "./dist/index.js",
+    "module": "./dist/index.mjs",
+    "types": "./dist/index.d.ts"
+  }
+}

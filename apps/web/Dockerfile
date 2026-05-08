@@ -1,10 +1,10 @@
-FROM node:20-alpine AS build
+FROM node:22-alpine AS build
 RUN npm install -g pnpm@9.15.0
 WORKDIR /app
-COPY ../../package.json ../../pnpm-workspace.yaml ../../.npmrc ./
-COPY package.json ./apps/web/
-RUN pnpm install --filter @mighty-twin/web --frozen-lockfile || pnpm install --filter @mighty-twin/web
-COPY . ./apps/web/
+COPY package.json pnpm-workspace.yaml pnpm-lock.yaml tsconfig*.json ./
+COPY packages/ ./packages/
+COPY apps/web/ ./apps/web/
+RUN pnpm install --frozen-lockfile
 RUN pnpm --filter @mighty-twin/web build
 
 FROM nginx:alpine

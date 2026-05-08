@@ -3,6 +3,7 @@ node_modules/
 dist/
 build/
 .turbo/
+*.tsbuildinfo
 
 __pycache__/
 *.py[cod]
@@ -18,3 +19,5 @@ __pycache__/
 
 .DS_Store
 *.log
+CLAUDE.md
+.claude/settings.local.json

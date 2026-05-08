@@ -4,14 +4,22 @@
  */
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import type { SiteConfigState } from '../../types/api'
-import { Cartesian3 } from 'cesium'
+import { Cartesian3, Math as CesiumMath } from 'cesium'
 import { useBreakpoint } from '../../hooks/useBreakpoint'
-import {
-  Home, ZoomIn, ZoomOut, Map as MapIcon, Search, Ruler, Mountain, ListTree, HelpCircle, Hexagon,
-} from 'lucide-react'
+import { useWidgetLayout } from '../../hooks/useWidgetLayout'
+import { HelpCircle } from 'lucide-react'
 import { getExtensionPanels } from '../../extensions'
 import type { ViewerContext } from '../../extensions/types'
 import type { CesiumViewerProps } from './types'
+import { MapShell } from '../MapShell'
+import {
+  FeaturePopup,
+  FeatureAttributesDrawer,
+  useFeatureClick,
+} from '../FeaturePopup'
+import { SitePicker, pushRecentSite } from '../SitePicker'
+import { useSites } from '../../hooks/useSites'
+import { useNavigate } from 'react-router-dom'
 
 import { useTokenFetch } from './hooks/useTokenFetch'
 import { useCesiumMount } from './hooks/useCesiumMount'
@@ -19,6 +27,11 @@ import { useLayerSync } from './hooks/useLayerSync'
 import { useSiteFocalPin } from './hooks/useSiteFocalPin'
 
 import MeasureWidget, { useMeasure } from '../../widgets/measure'
+import { SnapshotWidget } from '../../widgets/snapshot'
+import { AttributeTableWidget } from '../../widgets/attribute-table'
+import { StrikeWidget, useStrike } from '../../widgets/strike'
+import { TerrainWidget, useTerrain, useUnderground } from '../../widgets/terrain'
+import { flyToTarget } from '../../utils/flyToTarget'
 import BasemapWidget, { useBasemap } from '../../widgets/basemap'
 import TransparencyWidget, { useGlobeTransparency } from '../../widgets/transparency'
 import SearchWidget from '../../widgets/search'
@@ -27,6 +40,7 @@ import LegendWidget from '../../widgets/legend'
 import SplashOverlay from '../SplashOverlay/SplashOverlay'
 import TetraView from '../TetraView/TetraView'
 import ViewerSidebar from '../ViewerSidebar'
+import { DesignWidget } from '../../widgets/design'
 
 // Mobile-only floating layer panel
 function MobileLayers({ layers, layersLoading, onLayerToggle, onLayerOpacityChange }: {
@@ -60,8 +74,11 @@ export default function CesiumViewerComponent({
   onViewerReady,
   onLayerToggle,
   onLayerOpacityChange,
+  onOpenStoryPicker,
+  storyActive = false,
 }: CesiumViewerProps) {
   const { isMobile } = useBreakpoint()
+  const widgetOverrides = useWidgetLayout()
   const [sidebarOpen, setSidebarOpen] = useState(!isMobile)
   const [searchOpen, setSearchOpen] = useState(false)
   const [activeExtPanel, setActiveExtPanel] = useState<string | null>(null)
@@ -72,6 +89,7 @@ export default function CesiumViewerComponent({
   const [tetraActive, setTetraActive] = useState(false)
   const [zoomSplashOpen, setZoomSplashOpen] = useState(false)
   const zoomSplashTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const [is2D, setIs2D] = useState(false)
 
   // Zoom-to splash: show once per session per site after 3s delay
   useEffect(() => {
@@ -128,6 +146,11 @@ export default function CesiumViewerComponent({
     if (sidebarOpen) { setSidebarOpen(false); return }
   }, [measureActive, measureResult, searchOpen, activeExtPanel, basemapOpen, transparencyOpen, legendOpen, sidebarOpen, cleanupMeasure, setMeasureResult, setBasemapOpen, setTransparencyOpen])
 
+  const closeDesign = useCallback(() => {
+    setDesignOpen(false)
+    window.dispatchEvent(new CustomEvent('design:close'))
+  }, [])
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       // Don't fire when typing in an input/textarea
@@ -152,16 +175,28 @@ export default function CesiumViewerComponent({
     return () => window.removeEventListener('keydown', onKey)
   }, [closeActivePanel, measureActive, startMeasure])
 
-  // Camera controls (stable references to avoid child re-renders)
+  // Camera controls (stable references to avoid child re-renders).
+  // flyHome uses the bounding-sphere pattern via flyToTarget so the
+  // user lands looking AT the home target at a tilted 45° from
+  // initialPosition.height range, rather than standing on the address
+  // staring past it.
   const flyHome = useCallback(() => {
-    viewerRef.current?.camera.flyTo({
-      destination: Cartesian3.fromDegrees(
-        initialPosition.longitude,
-        initialPosition.latitude,
-        initialPosition.height
-      ),
+    flyToTarget(viewerRef.current, {
+      longitude: initialPosition.longitude,
+      latitude: initialPosition.latitude,
+      height: 0,
+      range: initialPosition.height,
+      headingDeg: initialPosition.heading ?? 0,
+      pitchDeg: initialPosition.pitch ?? -45,
     })
-  }, [viewerRef, initialPosition.longitude, initialPosition.latitude, initialPosition.height])
+  }, [
+    viewerRef,
+    initialPosition.longitude,
+    initialPosition.latitude,
+    initialPosition.height,
+    initialPosition.heading,
+    initialPosition.pitch,
+  ])
   const zoomIn = useCallback(() => {
     const h = viewerRef.current?.camera.positionCartographic.height ?? 10000
     viewerRef.current?.camera.zoomIn(h * 0.4)
@@ -170,6 +205,216 @@ export default function CesiumViewerComponent({
     const h = viewerRef.current?.camera.positionCartographic.height ?? 10000
     viewerRef.current?.camera.zoomOut(h * 0.4)
   }, [viewerRef])
+
+  // 2D/3D toggle. Cesium's morphTo* animates the transition; we keep
+  // local UI state in sync so the button shows the *target* mode (icon
+  // reflects what clicking will give you).
+  const toggleSceneMode = useCallback(() => {
+    const viewer = viewerRef.current
+    if (!viewer) return
+    if (is2D) {
+      viewer.scene.morphTo3D(1.0)
+      setIs2D(false)
+    } else {
+      viewer.scene.morphTo2D(1.0)
+      setIs2D(true)
+    }
+  }, [viewerRef, is2D])
+
+  // Camera capture for cross-tab editor flows (StoryMaps "Capture from
+  // viewer"). Writes the live camera to localStorage every ~500ms
+  // throttled, scoped to the active site slug. The Atlas editor reads
+  // this and pulls coords back into the slide form.
+  useEffect(() => {
+    const viewer = viewerRef.current
+    if (!viewer || !siteId) return
+    let scene
+    try {
+      scene = viewer.scene
+    } catch {
+      return
+    }
+    if (!scene) return
+    let lastWrite = 0
+    const onPost = () => {
+      const now = Date.now()
+      if (now - lastWrite < 500) return
+      lastWrite = now
+      try {
+        const cam = viewer.camera
+        const cart = cam.positionCartographic
+        if (!cart) return
+        const payload = {
+          longitude: CesiumMath.toDegrees(cart.longitude),
+          latitude: CesiumMath.toDegrees(cart.latitude),
+          height: cart.height,
+          heading: CesiumMath.toDegrees(cam.heading),
+          pitch: CesiumMath.toDegrees(cam.pitch),
+          roll: CesiumMath.toDegrees(cam.roll),
+          ts: now,
+        }
+        localStorage.setItem(`mighty:viewer-cam:${siteId}`, JSON.stringify(payload))
+      } catch {
+        /* viewer mid-destroy or quota exhausted */
+      }
+    }
+    scene.postRender.addEventListener(onPost)
+    return () => {
+      try {
+        scene.postRender.removeEventListener(onPost)
+      } catch {
+        /* scene already gone */
+      }
+    }
+  }, [viewerRef.current, siteId])
+
+  // Camera-heading + reset, used by the new nav gimbal in MapShell.
+  // Guard against viewer destroy: cesium throws when accessing .scene
+  // after destroy() so we keep our own listener-handle and try/catch
+  // cleanup. Re-runs whenever the viewer ref is set up (post-mount).
+  const [headingDeg, setHeadingDeg] = useState(0)
+  useEffect(() => {
+    const viewer = viewerRef.current
+    if (!viewer) return
+    let scene
+    try {
+      scene = viewer.scene
+    } catch {
+      return
+    }
+    if (!scene) return
+    const onPostRender = () => {
+      try {
+        const h = CesiumMath.toDegrees(viewer.camera.heading)
+        setHeadingDeg((prev) => (Math.abs(prev - h) > 0.5 ? h : prev))
+      } catch {
+        /* viewer destroyed mid-render */
+      }
+    }
+    scene.postRender.addEventListener(onPostRender)
+    return () => {
+      try {
+        scene.postRender.removeEventListener(onPostRender)
+      } catch {
+        /* scene already disposed */
+      }
+    }
+  }, [viewerRef.current])
+
+  const resetCamera = useCallback(() => {
+    const viewer = viewerRef.current
+    if (!viewer) return
+    const c = viewer.camera
+    const cart = c.positionCartographic
+    c.flyTo({
+      destination: Cartesian3.fromRadians(cart.longitude, cart.latitude, cart.height),
+      orientation: { heading: 0, pitch: -CesiumMath.PI_OVER_TWO, roll: 0 },
+      duration: 0.8,
+    })
+  }, [])
+
+  // Site picker — popover from the MapShell site chip.
+  const navigate = useNavigate()
+  const [pickerOpen, setPickerOpen] = useState(false)
+  const { sites: pickerSites, loading: pickerLoading } = useSites()
+  useEffect(() => {
+    if (siteId) pushRecentSite(siteId)
+  }, [siteId])
+
+  // Feature click → popup → drawer.
+  const { picked, anchor, clear: clearPicked } = useFeatureClick(viewerRef)
+  const [drawerOpen, setDrawerOpen] = useState(false)
+  useEffect(() => {
+    if (!picked) setDrawerOpen(false)
+  }, [picked])
+  const zoomToPicked = useCallback(() => {
+    const viewer = viewerRef.current
+    if (!viewer || !picked) return
+    try {
+      viewer.flyTo(picked.entity, { duration: 0.8 })
+    } catch {
+      /* entity may not have a flyable bounding sphere */
+    }
+  }, [picked, viewerRef])
+
+  // Snapshot widget — opens via Snap rail tile.
+  const [snapOpen, setSnapOpen] = useState(false)
+
+  // Attribute table — opens via Table rail tile (T+1080).
+  const [tableOpen, setTableOpen] = useState(false)
+
+  // Strike widget — opens via Strike rail tile (T+1110).
+  const [strikeOpen, setStrikeOpen] = useState(false)
+  const strike = useStrike(viewerRef)
+
+  // Terrain section — opens via Terrain rail tile (T+1170). Folds the
+  // existing globe-transparency knob into a tab inside the same panel.
+  const [terrainOpen, setTerrainOpen] = useState(false)
+  const terrain = useTerrain(viewerRef)
+  const underground = useUnderground(viewerRef, globeAlpha, setGlobeAlpha)
+
+  // Design widget — right-side overlay (was a sidebar tab). Dispatches
+  // design:open / design:close on the window so the AI ChatPanel can
+  // minimise itself out of the way.
+  const [designOpen, setDesignOpen] = useState(false)
+
+  // Map MapShell action ids → existing widget state. Tools that aren't
+  // implemented yet (table/story/strike) toggle a placeholder
+  // state we can wire later without ripping the rail apart.
+  const [comingSoon, setComingSoon] = useState<string | null>(null)
+  useEffect(() => {
+    if (!comingSoon) return
+    const t = setTimeout(() => setComingSoon(null), 2400)
+    return () => clearTimeout(t)
+  }, [comingSoon])
+
+  const activeToolId = useMemo<string | null>(() => {
+    if (searchOpen) return 'search'
+    if (measureActive) return 'measure'
+    if (sidebarOpen && !isMobile) return 'layers'
+    if (legendOpen) return 'legend'
+    if (terrainOpen) return 'terrain'
+    if (snapOpen) return 'snap'
+    if (tableOpen) return 'table'
+    if (strikeOpen) return 'strike'
+    if (storyActive) return 'story'
+    if (designOpen) return 'design'
+    if (basemapOpen) return null  // basemap lives in zoom column, not bottom rail
+    return null
+  }, [searchOpen, measureActive, sidebarOpen, isMobile, legendOpen, transparencyOpen, terrainOpen, snapOpen, tableOpen, strikeOpen, storyActive, basemapOpen, designOpen])
+
+  const onMapShellAction = useCallback((id: string) => {
+    switch (id) {
+      case 'search':
+        setSearchOpen((o) => !o); break
+      case 'measure':
+        measureActive ? cleanupMeasure() : startMeasure(); break
+      case 'layers':
+        setSidebarOpen((o) => !o); break
+      case 'legend':
+        setLegendOpen((o) => !o); break
+      case 'terrain':
+        setTerrainOpen((o) => !o); break
+      case 'snap':
+        setSnapOpen(true); break
+      case 'table':
+        setTableOpen(true); break
+      case 'strike':
+        setStrikeOpen((o) => !o); break
+      case 'story':
+        if (onOpenStoryPicker) onOpenStoryPicker()
+        else setComingSoon(id)
+        break
+      case 'design':
+        setDesignOpen(prev => {
+          const next = !prev
+          window.dispatchEvent(new CustomEvent(next ? 'design:open' : 'design:close'))
+          return next
+        })
+        break
+      default: break
+    }
+  }, [measureActive, cleanupMeasure, startMeasure, onOpenStoryPicker])
 
   // Sidebar width: tab rail (48px) + content panel (280px) when open
   const sidebarWidth = !isMobile && sidebarOpen ? 328 : !isMobile ? 48 : 0
@@ -212,38 +457,199 @@ export default function CesiumViewerComponent({
       {/* Search */}
       <SearchWidget viewerRef={viewerRef} searchOpen={searchOpen} setSearchOpen={setSearchOpen} />
 
-      {/* Map Controls */}
-      <div className="map-controls">
-        <button className="map-control-btn" onClick={() => setSearchOpen(s => !s)} title="Search"><Search size={18} /></button>
-        <button className="map-control-btn" onClick={flyHome} title="Home"><Home size={18} /></button>
-        <div className="map-controls-divider" />
-        <button className="map-control-btn" onClick={zoomIn} title="Zoom In"><ZoomIn size={18} /></button>
-        <button className="map-control-btn" onClick={zoomOut} title="Zoom Out"><ZoomOut size={18} /></button>
-        <div className="map-controls-divider" />
-        <button className={`map-control-btn${measureActive ? ' active' : ''}`} onClick={startMeasure} title="Measure (M)"><Ruler size={18} /></button>
-        <button className={`map-control-btn${transparencyOpen ? ' active' : ''}`} onClick={() => setTransparencyOpen(s => !s)} title="Globe Transparency"><Mountain size={18} /></button>
-        <button className="map-control-btn" onClick={() => setBasemapOpen(s => !s)} title="Basemap"><MapIcon size={18} /></button>
-        <button className={`map-control-btn${legendOpen ? ' active' : ''}`} onClick={() => setLegendOpen(s => !s)} title="Legend"><ListTree size={18} /></button>
-        <button className={`map-control-btn${tetraActive ? ' active' : ''}`} onClick={() => setTetraActive(s => !s)} title="Tetra View"><Hexagon size={18} /></button>
-        {site?.overlay_config?.info_widget_enabled && (
-          <button className={`map-control-btn${infoWidgetOpen ? ' active' : ''}`} onClick={() => setInfoWidgetOpen(true)} title="Site Info"><HelpCircle size={18} /></button>
-        )}
-        {/* Extension panel buttons — only shown on mobile (desktop uses sidebar tabs) */}
-        {isMobile && extensionPanels.length > 0 && <div className="map-controls-divider" />}
-        {isMobile && extensionPanels.map(ep => (
-          <button
-            key={ep.id}
-            className={`map-control-btn${activeExtPanel === ep.id ? ' active' : ''}`}
-            title={ep.label}
-            onClick={() => setActiveExtPanel(p => p === ep.id ? null : ep.id)}
-          >
-            {ep.icon}
-          </button>
-        ))}
+      {/* New chrome — MapShell renders site chip / zoom column / nav
+          gimbal / bottom widget rails. Wraps inside a sidebar-aware
+          container so it doesn't fight the existing left sidebar. */}
+      <div
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: sidebarWidth,
+          right: 0,
+          bottom: 0,
+          pointerEvents: 'none',
+          transition: 'left 0.2s ease',
+        }}
+      >
+        <MapShell
+          site={site ? { slug: siteId ?? '', name: site.name, subtitle: site.description ?? undefined } : null}
+          activeToolId={activeToolId}
+          onAction={onMapShellAction}
+          onZoomIn={zoomIn}
+          onZoomOut={zoomOut}
+          onHome={flyHome}
+          onToggle2D3D={toggleSceneMode}
+          onToggleBasemap={() => setBasemapOpen((o) => !o)}
+          onResetCamera={resetCamera}
+          onOpenSitePicker={() => setPickerOpen((o) => !o)}
+          headingDeg={headingDeg}
+          is2D={is2D}
+          phoneMode={isMobile}
+          widgetOverrides={widgetOverrides}
+        />
       </div>
+
+      {/* Site picker — popover from MapShell site chip. Rendered inside
+          the sidebar-aware frame so it doesn't bleed under the left
+          sidebar on desktop. */}
+      {pickerOpen && (
+        <div
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: sidebarWidth,
+            right: 0,
+            bottom: 0,
+            zIndex: 30,
+            pointerEvents: 'none',
+          }}
+        >
+          <div style={{ pointerEvents: 'auto' }}>
+            <SitePicker
+              sites={pickerSites}
+              currentSlug={siteId ?? null}
+              loading={pickerLoading}
+              isMobile={isMobile}
+              onClose={() => setPickerOpen(false)}
+              onSelect={(slug) => {
+                pushRecentSite(slug)
+                setPickerOpen(false)
+                navigate(`/sites/${slug}`)
+              }}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Feature click — leader-line popup near the picked feature, full
+          attribute drawer on demand. Wraps inside the sidebar-aware
+          frame so the popup tracks the visible canvas, not the off-screen
+          left strip. */}
+      <div
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: sidebarWidth,
+          right: 0,
+          bottom: 0,
+          pointerEvents: 'none',
+          transition: 'left 0.2s ease',
+        }}
+      >
+        {picked && !drawerOpen && (
+          <div style={{ position: 'absolute', inset: 0, pointerEvents: 'auto' }}>
+            <FeaturePopup
+              picked={picked}
+              anchor={anchor}
+              isMobile={isMobile}
+              onClose={clearPicked}
+              onOpenDrawer={() => setDrawerOpen(true)}
+            />
+          </div>
+        )}
+        {picked && drawerOpen && (
+          <div style={{ position: 'absolute', inset: 0, pointerEvents: 'auto' }}>
+            <FeatureAttributesDrawer
+              picked={picked}
+              siteSlug={siteId ?? null}
+              isMobile={isMobile}
+              onClose={() => {
+                setDrawerOpen(false)
+                clearPicked()
+              }}
+              onZoomTo={zoomToPicked}
+              onChanged={(next) => {
+                if (next === null) {
+                  // feature deleted — entity will be removed by the
+                  // layer reload that ViewerPage triggers on navigate
+                  setDrawerOpen(false)
+                  clearPicked()
+                }
+                // attribute updates: the next click will re-pick fresh
+                // from the GeoJsonDataSource (which is reloaded by
+                // useLayerSync on URL/visibility changes); for now we
+                // close + reopen the drawer fresh on the next click.
+              }}
+            />
+          </div>
+        )}
+      </div>
+
+      {/* Site-info trigger (lives outside MapShell because it's
+          conditional on overlay_config). Rendered as a small floating
+          chip top-right of the bottom rails. */}
+      {site?.overlay_config?.info_widget_enabled && (
+        <button
+          className="map-control-btn"
+          style={{
+            position: 'absolute',
+            right: 16,
+            bottom: 18,
+            zIndex: 5,
+          }}
+          onClick={() => setInfoWidgetOpen(true)}
+          title="Site Info"
+        >
+          <HelpCircle size={18} />
+        </button>
+      )}
+
+      {/* Extension panels — mobile renders launcher icons in a strip */}
+      {isMobile && extensionPanels.length > 0 && (
+        <div
+          style={{
+            position: 'absolute',
+            right: 14,
+            bottom: 90,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 6,
+            zIndex: 5,
+          }}
+        >
+          {extensionPanels.map((ep) => (
+            <button
+              key={ep.id}
+              className={`map-control-btn${activeExtPanel === ep.id ? ' active' : ''}`}
+              title={ep.label}
+              onClick={() => setActiveExtPanel((p) => (p === ep.id ? null : ep.id))}
+            >
+              {ep.icon}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* "Coming soon" toast for not-yet-wired secondary widgets */}
+      {comingSoon && (
+        <div
+          style={{
+            position: 'absolute',
+            left: '50%',
+            bottom: 110,
+            transform: 'translateX(-50%)',
+            padding: '8px 16px',
+            background: 'rgba(17,20,29,0.95)',
+            border: '1px solid rgba(245,158,11,0.32)',
+            borderRadius: 999,
+            color: '#f59e0b',
+            fontSize: 12,
+            textTransform: 'uppercase',
+            letterSpacing: '0.06em',
+            boxShadow: '0 4px 14px rgba(0,0,0,0.32)',
+            zIndex: 10,
+            pointerEvents: 'none',
+          }}
+        >
+          {comingSoon} · landing soon
+        </div>
+      )}
 
       {/* Panels */}
       {basemapOpen && <BasemapWidget activeBasemap={activeBasemap} switchBasemap={switchBasemap} />}
+      {/* Globe-transparency lives inside the Terrain panel as a tab; the
+          legacy standalone widget is kept for Esc-close compatibility
+          but isn't reachable from the rail anymore. */}
       {transparencyOpen && <TransparencyWidget globeAlpha={globeAlpha} setGlobeAlpha={setGlobeAlpha} onClose={() => setTransparencyOpen(false)} />}
 
       {/* Measure */}
@@ -309,6 +715,124 @@ export default function CesiumViewerComponent({
       {/* Tetra View */}
       {tetraActive && viewerRef.current && (
         <TetraView viewer={viewerRef.current} onClose={() => setTetraActive(false)} />
+      )}
+
+      {/* Snapshot capture modal */}
+      {snapOpen && (
+        <SnapshotWidget
+          viewerRef={viewerRef}
+          siteSlug={siteId ?? null}
+          layers={layers.map((l) => ({
+            id: l.id,
+            visible: l.visible ?? true,
+            opacity: l.opacity ?? 1,
+          }))}
+          isMobile={isMobile}
+          onClose={() => setSnapOpen(false)}
+        />
+      )}
+
+      {/* Attribute table modal — wraps the shared AttributeTable with a
+          layer picker so users land on the right rows for the active site. */}
+      {tableOpen && siteId && (
+        <AttributeTableWidget
+          siteSlug={siteId}
+          siteName={site?.name}
+          layers={layers}
+          isMobile={isMobile}
+          onClose={() => setTableOpen(false)}
+        />
+      )}
+
+      {/* Strike & dip — three-point geological annotation */}
+      {strikeOpen && (
+        <StrikeWidget
+          active={strike.active}
+          pickedCount={strike.picked.length}
+          measurement={strike.measurement}
+          isMobile={isMobile}
+          onStart={strike.start}
+          onCancel={strike.cancel}
+          onClear={strike.clear}
+          onClose={() => {
+            strike.clear()
+            setStrikeOpen(false)
+          }}
+        />
+      )}
+
+      {/* Design widget — right-side overlay (replaces the old left-rail
+          extension panel). Slides in over the canvas; ChatPanel listens
+          for design:open / design:close to minimise itself out of the
+          way. The widget reaches viewer via the prop. */}
+      {designOpen && viewerRef.current && (
+        <div
+          style={{
+            position: 'absolute',
+            top: 0,
+            right: 0,
+            bottom: 0,
+            width: 420,
+            zIndex: 50,
+            background: 'rgba(18, 22, 30, 0.97)',
+            backdropFilter: 'blur(12px)',
+            borderLeft: '1px solid rgba(255,255,255,0.08)',
+            display: 'flex',
+            flexDirection: 'column',
+            boxShadow: '-8px 0 40px rgba(0,0,0,0.4)',
+            animation: 'slideInRight 200ms ease',
+          }}
+        >
+          <button
+            onClick={closeDesign}
+            title="Close"
+            aria-label="Close design"
+            style={{
+              position: 'absolute',
+              top: 10,
+              right: 10,
+              zIndex: 1,
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              color: 'rgba(255,255,255,0.5)',
+              fontSize: 18,
+            }}
+          >
+            ✕
+          </button>
+          <DesignWidget
+            viewer={viewerRef.current}
+            onClose={closeDesign}
+            siteSlug={siteId ?? null}
+          />
+        </div>
+      )}
+
+      {/* Terrain section + underground + transparency */}
+      {terrainOpen && (
+        <TerrainWidget
+          status={terrain.status}
+          pickedCount={terrain.pickedCount}
+          section={terrain.section}
+          error={terrain.error}
+          isMobile={isMobile}
+          globeAlpha={globeAlpha}
+          onSetGlobeAlpha={setGlobeAlpha}
+          onStart={terrain.start}
+          onCancel={terrain.cancel}
+          onClear={terrain.clear}
+          onHoverSample={terrain.setCursor}
+          underground={underground.state}
+          onUndergroundEnable={underground.enable}
+          onUndergroundDisable={underground.disable}
+          onUndergroundSet={underground.set}
+          onUndergroundReset={underground.reset}
+          onClose={() => {
+            terrain.clear()
+            setTerrainOpen(false)
+          }}
+        />
       )}
     </div>
   )

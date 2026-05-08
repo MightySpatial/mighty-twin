@@ -1,0 +1,241 @@
+.shell {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  height: 100%;
+  background: #0f0f14;
+  color: #f5f5f7;
+}
+
+.sidebar {
+  border-right: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 18px 12px;
+  background: rgba(0, 0, 0, 0.2);
+  overflow-y: auto;
+}
+
+.sidebarTitle {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(255, 255, 255, 0.35);
+  padding: 0 12px 10px;
+  margin: 0;
+}
+
+.navSection {
+  margin-bottom: 22px;
+}
+
+.navHeader {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(255, 255, 255, 0.35);
+  padding: 0 12px 6px;
+  margin: 0;
+}
+
+.navItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 7px 12px;
+  border: none;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.8);
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 100ms ease;
+}
+
+.navItem:hover {
+  background: rgba(255, 255, 255, 0.04);
+  color: #fff;
+}
+
+.navItemActive {
+  background: rgba(99, 102, 241, 0.2);
+  color: #fff;
+}
+
+.dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.5;
+}
+
+.content {
+  padding: 28px 36px;
+  overflow-y: auto;
+}
+
+.pageHeader {
+  margin-bottom: 24px;
+}
+
+.pageTitle {
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  margin: 0 0 4px;
+}
+
+.pageDesc {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.55);
+  margin: 0;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.table thead th {
+  text-align: left;
+  padding: 10px 12px;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: rgba(255, 255, 255, 0.4);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.table tbody td {
+  padding: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.pillGreen { background: rgba(34, 197, 94, 0.15); color: #86efac; }
+.pillAmber { background: rgba(245, 158, 11, 0.15); color: #fcd34d; }
+.pillBlue { background: rgba(99, 102, 241, 0.15); color: #a5b4fc; }
+.pillRose { background: rgba(244, 63, 94, 0.15); color: #fda4af; }
+.pillGray { background: rgba(255, 255, 255, 0.08); color: rgba(255, 255, 255, 0.7); }
+
+.mockBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border: 1px solid rgba(245, 158, 11, 0.4);
+  background: rgba(245, 158, 11, 0.12);
+  border-radius: 6px;
+  font-size: 11px;
+  color: #fcd34d;
+  margin-bottom: 16px;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+/* Phone layout — shell switches to this whole layout via JS (breakpoint
+   from ShellContext), not a media query, so forced-breakpoint previews
+   work correctly in the device frame. */
+.phoneShell {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: #0f0f14;
+  color: #f5f5f7;
+}
+
+.phoneNav {
+  display: flex;
+  gap: 6px;
+  padding: 48px 12px 8px;
+  overflow-x: auto;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(0, 0, 0, 0.2);
+  flex-shrink: 0;
+  scrollbar-width: none;
+}
+.phoneNav::-webkit-scrollbar { display: none; }
+
+.phoneNavItem {
+  flex: 0 0 auto;
+  padding: 7px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.8);
+  font: inherit;
+  font-size: 13px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.phoneNavItem:hover {
+  color: #fff;
+}
+.phoneNavItemActive {
+  background: rgba(99, 102, 241, 0.22);
+  color: #fff;
+  border-color: rgba(99, 102, 241, 0.55);
+}
+
+.phoneContent {
+  flex: 1;
+  padding: 16px;
+  overflow-y: auto;
+}
+
+/* Card list for phone layouts — replaces dense tables with tappable rows. */
+.cardList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.card {
+  padding: 14px 16px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+}
+
+.cardHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+
+.cardTitle {
+  font-size: 15px;
+  font-weight: 600;
+  margin: 0;
+  color: #fff;
+  line-height: 1.2;
+}
+
+.cardMeta {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.55);
+  line-height: 1.4;
+}
+.cardMeta code {
+  font-size: 11px;
+  padding: 1px 5px;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 4px;
+  font-family: ui-monospace, SFMono-Regular, monospace;
+}

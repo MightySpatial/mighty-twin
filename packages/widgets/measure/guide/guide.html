@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Measure — Mighty widget guide</title>
+    <style>
+      :root {
+        --bg: #0f0f14;
+        --bg-2: #1a1a24;
+        --fg: #f5f5f7;
+        --fg-muted: rgba(255, 255, 255, 0.65);
+        --fg-dim: rgba(255, 255, 255, 0.4);
+        --accent: #6366f1;
+        --accent-light: #818cf8;
+        --border: rgba(255, 255, 255, 0.08);
+      }
+      * { box-sizing: border-box; }
+      html, body { margin: 0; background: var(--bg); color: var(--fg); }
+      body {
+        font: 15px/1.55 -apple-system, 'Segoe UI', 'Inter', system-ui, sans-serif;
+        padding: 32px 24px;
+      }
+      .page { max-width: 760px; margin: 0 auto; }
+      h1 { font-size: 32px; margin: 0 0 6px; letter-spacing: -0.02em; }
+      h2 { font-size: 18px; margin: 32px 0 12px; letter-spacing: -0.01em; }
+      p { color: var(--fg-muted); margin: 0 0 16px; }
+      .subtitle { color: var(--fg-dim); font-size: 15px; margin-bottom: 28px; }
+      .callout {
+        padding: 14px 18px;
+        background: rgba(99, 102, 241, 0.10);
+        border: 1px solid rgba(99, 102, 241, 0.3);
+        border-radius: 12px;
+        margin: 18px 0;
+        color: var(--fg);
+      }
+      .callout strong { color: var(--accent-light); }
+      ol, ul { color: var(--fg-muted); padding-left: 22px; }
+      li { margin-bottom: 6px; }
+      li strong { color: var(--fg); }
+      .demo {
+        margin: 28px 0;
+        padding: 28px;
+        background: var(--bg-2);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        position: relative;
+        min-height: 360px;
+      }
+      .demo-globe {
+        position: absolute; inset: 28px;
+        border-radius: 12px;
+        background:
+          radial-gradient(circle at 30% 35%, rgba(99, 102, 241, 0.25), transparent 55%),
+          radial-gradient(circle at 70% 65%, rgba(34, 197, 94, 0.15), transparent 55%),
+          radial-gradient(ellipse at center, #1d2238 0%, #0a0c14 70%);
+        overflow: hidden;
+      }
+      .demo-globe::after {
+        content: '';
+        position: absolute; inset: 0;
+        background-image:
+          linear-gradient(transparent 0, transparent calc(50% - 1px), rgba(255,255,255,0.06) 50%, transparent calc(50% + 1px), transparent),
+          radial-gradient(circle at 20% 40%, rgba(255, 255, 255, 0.1), transparent 4%),
+          radial-gradient(circle at 65% 30%, rgba(255, 255, 255, 0.08), transparent 5%),
+          radial-gradient(circle at 50% 70%, rgba(255, 255, 255, 0.08), transparent 4%);
+      }
+      .point {
+        position: absolute;
+        width: 14px; height: 14px;
+        border-radius: 50%;
+        background: var(--accent);
+        border: 2px solid #fff;
+        box-shadow: 0 2px 8px rgba(99, 102, 241, 0.6);
+        z-index: 3;
+      }
+      .line {
+        position: absolute;
+        height: 3px;
+        background: var(--accent);
+        transform-origin: left center;
+        border-radius: 2px;
+        z-index: 2;
+      }
+      .fill {
+        position: absolute;
+        background: rgba(99, 102, 241, 0.15);
+        z-index: 1;
+      }
+      .chip {
+        position: absolute;
+        padding: 8px 14px;
+        background: rgba(15, 15, 20, 0.94);
+        border: 1px solid var(--border);
+        backdrop-filter: blur(12px);
+        border-radius: 10px;
+        font-size: 12px;
+        z-index: 4;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+      }
+      .chip .dist { color: var(--accent-light); font-weight: 600; display: block; font-size: 13px; }
+      .chip .hint { color: var(--fg-dim); font-size: 11px; }
+      .result-panel {
+        position: absolute;
+        bottom: 44px; right: 44px;
+        min-width: 240px;
+        padding: 14px 16px;
+        background: rgba(15, 15, 20, 0.94);
+        border: 1px solid var(--border);
+        backdrop-filter: blur(12px);
+        border-radius: 14px;
+        z-index: 4;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+      }
+      .result-panel h3 { font-size: 13px; margin: 0 0 10px; }
+      .result-panel .row { display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 13px; }
+      .result-panel .row:last-child { margin-bottom: 0; }
+      .result-panel .label { color: var(--fg-dim); }
+      .result-panel .value { color: var(--fg); font-weight: 600; font-variant-numeric: tabular-nums; }
+      .toolbar {
+        position: absolute; top: 44px; left: 44px;
+        display: flex; gap: 8px; z-index: 4;
+      }
+      .btn {
+        padding: 8px 14px;
+        border-radius: 10px;
+        border: 1px solid var(--border);
+        background: rgba(255, 255, 255, 0.04);
+        color: var(--fg);
+        font: inherit;
+      }
+      .btn-primary { background: var(--accent); border-color: var(--accent); }
+      kbd {
+        padding: 2px 6px;
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        font-size: 11px;
+        font-family: ui-monospace, SFMono-Regular, monospace;
+      }
+      .states { display: grid; gap: 10px; margin-top: 14px; }
+      .states-row {
+        display: grid; grid-template-columns: 120px 1fr; gap: 14px;
+        padding: 10px 12px;
+        border: 1px solid var(--border); border-radius: 10px;
+        background: var(--bg-2);
+        align-items: baseline;
+      }
+      .states-row .name { color: var(--accent-light); font-weight: 600; font-size: 13px; }
+      .states-row .desc { color: var(--fg-muted); font-size: 13px; }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <h1>Measure</h1>
+      <div class="subtitle">Distance and area, on the globe.</div>
+
+      <p>
+        <strong style="color: var(--fg);">Measure</strong> is the simplest way to answer the question “how far apart are two points?” or “how much ground does this area cover?” Click once to start, again to place each point, double-click to finish.
+      </p>
+
+      <h2>Walkthrough</h2>
+
+      <div class="demo" role="img" aria-label="Mock of the Measure widget in action: two points on a globe with a measured distance and area panel.">
+        <div class="demo-globe"></div>
+
+        <div class="toolbar">
+          <button class="btn btn-primary">Start measuring</button>
+        </div>
+
+        <!-- Four points forming a triangle + dangling tail for active drag -->
+        <div class="fill" style="left: 210px; top: 130px; width: 230px; height: 140px; clip-path: polygon(0% 100%, 40% 0%, 100% 60%, 50% 100%);"></div>
+
+        <div class="line" style="left: 210px; top: 270px; width: 92px; transform: rotate(-55deg);"></div>
+        <div class="line" style="left: 290px; top: 135px; width: 178px; transform: rotate(22deg);"></div>
+        <div class="line" style="left: 440px; top: 190px; width: 150px; transform: rotate(45deg);"></div>
+
+        <div class="point" style="left: 210px; top: 270px;"></div>
+        <div class="point" style="left: 290px; top: 135px;"></div>
+        <div class="point" style="left: 440px; top: 185px;"></div>
+
+        <div class="chip" style="left: 330px; top: 100px;">
+          <span class="dist">842 m</span>
+          <span class="hint">3 points — double-click to finish</span>
+        </div>
+
+        <div class="result-panel">
+          <h3>Measurement</h3>
+          <div class="row"><span class="label">Distance</span><span class="value">842 m</span></div>
+          <div class="row"><span class="label">Area</span><span class="value">1.12 ha</span></div>
+          <div class="row"><span class="label">Points</span><span class="value">3</span></div>
+        </div>
+      </div>
+
+      <h2>Controls</h2>
+      <ol>
+        <li><strong>Start measuring.</strong> Arms the tool. Your pointer now drops points on the globe.</li>
+        <li><strong>Click</strong> anywhere on the globe to place a point. The running distance updates with each click.</li>
+        <li><strong>Double-click</strong> to finish. A result panel appears with distance, area (if ≥ 3 points), and the point count.</li>
+        <li><strong><kbd>Esc</kbd></strong> or <strong>Cancel</strong> drops the measurement without saving.</li>
+        <li><strong>Clear</strong> on the result panel removes everything and returns to the start state.</li>
+      </ol>
+
+      <h2>States</h2>
+      <div class="states">
+        <div class="states-row">
+          <div class="name">Idle</div>
+          <div class="desc">Only the “Start measuring” button is visible. The globe is untouched.</div>
+        </div>
+        <div class="states-row">
+          <div class="name">Active</div>
+          <div class="desc">A hint tooltip tells you to click. Each placed point is an indigo dot on the ground, with a live polyline following your cursor.</div>
+        </div>
+        <div class="states-row">
+          <div class="name">Running</div>
+          <div class="desc">Once you have one or more points, the tooltip shows the running distance, point count, and “double-click to finish.”</div>
+        </div>
+        <div class="states-row">
+          <div class="name">Finished</div>
+          <div class="desc">The polyline is made static. With three or more points, a translucent polygon fill appears. The result panel pops up.</div>
+        </div>
+      </div>
+
+      <div class="callout">
+        <strong>Tip.</strong> You can kick off a new measurement without clearing the current result — the old entities stay on the globe until you hit <strong>Clear</strong>.
+      </div>
+
+      <h2>Units</h2>
+      <ul>
+        <li><strong>Distance</strong> — metres under 1&nbsp;km, otherwise kilometres to two decimal places.</li>
+        <li><strong>Area</strong> — square metres under 1&nbsp;ha, hectares under 1&nbsp;km², square kilometres above.</li>
+      </ul>
+
+      <h2>What Measure is not (yet)</h2>
+      <ul>
+        <li>Saving measurements to a site — v1 is ephemeral.</li>
+        <li>Editing an existing measurement by dragging points.</li>
+        <li>Terrain-aware measurement (along a hill, over a building).</li>
+        <li>Imperial or nautical units.</li>
+      </ul>
+
+      <p style="color: var(--fg-dim); font-size: 13px; margin-top: 48px;">
+        <strong>Spec version:</strong> 1 &middot; <strong>Impl version:</strong> 0.1.0
+      </p>
+    </div>
+  </body>
+</html>

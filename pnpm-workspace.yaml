@@ -1,2 +1,4 @@
 packages:
   - 'apps/web'
+  - 'packages/*'
+  - 'packages/widgets/*'
