@@ -12,7 +12,7 @@
   top: 14px; left: 14px;
   display: inline-flex; align-items: center; gap: 2px;
   padding: 4px;
-  background: rgba(17,20,29,0.90);
+  background: rgba(15,15,20,0.90);
   backdrop-filter: blur(14px);
   border: 1px solid rgba(255,255,255,0.08);
   border-radius: 12px;
@@ -81,10 +81,10 @@
   position: absolute;
   right: 14px; top: 14px;
   width: 44px; height: 44px;
-  background: rgba(17,20,29,0.90);
+  background: rgba(15,15,20,0.90);
   backdrop-filter: blur(12px);
   border: 1px solid rgba(255,255,255,0.08);
-  border-radius: 12px;
+  border-radius: 50%;
   box-shadow: 0 2px 8px rgba(0,0,0,0.28);
   cursor: pointer;
   display: flex; align-items: center; justify-content: center;
@@ -229,8 +229,8 @@
   .topBar { top: 10px; left: 10px; padding: 3px; border-radius: 12px; }
   .siteChipName { max-width: 96px; font-size: 12px; }
   .barBtn { width: 28px; height: 28px; border-radius: 10px; }
-  /* compass: 44px to match floating column, same border-radius */
-  .gimbal { width: 44px; height: 44px; border-radius: 12px; right: 10px; top: 10px; }
+  /* compass stays round, 44px to match column hit target */
+  .gimbal { width: 44px; height: 44px; border-radius: 50%; right: 10px; top: 10px; }
   .rails { display: none; }
 }
 
@@ -248,8 +248,8 @@
     width: 44px;
     height: 44px;
     border-radius: 12px;
-    border: 1px solid rgba(255, 255, 255, 0.07);
-    background: rgba(17, 20, 29, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(15, 15, 20, 0.90);
     backdrop-filter: blur(14px);
     color: #f0f2f8;
     align-items: center;
