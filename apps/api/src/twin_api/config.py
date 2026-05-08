@@ -63,6 +63,20 @@ class Settings(BaseSettings):
     microsoft_client_id: str = Field(default="")
     microsoft_client_secret: str = Field(default="")
 
+    @field_validator("database_url", mode="before")
+    @classmethod
+    def _normalise_database_url(cls, v: str) -> str:
+        """Railway provides postgres:// URLs; SQLAlchemy 2 + psycopg v3 needs
+        postgresql+psycopg://. Convert both legacy variants so the engine URL
+        is always valid regardless of the source (Railway ref var, .env, etc.).
+        """
+        if isinstance(v, str):
+            if v.startswith("postgres://"):
+                return "postgresql+psycopg://" + v[len("postgres://"):]
+            if v.startswith("postgresql://"):
+                return "postgresql+psycopg://" + v[len("postgresql://"):]
+        return v
+
     @field_validator("jwt_secret")
     @classmethod
     def _reject_default_jwt_in_prod(cls, v: str) -> str:
