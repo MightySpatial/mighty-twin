@@ -166,9 +166,26 @@ export function MapShell({
       className={`${styles.shell} ${phoneMode ? styles.shellPhone : ''}`}
       aria-hidden="false"
     >
-      {/* Top-left bar — nav buttons. Site chip and tools are in the sidebar
-          on all screen sizes. On mobile the sidebar overlays the map. */}
+      {/* Top-left bar.
+          Desktop: nav buttons only (site chip lives in sidebar ribbon).
+          Mobile: site chip only (nav buttons hidden; pinch-to-zoom + tools sheet replaces them). */}
       <div className={styles.topBar}>
+        {/* Site chip — only visible on phone (desktop sidebar already shows it) */}
+        {site && (
+          <button
+            type="button"
+            className={`${styles.siteChip} ${styles.siteChipMobile}`}
+            onClick={onOpenSitePicker}
+            title={`Switch site — ${site.name}`}
+          >
+            <span className={styles.siteChipIcon}>
+              {site.name.slice(0, 1).toUpperCase()}
+            </span>
+            <span className={styles.siteChipName}>{site.name}</span>
+          </button>
+        )}
+        {/* Divider between chip and nav buttons (desktop only; both sides visible) */}
+        {site && <div className={`${styles.barDiv} ${styles.barDivDesktop}`} />}
         <button className={styles.barBtn} onClick={onZoomIn} title="Zoom in">
           <ZoomIn size={16} />
         </button>
@@ -237,12 +254,12 @@ export function MapShell({
         </div>
       )}
 
-      {/* Phone — FAB opens a sheet for secondary widgets only.
-          Primary tools (Search, Measure, Legend) live in the sidebar on all platforms. */}
+      {/* Phone — Tools FAB substitutes for the bottom rails. Opens a
+          slide-up sheet with all widgets in a 4-column grid. */}
       <button
         type="button"
         className={styles.toolsFab}
-        aria-label="Widgets"
+        aria-label="Tools"
         onClick={() => setToolsOpen(true)}
       >
         <ToolsIcon size={22} />
@@ -254,6 +271,26 @@ export function MapShell({
         >
           <div className={styles.toolsSheet} onClick={(e) => e.stopPropagation()}>
             <div className={styles.toolsSheetHandle} />
+            {/* Primary tools — exclude Layers (accessible via sidebar on desktop,
+                and via the dedicated Layers FAB on mobile) */}
+            {primary.filter(w => w.id !== 'layers').length > 0 && (
+              <div className={styles.toolsSheetSection}>
+                <div className={styles.toolsSheetSectionLabel}>Tools</div>
+                <div className={styles.toolsSheetGrid}>
+                  {primary.filter(w => w.id !== 'layers').map((w) => (
+                    <SheetTile
+                      key={w.id}
+                      widget={w}
+                      active={activeToolId === w.id}
+                      onClick={() => {
+                        onAction(w.id)
+                        setToolsOpen(false)
+                      }}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
             {!publicMode && secondary.length > 0 && (
               <div className={styles.toolsSheetSection}>
                 <div className={styles.toolsSheetSectionLabel}>Widgets</div>

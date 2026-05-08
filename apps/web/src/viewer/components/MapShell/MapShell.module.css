@@ -223,64 +223,29 @@
      2. native @media (max-width: 640px) for real small viewports
    The rules below are duplicated as-needed.
 */
-/* Phone overrides — sidebar tab rail is 64px wide, so topBar shifts right to clear it.
-   Camera control buttons stay visible (no pinch-only assumption).
-   Sidebar content panel overlays when opened. */
-.shellPhone .topBar { top: 10px; left: 74px; padding: 3px; border-radius: 10px; }
+.shellPhone .topBar { top: 10px; left: 10px; padding: 3px; border-radius: 10px; }
+.shellPhone .siteChipName { max-width: 120px; font-size: 12px; }
+/* Phone: hide zoom/nav buttons — pinch-to-zoom and the tools sheet cover them */
+.shellPhone .barBtn { display: none; }
+.shellPhone .barDiv { display: none; }
 .shellPhone .gimbal { width: 32px; height: 32px; right: 10px; top: 10px; }
 .shellPhone .rails { display: none; }
 .shellPhone .toolsFab { display: flex; }
 
 @media (max-width: 640px) {
-  /* topBar starts at 74px — clears the 64px floating sidebar tab rail */
-  .topBar { top: 10px; left: 74px; padding: 3px; border-radius: 10px; }
+  .topBar { top: 10px; left: 10px; padding: 3px; border-radius: 10px; }
+  .siteChipName { max-width: 120px; font-size: 12px; }
+  /* Phone: hide zoom/nav buttons — pinch-to-zoom and the tools sheet cover them */
+  .barBtn { display: none; }
+  .barDiv { display: none; }
   .gimbal { width: 32px; height: 32px; right: 10px; top: 10px; }
-  /* Hide the desktop bottom rail — FAB covers secondary widgets on mobile */
+
+  /* Hide the rails — Tools FAB takes over. */
   .rails { display: none; }
 }
 
-/* Primary tool column — phone-only. Sits below the topBar pill, left-aligned.
-   Search / Measure / Legend as compact inline buttons. Hidden on desktop
-   (sidebar handles primary tools there). */
-.primaryToolCol {
-  display: none;
-}
-@media (max-width: 640px) {
-  .primaryToolCol {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    position: absolute;
-    top: 58px; /* just below the topBar pill */
-    left: 10px;
-  }
-}
-.shellPhone .primaryToolCol { display: flex; flex-direction: column; gap: 4px; position: absolute; top: 58px; left: 10px; }
-
-.primaryToolBtn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 10px;
-  background: rgba(17, 20, 29, 0.90);
-  backdrop-filter: blur(14px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 10px;
-  color: rgba(240, 242, 248, 0.75);
-  font: inherit;
-  font-size: 12px;
-  font-weight: 500;
-  cursor: pointer;
-  white-space: nowrap;
-}
-.primaryToolBtn:hover { background: rgba(22, 26, 37, 0.95); color: #f0f2f8; }
-.primaryToolBtn.active {
-  color: #2dd4bf;
-  border-color: rgba(45, 212, 191, 0.35);
-  background: rgba(45, 212, 191, 0.06);
-}
-
-/* Tools FAB — phone-only. Opens a slide-up sheet for secondary widgets. */
+/* Tools FAB — phone-only. Opens a slide-up sheet with the full widget
+   catalog. */
 .toolsFab {
   display: none;
 }

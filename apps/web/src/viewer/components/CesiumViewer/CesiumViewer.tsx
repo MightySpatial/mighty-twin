@@ -455,10 +455,8 @@ export default function CesiumViewerComponent({
     }
   }, [measureActive, cleanupMeasure, startMeasure, onOpenStoryPicker])
 
-  // Sidebar width used to offset canvas and overlays.
-  // Mobile: sidebar overlays the map (no canvas push) so width = 0 for positioning.
-  // Desktop: 344px when open, 64px (icon rail only) when collapsed.
-  const sidebarWidth = isMobile ? 0 : sidebarOpen ? 344 : 64
+  // Sidebar width: tab rail (64px) + content panel (280px) when open
+  const sidebarWidth = !isMobile && sidebarOpen ? 344 : !isMobile ? 64 : 0
 
   // Terrain panel rendered inline for the sidebar
   const terrainSidebarPanel = terrainOpen ? (
@@ -491,32 +489,32 @@ export default function CesiumViewerComponent({
 
   return (
     <div className="cesium-container">
-      {/* Sidebar — always visible on both mobile and desktop.
-          Mobile: overlays the map (no canvas offset); collapsed by default.
-          Desktop: offsets canvas; collapsed to icon rail, expands to full panel. */}
-      <ViewerSidebar
-        layers={layers}
-        layersLoading={layersLoading}
-        onLayerToggle={onLayerToggle}
-        onLayerOpacityChange={onLayerOpacityChange}
-        extensionPanels={extensionPanels}
-        activeExtPanel={activeExtPanel}
-        setActiveExtPanel={setActiveExtPanel}
-        viewer={viewerRef.current}
-        siteId={siteId ?? ''}
-        siteConfigState={siteConfigState}
-        setSiteConfigState={setSiteConfigState}
-        sidebarOpen={sidebarOpen}
-        setSidebarOpen={setSidebarOpen}
-        isMobile={isMobile}
-        terrainPanel={terrainSidebarPanel}
-        terrainTabActive={terrainOpen}
-        onTerrainTabClick={() => setTerrainOpen(o => !o)}
-        activeWidgetId={activeToolId}
-        onWidgetTabClick={onMapShellAction}
-        site={site ? { slug: siteId ?? '', name: site.name } : null}
-        onOpenSitePicker={() => setPickerOpen(o => !o)}
-      />
+      {/* Sidebar — docked left on desktop */}
+      {!isMobile && (
+        <ViewerSidebar
+          layers={layers}
+          layersLoading={layersLoading}
+          onLayerToggle={onLayerToggle}
+          onLayerOpacityChange={onLayerOpacityChange}
+          extensionPanels={extensionPanels}
+          activeExtPanel={activeExtPanel}
+          setActiveExtPanel={setActiveExtPanel}
+          viewer={viewerRef.current}
+          siteId={siteId ?? ''}
+          siteConfigState={siteConfigState}
+          setSiteConfigState={setSiteConfigState}
+          sidebarOpen={sidebarOpen}
+          setSidebarOpen={setSidebarOpen}
+          isMobile={isMobile}
+          terrainPanel={terrainSidebarPanel}
+          terrainTabActive={terrainOpen}
+          onTerrainTabClick={() => setTerrainOpen(o => !o)}
+          activeWidgetId={activeToolId}
+          onWidgetTabClick={onMapShellAction}
+          site={site ? { slug: siteId ?? '', name: site.name } : null}
+          onOpenSitePicker={() => setPickerOpen(o => !o)}
+        />
+      )}
 
       {/* Cesium canvas — offset by sidebar width */}
       <div

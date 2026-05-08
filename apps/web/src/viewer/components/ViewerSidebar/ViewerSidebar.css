@@ -230,54 +230,10 @@
   background: transparent;
 }
 
-/* ── Mobile: sidebar tab rail floats as transparent icon buttons ─────────────── */
+/* ── Mobile: sidebar hidden, use legacy floating panel ──────────────────────── */
 
 @media (max-width: 767px) {
   .viewer-sidebar {
-    z-index: 20;
-  }
-  /* Strip the panel background — tabs become bare floating icons */
-  .sidebar-tabs {
-    background: transparent;
-    border-right: none;
-    backdrop-filter: none;
-    padding: 8px 4px;
-    gap: 4px;
-  }
-  /* Each tab gets its own frosted-glass pill */
-  .sidebar-tab {
-    background: rgba(17, 20, 29, 0.88);
-    backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 10px;
-    padding: 8px 4px;
-  }
-  .sidebar-tab:hover {
-    background: rgba(30, 34, 48, 0.95);
-  }
-  .sidebar-tab--active {
-    background: rgba(99, 102, 241, 0.22);
-    border-color: rgba(99, 102, 241, 0.3);
-  }
-  /* Site chip pill */
-  .sidebar-site-chip {
-    background: rgba(17, 20, 29, 0.88);
-    backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 10px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-    padding: 8px 4px;
-    margin-bottom: 4px;
-  }
-  /* Collapse button */
-  .sidebar-collapse-btn {
-    background: rgba(17, 20, 29, 0.88);
-    backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 10px;
-  }
-  /* Content panel width when open */
-  .sidebar-content {
-    width: min(280px, calc(100vw - 64px));
+    display: none;
   }
 }
