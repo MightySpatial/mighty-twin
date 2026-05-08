@@ -39,7 +39,7 @@ import {
   Square,
   Globe,
   Map as MapIcon,
-  Settings as ToolsIcon,
+  LayoutGrid as ToolsIcon,
 } from 'lucide-react'
 
 import {

@@ -11,7 +11,10 @@
 // loaded — keeps the panel-strip from showing two ways to reach
 // the same controls.
 
-import './pipes'
+// Pipes extension removed — pipe depth modes are now handled inside the
+// Design widget (layer metadata / renderAs controls). Keep the extension
+// file for reference but don't register it.
+// import './pipes'
 
 // Design moved out of the left sidebar — it now mounts as a right-side
 // overlay opened from the bottom rail. See CesiumViewer.tsx (`designOpen`).
