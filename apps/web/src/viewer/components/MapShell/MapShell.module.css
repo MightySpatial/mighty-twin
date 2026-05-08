@@ -58,10 +58,10 @@
 .barDiv { width: 1px; height: 20px; background: rgba(255,255,255,0.08); margin: 0 2px; flex-shrink: 0; }
 
 .barBtn {
-  width: 30px; height: 30px;
+  width: 32px; height: 32px;
   display: flex; align-items: center; justify-content: center;
   border: none; background: transparent;
-  border-radius: 7px;
+  border-radius: 10px;
   color: rgba(240,242,248,0.7);
   cursor: pointer;
   flex-shrink: 0;
@@ -80,11 +80,11 @@
 .gimbal {
   position: absolute;
   right: 14px; top: 14px;
-  width: 36px; height: 36px;
+  width: 44px; height: 44px;
   background: rgba(17,20,29,0.90);
   backdrop-filter: blur(12px);
   border: 1px solid rgba(255,255,255,0.08);
-  border-radius: 50%;
+  border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.28);
   cursor: pointer;
   display: flex; align-items: center; justify-content: center;
@@ -226,10 +226,11 @@
 .shellPhone .toolsFab { display: flex; }
 
 @media (max-width: 640px) {
-  .topBar { top: 10px; left: 10px; padding: 3px; border-radius: 10px; }
+  .topBar { top: 10px; left: 10px; padding: 3px; border-radius: 12px; }
   .siteChipName { max-width: 96px; font-size: 12px; }
-  .barBtn { width: 26px; height: 26px; }
-  .gimbal { width: 32px; height: 32px; right: 10px; top: 10px; }
+  .barBtn { width: 28px; height: 28px; border-radius: 10px; }
+  /* compass: 44px to match floating column, same border-radius */
+  .gimbal { width: 44px; height: 44px; border-radius: 12px; right: 10px; top: 10px; }
   .rails { display: none; }
 }
 
@@ -242,11 +243,11 @@
   .toolsFab {
     display: flex;
     position: absolute;
-    left: 14px;
+    left: 10px;
     bottom: 14px;
-    width: 48px;
-    height: 48px;
-    border-radius: 50%;
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
     border: 1px solid rgba(255, 255, 255, 0.07);
     background: rgba(17, 20, 29, 0.95);
     backdrop-filter: blur(14px);

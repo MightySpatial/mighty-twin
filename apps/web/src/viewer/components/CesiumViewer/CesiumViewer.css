@@ -246,7 +246,7 @@
 .layer-toggle-btn {
   position: absolute;
   top: 60px; /* pushed down to clear the topBar pill */
-  left: 16px;
+  left: 10px;
   width: 44px;
   height: 44px;
   display: flex;
@@ -254,7 +254,7 @@
   justify-content: center;
   background: rgba(15, 15, 20, 0.85);
   border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 10px;
+  border-radius: 12px;
   color: rgba(255,255,255,0.85);
   cursor: pointer;
   z-index: 10;
@@ -270,7 +270,7 @@
    position: absolute so they float independently over the map. */
 .mobile-tool-btn {
   position: absolute;
-  left: 16px;
+  left: 10px;
   width: 44px;
   height: 44px;
   display: flex;
@@ -278,7 +278,7 @@
   justify-content: center;
   background: rgba(15, 15, 20, 0.85);
   border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 10px;
+  border-radius: 12px;
   color: rgba(255, 255, 255, 0.85);
   cursor: pointer;
   z-index: 10;
@@ -314,8 +314,8 @@
 
 @media (max-width: 767px) {
   .layer-panel {
-    /* open to the right of the button column, clear of topBar */
-    left: 70px;
+    /* right of button column (10px offset + 44px wide + 8px gap = 62px) */
+    left: 62px;
     right: 8px;
     width: auto;
     top: 60px;
@@ -882,8 +882,7 @@
 
 @media (max-width: 767px) {
   .legend-panel {
-    /* right of button column, above bottom nav (~60px) */
-    left: 70px;
+    left: 62px;
     right: 8px;
     width: auto;
     bottom: 70px;
@@ -1028,9 +1027,8 @@
     width: auto;
   }
   .cesium-search {
-    /* right of button column, below topBar */
     top: 60px;
-    left: 70px;
+    left: 62px;
     right: 8px;
     width: auto;
     transform: none;
