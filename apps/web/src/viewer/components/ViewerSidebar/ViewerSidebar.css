@@ -244,6 +244,7 @@
   .sidebar-tabs {
     background: transparent;
     border: none;
+    backdrop-filter: none;
     gap: 6px;
     padding: 0 6px;
   }
