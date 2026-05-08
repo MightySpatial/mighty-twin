@@ -21,7 +21,7 @@ from mighty_db import get_engine, get_session_factory
 from mighty_models import User
 
 from .auth import router as auth_router
-from .bootstrap import ensure_admin_user
+from .bootstrap import ensure_admin_user, run_migrations
 from .config import get_settings
 from .dev_stubs import router as dev_stubs_router
 from .settings_routes import settings_router, system_router
@@ -45,9 +45,11 @@ from .demo_routes import router as demo_router
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     settings = get_settings()
-    # Migrations are handled by the Railway pre-deploy command
-    # (`cd /app/apps/api && uv run alembic upgrade head`) — running them
-    # again here causes FastAPI merged_lifespan recursion on startup.
+    # Run migrations in-process at startup. This is the only reliable way
+    # to ensure the schema is at head before the app starts serving traffic.
+    # The merged_lifespan deep stack in tracebacks is normal FastAPI router
+    # chaining — it is NOT a recursion bug.
+    run_migrations(settings.database_url)
     engine = get_engine(settings.database_url, pool_pre_ping=True)
     session_factory = get_session_factory(engine)
     app.state.engine = engine
