@@ -20,6 +20,9 @@ interface SidebarTab {
 }
 
 interface ViewerSidebarProps {
+  // Site chip — shown at top of ribbon so it never overlaps the canvas topBar
+  site?: { slug: string; name: string } | null
+  onOpenSitePicker?: () => void
   // Layers
   layers: Layer[]
   layersLoading?: boolean
@@ -67,6 +70,8 @@ function LayerSkeleton() {
 }
 
 export default function ViewerSidebar({
+  site,
+  onOpenSitePicker,
   layers,
   layersLoading = false,
   onLayerToggle,
@@ -167,6 +172,21 @@ export default function ViewerSidebar({
       <div className={`viewer-sidebar${sidebarOpen ? ' viewer-sidebar--open' : ''}`}>
         {/* Tab Bar */}
         <div className="sidebar-tabs">
+          {/* Site chip — top of ribbon, opens site picker */}
+          {site && (
+            <button
+              className="sidebar-site-chip"
+              onClick={onOpenSitePicker}
+              title={`Switch site — ${site.name}`}
+            >
+              <span className="sidebar-site-chip-icon">
+                {site.name.slice(0, 1).toUpperCase()}
+              </span>
+              {sidebarOpen && (
+                <span className="sidebar-site-chip-name">{site.name}</span>
+              )}
+            </button>
+          )}
           {tabs.map(tab => (
             <button
               key={tab.id}

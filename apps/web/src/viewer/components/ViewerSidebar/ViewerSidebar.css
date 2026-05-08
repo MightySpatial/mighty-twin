@@ -29,6 +29,52 @@
   padding: 8px 4px;
 }
 
+/* Site chip at top of ribbon */
+.sidebar-site-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 4px;
+  margin-bottom: 4px;
+  border: none;
+  background: rgba(99, 102, 241, 0.12);
+  border-radius: 8px;
+  cursor: pointer;
+  color: #f0f2f8;
+  font: inherit;
+  min-width: 0;
+  width: 100%;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 0;
+  padding: 8px 4px 10px;
+  margin-bottom: 4px;
+}
+.sidebar-site-chip:hover {
+  background: rgba(99, 102, 241, 0.2);
+}
+.sidebar-site-chip-icon {
+  width: 28px;
+  height: 28px;
+  background: linear-gradient(135deg, #2453ff, #a78bfa);
+  border-radius: 7px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  flex-shrink: 0;
+  margin: 0 auto;
+}
+.sidebar-site-chip-name {
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
 .sidebar-tab {
   display: flex;
   flex-direction: column;

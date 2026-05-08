@@ -138,26 +138,11 @@ export function MapShell({
       className={`${styles.shell} ${phoneMode ? styles.shellPhone : ''}`}
       aria-hidden="false"
     >
-      {/* Top-left bar — site chip + map controls inline in one pill */}
+      {/* Top-left bar — map navigation controls only.
+          The site chip now lives at the top of the sidebar ribbon so it
+          can never overlap these controls. On phone these are hidden via
+          CSS (phoneMode / max-width 640px) since pinch-to-zoom replaces them. */}
       <div className={styles.topBar}>
-        {site && (
-          <>
-            <button
-              type="button"
-              className={styles.siteChip}
-              onClick={onOpenSitePicker}
-              title="Switch site"
-            >
-              <span className={styles.siteChipIcon}>
-                {site.name.slice(0, 1).toUpperCase()}
-              </span>
-              <span className={styles.siteChipName}>{site.name}</span>
-              <span className={styles.siteChipChev}>▾</span>
-            </button>
-            <div className={styles.barDiv} />
-          </>
-        )}
-
         <button className={styles.barBtn} onClick={onZoomIn} title="Zoom in">
           <ZoomIn size={16} />
         </button>

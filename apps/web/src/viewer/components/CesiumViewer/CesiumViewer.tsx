@@ -488,6 +488,8 @@ export default function CesiumViewerComponent({
           onTerrainTabClick={() => setTerrainOpen(o => !o)}
           activeWidgetId={activeToolId}
           onWidgetTabClick={onMapShellAction}
+          site={site ? { slug: siteId ?? '', name: site.name } : null}
+          onOpenSitePicker={() => setPickerOpen(o => !o)}
         />
       )}
 
