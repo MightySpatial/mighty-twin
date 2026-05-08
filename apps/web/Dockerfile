@@ -26,9 +26,17 @@ RUN pnpm --filter @mighty-twin/web build
 
 FROM nginx:alpine
 COPY --from=build /app/apps/web/dist /usr/share/nginx/html
-# Vite base='/viewer/' references /viewer/assets/* but builds assets to /assets/.
-# mkdir first because Vite doesn't emit a viewer/ subdir — it only prepends the
-# URL prefix in index.html — so mv would otherwise fail with no-such-directory.
+
+# Vite emits to dist/ with base='/viewer/' as a URL prefix only — the
+# on-disk layout is still flat (index.html, assets/, cesium/, favicons,
+# …). Move every dist entry under viewer/ so paths line up with what
+# the bundle and the SPA router request.
 RUN mkdir -p /usr/share/nginx/html/viewer \
-    && mv /usr/share/nginx/html/assets /usr/share/nginx/html/viewer/assets
+    && find /usr/share/nginx/html -maxdepth 1 -mindepth 1 \
+        ! -name viewer \
+        -exec mv {} /usr/share/nginx/html/viewer/ \;
+
+# SPA fallback under /viewer/ + redirect / → /viewer/.
+COPY apps/web/nginx.conf /etc/nginx/conf.d/default.conf
+
 EXPOSE 80
