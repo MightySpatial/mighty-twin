@@ -758,8 +758,7 @@ export default function CesiumViewerComponent({
             onClick={() => setSearchOpen(o => !o)}
             title="Search"
           >
-            <SearchIcon size={18} />
-            <span>Search</span>
+            <SearchIcon size={20} />
           </button>
           <button
             className={`mobile-tool-btn${measureActive ? ' mobile-tool-btn--active' : ''}`}
@@ -767,8 +766,7 @@ export default function CesiumViewerComponent({
             onClick={() => measureActive ? cleanupMeasure() : startMeasure()}
             title="Measure"
           >
-            <Ruler size={18} />
-            <span>Measur</span>
+            <Ruler size={20} />
           </button>
           <button
             className={`mobile-tool-btn${legendOpen ? ' mobile-tool-btn--active' : ''}`}
@@ -776,8 +774,7 @@ export default function CesiumViewerComponent({
             onClick={() => setLegendOpen(o => !o)}
             title="Legend"
           >
-            <LegendIcon size={18} />
-            <span>Legend</span>
+            <LegendIcon size={20} />
           </button>
         </div>
       )}

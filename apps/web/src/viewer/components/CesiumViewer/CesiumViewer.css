@@ -274,10 +274,8 @@
   width: 44px;
   height: 44px;
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 2px;
   background: rgba(15, 15, 20, 0.85);
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 10px;
@@ -286,11 +284,6 @@
   z-index: 10;
   transition: background 0.15s;
   backdrop-filter: blur(8px);
-  font: inherit;
-  font-size: 9px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
 }
 .mobile-tool-btn:hover { background: rgba(30, 30, 42, 0.95); border-color: rgba(255,255,255,0.2); }
 .mobile-tool-btn--active {
@@ -321,11 +314,12 @@
 
 @media (max-width: 767px) {
   .layer-panel {
-    left: 16px;
-    right: 16px;
+    /* open to the right of the button column, clear of topBar */
+    left: 70px;
+    right: 8px;
     width: auto;
-    top: 70px;
-    max-height: 50vh;
+    top: 60px;
+    max-height: calc(100vh - 140px);
   }
 }
 
@@ -888,10 +882,11 @@
 
 @media (max-width: 767px) {
   .legend-panel {
-    left: 16px;
-    right: 16px;
+    /* right of button column, above bottom nav (~60px) */
+    left: 70px;
+    right: 8px;
     width: auto;
-    bottom: 16px;
+    bottom: 70px;
     max-height: 40vh;
   }
 }
@@ -1033,7 +1028,12 @@
     width: auto;
   }
   .cesium-search {
-    width: calc(100vw - 32px);
+    /* right of button column, below topBar */
+    top: 60px;
+    left: 70px;
+    right: 8px;
+    width: auto;
+    transform: none;
   }
   .design-feature-item {
     padding: 8px 6px;
