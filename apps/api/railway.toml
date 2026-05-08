@@ -2,11 +2,10 @@
 builder = "DOCKERFILE"
 dockerfilePath = "Dockerfile"
 
-# startCommand intentionally omitted — Dockerfile CMD runs alembic
-# migrations then boots uvicorn, and overriding it here would skip the
-# migration step.
 [deploy]
+# Explicit startCommand so Railway dashboard override cannot bypass migrations.
+startCommand = "sh -c 'uv run alembic upgrade head && uv run uvicorn twin_api.main:app --host 0.0.0.0 --port ${PORT:-8080}'"
 healthcheckPath = "/health"
-healthcheckTimeout = 30
+healthcheckTimeout = 300
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 3
