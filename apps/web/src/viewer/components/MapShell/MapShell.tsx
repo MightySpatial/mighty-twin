@@ -21,7 +21,7 @@
  *  rails are filtered to widgets with ``publicVisible: true`` only.
  */
 
-import { useMemo, useRef, useState } from 'react'
+import { useMemo, useState } from 'react'
 import {
   Layers as LayersIcon,
   List as ListIcon,
@@ -133,13 +133,6 @@ export function MapShell({
   // Phone-only: tools sheet open/closed.
   const [toolsOpen, setToolsOpen] = useState(false)
 
-  // Desktop secondary rail: "More" popover for items beyond the inline cap.
-  const SECONDARY_INLINE_CAP = 4
-  const secondaryInline = secondary.slice(0, SECONDARY_INLINE_CAP)
-  const secondaryMore = secondary.slice(SECONDARY_INLINE_CAP)
-  const [moreOpen, setMoreOpen] = useState(false)
-  const moreRef = useRef<HTMLDivElement>(null)
-
   return (
     <div
       className={`${styles.shell} ${phoneMode ? styles.shellPhone : ''}`}
@@ -217,8 +210,8 @@ export function MapShell({
 
       <div className={styles.rails}>
         {!publicMode && secondary.length > 0 && (
-          <div className={`${styles.rail} ${styles.railSecondary}`}>
-            {secondaryInline.map((w) => (
+          <div className={`${styles.rail} ${styles.railSecondary} ${styles.railScrollable}`}>
+            {secondary.map((w) => (
               <RailTile
                 key={w.id}
                 widget={w}
@@ -226,42 +219,6 @@ export function MapShell({
                 onClick={() => onAction(w.id)}
               />
             ))}
-            {secondaryMore.length > 0 && (
-              <div ref={moreRef} style={{ position: 'relative' }}>
-                <button
-                  type="button"
-                  className={`${styles.moreToggle} ${moreOpen ? styles.moreToggleOpen : ''}`}
-                  onClick={() => setMoreOpen((o) => !o)}
-                  title="More tools"
-                >
-                  {secondaryMore.some((w) => activeToolId === w.id)
-                    ? `${secondaryMore.find((w) => activeToolId === w.id)?.label} ▾`
-                    : `+${secondaryMore.length} more ▾`}
-                </button>
-                {moreOpen && (
-                  <>
-                    {/* Backdrop to close on outside click */}
-                    <div
-                      style={{ position: 'fixed', inset: 0, zIndex: 9 }}
-                      onClick={() => setMoreOpen(false)}
-                    />
-                    <div className={styles.morePopover}>
-                      {secondaryMore.map((w) => (
-                        <RailTile
-                          key={w.id}
-                          widget={w}
-                          active={activeToolId === w.id}
-                          onClick={() => {
-                            onAction(w.id)
-                            setMoreOpen(false)
-                          }}
-                        />
-                      ))}
-                    </div>
-                  </>
-                )}
-              </div>
-            )}
           </div>
         )}
         <div className={`${styles.rail} ${styles.railPrimary}`}>

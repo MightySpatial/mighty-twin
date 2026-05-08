@@ -150,24 +150,17 @@
   border-color: rgba(255,255,255,0.08);
 }
 
-/* Popover panel that appears above the "More" button */
-.morePopover {
-  position: absolute;
-  bottom: calc(100% + 8px);
-  right: 0;
-  display: inline-flex;
-  flex-direction: row;
-  align-items: center;
-  gap: 4px;
-  padding: 6px;
-  background: rgba(17,20,29,0.97);
-  backdrop-filter: blur(14px);
-  border: 1px solid rgba(255,255,255,0.10);
-  border-radius: 14px;
-  box-shadow: 0 8px 28px rgba(0,0,0,0.5);
-  z-index: 10;
-  white-space: nowrap;
+/* Scrollable secondary rail — all items inline, hidden scrollbar, fade-right mask */
+.railScrollable {
+  overflow-x: auto;
+  scrollbar-width: none;       /* Firefox */
+  -webkit-overflow-scrolling: touch;
+  flex-wrap: nowrap;
+  /* Fade mask on the right to hint at more content */
+  -webkit-mask-image: linear-gradient(to right, black calc(100% - 28px), transparent 100%);
+  mask-image: linear-gradient(to right, black calc(100% - 28px), transparent 100%);
 }
+.railScrollable::-webkit-scrollbar { display: none; } /* Chrome/Safari */
 
 /* Customer brand zone (rendered in app shell topbar via slot) */
 .brandZone {
