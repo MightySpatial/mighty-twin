@@ -360,10 +360,14 @@ export default function CesiumViewerComponent({
   const [designOpen, setDesignOpen] = useState(false)
 
   // Signal to Mai that a panel is open → it docks at the bottom of the sidebar.
+  // Include all widget panels that open floating overlays so Mai doesn't overlap them.
   const { setDocked } = useMaiDock()
   useEffect(() => {
-    setDocked(!isMobile && (sidebarOpen || designOpen))
-  }, [sidebarOpen, designOpen, isMobile, setDocked])
+    const anyPanelOpen = sidebarOpen || designOpen || terrainOpen || strikeOpen ||
+      snapOpen || tableOpen || legendOpen || transparencyOpen || storyActive
+    setDocked(!isMobile && anyPanelOpen)
+  }, [sidebarOpen, designOpen, terrainOpen, strikeOpen, snapOpen, tableOpen,
+      legendOpen, transparencyOpen, storyActive, isMobile, setDocked])
 
   // Map MapShell action ids → existing widget state. Tools that aren't
   // implemented yet (table/story/strike) toggle a placeholder
