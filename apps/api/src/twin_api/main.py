@@ -8,7 +8,6 @@ implementations land phase by phase; routes not yet built come from
 
 from __future__ import annotations
 
-import logging
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -17,12 +16,11 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
-from sqlalchemy import select
 
 from mighty_db import get_engine, get_session_factory
-from mighty_models import User
 
-from .auth import hash_password, router as auth_router
+from .auth import router as auth_router
+from .bootstrap import ensure_admin_user, run_migrations
 from .config import get_settings
 from .dev_stubs import router as dev_stubs_router
 from .settings_routes import settings_router, system_router
@@ -43,46 +41,18 @@ from .feature_import_routes import router as feature_import_router
 from .demo_routes import router as demo_router
 
 
-log = logging.getLogger(__name__)
-
-BOOTSTRAP_ADMIN_EMAIL = "admin@mightyspatial.com"
-BOOTSTRAP_ADMIN_PASSWORD = "admin123"
-
-
-def _seed_admin(session_factory) -> None:
-    """Create the bootstrap admin if it doesn't already exist. Idempotent
-    — leaves an existing row alone (password, role, and active flag are
-    not overwritten). Belt-and-braces alongside the alembic seed."""
-    with session_factory() as db:
-        existing = db.execute(
-            select(User).where(User.email == BOOTSTRAP_ADMIN_EMAIL)
-        ).scalar_one_or_none()
-        if existing is not None:
-            return
-        db.add(
-            User(
-                email=BOOTSTRAP_ADMIN_EMAIL,
-                name="Admin",
-                hashed_password=hash_password(BOOTSTRAP_ADMIN_PASSWORD),
-                role="admin",
-                is_active=True,
-            )
-        )
-        db.commit()
-        log.warning(
-            "Seeded bootstrap admin %s — change the password.",
-            BOOTSTRAP_ADMIN_EMAIL,
-        )
-
-
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     settings = get_settings()
+    # Apply migrations before the engine pool warms up — fresh Railway
+    # DBs ship with no schema, and the deploy command no longer runs
+    # `alembic upgrade head` itself.
+    run_migrations(settings.database_url)
     engine = get_engine(settings.database_url, pool_pre_ping=True)
     session_factory = get_session_factory(engine)
     app.state.engine = engine
     app.state.session_factory = session_factory
-    _seed_admin(session_factory)
+    ensure_admin_user(session_factory)
     try:
         yield
     finally:
