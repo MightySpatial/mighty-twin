@@ -244,8 +244,48 @@
   .rails { display: none; }
 }
 
-/* Tools FAB — phone-only. Opens a slide-up sheet with the full widget
-   catalog. */
+/* Primary tool column — phone-only. Sits below the topBar pill, left-aligned.
+   Search / Measure / Legend as compact inline buttons. Hidden on desktop
+   (sidebar handles primary tools there). */
+.primaryToolCol {
+  display: none;
+}
+@media (max-width: 640px) {
+  .primaryToolCol {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    position: absolute;
+    top: 58px; /* just below the topBar pill */
+    left: 10px;
+  }
+}
+.shellPhone .primaryToolCol { display: flex; flex-direction: column; gap: 4px; position: absolute; top: 58px; left: 10px; }
+
+.primaryToolBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  background: rgba(17, 20, 29, 0.90);
+  backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  color: rgba(240, 242, 248, 0.75);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.primaryToolBtn:hover { background: rgba(22, 26, 37, 0.95); color: #f0f2f8; }
+.primaryToolBtn.active {
+  color: #2dd4bf;
+  border-color: rgba(45, 212, 191, 0.35);
+  background: rgba(45, 212, 191, 0.06);
+}
+
+/* Tools FAB — phone-only. Opens a slide-up sheet for secondary widgets. */
 .toolsFab {
   display: none;
 }

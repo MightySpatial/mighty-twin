@@ -230,10 +230,13 @@
   background: transparent;
 }
 
-/* ── Mobile: sidebar hidden, use legacy floating panel ──────────────────────── */
+/* ── Mobile: sidebar overlays the map (no canvas push) ──────────────────────── */
 
 @media (max-width: 767px) {
   .viewer-sidebar {
-    display: none;
+    z-index: 20;
+  }
+  .sidebar-content {
+    width: min(280px, calc(100vw - 64px));
   }
 }
