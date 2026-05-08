@@ -15,6 +15,11 @@ WORKDIR /repo
 # Workspace root + lockfile + tsconfigs (web tsconfig extends ../../tsconfig.base.json).
 COPY package.json pnpm-workspace.yaml pnpm-lock.yaml .npmrc tsconfig*.json ./
 
+# Cache-bust arg — increment RAILWAY_CACHE_BUST env var in Railway dashboard
+# to force re-fetch of packages layer if BuildKit snapshot goes stale.
+ARG CACHE_BUST=1
+RUN echo "cache bust: $CACHE_BUST"
+
 # Workspace packages required for the web build's `workspace:` deps.
 COPY packages/ ./packages/
 
