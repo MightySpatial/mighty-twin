@@ -33,6 +33,12 @@ import {
   BookOpen,
   Slash,
   Mountain,
+  ZoomIn,
+  ZoomOut,
+  Home as HomeIcon,
+  Square,
+  Globe,
+  Map as MapIcon,
   LayoutGrid as ToolsIcon,
 } from 'lucide-react'
 
@@ -163,10 +169,9 @@ export function MapShell({
       {/* Top-left bar.
           Desktop: nav buttons only (site chip lives in sidebar ribbon).
           Mobile: site chip only (nav buttons hidden; pinch-to-zoom + tools sheet replaces them). */}
-      {/* Top-left site chip — mobile only. Camera controls have moved to
-          the ViewerSidebar tab rail (visible on both desktop and mobile). */}
-      {site && (
-        <div className={`${styles.topBar} ${styles.topBarMobileOnly}`}>
+      {/* Top-left bar: site chip (mobile only) + camera controls */}
+      <div className={styles.topBar}>
+        {site && (
           <button
             type="button"
             className={`${styles.siteChip} ${styles.siteChipMobile}`}
@@ -178,8 +183,29 @@ export function MapShell({
             </span>
             <span className={styles.siteChipName}>{site.name}</span>
           </button>
-        </div>
-      )}
+        )}
+        {site && <div className={`${styles.barDiv} ${styles.barDivDesktop}`} />}
+        <button className={styles.barBtn} onClick={onZoomIn} title="Zoom in">
+          <ZoomIn size={16} />
+        </button>
+        <button className={styles.barBtn} onClick={onZoomOut} title="Zoom out">
+          <ZoomOut size={16} />
+        </button>
+        <div className={styles.barDiv} />
+        <button className={styles.barBtn} onClick={onHome} title="Home">
+          <HomeIcon size={16} />
+        </button>
+        <button
+          className={`${styles.barBtn} ${is2D ? styles.active : ''}`}
+          onClick={onToggle2D3D}
+          title={is2D ? 'Switch to 3D' : 'Switch to 2D'}
+        >
+          {is2D ? <Globe size={16} /> : <Square size={16} />}
+        </button>
+        <button className={styles.barBtn} onClick={onToggleBasemap} title="Basemap">
+          <MapIcon size={16} />
+        </button>
+      </div>
 
       {/* Compact needle compass — tap = face north, hold = look-around mode */}
       <button

@@ -4,7 +4,7 @@
  * On mobile, falls back to the traditional floating layer panel.
  */
 import { useState } from 'react'
-import { Layers, ChevronLeft, ChevronRight, Mountain, Search, Ruler, List, ZoomIn, ZoomOut, Home, Square, Globe, Map as MapIcon } from 'lucide-react'
+import { Layers, ChevronLeft, ChevronRight, Mountain, Search, Ruler, List } from 'lucide-react'
 import type { Layer } from '../CesiumViewer/types'
 import type { ViewerContext, PanelProps } from '../../extensions/types'
 import type { Viewer as CesiumViewerType } from 'cesium'
@@ -53,14 +53,6 @@ interface ViewerSidebarProps {
   // highlighted when the matching tool is active.
   activeWidgetId?: string | null
   onWidgetTabClick?: (id: string) => void
-  // Camera controls — live in the bottom section of the ribbon on both
-  // desktop and mobile (mobile sidebar shows rail only, no content panel).
-  onZoomIn?: () => void
-  onZoomOut?: () => void
-  onHome?: () => void
-  onToggle2D3D?: () => void
-  onToggleBasemap?: () => void
-  is2D?: boolean
 }
 
 function LayerSkeleton() {
@@ -99,12 +91,6 @@ export default function ViewerSidebar({
   onTerrainTabClick,
   activeWidgetId,
   onWidgetTabClick,
-  onZoomIn,
-  onZoomOut,
-  onHome,
-  onToggle2D3D,
-  onToggleBasemap,
-  is2D = false,
 }: ViewerSidebarProps) {
   const [attrLayerId, setAttrLayerId] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<string>('layers')
@@ -256,49 +242,7 @@ export default function ViewerSidebar({
               </span>
             </button>
           )}
-          {/* Camera controls — bottom of ribbon, styled as action tabs */}
-          {(onZoomIn || onZoomOut || onHome || onToggle2D3D || onToggleBasemap) && (
-            <>
-              <div className="sidebar-tab-divider" />
-              {onZoomIn && (
-                <button className="sidebar-tab sidebar-cam-btn" onClick={onZoomIn} title="Zoom in">
-                  <span className="sidebar-tab-icon"><ZoomIn size={16} /></span>
-                  <span className="sidebar-tab-label">{sidebarOpen ? 'Zoom in' : 'Zoom+'}</span>
-                </button>
-              )}
-              {onZoomOut && (
-                <button className="sidebar-tab sidebar-cam-btn" onClick={onZoomOut} title="Zoom out">
-                  <span className="sidebar-tab-icon"><ZoomOut size={16} /></span>
-                  <span className="sidebar-tab-label">{sidebarOpen ? 'Zoom out' : 'Zoom-'}</span>
-                </button>
-              )}
-              {onHome && (
-                <button className="sidebar-tab sidebar-cam-btn" onClick={onHome} title="Home">
-                  <span className="sidebar-tab-icon"><Home size={16} /></span>
-                  <span className="sidebar-tab-label">Home</span>
-                </button>
-              )}
-              {onToggle2D3D && (
-                <button
-                  className={`sidebar-tab sidebar-cam-btn${is2D ? ' sidebar-tab--active' : ''}`}
-                  onClick={onToggle2D3D}
-                  title={is2D ? 'Switch to 3D' : 'Switch to 2D'}
-                >
-                  <span className="sidebar-tab-icon">
-                    {is2D ? <Globe size={16} /> : <Square size={16} />}
-                  </span>
-                  <span className="sidebar-tab-label">{is2D ? '3D' : '2D'}</span>
-                </button>
-              )}
-              {onToggleBasemap && (
-                <button className="sidebar-tab sidebar-cam-btn" onClick={onToggleBasemap} title="Basemap">
-                  <span className="sidebar-tab-icon"><MapIcon size={16} /></span>
-                  <span className="sidebar-tab-label">{sidebarOpen ? 'Basemap' : 'Base'}</span>
-                </button>
-              )}
-            </>
-          )}
-          {/* Collapse toggle — desktop only */}
+          {/* Collapse toggle */}
           <button
             className="sidebar-collapse-btn"
             onClick={() => setSidebarOpen(!sidebarOpen)}

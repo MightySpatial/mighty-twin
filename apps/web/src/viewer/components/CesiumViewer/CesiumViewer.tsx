@@ -513,12 +513,6 @@ export default function CesiumViewerComponent({
         onWidgetTabClick={onMapShellAction}
         site={site ? { slug: siteId ?? '', name: site.name } : null}
         onOpenSitePicker={() => setPickerOpen(o => !o)}
-        onZoomIn={zoomIn}
-        onZoomOut={zoomOut}
-        onHome={flyHome}
-        onToggle2D3D={toggleSceneMode}
-        onToggleBasemap={() => setBasemapOpen(o => !o)}
-        is2D={is2D}
       />
 
       {/* Cesium canvas — offset by sidebar width */}
