@@ -208,8 +208,10 @@ export function MapShell({
         </div>
       )}
 
-      <div className={styles.rails}>
-        {!publicMode && secondary.length > 0 && (
+      {/* Only the secondary rail lives at the bottom.
+          Primary widgets (Search, Measure, Layers, Legend) are in the sidebar. */}
+      {!publicMode && secondary.length > 0 && (
+        <div className={styles.rails}>
           <div className={`${styles.rail} ${styles.railSecondary} ${styles.railScrollable}`}>
             {secondary.map((w) => (
               <RailTile
@@ -220,18 +222,8 @@ export function MapShell({
               />
             ))}
           </div>
-        )}
-        <div className={`${styles.rail} ${styles.railPrimary}`}>
-          {primary.map((w) => (
-            <RailTile
-              key={w.id}
-              widget={w}
-              active={activeToolId === w.id}
-              onClick={() => onAction(w.id)}
-            />
-          ))}
         </div>
-      </div>
+      )}
 
       {/* Phone — Tools FAB substitutes for the bottom rails. Opens a
           slide-up sheet with all widgets in a 4-column grid. */}

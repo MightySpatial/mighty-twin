@@ -4,7 +4,7 @@
  * On mobile, falls back to the traditional floating layer panel.
  */
 import { useState } from 'react'
-import { Layers, ChevronLeft, ChevronRight, Mountain } from 'lucide-react'
+import { Layers, ChevronLeft, ChevronRight, Mountain, Search, Ruler, List } from 'lucide-react'
 import type { Layer } from '../CesiumViewer/types'
 import type { ViewerContext, PanelProps } from '../../extensions/types'
 import type { Viewer as CesiumViewerType } from 'cesium'
@@ -46,6 +46,10 @@ interface ViewerSidebarProps {
   terrainPanel?: React.ReactNode
   terrainTabActive?: boolean
   onTerrainTabClick?: () => void
+  // Primary widget action tabs — Search, Measure, Legend fire actions,
+  // highlighted when the matching tool is active.
+  activeWidgetId?: string | null
+  onWidgetTabClick?: (id: string) => void
 }
 
 function LayerSkeleton() {
@@ -80,6 +84,8 @@ export default function ViewerSidebar({
   terrainPanel,
   terrainTabActive = false,
   onTerrainTabClick,
+  activeWidgetId,
+  onWidgetTabClick,
 }: ViewerSidebarProps) {
   const [attrLayerId, setAttrLayerId] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<string>('layers')
@@ -174,6 +180,32 @@ export default function ViewerSidebar({
               </span>
             </button>
           ))}
+          {/* Primary widget action tabs — Search, Measure, Legend */}
+          {onWidgetTabClick && (
+            <>
+              <div className="sidebar-tab-divider" />
+              {[
+                { id: 'search',  label: 'Search',  Icon: Search },
+                { id: 'measure', label: 'Measure', Icon: Ruler  },
+                { id: 'legend',  label: 'Legend',  Icon: List   },
+              ].map(({ id, label, Icon }) => (
+                <button
+                  key={id}
+                  className={`sidebar-tab${activeWidgetId === id ? ' sidebar-tab--active' : ''}`}
+                  onClick={() => {
+                    onWidgetTabClick(id)
+                    if (!sidebarOpen) setSidebarOpen(true)
+                  }}
+                  title={label}
+                >
+                  <span className="sidebar-tab-icon"><Icon size={16} /></span>
+                  <span className="sidebar-tab-label">
+                    {sidebarOpen ? label : label.slice(0, 6)}
+                  </span>
+                </button>
+              ))}
+            </>
+          )}
           {/* Terrain tab — only when terrain panel is provided */}
           {terrainPanel && (
             <button

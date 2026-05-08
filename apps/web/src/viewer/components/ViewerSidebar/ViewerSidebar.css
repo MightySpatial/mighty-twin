@@ -77,6 +77,14 @@
   min-width: 0;
 }
 
+/* Thin divider between tab groups */
+.sidebar-tab-divider {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.07);
+  margin: 4px 8px;
+  flex-shrink: 0;
+}
+
 /* Collapse button — sits at bottom of tab rail */
 .sidebar-collapse-btn {
   margin-top: auto;

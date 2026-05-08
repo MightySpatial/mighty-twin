@@ -486,6 +486,8 @@ export default function CesiumViewerComponent({
           terrainPanel={terrainSidebarPanel}
           terrainTabActive={terrainOpen}
           onTerrainTabClick={() => setTerrainOpen(o => !o)}
+          activeWidgetId={activeToolId}
+          onWidgetTabClick={onMapShellAction}
         />
       )}
 
