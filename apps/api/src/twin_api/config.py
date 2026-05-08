@@ -112,3 +112,4 @@ def get_settings() -> Settings:
             )
             raise ValueError("DEV_STUBS_ENABLED must be false in production")
     return s
+# Railway deploy: alembic upgrade head runs via start command
