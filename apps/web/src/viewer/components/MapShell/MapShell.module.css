@@ -223,24 +223,19 @@
      2. native @media (max-width: 640px) for real small viewports
    The rules below are duplicated as-needed.
 */
-.shellPhone .topBar { top: 10px; left: 10px; padding: 3px; border-radius: 10px; }
-.shellPhone .siteChipName { max-width: 120px; font-size: 12px; }
-/* Phone: hide zoom/nav buttons — pinch-to-zoom and the tools sheet cover them */
-.shellPhone .barBtn { display: none; }
-.shellPhone .barDiv { display: none; }
+/* Phone overrides — sidebar tab rail is 64px wide, so topBar shifts right to clear it.
+   Camera control buttons stay visible (no pinch-only assumption).
+   Sidebar content panel overlays when opened. */
+.shellPhone .topBar { top: 10px; left: 74px; padding: 3px; border-radius: 10px; }
 .shellPhone .gimbal { width: 32px; height: 32px; right: 10px; top: 10px; }
 .shellPhone .rails { display: none; }
 .shellPhone .toolsFab { display: flex; }
 
 @media (max-width: 640px) {
-  .topBar { top: 10px; left: 10px; padding: 3px; border-radius: 10px; }
-  .siteChipName { max-width: 120px; font-size: 12px; }
-  /* Phone: hide zoom/nav buttons — pinch-to-zoom and the tools sheet cover them */
-  .barBtn { display: none; }
-  .barDiv { display: none; }
+  /* topBar starts at 74px — clears the 64px floating sidebar tab rail */
+  .topBar { top: 10px; left: 74px; padding: 3px; border-radius: 10px; }
   .gimbal { width: 32px; height: 32px; right: 10px; top: 10px; }
-
-  /* Hide the rails — Tools FAB takes over. */
+  /* Hide the desktop bottom rail — FAB covers secondary widgets on mobile */
   .rails { display: none; }
 }
 
