@@ -67,8 +67,9 @@ const ICON_MAP: Record<string, IconComponent> = {
 }
 
 export interface MapShellProps {
-  /** Currently displayed site — name + slug + brief context for the chip. */
-  site: { slug: string; name: string; subtitle?: string } | null
+  /** Currently displayed site — passed through for public banner / future chip.
+   *  The site chip itself now lives in ViewerSidebar. */
+  site?: { slug: string; name: string; subtitle?: string } | null
   /** Active tool id (matches WidgetDef.id) — used to highlight the rail. */
   activeToolId: string | null
   /** Click handler for any rail tile. id is the WidgetDef.id. */
@@ -105,7 +106,7 @@ export interface MapShellProps {
 }
 
 export function MapShell({
-  site,
+  site: _site,
   activeToolId,
   onAction,
   onZoomIn,
