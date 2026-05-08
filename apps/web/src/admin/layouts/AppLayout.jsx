@@ -218,6 +218,17 @@ export default function AppLayout() {
               onClick={(e) => e.stopPropagation()}
             >
               <div className="bottom-nav-more-handle" />
+              <div className="bottom-nav-more-header">
+                <span className="bottom-nav-more-title">More sections</span>
+                <button
+                  type="button"
+                  className="bottom-nav-more-close"
+                  aria-label="Close"
+                  onClick={() => setMoreSheetOpen(false)}
+                >
+                  <X size={18} />
+                </button>
+              </div>
               <div className="bottom-nav-more-grid">
                 {NAV_ITEMS.filter(item => !PHONE_PRIMARY.includes(item.path)).map(item => (
                   <NavLink

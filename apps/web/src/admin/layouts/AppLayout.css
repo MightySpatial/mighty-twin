@@ -257,26 +257,42 @@
   -webkit-overflow-scrolling: touch;
 }
 
-/* Phone: add padding for bottom nav */
+/* Phone: add padding for the inner Atlas bottom nav (which is fixed at
+   bottom: 64px above the outer Map/Atlas/Settings tab bar). */
 @media (max-width: 767px) {
   .main-content {
-    padding-bottom: calc(var(--bottom-nav-height) + var(--safe-bottom));
+    padding-bottom: calc(var(--bottom-nav-height) + 16px);
+  }
+  .header-phone {
+    /* Outer MobileHeader already provides a 48px brand bar; keep this
+       title bar compact, with safe-area padding off (the outer header
+       owns the notch). Dark-glass aesthetic to match the bottom nav. */
+    padding-top: 0;
+    height: var(--header-height);
+    background: rgba(15, 15, 20, 0.92);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
   }
 }
 
 /* ─── BOTTOM NAV (Phone) ──────────────────────────────────────────────────── */
 
+/* Fixed to viewport so it survives the .app-layout `overflow: hidden`
+   clipping on phones. `bottom: 64px` clears the outer Map/Atlas/Settings
+   tab bar that the AppShell renders below this layout. */
 .bottom-nav {
   display: flex;
-  background: var(--color-bg-secondary);
-  border-top: 1px solid var(--color-border);
-  padding-bottom: var(--safe-bottom);
-  /* absolute (not fixed): scoped to .app-layout */
-  position: absolute;
-  bottom: 0;
+  background: rgba(15, 15, 20, 0.92);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  height: var(--bottom-nav-height);
+  position: fixed;
+  bottom: 64px;
   left: 0;
   right: 0;
-  z-index: 50;
+  z-index: 100;
 }
 
 .bottom-nav-item {
@@ -284,23 +300,27 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--space-1);
-  padding: var(--space-2) 0;
+  justify-content: center;
+  gap: 2px;
+  padding: 6px 4px;
+  min-height: 44px;
   background: none;
   border: none;
-  color: var(--color-text-tertiary);
-  font-size: var(--font-size-xs);
+  color: rgba(240, 242, 248, 0.6);
+  font-size: 10px;
+  font-weight: 500;
   text-decoration: none;
   cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .bottom-nav-item.active {
-  color: var(--color-accent-light);
+  color: #2dd4bf;
 }
 
 .bottom-nav-item svg {
-  width: 24px;
-  height: 24px;
+  width: 22px;
+  height: 22px;
 }
 
 /* ─── Desktop without header ──────────────────────────────────────────────── */
@@ -361,11 +381,15 @@
 .bottom-nav-more-fab {
   position: fixed;
   right: 14px;
-  bottom: 80px; /* clear of the 64px bottom-nav */
+  /* Clear the inner Atlas bottom-nav (64px, sitting at bottom: 64px),
+     and the outer Map/Atlas/Settings tab bar (64px). */
+  bottom: 142px;
   width: 44px;
   height: 44px;
   border-radius: 50%;
-  background: rgba(17, 20, 29, 0.95);
+  background: rgba(15, 15, 20, 0.92);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   border: 1px solid rgba(255, 255, 255, 0.12);
   color: #f0f2f8;
   display: flex;
@@ -373,14 +397,14 @@
   justify-content: center;
   cursor: pointer;
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
-  z-index: 30;
+  z-index: 110;
 }
 
 .bottom-nav-more-backdrop {
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.5);
-  z-index: 50;
+  z-index: 200;
   display: flex;
   align-items: flex-end;
   justify-content: center;
@@ -393,13 +417,40 @@
 
 .bottom-nav-more-sheet {
   width: 100%;
-  background: rgba(15, 15, 20, 0.98);
-  backdrop-filter: blur(14px);
+  background: rgba(15, 15, 20, 0.96);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   border-top: 1px solid rgba(255, 255, 255, 0.08);
   border-top-left-radius: 16px;
   border-top-right-radius: 16px;
-  padding: 8px 16px 24px;
+  padding: 8px 16px calc(24px + var(--safe-bottom));
   animation: more-slide 220ms ease-out;
+}
+
+.bottom-nav-more-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 4px 12px;
+}
+
+.bottom-nav-more-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #f0f2f8;
+}
+
+.bottom-nav-more-close {
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: rgba(240, 242, 248, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
 }
 @keyframes more-slide {
   from { transform: translateY(100%); }
@@ -425,22 +476,26 @@
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: 6px;
   padding: 14px 8px;
+  min-height: 76px;
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid rgba(255, 255, 255, 0.07);
-  border-radius: 10px;
+  border-radius: 12px;
   color: rgba(240, 242, 248, 0.85);
   text-decoration: none;
   font-size: 11px;
+  font-weight: 500;
   text-align: center;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .bottom-nav-more-tile:active,
 .bottom-nav-more-tile.active {
-  background: rgba(36, 83, 255, 0.10);
-  border-color: rgba(36, 83, 255, 0.4);
-  color: #9bb3ff;
+  background: rgba(45, 212, 191, 0.10);
+  border-color: rgba(45, 212, 191, 0.4);
+  color: #2dd4bf;
 }
 
 .bottom-nav-more-tile .nav-badge {
