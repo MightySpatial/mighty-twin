@@ -8,7 +8,7 @@ WORKDIR /app
 # Copy monorepo workspace config + lockfile + root tsconfigs from repo root.
 # Workspace packages extend ../../tsconfig.base.json — vite/esbuild needs it
 # resolvable when bundling through workspace boundaries.
-COPY package.json pnpm-workspace.yaml pnpm-lock.yaml .npmrc tsconfig*.json ./
+COPY package.json pnpm-workspace.yaml pnpm-lock.yaml tsconfig*.json ./
 
 # Copy all workspace packages (needed for workspace: protocol resolution)
 COPY packages/ ./packages/
