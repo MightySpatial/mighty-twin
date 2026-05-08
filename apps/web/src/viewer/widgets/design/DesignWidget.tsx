@@ -7,7 +7,7 @@ import { useCallback, useEffect } from 'react'
 import type { Viewer as CesiumViewerType } from 'cesium'
 import { Check, CloudOff, Loader, RefreshCw } from 'lucide-react'
 import { RAIL_TABS } from './types'
-import type { DesignRailTab, ElevationDatum } from './types'
+import type { ElevationDatum } from './types'
 import { useDesignState } from './useDesignState'
 import { useSketchPersistence } from './useSketchPersistence'
 import { useSolidTools } from './tools/useSolidTools'
@@ -327,18 +327,6 @@ export default function DesignWidget({ viewer, onClose, siteSlug = null }: Desig
   )
 }
 
-function DesignPlaceholder({ tab, description }: { tab: DesignRailTab; description: string }) {
-  return (
-    <div className="design-placeholder">
-      <p className="design-placeholder-title">
-        {RAIL_TABS.find(t => t.id === tab)?.label}
-      </p>
-      <p className="design-placeholder-desc">{description}</p>
-      <p className="design-placeholder-hint">Available in Sprint 2.</p>
-    </div>
-  )
-}
-
 function SaveIndicator({
   status,
   lastSavedAt,
@@ -350,8 +338,6 @@ function SaveIndicator({
   lastError: string | null
   onRetry: () => void
 }) {
-  const tint =
-    status === 'error' ? '#fb7185' : status === 'saving' ? '#9bb3ff' : '#34d399'
   const icon =
     status === 'saving' ? (
       <Loader size={11} className="spin" />
@@ -373,24 +359,16 @@ function SaveIndicator({
     : lastSavedAt
     ? `Last saved ${new Date(lastSavedAt).toLocaleTimeString()}`
     : 'No unsaved changes'
+  // Map our 4 statuses to the 4 visual buckets: 'idle' covers the never-saved
+  // state; once a save has occurred we bucket idle into 'saved' so the pill
+  // stays teal between debounced saves rather than flashing grey.
+  const visualStatus =
+    status === 'idle' ? (lastSavedAt ? 'saved' : 'idle') : status
   return (
     <span
+      className="design-save-pill"
+      data-status={visualStatus}
       title={title}
-      style={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: 4,
-        marginLeft: 'auto',
-        padding: '2px 8px',
-        borderRadius: 999,
-        background: `${tint}1a`,
-        color: tint,
-        fontSize: 10,
-        fontWeight: 600,
-        textTransform: 'uppercase',
-        letterSpacing: '0.04em',
-        cursor: status === 'error' ? 'pointer' : 'default',
-      }}
       onClick={status === 'error' ? onRetry : undefined}
     >
       {icon}
