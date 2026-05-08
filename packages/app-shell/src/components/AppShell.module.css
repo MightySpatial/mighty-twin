@@ -245,7 +245,10 @@
   inset: 0;
   z-index: 1;
   background: #0f0f14;
-  overflow: auto;
+  /* overflow: hidden so the child app-layout owns all scrolling.
+     overflow: auto here caused the entire admin panel to scroll as a unit,
+     carrying the absolute-positioned bottom-nav off screen. */
+  overflow: hidden;
 }
 
 /* Settings pane */

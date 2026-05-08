@@ -17,7 +17,7 @@ import {
   ScreenSpaceEventHandler,
   ConstantProperty,
 } from 'cesium'
-import { ArrowLeft, Navigation } from 'lucide-react'
+import { ArrowLeft, Navigation, ChevronDown, MapPin } from 'lucide-react'
 import { useTokenFetch } from '../components/CesiumViewer/hooks/useTokenFetch'
 import { pointSymbolToDataUrl } from '../shared/pointSymbology'
 import { authFetch } from '../utils/authFetch'
@@ -56,6 +56,9 @@ export default function SitesMapPage() {
 
   const sitesWithCamera = useRef<SiteWithCamera[]>([])
   const sitesLoaded = useRef(false)
+  // Mirror of sitesWithCamera for reactive rendering (dropdown list).
+  const [loadedSites, setLoadedSites] = useState<SiteWithCamera[]>([])
+  const [siteListOpen, setSiteListOpen] = useState(false)
 
   // Selection state
   const [selectedSlug, setSelectedSlug] = useState<string | null>(null)
@@ -253,6 +256,7 @@ export default function SitesMapPage() {
         }
         sitesWithCamera.current = loaded
         sitesLoaded.current = true
+        setLoadedSites(loaded)
       })
       .catch(() => {})
 
@@ -286,6 +290,7 @@ export default function SitesMapPage() {
 
           // First click — select
           setSelectedSlug(slug)
+          setSiteListOpen(false)
           return
         }
       }
@@ -347,7 +352,7 @@ export default function SitesMapPage() {
         Back
       </button>
 
-      {/* Title — shows selected site name or "All Sites" */}
+      {/* Title — shows selected site name, or "All Sites" dropdown trigger */}
       <div
         style={{
           position: 'absolute',
@@ -355,17 +360,105 @@ export default function SitesMapPage() {
           left: '50%',
           transform: 'translateX(-50%)',
           zIndex: 10,
-          padding: '8px 18px',
-          background: 'rgba(15,15,20,0.85)',
-          color: '#fff',
-          border: '1px solid rgba(255,255,255,0.12)',
-          borderRadius: 8,
-          fontSize: 16,
-          fontWeight: 600,
-          backdropFilter: 'blur(8px)',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
         }}
       >
-        {selectedSite ? selectedSite.name : 'All Sites'}
+        <button
+          type="button"
+          onClick={() => {
+            if (!selectedSite) setSiteListOpen(v => !v)
+          }}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
+            padding: '8px 18px',
+            background: 'rgba(15,15,20,0.85)',
+            color: '#fff',
+            border: '1px solid rgba(255,255,255,0.12)',
+            borderRadius: siteListOpen ? '8px 8px 0 0' : 8,
+            fontSize: 16,
+            fontWeight: 600,
+            backdropFilter: 'blur(8px)',
+            cursor: selectedSite ? 'default' : 'pointer',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          {selectedSite ? selectedSite.name : 'All Sites'}
+          {!selectedSite && loadedSites.length > 0 && (
+            <ChevronDown
+              size={16}
+              style={{
+                transition: 'transform 180ms',
+                transform: siteListOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+                opacity: 0.7,
+              }}
+            />
+          )}
+        </button>
+
+        {/* Sites dropdown */}
+        {siteListOpen && !selectedSite && loadedSites.length > 0 && (
+          <div
+            style={{
+              width: '100%',
+              minWidth: 200,
+              background: 'rgba(15,15,20,0.96)',
+              border: '1px solid rgba(255,255,255,0.12)',
+              borderTop: 'none',
+              borderRadius: '0 0 8px 8px',
+              backdropFilter: 'blur(8px)',
+              overflow: 'hidden',
+              maxHeight: 280,
+              overflowY: 'auto',
+            }}
+          >
+            {loadedSites.map(site => (
+              <button
+                key={site.slug}
+                type="button"
+                onClick={() => {
+                  setSiteListOpen(false)
+                  // Fly to site then navigate
+                  if (viewerRef.current && !viewerRef.current.isDestroyed()) {
+                    flyToTarget(viewerRef.current, {
+                      longitude: site.longitude,
+                      latitude: site.latitude,
+                      height: 0,
+                      range: site.height ?? 800,
+                      duration: 1.5,
+                      onComplete: () => navigateToSite(site.slug),
+                    })
+                  } else {
+                    navigateToSite(site.slug)
+                  }
+                }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  width: '100%',
+                  padding: '10px 14px',
+                  background: 'none',
+                  border: 'none',
+                  borderBottom: '1px solid rgba(255,255,255,0.06)',
+                  color: '#fff',
+                  fontSize: 14,
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                  transition: 'background 120ms',
+                }}
+                onMouseEnter={e => (e.currentTarget.style.background = 'rgba(99,102,241,0.18)')}
+                onMouseLeave={e => (e.currentTarget.style.background = 'none')}
+              >
+                <MapPin size={14} style={{ flexShrink: 0, color: site.marker_color ?? '#6366f1' }} />
+                <span>{site.name}</span>
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* "Zoom to" button — appears when a site is selected */}

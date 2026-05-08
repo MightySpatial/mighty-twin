@@ -10,7 +10,7 @@ import SystemSettingsPage from './admin/pages/SystemSettingsPage'
 import DiagnosticsPanel from './admin/pages/DiagnosticsPanel'
 import ProfilePanel from './admin/pages/ProfilePanel'
 import AISettings from './ai/AISettings'
-import ChatPanel from './ai/ChatPanel'
+import { DraggableMai } from './ai/DraggableMai'
 import { loadAiPanelVisible } from './ai/storage'
 import {
   AutodetectRulesPanel,
@@ -131,14 +131,18 @@ export function App() {
   }
 
   return (
-    <AppShell
-      brand={{ name: 'MightyTwin' }}
-      viewer={<ViewerRoot />}
-      adminContent={<AdminRoot />}
-      settingsContent={<SettingsShell extraSections={TWIN_SETTINGS_SECTIONS} />}
-      tabLabels={{ viewer: 'Map', admin: 'Atlas' }}
-      showDeveloperTools={settings.dev.enabled}
-      rightRail={aiPanelVisible ? <ChatPanel /> : null}
-    />
+    <>
+      <AppShell
+        brand={{ name: 'MightyTwin' }}
+        viewer={<ViewerRoot />}
+        adminContent={<AdminRoot />}
+        settingsContent={<SettingsShell extraSections={TWIN_SETTINGS_SECTIONS} />}
+        tabLabels={{ viewer: 'Map', admin: 'Atlas' }}
+        showDeveloperTools={settings.dev.enabled}
+        rightRail={null}
+      />
+      {/* Floating repositionable AI panel — draggable on desktop, FAB+sheet on phone */}
+      {aiPanelVisible && <DraggableMai />}
+    </>
   )
 }
