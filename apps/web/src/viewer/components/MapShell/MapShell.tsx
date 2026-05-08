@@ -145,66 +145,68 @@ export function MapShell({
       className={`${styles.shell} ${phoneMode ? styles.shellPhone : ''}`}
       aria-hidden="false"
     >
-      {site && (
-        <button
-          type="button"
-          className={styles.siteChip}
-          onClick={onOpenSitePicker}
-          title="Site picker"
-        >
-          <span className={styles.siteChipIcon}>
-            {site.name.slice(0, 1).toUpperCase()}
-          </span>
-          <span className={styles.siteChipMeta}>
-            <span className={styles.siteChipName}>{site.name}</span>
-            {site.subtitle ? (
-              <span className={styles.siteChipSub}>{site.subtitle}</span>
-            ) : null}
-          </span>
-          <span className={styles.siteChipChev}>▾</span>
-        </button>
-      )}
+      {/* Left column — site chip stacked above zoom controls */}
+      <div className={styles.leftCol}>
+        {site && (
+          <button
+            type="button"
+            className={styles.siteChip}
+            onClick={onOpenSitePicker}
+            title="Site picker"
+          >
+            <span className={styles.siteChipIcon}>
+              {site.name.slice(0, 1).toUpperCase()}
+            </span>
+            <span className={styles.siteChipMeta}>
+              <span className={styles.siteChipName}>{site.name}</span>
+              {site.subtitle ? (
+                <span className={styles.siteChipSub}>{site.subtitle}</span>
+              ) : null}
+            </span>
+            <span className={styles.siteChipChev}>▾</span>
+          </button>
+        )}
 
-      <div className={styles.zoomCol}>
-        <button className={styles.zoomBtn} onClick={onZoomIn} title="Zoom in">
-          <ZoomIn size={18} />
-        </button>
-        <button className={styles.zoomBtn} onClick={onZoomOut} title="Zoom out">
-          <ZoomOut size={18} />
-        </button>
-        <div className={styles.zoomDiv} />
-        <button className={styles.zoomBtn} onClick={onHome} title="Home">
-          <HomeIcon size={18} />
-        </button>
-        <button
-          className={`${styles.zoomBtn} ${is2D ? styles.active : ''}`}
-          onClick={onToggle2D3D}
-          title={is2D ? 'Switch to 3D' : 'Switch to 2D'}
-        >
-          {is2D ? <Globe size={18} /> : <Square size={18} />}
-        </button>
-        <button className={styles.zoomBtn} onClick={onToggleBasemap} title="Basemap">
-          <MapIcon size={18} />
-        </button>
+        <div className={styles.zoomCol}>
+          <button className={styles.zoomBtn} onClick={onZoomIn} title="Zoom in">
+            <ZoomIn size={18} />
+          </button>
+          <button className={styles.zoomBtn} onClick={onZoomOut} title="Zoom out">
+            <ZoomOut size={18} />
+          </button>
+          <div className={styles.zoomDiv} />
+          <button className={styles.zoomBtn} onClick={onHome} title="Home">
+            <HomeIcon size={18} />
+          </button>
+          <button
+            className={`${styles.zoomBtn} ${is2D ? styles.active : ''}`}
+            onClick={onToggle2D3D}
+            title={is2D ? 'Switch to 3D' : 'Switch to 2D'}
+          >
+            {is2D ? <Globe size={18} /> : <Square size={18} />}
+          </button>
+          <button className={styles.zoomBtn} onClick={onToggleBasemap} title="Basemap">
+            <MapIcon size={18} />
+          </button>
+        </div>
       </div>
 
+      {/* Compact needle compass — tap to recenter north */}
       <button
         type="button"
         className={styles.gimbal}
         onClick={onResetCamera}
-        title="Reset camera (click to face north + level)"
+        title="Tap to face north"
       >
-        <svg viewBox="0 0 84 84">
-          <circle cx="42" cy="42" r="38" fill="none" stroke="rgba(240,242,248,0.18)" strokeWidth="1" />
-          <circle cx="42" cy="42" r="30" fill="none" stroke="rgba(240,242,248,0.10)" strokeWidth="1" />
-          <text x="42" y="14" textAnchor="middle" className={styles.gimbalText}>N</text>
-          <text x="74" y="46" textAnchor="middle" className={styles.gimbalText}>E</text>
-          <text x="42" y="78" textAnchor="middle" className={styles.gimbalText}>S</text>
-          <text x="10" y="46" textAnchor="middle" className={styles.gimbalText}>W</text>
-          <g transform={`rotate(${headingDeg} 42 42)`}>
-            <polygon points="42,16 38,28 46,28" fill="#2dd4bf" />
-            <polygon points="42,68 39,58 45,58" fill="rgba(240,242,248,0.5)" />
+        <svg viewBox="0 0 36 36" width="36" height="36">
+          <g transform={`rotate(${headingDeg} 18 18)`}>
+            {/* North needle — teal */}
+            <polygon points="18,5 15,18 21,18" fill="#2dd4bf" />
+            {/* South needle — muted */}
+            <polygon points="18,31 15,18 21,18" fill="rgba(240,242,248,0.28)" />
           </g>
+          {/* Centre dot */}
+          <circle cx="18" cy="18" r="2.5" fill="rgba(240,242,248,0.7)" />
         </svg>
       </button>
 
