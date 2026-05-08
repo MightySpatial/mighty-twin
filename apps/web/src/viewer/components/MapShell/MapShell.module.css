@@ -6,9 +6,9 @@
 .shell { position: absolute; inset: 0; pointer-events: none; }
 .shell > * { pointer-events: auto; }
 
-/* Top-left site chip */
+/* Top-right site chip (moved from top-left to avoid overlap with zoom column) */
 .siteChip {
-  position: absolute; top: 14px; left: 14px;
+  position: absolute; top: 14px; right: 16px;
   display: inline-flex; align-items: center; gap: 10px;
   padding: 8px 14px 8px 8px;
   background: rgba(17,20,29,0.86);
@@ -78,10 +78,10 @@
 }
 .zoomDiv { height: 1px; background: rgba(255,255,255,0.07); margin: 2px 4px; }
 
-/* Top-right nav gimbal */
+/* Right-side nav gimbal — sits below the site chip */
 .gimbal {
   position: absolute;
-  right: 16px; top: 14px;
+  right: 16px; top: 70px;
   width: 84px; height: 84px;
   background: rgba(17,20,29,0.86);
   backdrop-filter: blur(12px);
@@ -221,7 +221,8 @@
 */
 .shellPhone .siteChip {
   top: 10px;
-  left: 10px;
+  right: 10px;
+  left: auto;
   padding: 6px 10px 6px 6px;
 }
 .shellPhone .siteChipName { max-width: 130px; font-size: 12px; }
@@ -229,14 +230,16 @@
 .shellPhone .siteChipChev { display: none; }
 .shellPhone .zoomCol { left: 10px; gap: 2px; padding: 3px; }
 .shellPhone .zoomBtn { width: 28px; height: 28px; }
-.shellPhone .gimbal { width: 56px; height: 56px; right: 10px; top: 10px; }
+/* Gimbal on phone sits below the chip (chip ~38px + 8px gap = 56px top) */
+.shellPhone .gimbal { width: 56px; height: 56px; right: 10px; top: 56px; }
 .shellPhone .rails { display: none; }
 .shellPhone .toolsFab { display: flex; }
 
 @media (max-width: 640px) {
   .siteChip {
     top: 10px;
-    left: 10px;
+    right: 10px;
+    left: auto;
     padding: 6px 10px 6px 6px;
   }
   .siteChipName { max-width: 130px; font-size: 12px; }
@@ -246,7 +249,8 @@
   .zoomCol { left: 10px; gap: 2px; padding: 3px; }
   .zoomBtn { width: 28px; height: 28px; }
 
-  .gimbal { width: 56px; height: 56px; right: 10px; top: 10px; }
+  /* Gimbal sits below the chip */
+  .gimbal { width: 56px; height: 56px; right: 10px; top: 56px; }
 
   /* Hide the rails — Tools FAB takes over. */
   .rails { display: none; }
