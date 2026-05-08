@@ -87,41 +87,102 @@
 
 /* ── Basemap Picker ─────────────────────────────────────────────────────────── */
 
-.basemap-picker {
+.basemap-panel {
   position: absolute;
-  top: 80px;
-  right: 62px;
+  top: 64px;
+  left: 14px;
+  width: min(300px, calc(100vw - 80px));
+  max-width: 320px;
+  background: rgba(15, 15, 20, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  overflow: hidden;
+  z-index: 25;
+  backdrop-filter: blur(14px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.basemap-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 8px 10px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.basemap-panel-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: white;
+  letter-spacing: -0.01em;
+}
+
+.basemap-panel-close {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: color 0.12s, background 0.12s;
+}
+.basemap-panel-close:hover {
+  color: white;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.basemap-panel-body {
+  padding: 6px;
   display: flex;
   flex-direction: column;
-  gap: 3px;
-  background: rgba(15, 15, 20, 0.92);
-  border: 1px solid rgba(255,255,255,0.12);
-  border-radius: 10px;
-  padding: 6px;
-  z-index: 20;
-  backdrop-filter: blur(8px);
-  min-width: 140px;
+  gap: 2px;
+}
+
+.basemap-scrim {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 60;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 56px 16px 16px;
+  backdrop-filter: blur(2px);
+}
+
+.basemap-scrim .basemap-panel {
+  position: relative;
+  top: auto;
+  left: auto;
+  width: min(320px, 100%);
+  max-width: 320px;
 }
 
 .basemap-option {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 8px 10px;
-  border-radius: 6px;
+  padding: 9px 10px;
+  border-radius: 8px;
   background: transparent;
   border: none;
-  color: rgba(255,255,255,0.8);
+  color: rgba(255, 255, 255, 0.8);
   cursor: pointer;
   font-size: 13px;
   text-align: left;
-  transition: background 0.12s;
+  transition: background 0.12s, color 0.12s;
 }
 
-.basemap-option:hover { background: rgba(255,255,255,0.08); }
-.basemap-option.active { background: rgba(99, 102, 241, 0.2); color: #a5b4fc; }
+.basemap-option:hover { background: rgba(255, 255, 255, 0.06); color: white; }
+.basemap-option.active { background: rgba(99, 102, 241, 0.18); color: #a5b4fc; }
 
-.basemap-icon { font-size: 16px; }
+.basemap-icon { font-size: 16px; width: 20px; text-align: center; }
 .basemap-label { font-weight: 500; }
 
 /* ── Transparency Panel ───────────────────────────────────────────────────── */
@@ -1015,10 +1076,13 @@
     right: 12px;
     width: auto;
   }
-  .basemap-picker {
-    right: 12px;
+  .basemap-panel {
+    /* Mobile uses .basemap-scrim wrapper; non-scrim fallback fills width. */
     left: 12px;
-    min-width: 0;
+    right: 12px;
+    width: auto;
+    max-width: none;
+    top: 56px;
   }
   .measure-result {
     left: 16px;

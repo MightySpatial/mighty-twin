@@ -130,14 +130,14 @@ export default function CesiumViewerComponent({
   // Widget hooks
   const {
     measureActive, measureRunning, measureResult,
-    startMeasure, cleanupMeasure, setMeasureResult,
+    startMeasure, cancelMeasure, cleanupMeasure, setMeasureResult,
   } = useMeasure(viewerRef)
   const { activeBasemap, basemapOpen, setBasemapOpen, switchBasemap } = useBasemap(viewerRef, imgMapRef)
   const { globeAlpha, setGlobeAlpha, transparencyOpen, setTransparencyOpen } = useGlobeTransparency(viewerRef)
 
   // Keyboard shortcuts: ESC closes active panel, L toggles layers, M activates measure
   const closeActivePanel = useCallback(() => {
-    if (measureActive) { cleanupMeasure(); return }
+    if (measureActive) { cancelMeasure(); return }
     if (measureResult) { cleanupMeasure(); setMeasureResult(null); return }
     if (searchOpen) { setSearchOpen(false); return }
     if (activeExtPanel) { setActiveExtPanel(null); return }
@@ -145,7 +145,7 @@ export default function CesiumViewerComponent({
     if (transparencyOpen) { setTransparencyOpen(false); return }
     if (legendOpen) { setLegendOpen(false); return }
     if (sidebarOpen) { setSidebarOpen(false); return }
-  }, [measureActive, measureResult, searchOpen, activeExtPanel, basemapOpen, transparencyOpen, legendOpen, sidebarOpen, cleanupMeasure, setMeasureResult, setBasemapOpen, setTransparencyOpen])
+  }, [measureActive, measureResult, searchOpen, activeExtPanel, basemapOpen, transparencyOpen, legendOpen, sidebarOpen, cancelMeasure, cleanupMeasure, setMeasureResult, setBasemapOpen, setTransparencyOpen])
 
   const closeDesign = useCallback(() => {
     setDesignOpen(false)
@@ -422,7 +422,10 @@ export default function CesiumViewerComponent({
       case 'search':
         setSearchOpen((o) => !o); break
       case 'measure':
-        measureActive ? cleanupMeasure() : startMeasure(); break
+        // cancelMeasure resets React state (measureActive=false) AND cleans
+        // up entities/handlers. cleanupMeasure alone left React state stale,
+        // which kept the toggle stuck on after a tap-to-disable.
+        measureActive ? cancelMeasure() : startMeasure(); break
       case 'layers':
         setSidebarOpen((o) => !o); break
       case 'legend':
@@ -453,7 +456,7 @@ export default function CesiumViewerComponent({
         break
       default: break
     }
-  }, [measureActive, cleanupMeasure, startMeasure, onOpenStoryPicker])
+  }, [measureActive, cancelMeasure, startMeasure, onOpenStoryPicker])
 
   // Sidebar width: tab rail (64px) + content panel (280px) when open
   const sidebarWidth = !isMobile && sidebarOpen ? 344 : !isMobile ? 64 : 0
@@ -722,7 +725,33 @@ export default function CesiumViewerComponent({
       )}
 
       {/* Panels */}
-      {basemapOpen && <BasemapWidget activeBasemap={activeBasemap} switchBasemap={switchBasemap} />}
+      {basemapOpen && (
+        // Sidebar-aware wrapper so the panel anchors below the topBar's
+        // basemap button (left: 14px) inside the visible canvas, not under
+        // the desktop sidebar. Mobile uses a fullscreen scrim and ignores
+        // this offset.
+        <div
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: isMobile ? 0 : sidebarWidth,
+            right: 0,
+            bottom: 0,
+            zIndex: 25,
+            pointerEvents: 'none',
+            transition: 'left 0.2s ease',
+          }}
+        >
+          <div style={{ pointerEvents: 'auto' }}>
+            <BasemapWidget
+              activeBasemap={activeBasemap}
+              switchBasemap={switchBasemap}
+              onClose={() => setBasemapOpen(false)}
+              isMobile={isMobile}
+            />
+          </div>
+        </div>
+      )}
       {/* Globe-transparency lives inside the Terrain panel as a tab; the
           legacy standalone widget is kept for Esc-close compatibility
           but isn't reachable from the rail anymore. */}
@@ -763,7 +792,7 @@ export default function CesiumViewerComponent({
           <button
             className={`mobile-tool-btn${measureActive ? ' mobile-tool-btn--active' : ''}`}
             style={{ pointerEvents: 'auto', top: 160 }}
-            onClick={() => measureActive ? cleanupMeasure() : startMeasure()}
+            onClick={() => measureActive ? cancelMeasure() : startMeasure()}
             title="Measure"
           >
             <Ruler size={20} />
