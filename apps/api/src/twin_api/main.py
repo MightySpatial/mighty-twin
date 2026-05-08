@@ -18,6 +18,7 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from mighty_db import get_engine, get_session_factory
+from mighty_models import User
 
 from .auth import router as auth_router
 from .bootstrap import ensure_admin_user, run_migrations
