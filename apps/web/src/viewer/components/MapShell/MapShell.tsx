@@ -106,7 +106,7 @@ export interface MapShellProps {
 }
 
 export function MapShell({
-  site: _site,
+  site,
   activeToolId,
   onAction,
   onZoomIn,
@@ -139,11 +139,26 @@ export function MapShell({
       className={`${styles.shell} ${phoneMode ? styles.shellPhone : ''}`}
       aria-hidden="false"
     >
-      {/* Top-left bar — map navigation controls only.
-          The site chip now lives at the top of the sidebar ribbon so it
-          can never overlap these controls. On phone these are hidden via
-          CSS (phoneMode / max-width 640px) since pinch-to-zoom replaces them. */}
+      {/* Top-left bar.
+          Desktop: nav buttons only (site chip lives in sidebar ribbon).
+          Mobile: site chip only (nav buttons hidden; pinch-to-zoom + tools sheet replaces them). */}
       <div className={styles.topBar}>
+        {/* Site chip — only visible on phone (desktop sidebar already shows it) */}
+        {site && (
+          <button
+            type="button"
+            className={`${styles.siteChip} ${styles.siteChipMobile}`}
+            onClick={onOpenSitePicker}
+            title={`Switch site — ${site.name}`}
+          >
+            <span className={styles.siteChipIcon}>
+              {site.name.slice(0, 1).toUpperCase()}
+            </span>
+            <span className={styles.siteChipName}>{site.name}</span>
+          </button>
+        )}
+        {/* Divider between chip and nav buttons (desktop only; both sides visible) */}
+        {site && <div className={`${styles.barDiv} ${styles.barDivDesktop}`} />}
         <button className={styles.barBtn} onClick={onZoomIn} title="Zoom in">
           <ZoomIn size={16} />
         </button>
