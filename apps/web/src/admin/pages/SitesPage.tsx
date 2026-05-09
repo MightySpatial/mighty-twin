@@ -658,6 +658,7 @@ function FirstSiteHero({
   onImport: () => void
   onLoadDemo: () => Promise<void>
 }) {
+  const navigate = useNavigate()
   const [loadingDemo, setLoadingDemo] = useState(false)
   return (
     <div
@@ -688,7 +689,7 @@ function FirstSiteHero({
         </div>
         <div>
           <h2 style={{ margin: 0, fontSize: 18, fontWeight: 600 }}>
-            Welcome to MightyTwin
+            Upload your house. Upload your building.
           </h2>
           <p
             style={{
@@ -697,7 +698,8 @@ function FirstSiteHero({
               color: 'rgba(240,242,248,0.7)',
             }}
           >
-            A site is a project — pick a starting point below.
+            A site is a project — drop a 3D scan, sketch from scratch, or import
+            from another tool.
           </p>
         </div>
       </div>
@@ -705,16 +707,28 @@ function FirstSiteHero({
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: isPhone ? '1fr' : 'repeat(3, 1fr)',
+          gridTemplateColumns: isPhone ? '1fr' : 'repeat(2, 1fr)',
           gap: 10,
           marginTop: 14,
         }}
       >
         <HeroOption
+          icon={<Upload size={18} />}
+          title="Upload a 3D scan"
+          subtitle={
+            isPhone
+              ? 'Polycam, Scaniverse, Pix4D, PlayCanvas, .ply / .splat / .spz / .ksplat.'
+              : 'Polycam, Scaniverse, Pix4D, PlayCanvas SuperSplat — drop the export. .ply / .compressed.ply / .splat / .spz / .ksplat all supported.'
+          }
+          action="Upload"
+          onClick={() => navigate('/admin/upload')}
+          accent="#ec4899"
+        />
+        <HeroOption
           icon={<Plus size={18} />}
-          title="Create a new site"
-          subtitle="Empty canvas. Add layers + features yourself."
-          action="Create"
+          title="Sketch from scratch"
+          subtitle="Empty canvas with the building wizard — stack a multi-storey shell from one click."
+          action="New site"
           onClick={onCreate}
           accent="#2453ff"
         />
@@ -728,7 +742,7 @@ function FirstSiteHero({
         />
         <HeroOption
           icon={loadingDemo ? <Loader size={18} className="spin" /> : <Layers size={18} />}
-          title="Load demo site"
+          title="Load the demo"
           subtitle="Sydney Harbour with points, a route, and a polygon."
           action={loadingDemo ? 'Loading…' : 'Load demo'}
           onClick={async () => {

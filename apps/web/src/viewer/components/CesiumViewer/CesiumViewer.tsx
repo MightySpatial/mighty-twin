@@ -404,7 +404,36 @@ export default function CesiumViewerComponent({
   // Design widget — right-side overlay (was a sidebar tab). Dispatches
   // design:open / design:close on the window so the AI ChatPanel can
   // minimise itself out of the way.
-  const [designOpen, setDesignOpen] = useState(false)
+  //
+  // Also: respect ?widget=design (and optional &tool=building) on first
+  // mount so admin "Sketch with the wizard" links land on the right
+  // panel without an extra click. Cleared from the URL after consuming
+  // so a refresh doesn't re-open the panel forever.
+  const [designOpen, setDesignOpen] = useState(() => {
+    if (typeof window === 'undefined') return false
+    return new URLSearchParams(window.location.search).get('widget') === 'design'
+  })
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('widget') === 'design') {
+      const tool = params.get('tool')
+      if (tool === 'building') {
+        // Surface the building tab via a window event the widget reads
+        // on mount. Keeps the deep-link contract one-way without
+        // wiring tab state through props.
+        window.dispatchEvent(
+          new CustomEvent('design:request-tab', { detail: { tab: 'building' } }),
+        )
+      }
+      params.delete('widget')
+      params.delete('tool')
+      const remaining = params.toString()
+      const url =
+        window.location.pathname + (remaining ? `?${remaining}` : '') + window.location.hash
+      window.history.replaceState(null, '', url)
+    }
+  }, [])
 
   // Signal to Mai that a panel is open → it docks at the bottom of the sidebar.
   // Include all widget panels that open floating overlays so Mai doesn't overlap them.

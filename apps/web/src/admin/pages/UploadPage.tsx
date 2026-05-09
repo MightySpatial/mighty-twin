@@ -250,10 +250,22 @@ export default function UploadPage() {
       </div>
 
       <header style={{ marginBottom: 18 }}>
-        <h1 style={{ margin: 0, fontSize: 24, fontWeight: 600 }}>Upload data</h1>
-        <p style={{ margin: '4px 0 0', color: 'rgba(240,242,248,0.5)', fontSize: 13 }}>
-          CSV · GeoJSON · Excel · Gaussian splats (.ply, .compressed.ply,
-          .splat, .spz, .ksplat) · 50 MB tabular / 600 MB splat
+        <h1 style={{ margin: 0, fontSize: 24, fontWeight: 600 }}>
+          Upload your house, your building, your data
+        </h1>
+        <p
+          style={{
+            margin: '4px 0 0',
+            color: 'rgba(240,242,248,0.6)',
+            fontSize: 13,
+            lineHeight: 1.5,
+          }}
+        >
+          Got a 3D scan from <strong>Polycam</strong>, <strong>Scaniverse</strong>,{' '}
+          <strong>Pix4D</strong>, or <strong>PlayCanvas SuperSplat</strong>? Drop
+          the export below — .ply, .compressed.ply, .splat, .spz, and .ksplat all
+          land directly. Tabular formats (CSV / GeoJSON / Excel) work too. 50 MB
+          tabular cap, 600 MB splat cap.
         </p>
       </header>
 

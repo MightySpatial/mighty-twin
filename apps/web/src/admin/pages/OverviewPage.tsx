@@ -140,11 +140,11 @@ export default function OverviewPage() {
           </div>
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: 14, fontWeight: 600 }}>
-              Welcome — start with your first site
+              Upload your house. Upload your building.
             </div>
             <div style={{ fontSize: 12, color: 'rgba(240,242,248,0.55)', marginTop: 2 }}>
-              Sites organise layers, snaps, story maps, and submissions. Pick one
-              of three starting points on the Sites page.
+              Drop a 3D scan from Polycam, Scaniverse, Pix4D, or PlayCanvas — or
+              sketch from scratch with the building wizard.
             </div>
           </div>
           <span style={{ fontSize: 12, color: '#9bb3ff' }}>Get started →</span>

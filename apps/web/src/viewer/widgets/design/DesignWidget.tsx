@@ -16,7 +16,7 @@
  */
 import { useCallback, useEffect } from 'react'
 import type { Viewer as CesiumViewerType } from 'cesium'
-import { RAIL_TABS } from './types'
+import { RAIL_TABS, type DesignRailTab } from './types'
 import { useDesignState, useSketchPersistence } from './hooks'
 import { useCursorCoords } from './hooks/useCursorCoords'
 import { useSolidTools } from './tools/useSolidTools'
@@ -68,6 +68,19 @@ export default function DesignWidget({ viewer, onClose, siteSlug = null }: Desig
   const cursor = useCursorCoords(viewer)
   const { activeTab, setActiveTab } = state
   const { isMobile } = useBreakpoint()
+
+  // Deep-link contract: Atlas → /viewer/sites/<slug>?widget=design&tool=building
+  // dispatches a one-off 'design:request-tab' event before the widget
+  // mounts (URL params are consumed in CesiumViewer). Replay any pending
+  // request when the widget mounts so the user lands on the right tab.
+  useEffect(() => {
+    function onRequestTab(e: Event) {
+      const detail = (e as CustomEvent).detail as { tab?: DesignRailTab } | undefined
+      if (detail?.tab) setActiveTab(detail.tab)
+    }
+    window.addEventListener('design:request-tab', onRequestTab)
+    return () => window.removeEventListener('design:request-tab', onRequestTab)
+  }, [setActiveTab])
 
   // ── Persistence ─────────────────────────────────────────────────────────
   const handleHydrate = useCallback(

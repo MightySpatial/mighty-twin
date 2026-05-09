@@ -590,6 +590,96 @@ export default function SiteDetailPage() {
 
         {/* Right col — layers + snapshots + story maps */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          {/* "Add a building" — frames the two paths from the pitch
+              (upload-a-scan / sketch-from-scratch) for the active site.
+              Sits above the Layers card so it's the first thing the
+              admin sees when working with a fresh site. */}
+          <div
+            style={{
+              padding: 14,
+              background:
+                'linear-gradient(135deg, rgba(236,72,153,0.08), rgba(36,83,255,0.06))',
+              border: '1px solid rgba(236,72,153,0.28)',
+              borderRadius: 12,
+            }}
+          >
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 10,
+                marginBottom: 10,
+              }}
+            >
+              <span style={{ fontSize: 18, lineHeight: 1 }}>🏠</span>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 13, fontWeight: 600 }}>
+                  Add a building to this site
+                </div>
+                <div
+                  style={{
+                    fontSize: 11,
+                    color: 'rgba(240,242,248,0.55)',
+                    marginTop: 2,
+                  }}
+                >
+                  Upload a 3D scan of an existing building, or sketch a new
+                  one with the Design widget.
+                </div>
+              </div>
+            </div>
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: isPhone ? '1fr' : '1fr 1fr',
+                gap: 8,
+              }}
+            >
+              <Link
+                to="/admin/upload"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  padding: '8px 10px',
+                  background: 'rgba(236,72,153,0.12)',
+                  border: '1px solid rgba(236,72,153,0.32)',
+                  borderRadius: 8,
+                  color: '#f0f2f8',
+                  textDecoration: 'none',
+                  fontSize: 12,
+                  fontWeight: 500,
+                }}
+                title="Polycam, Scaniverse, Pix4D, PlayCanvas SuperSplat — drop the export"
+              >
+                <span style={{ fontSize: 14 }}>📷</span>
+                <span style={{ flex: 1 }}>Upload a 3D scan</span>
+                <span style={{ color: '#f9a8d4', fontSize: 11 }}>→</span>
+              </Link>
+              <Link
+                to={`/viewer/sites/${site.slug}?widget=design&tool=building`}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  padding: '8px 10px',
+                  background: 'rgba(36,83,255,0.12)',
+                  border: '1px solid rgba(36,83,255,0.32)',
+                  borderRadius: 8,
+                  color: '#f0f2f8',
+                  textDecoration: 'none',
+                  fontSize: 12,
+                  fontWeight: 500,
+                }}
+                title="Opens the viewer with Design → Building wizard ready"
+              >
+                <span style={{ fontSize: 14 }}>🏢</span>
+                <span style={{ flex: 1 }}>Sketch with the wizard</span>
+                <span style={{ color: '#9bb3ff', fontSize: 11 }}>→</span>
+              </Link>
+            </div>
+          </div>
+
           <Card
             title={`Layers (${layers.length})`}
             action={
