@@ -21,7 +21,7 @@ from mighty_db import get_engine, get_session_factory
 from mighty_models import User
 
 from .auth import router as auth_router
-from .bootstrap import ensure_admin_user, run_migrations
+from .bootstrap import ensure_admin_user
 from .config import get_settings
 from .dev_stubs import router as dev_stubs_router
 from .settings_routes import settings_router, system_router
@@ -45,11 +45,10 @@ from .demo_routes import router as demo_router
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     settings = get_settings()
-    # Run migrations in-process at startup. This is the only reliable way
-    # to ensure the schema is at head before the app starts serving traffic.
-    # The merged_lifespan deep stack in tracebacks is normal FastAPI router
-    # chaining — it is NOT a recursion bug.
-    run_migrations(settings.database_url)
+    # Migrations run in the Dockerfile CMD (`uv run alembic upgrade head &&
+    # uv run uvicorn ...`) before this lifespan starts, so the schema is
+    # already at head. Re-running here would block the asyncio event loop
+    # on sync Alembic I/O during startup and starve the Railway healthcheck.
     engine = get_engine(settings.database_url, pool_pre_ping=True)
     session_factory = get_session_factory(engine)
     app.state.engine = engine
