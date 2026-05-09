@@ -26,7 +26,24 @@ import { API_URL } from '../hooks/useApi'
 import { useBreakpoint } from '../hooks/useBreakpoint'
 import { useToast } from '../../viewer/hooks/useToast'
 
-const ACCEPTED_EXTS = ['.csv', '.geojson', '.json', '.xlsx', '.xlsm']
+// Tabular formats + Gaussian splats. The splat extensions come from
+// the major capture pipelines we've validated against:
+//   .ply               Pix4D, Reality Capture, raw gsplat trainers
+//   .compressed.ply    PlayCanvas SuperSplat single-file deliverable
+//   .splat             antimatter15 / Niantic spec (32 bytes/splat)
+//   .spz               Scaniverse compressed splat
+//   .ksplat            mkkellogg/gaussian-splats-3d packed format
+const ACCEPTED_EXTS = [
+  '.csv',
+  '.geojson',
+  '.json',
+  '.xlsx',
+  '.xlsm',
+  '.ply',
+  '.splat',
+  '.spz',
+  '.ksplat',
+]
 
 const TYPE_LABELS: Record<string, string> = {
   csv: 'CSV',
@@ -34,9 +51,21 @@ const TYPE_LABELS: Record<string, string> = {
   json: 'JSON',
   xlsx: 'Excel',
   xlsm: 'Excel (macros)',
+  ply: 'Gaussian splat (PLY)',
+  splat: 'Gaussian splat',
+  spz: 'Gaussian splat (SPZ)',
+  ksplat: 'Gaussian splat (KSPLAT)',
 }
 
-const MAX_BYTES = 50 * 1024 * 1024
+// Splat formats are detected by ext below. They get a much larger size
+// cap because a captured-scene splat is routinely 200–500MB.
+const SPLAT_EXTS = new Set(['ply', 'splat', 'spz', 'ksplat'])
+
+const TABULAR_MAX_BYTES = 50 * 1024 * 1024
+const SPLAT_MAX_BYTES = 600 * 1024 * 1024
+function maxBytesFor(ext: string): number {
+  return SPLAT_EXTS.has(ext) ? SPLAT_MAX_BYTES : TABULAR_MAX_BYTES
+}
 
 type Status = 'idle' | 'uploading' | 'done' | 'error'
 
@@ -94,15 +123,17 @@ export default function UploadPage() {
     const valid: Entry[] = []
     const rejected: { name: string; reason: string }[] = []
     for (const f of Array.from(files)) {
-      const ext = '.' + extOf(f.name)
+      const rawExt = extOf(f.name)
+      const ext = '.' + rawExt
       if (!ACCEPTED_EXTS.includes(ext)) {
         rejected.push({ name: f.name, reason: `${ext || '(no extension)'} is not supported` })
         continue
       }
-      if (f.size > MAX_BYTES) {
+      const cap = maxBytesFor(rawExt)
+      if (f.size > cap) {
         rejected.push({
           name: f.name,
-          reason: `Exceeds 50 MB cap (${fmtBytes(f.size)})`,
+          reason: `Exceeds ${cap / (1024 * 1024)} MB cap (${fmtBytes(f.size)})`,
         })
         continue
       }
@@ -221,7 +252,8 @@ export default function UploadPage() {
       <header style={{ marginBottom: 18 }}>
         <h1 style={{ margin: 0, fontSize: 24, fontWeight: 600 }}>Upload data</h1>
         <p style={{ margin: '4px 0 0', color: 'rgba(240,242,248,0.5)', fontSize: 13 }}>
-          CSV · GeoJSON · JSON · Excel · 50 MB max per file
+          CSV · GeoJSON · Excel · Gaussian splats (.ply, .compressed.ply,
+          .splat, .spz, .ksplat) · 50 MB tabular / 600 MB splat
         </p>
       </header>
 
@@ -283,7 +315,7 @@ export default function UploadPage() {
               Drop files here or click to browse
             </div>
             <div style={{ fontSize: 12, color: 'rgba(240,242,248,0.5)' }}>
-              CSV · GeoJSON · JSON · Excel · 50 MB max
+              CSV · GeoJSON · Excel · .ply / .compressed.ply / .splat / .spz / .ksplat
             </div>
           </>
         ) : (

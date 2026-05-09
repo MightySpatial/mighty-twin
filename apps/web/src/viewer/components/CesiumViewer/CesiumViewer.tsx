@@ -25,6 +25,12 @@ import { useTokenFetch } from './hooks/useTokenFetch'
 import { useCesiumMount } from './hooks/useCesiumMount'
 import { useLayerSync } from './hooks/useLayerSync'
 import { useSiteFocalPin } from './hooks/useSiteFocalPin'
+import {
+  useWalkMode,
+  walkSpeedLabel,
+  WALK_SPEEDS,
+  type WalkSpeed,
+} from './hooks/useWalkMode'
 
 import MeasureWidget, { useMeasure } from '../../widgets/measure'
 import { SnapshotWidget } from '../../widgets/snapshot'
@@ -314,6 +320,24 @@ export default function CesiumViewerComponent({
     })
   }, [])
 
+  // Walking / running fly-through camera mode. Off by default; the
+  // toolbar exposes a play/stop control + speed picker. Activation
+  // toggles WASD locomotion at human speeds — see useWalkMode.
+  const [walkActive, setWalkActive] = useState(false)
+  const [walkSpeed, setWalkSpeed] = useState<WalkSpeed>('walk')
+  useWalkMode({ viewerRef, active: walkActive, speed: walkSpeed })
+
+  // Auto-exit walk mode when the user navigates away from the viewer
+  // surface — otherwise WASD still moves the (unmounted) camera.
+  useEffect(() => {
+    if (!walkActive) return
+    function onEsc(e: KeyboardEvent) {
+      if (e.key === 'Escape') setWalkActive(false)
+    }
+    window.addEventListener('keydown', onEsc)
+    return () => window.removeEventListener('keydown', onEsc)
+  }, [walkActive])
+
   // Look-around mode: hold compass → first-person free-look, release anywhere → restore orbit.
   const [lookAroundActive, setLookAroundActive] = useState(false)
   const toggleLookAround = useCallback(() => {
@@ -567,6 +591,131 @@ export default function CesiumViewerComponent({
           widgetOverrides={widgetOverrides}
         />
       </div>
+
+      {/* Walk-mode toggle — small pill in the upper-right when inactive.
+          Click to enter; the HUD below replaces this when active. */}
+      {!walkActive && (
+        <button
+          onClick={() => setWalkActive(true)}
+          style={{
+            position: 'absolute',
+            top: 14,
+            right: 14,
+            zIndex: 35,
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 6,
+            padding: '7px 11px',
+            background: 'rgba(15,15,20,0.85)',
+            border: '1px solid rgba(255,255,255,0.12)',
+            borderRadius: 999,
+            color: 'rgba(240,242,248,0.85)',
+            fontSize: 11,
+            fontWeight: 500,
+            cursor: 'pointer',
+            backdropFilter: 'blur(10px)',
+            WebkitBackdropFilter: 'blur(10px)',
+          }}
+          title="Walk through the scene at human speed"
+        >
+          🚶 Walk
+        </button>
+      )}
+
+      {/* Walk-mode HUD — fixed top-right overlay with speed picker +
+          keybinding cheat sheet. Only renders when active so it doesn't
+          clutter the default view. */}
+      {walkActive && (
+        <div
+          style={{
+            position: 'absolute',
+            top: 14,
+            right: 14,
+            zIndex: 40,
+            background: 'rgba(15,15,20,0.92)',
+            border: '1px solid rgba(36,83,255,0.4)',
+            borderRadius: 10,
+            padding: '10px 12px',
+            color: '#f0f2f8',
+            fontSize: 12,
+            backdropFilter: 'blur(10px)',
+            WebkitBackdropFilter: 'blur(10px)',
+            minWidth: 220,
+            boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
+          }}
+        >
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              marginBottom: 8,
+            }}
+          >
+            <span style={{ fontWeight: 600 }}>Walk mode</span>
+            <button
+              onClick={() => setWalkActive(false)}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: 'rgba(240,242,248,0.6)',
+                cursor: 'pointer',
+                padding: 2,
+                fontSize: 13,
+              }}
+              title="Exit walk mode (Esc)"
+            >
+              ✕
+            </button>
+          </div>
+          <div style={{ display: 'flex', gap: 4, marginBottom: 8 }}>
+            {WALK_SPEEDS.map((s) => (
+              <button
+                key={s}
+                onClick={() => setWalkSpeed(s)}
+                style={{
+                  flex: 1,
+                  padding: '5px 6px',
+                  background:
+                    walkSpeed === s
+                      ? 'rgba(36,83,255,0.32)'
+                      : 'rgba(255,255,255,0.05)',
+                  border: `1px solid ${
+                    walkSpeed === s
+                      ? 'rgba(36,83,255,0.5)'
+                      : 'rgba(255,255,255,0.07)'
+                  }`,
+                  borderRadius: 6,
+                  color: walkSpeed === s ? '#9bb3ff' : 'rgba(240,242,248,0.7)',
+                  fontSize: 11,
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  textTransform: 'capitalize',
+                }}
+                title={walkSpeedLabel(s)}
+              >
+                {s}
+              </button>
+            ))}
+          </div>
+          <div
+            style={{
+              fontSize: 10,
+              color: 'rgba(240,242,248,0.5)',
+              lineHeight: 1.6,
+            }}
+          >
+            <kbd style={kbdStyle}>W</kbd>
+            <kbd style={kbdStyle}>A</kbd>
+            <kbd style={kbdStyle}>S</kbd>
+            <kbd style={kbdStyle}>D</kbd> move ·{' '}
+            <kbd style={kbdStyle}>Q</kbd>
+            <kbd style={kbdStyle}>E</kbd> ↕ ·{' '}
+            <kbd style={kbdStyle}>⇧</kbd> 2× · drag to look ·{' '}
+            <kbd style={kbdStyle}>esc</kbd> exit
+          </div>
+        </div>
+      )}
 
       {/* Site picker — popover from MapShell site chip. Rendered inside
           the sidebar-aware frame so it doesn't bleed under the left
@@ -974,4 +1123,18 @@ export default function CesiumViewerComponent({
       )}
     </div>
   )
+}
+
+const kbdStyle: React.CSSProperties = {
+  display: 'inline-block',
+  padding: '0 4px',
+  margin: '0 1px',
+  background: 'rgba(255,255,255,0.08)',
+  border: '1px solid rgba(255,255,255,0.12)',
+  borderRadius: 3,
+  fontFamily: 'monospace',
+  fontSize: 9,
+  fontWeight: 600,
+  color: 'rgba(240,242,248,0.85)',
+  lineHeight: '14px',
 }

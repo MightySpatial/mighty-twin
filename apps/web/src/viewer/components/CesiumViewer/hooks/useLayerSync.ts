@@ -18,6 +18,9 @@ import {
   VerticalOrigin,
   HeightReference,
   ConstantProperty,
+  Cartesian3,
+  Color,
+  Entity,
 } from 'cesium'
 import type { Layer } from '../types'
 import type { ViewerContext, LayerHandle } from '../../../extensions/types'
@@ -38,6 +41,11 @@ export function useLayerSync(
   const tilesMapRef = useRef<Map<string, Cesium3DTileset>>(new Map())
   const imgMapRef = useRef<Map<string, ImageryLayer>>(new Map())
   const extHandleMapRef = useRef<Map<string, LayerHandle>>(new Map())
+  /** Anchor entities for Gaussian-splat layers. Until full GS rendering
+   *  lands the splat appears as a labelled marker at its world anchor so
+   *  it shows up in the legend, can be picked, and gives the camera a
+   *  fly-to target. */
+  const splatMapRef = useRef<Map<string, Entity>>(new Map())
 
   // Keep latest config in refs so the effect doesn't re-run on config changes
   const siteConfigRef = useRef(siteConfigState)
@@ -71,6 +79,12 @@ export function useLayerSync(
     })
     imgMapRef.current.forEach((il, id) => {
       if (!activeIds.has(id)) { viewer.imageryLayers.remove(il, true); imgMapRef.current.delete(id) }
+    })
+    splatMapRef.current.forEach((entity, id) => {
+      if (!activeIds.has(id)) {
+        viewer.entities.remove(entity)
+        splatMapRef.current.delete(id)
+      }
     })
 
     // Build viewer context for extensions (uses refs to avoid stale closures without adding deps)
@@ -217,6 +231,55 @@ export function useLayerSync(
         } else {
           const il = imgMapRef.current.get(layer.id)
           if (il) il.alpha = layer.opacity ?? 1
+        }
+      }
+
+      if (layer.type === 'splat') {
+        // Gaussian splat layers — anchor pin pending full splat rendering
+        // (which lands as a separate primitive on top of Cesium's
+        // depth buffer in a follow-up). For now we drop a labelled
+        // marker at layer.style.anchor so the splat shows up in the
+        // legend, can be flown to, and gets picked correctly.
+        const anchor = layer.style?.anchor as
+          | { lon: number; lat: number; height?: number }
+          | undefined
+        if (!anchor) return // no anchor → no marker; user must set one in Atlas
+        if (!splatMapRef.current.has(layer.id)) {
+          const entity = viewer.entities.add({
+            id: `splat-${layer.id}`,
+            position: Cartesian3.fromDegrees(
+              anchor.lon,
+              anchor.lat,
+              anchor.height ?? 0,
+            ),
+            point: {
+              pixelSize: 14,
+              color: Color.fromCssColorString('#ec4899'),
+              outlineColor: Color.WHITE,
+              outlineWidth: 2,
+              heightReference: HeightReference.CLAMP_TO_GROUND,
+            },
+            label: {
+              text: `${layer.name}\n(splat)`,
+              font: '12px sans-serif',
+              fillColor: Color.WHITE,
+              outlineColor: Color.BLACK,
+              outlineWidth: 2,
+              style: 2, // FILL_AND_OUTLINE
+              verticalOrigin: VerticalOrigin.BOTTOM,
+              pixelOffset: new Cartesian3(0, -18, 0) as unknown as Cartesian3,
+            },
+            properties: {
+              splatUrl: layer.url,
+              splatFormat:
+                (layer.layer_metadata as Record<string, unknown> | undefined)
+                  ?.splat_format ?? null,
+              splatOrigin:
+                (layer.layer_metadata as Record<string, unknown> | undefined)
+                  ?.origin_hint ?? null,
+            },
+          })
+          splatMapRef.current.set(layer.id, entity)
         }
       }
     })
