@@ -172,12 +172,15 @@ export const DEFAULT_FEATURE_STYLE: FeatureStyle = {
   opacity: 0.7,
 }
 
+/** Compact glyphs for the horizontal rail. Single-character mono icons keep
+ *  the rail tight; v1 used inline SVG, but the engineering-instrument vibe
+ *  reads cleanly from these mono glyphs in the JetBrains Mono stack. */
 export const RAIL_TABS: { id: DesignRailTab; label: string; icon: string }[] = [
-  { id: 'layers', label: 'Layers', icon: '◫' },
-  { id: 'sketch', label: 'Sketch', icon: '✎' },
-  { id: 'edit', label: 'Edit', icon: '⊞' },
-  { id: 'style', label: 'Style', icon: '◐' },
-  { id: 'history', label: 'History', icon: '☰' },
-  { id: 'submit', label: 'Submit', icon: '↗' },
-  { id: 'download', label: 'Export', icon: '↓' },
+  { id: 'layers',   label: 'Layers',   icon: '▤' },
+  { id: 'sketch',   label: 'Sketch',   icon: '✎' },
+  { id: 'edit',     label: 'Edit',     icon: '⌖' },
+  { id: 'style',    label: 'Style',    icon: '◐' },
+  { id: 'history',  label: 'History',  icon: '☰' },
+  { id: 'submit',   label: 'Submit',   icon: '↗' },
+  { id: 'download', label: 'Export',   icon: '↓' },
 ]

@@ -1,25 +1,23 @@
 /**
  * MightyTwin — Design Widget Tokens
  *
- * Single source of truth for the widget's visual language. Every other CSS
- * file in this directory consumes these tokens — no magic numbers, no
- * inline colour literals, no per-rule paddings.
+ * Faithful translation of MightyDT v1's engineering-instrument aesthetic
+ * (mono font, dark surfaces, accent glow) onto v2's dark-glass token system.
  *
- * v1 token palette (faithful port from MightyDT):
- *   --dw-util:        #22D3EE   cyan accent — selected tools, focus rings
- *   --dw-indigo:      #6366F1   secondary accent — sidebar, layer cards
- *   --dw-warning:     #fbbf24   origin pickers, locked-layer hint
- *   --dw-danger:      #f87171   destructive actions
+ * The accent is teal (#2dd4bf) per the v2 design system, where v1 used
+ * cyan (#22d3ee). All other patterns — surface ramp, geometry colour
+ * palette, spacing rhythm, mono typography — track v1 directly.
  */
 .design-widget {
-  /* ── Accent palette ─────────────────────────────────────────────────── */
-  --dw-util: #22d3ee;
-  --dw-util-hover: #06b6d4;
-  --dw-util-d: rgba(34, 211, 238, 0.4);
-  --dw-util-bg: rgba(34, 211, 238, 0.12);
-  --dw-util-bg-soft: rgba(34, 211, 238, 0.06);
-  --dw-util-text-on: #052431;
+  /* ── Primary accent (teal) ──────────────────────────────────────────── */
+  --dw-util: #2dd4bf;
+  --dw-util-hover: #14b8a6;
+  --dw-util-d: rgba(45, 212, 191, 0.4);
+  --dw-util-bg: rgba(45, 212, 191, 0.12);
+  --dw-util-bg-soft: rgba(45, 212, 191, 0.06);
+  --dw-util-text-on: #042f2e;
 
+  /* ── Secondary accent (indigo — sketch context strip, layer cards) ──── */
   --dw-indigo: #6366f1;
   --dw-indigo-l: #a5b4fc;
   --dw-indigo-l2: #c7d2fe;
@@ -38,26 +36,42 @@
   --dw-danger-bg: rgba(248, 113, 113, 0.12);
   --dw-danger-border: rgba(248, 113, 113, 0.32);
 
-  /* ── Neutral surface ramp ───────────────────────────────────────────── */
-  --dw-surface-0: rgba(15, 15, 20, 0.95);
-  --dw-surface-1: rgba(0, 0, 0, 0.2);
-  --dw-surface-2: rgba(0, 0, 0, 0.3);
+  /* ── Surface ramp (v1 s0–s4 mapped onto v2 dark-glass) ──────────────── */
+  /*   surface-0 = the widget body                                          */
+  /*   surface-1 = rail + status bar (deepest)                              */
+  /*   surface-2 = header                                                   */
+  /*   surface-3 = section bodies, hover states                             */
+  --dw-surface-0: rgba(15, 15, 20, 0.92);
+  --dw-surface-1: rgba(11, 15, 22, 0.96);
+  --dw-surface-2: rgba(23, 30, 42, 0.85);
+  --dw-surface-3: rgba(29, 37, 54, 0.65);
   --dw-surface-glass: rgba(20, 20, 28, 0.98);
 
+  /* ── Fill (overlay tints on the surface) ────────────────────────────── */
   --dw-fill-1: rgba(255, 255, 255, 0.04);
   --dw-fill-2: rgba(255, 255, 255, 0.06);
   --dw-fill-3: rgba(255, 255, 255, 0.08);
   --dw-fill-hover: rgba(255, 255, 255, 0.06);
 
-  --dw-border: var(--color-border);
+  /* ── Borders ───────────────────────────────────────────────────────── */
+  --dw-border: rgba(36, 48, 72, 0.85);
   --dw-border-strong: rgba(255, 255, 255, 0.18);
   --dw-border-subtle: rgba(255, 255, 255, 0.04);
 
-  --dw-text-strong: rgba(255, 255, 255, 0.95);
-  --dw-text-1: rgba(255, 255, 255, 0.9);
-  --dw-text-2: rgba(255, 255, 255, 0.78);
-  --dw-text-3: rgba(255, 255, 255, 0.55);
-  --dw-text-4: rgba(255, 255, 255, 0.4);
+  /* ── Text ramp (v1 t0–t3) ───────────────────────────────────────────── */
+  --dw-text-strong: #edf2f8;
+  --dw-text-1: rgba(237, 242, 248, 0.92);
+  --dw-text-2: #9baec8;
+  --dw-text-3: #546a88;
+  --dw-text-4: #2d3f58;
+
+  /* ── Geometry badge colours (v1 palette) ────────────────────────────── */
+  --dw-geom-pt:    #a78bfa;
+  --dw-geom-ln:    #67e8f9;
+  --dw-geom-poly:  #6ee7b7;
+  --dw-geom-box:   #fbbf24;
+  --dw-geom-cyl:   #fb923c;
+  --dw-geom-pit:   #f472b6;
 
   /* ── Spacing scale (4px grid) ───────────────────────────────────────── */
   --dw-space-1: 2px;
@@ -69,12 +83,12 @@
   --dw-space-7: 14px;
   --dw-space-8: 16px;
 
-  /* ── Radii ──────────────────────────────────────────────────────────── */
+  /* ── Radii (v1 5px / 3px / pill) ────────────────────────────────────── */
   --dw-radius-sm: 3px;
   --dw-radius-md: 4px;
-  --dw-radius-lg: 6px;
-  --dw-radius-xl: 8px;
-  --dw-radius-2xl: 12px;
+  --dw-radius-lg: 5px;
+  --dw-radius-xl: 6px;
+  --dw-radius-2xl: 8px;
   --dw-radius-pill: 999px;
 
   /* ── Type scale ─────────────────────────────────────────────────────── */
@@ -85,14 +99,21 @@
   --dw-fs-13: 13px;
   --dw-fs-14: 14px;
   --dw-fs-16: 16px;
-  --dw-tracking-meta: 0.08em;
+  --dw-tracking-meta: 0.05em;
   --dw-tracking-tight: 0.02em;
 
-  /* ── Control sizing ─────────────────────────────────────────────────── */
+  /* ── Mono font stack (v1 engineering-instrument aesthetic) ──────────── */
+  --dw-font: 'JetBrains Mono', 'SF Mono', 'Fira Code', 'Menlo', ui-monospace, monospace;
+
+  /* ── Control sizing (v1's compact 22-26-28-32 scale) ───────────────── */
   --dw-control-h-sm: 22px;
   --dw-control-h-md: 26px;
   --dw-control-h-lg: 28px;
   --dw-control-h-xl: 32px;
+
+  /* ── Layout (v1 reference) ──────────────────────────────────────────── */
+  --dw-rail-h: 36px;
+  --dw-status-h: 22px;
 
   /* ── Motion ─────────────────────────────────────────────────────────── */
   --dw-dur-fast: 0.12s;

@@ -53,6 +53,12 @@ export function useDesignState(viewer: CesiumViewerType | null) {
   // ── Traverse draft ─────────────────────────────────────────────────────────
   const [traverseDraft, setTraverseDraft] = useState<TraverseDraft | null>(null)
 
+  // ── Snap toggle (v1 sketch context strip) ───────────────────────────────────
+  const [snapEnabled, setSnapEnabled] = useState(false)
+
+  // ── Default draw layer — preferred fallback layer (v1 sdw-star pattern) ───
+  const [defaultDrawLayerId, setDefaultDrawLayerId] = useState<string | null>(null)
+
   const handlerRef = useRef<ScreenSpaceEventHandler | null>(null)
 
   // Refs to avoid re-registering event listeners on every state change
@@ -109,6 +115,7 @@ export function useDesignState(viewer: CesiumViewerType | null) {
     updateFeatureStyle,
     updateFeatureParams,
     updateFeatureAttribute,
+    snapFeatureToTerrain,
     selectFeature,
     renameFeature,
     moveFeature,
@@ -251,6 +258,11 @@ export function useDesignState(viewer: CesiumViewerType | null) {
     // Traverse draft
     traverseDraft,
     setTraverseDraft,
+    // Snap + default layer
+    snapEnabled,
+    setSnapEnabled,
+    defaultDrawLayerId,
+    setDefaultDrawLayerId,
     // Features
     features,
     setFeatures,
@@ -262,6 +274,7 @@ export function useDesignState(viewer: CesiumViewerType | null) {
     updateFeatureStyle,
     updateFeatureParams,
     updateFeatureAttribute,
+    snapFeatureToTerrain,
     selectFeature,
     renameFeature,
     moveFeature,

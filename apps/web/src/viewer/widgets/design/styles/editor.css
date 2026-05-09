@@ -1,38 +1,38 @@
 /** Design Object Editor (.doe-*) + Attributes Editor (.ae-*) styles.
- *  These two components share visual rhythm — grouped sections with small
- *  uppercase labels above 2/3-col grids, tight 26-28px control rows. */
+ *  Faithful port of v1's compact 26-28px control rows with 3-col grids
+ *  for dimensions and orientation. Mono font, tight spacing. */
 
 @import './tokens.css';
 
 /* ── Design Object Editor ──────────────────────────────────────────────── */
 
 .doe {
-  padding: var(--dw-space-5) var(--dw-space-6);
+  padding: var(--dw-space-4) var(--dw-space-5);
   background: var(--dw-surface-1);
   border-top: 1px solid var(--dw-border-subtle);
   border-bottom: 1px solid var(--dw-border-subtle);
   display: flex;
   flex-direction: column;
-  gap: var(--dw-space-5);
+  gap: var(--dw-space-4);
 }
 .doe--appearance { border-top: none; }
 
 .doe-group {
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: var(--dw-space-2);
 }
 .doe-group-label {
   font-size: var(--dw-fs-9);
   text-transform: uppercase;
   letter-spacing: var(--dw-tracking-meta);
-  color: var(--color-text-muted);
+  color: var(--dw-text-3);
   display: flex;
   align-items: center;
   gap: var(--dw-space-3);
+  font-weight: 600;
 }
 
-/* Grids — 3-col / 2-col rhythm matches v1 doe-grid */
 .doe-grid {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
@@ -43,7 +43,7 @@
 .doe-span-2 { grid-column: span 2; }
 .doe-span-3 { grid-column: span 3; }
 
-.doe-field { display: flex; flex-direction: column; gap: var(--dw-space-1); min-width: 0; }
+.doe-field { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
 .doe-field label { font-size: var(--dw-fs-9); color: var(--dw-text-4); }
 .doe-field .inp {
   width: 100%;
@@ -52,25 +52,28 @@
   border: 1px solid var(--dw-border);
   color: var(--dw-text-1);
   padding: 0 var(--dw-space-3);
-  border-radius: var(--dw-radius-md);
+  border-radius: var(--dw-radius-sm);
+  font-family: inherit;
   font-size: var(--dw-fs-11);
   outline: none;
-  transition: border-color var(--dw-dur-med), box-shadow var(--dw-dur-med);
+  transition: border-color var(--dw-dur-fast), box-shadow var(--dw-dur-fast);
 }
 .doe-field .inp:focus {
   border-color: var(--dw-util);
   box-shadow: 0 0 0 1px var(--dw-util-d);
 }
 
-/* Pair of toggle buttons (Square / Round) */
+/* ── Square / Round shape toggle ───────────────────────────────────────── */
+
 .doe-toggle-row { display: flex; gap: var(--dw-space-1); }
 .doe-toggle-row button {
   flex: 1;
   height: var(--dw-control-h-md);
   border: 1px solid var(--dw-border);
-  border-radius: var(--dw-radius-md);
+  border-radius: var(--dw-radius-sm);
   background: var(--dw-fill-1);
   color: var(--dw-text-2);
+  font-family: inherit;
   font-size: var(--dw-fs-11);
   cursor: pointer;
   transition: all var(--dw-dur-fast);
@@ -81,16 +84,18 @@
   border-color: var(--dw-util-d);
 }
 
-/* refZ anchor triplet (⊤/◆/⊥) */
-.doe-anchor-row { display: flex; align-items: center; gap: var(--dw-space-2); }
+/* ── refZ anchor triplet (⊤/◆/⊥) ──────────────────────────────────────── */
+
+.doe-anchor-row { display: flex; align-items: center; gap: var(--dw-space-1); }
 .doe-anchor-btn {
-  width: var(--dw-control-h-lg);
-  height: var(--dw-control-h-lg);
+  width: 28px;
+  height: 28px;
   padding: 0;
   border: 1px solid var(--dw-border);
-  border-radius: var(--dw-radius-md);
+  border-radius: var(--dw-radius-sm);
   background: var(--dw-fill-1);
   color: var(--dw-text-2);
+  font-family: inherit;
   font-size: var(--dw-fs-14);
   line-height: 1;
   cursor: pointer;
@@ -100,29 +105,55 @@
   transition: background var(--dw-dur-fast), border-color var(--dw-dur-fast), color var(--dw-dur-fast);
 }
 .doe-anchor-btn:hover {
-  background: rgba(99, 102, 241, 0.16);
+  background: var(--dw-indigo-bg);
   border-color: var(--dw-indigo-border);
   color: var(--dw-indigo-l2);
 }
 .doe-anchor-btn.on {
-  background: rgba(99, 102, 241, 0.28);
-  border-color: rgba(99, 102, 241, 0.55);
+  background: var(--dw-indigo-bg-strong);
+  border-color: var(--dw-indigo-border);
   color: #e0e7ff;
 }
 .doe-anchor-hint {
   margin-left: auto;
-  font-size: var(--dw-fs-10);
-  color: var(--color-text-muted);
+  font-size: var(--dw-fs-9);
+  color: var(--dw-text-3);
   letter-spacing: var(--dw-tracking-tight);
 }
 
-/* Appearance row — colour + opacity */
-.doe-appearance { display: flex; align-items: center; gap: var(--dw-space-4); }
+/* ── Snap-to-terrain button (v1 doe-terrain-btn) ───────────────────────── */
+
+.doe-terrain-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--dw-space-2);
+  width: 100%;
+  height: var(--dw-control-h-md);
+  background: rgba(249, 115, 22, 0.12);
+  border: 1px solid rgba(249, 115, 22, 0.3);
+  border-radius: var(--dw-radius-sm);
+  color: #fb923c;
+  font-family: inherit;
+  font-size: var(--dw-fs-9);
+  cursor: pointer;
+  transition: all var(--dw-dur-fast);
+}
+.doe-terrain-btn:hover {
+  background: rgba(249, 115, 22, 0.22);
+  border-color: rgba(249, 115, 22, 0.5);
+  color: #fed7aa;
+}
+.doe-terrain-btn svg { flex-shrink: 0; }
+
+/* ── Appearance row ────────────────────────────────────────────────────── */
+
+.doe-appearance { display: flex; align-items: center; gap: var(--dw-space-3); }
 .doe-color {
   width: var(--dw-control-h-md);
   height: var(--dw-control-h-md);
   border: 1px solid var(--dw-border);
-  border-radius: var(--dw-radius-md);
+  border-radius: var(--dw-radius-sm);
   cursor: pointer;
   padding: 0;
   flex-shrink: 0;
@@ -136,6 +167,7 @@
   background: rgba(255, 255, 255, 0.1);
   border-radius: 2px;
   outline: none;
+  accent-color: var(--dw-util);
 }
 .doe-opacity-slider::-webkit-slider-thumb {
   -webkit-appearance: none;
@@ -146,32 +178,33 @@
   cursor: pointer;
 }
 .doe-opacity-label {
-  font-size: var(--dw-fs-10);
-  color: var(--color-text-muted);
+  font-size: var(--dw-fs-9);
+  color: var(--dw-text-3);
   width: 32px;
   text-align: right;
   flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
 }
 
 /* ── Attributes Editor ─────────────────────────────────────────────────── */
 
 .ae {
-  padding: var(--dw-space-3) 0;
+  padding: var(--dw-space-2) 0;
   display: flex;
   flex-direction: column;
-  gap: var(--dw-space-3);
+  gap: var(--dw-space-2);
 }
-.ae-fields { display: flex; flex-direction: column; gap: var(--dw-space-2); }
+.ae-fields { display: flex; flex-direction: column; gap: var(--dw-space-1); }
 .ae-field-row {
   display: flex;
   align-items: center;
-  gap: var(--dw-space-3);
+  gap: var(--dw-space-2);
   font-size: var(--dw-fs-11);
 }
 .ae-field-lbl {
   flex-shrink: 0;
   width: 72px;
-  font-size: var(--dw-fs-10);
+  font-size: var(--dw-fs-9);
   color: var(--dw-text-3);
   letter-spacing: var(--dw-tracking-tight);
   text-transform: lowercase;
@@ -179,46 +212,51 @@
 .ae-field-inp {
   flex: 1;
   min-width: 0;
-  height: 24px;
+  height: var(--dw-control-h-sm);
   padding: 0 var(--dw-space-3);
   background: var(--dw-surface-1);
   border: 1px solid var(--dw-border);
   color: var(--dw-text-1);
+  font-family: inherit;
   font-size: var(--dw-fs-11);
   border-radius: var(--dw-radius-sm);
   outline: none;
 }
-.ae-field-inp:focus { border-color: var(--dw-util); background: var(--dw-surface-2); }
+.ae-field-inp:focus {
+  border-color: var(--dw-util);
+  background: var(--dw-surface-2);
+}
 
 .ae-save-btn,
 .ae-add-btn {
   align-self: flex-start;
-  height: 24px;
-  padding: 0 var(--dw-space-5);
-  font-size: var(--dw-fs-11);
+  height: var(--dw-control-h-sm);
+  padding: 0 var(--dw-space-4);
+  font-family: inherit;
+  font-size: var(--dw-fs-10);
   font-weight: 600;
   background: var(--dw-indigo-bg-strong);
   border: 1px solid var(--dw-indigo-border);
   color: var(--dw-indigo-l);
-  border-radius: var(--dw-radius-md);
+  border-radius: var(--dw-radius-sm);
   cursor: pointer;
-  transition: background var(--dw-dur-med), border-color var(--dw-dur-med);
+  transition: background var(--dw-dur-fast), border-color var(--dw-dur-fast);
 }
 .ae-save-btn:hover:not(:disabled),
 .ae-add-btn:hover {
   background: rgba(99, 102, 241, 0.3);
   border-color: rgba(99, 102, 241, 0.6);
-  color: #e0e7ff;
+  color: var(--dw-indigo-l2);
 }
 
 .ae-save-form {
   display: flex;
   align-items: center;
-  gap: var(--dw-space-2);
-  padding: var(--dw-space-2) var(--dw-space-3);
+  gap: var(--dw-space-1);
+  padding: var(--dw-space-1) var(--dw-space-2);
   background: var(--dw-indigo-bg-soft);
   border: 1px solid var(--dw-indigo-border-soft);
-  border-radius: var(--dw-radius-md);
+  border-radius: var(--dw-radius-sm);
 }
 .ae-save-inp {
   flex: 1;
@@ -228,6 +266,7 @@
   background: var(--dw-surface-2);
   border: 1px solid rgba(255, 255, 255, 0.14);
   color: var(--dw-text-strong);
+  font-family: inherit;
   font-size: var(--dw-fs-11);
   border-radius: 2px;
   outline: none;
@@ -236,7 +275,8 @@
 .ae-save-ok,
 .ae-save-cancel {
   height: var(--dw-control-h-sm);
-  padding: 0 var(--dw-space-4);
+  padding: 0 var(--dw-space-3);
+  font-family: inherit;
   font-size: var(--dw-fs-10);
   border-radius: 2px;
   cursor: pointer;

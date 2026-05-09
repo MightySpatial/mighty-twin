@@ -6,46 +6,51 @@
 .dl-panel {
   display: flex;
   flex-direction: column;
-  gap: var(--dw-space-4);
-  padding: var(--dw-space-2) 0;
+  gap: var(--dw-space-3);
+  padding: var(--dw-space-1) 0;
 }
 
 .dl-summary {
   display: flex;
   align-items: center;
-  gap: var(--dw-space-4);
-  padding: var(--dw-space-5) var(--dw-space-6);
+  gap: var(--dw-space-3);
+  padding: var(--dw-space-3) var(--dw-space-4);
   background: var(--dw-util-bg-soft);
-  border: 1px solid rgba(34, 211, 238, 0.28);
-  border-radius: var(--dw-radius-xl);
-  margin-bottom: var(--dw-space-2);
+  border: 1px solid var(--dw-util-d);
+  border-radius: var(--dw-radius-md);
+  margin-bottom: var(--dw-space-1);
 }
 .dl-summary-icon { color: var(--dw-util); flex-shrink: 0; }
-.dl-summary-count { font-size: var(--dw-fs-12); font-weight: 600; color: var(--dw-text-1); }
+.dl-summary-count {
+  font-size: var(--dw-fs-11);
+  font-weight: 600;
+  color: var(--dw-text-1);
+}
 .dl-summary-meta {
   font-size: var(--dw-fs-10);
-  color: var(--color-text-muted);
-  margin-top: var(--dw-space-1);
+  color: var(--dw-text-3);
+  margin-top: 1px;
 }
 
 .dl-section-label {
-  font-size: var(--dw-fs-9);
+  font-size: var(--dw-fs-10);
   text-transform: uppercase;
   letter-spacing: var(--dw-tracking-meta);
-  color: var(--color-text-muted);
-  font-weight: 700;
+  color: var(--dw-text-3);
+  font-weight: 600;
 }
 
-.dl-row { display: flex; gap: var(--dw-space-3); }
+.dl-row { display: flex; gap: var(--dw-space-2); }
 .dl-select {
   flex: 1;
   min-width: 0;
-  height: var(--dw-control-h-lg);
-  padding: 0 var(--dw-space-4);
+  height: var(--dw-control-h-md);
+  padding: 0 var(--dw-space-3);
   background: var(--dw-fill-2);
   border: 1px solid var(--dw-border);
-  border-radius: var(--dw-radius-lg);
-  color: var(--dw-text-strong);
+  border-radius: var(--dw-radius-sm);
+  color: var(--dw-text-1);
+  font-family: inherit;
   font-size: var(--dw-fs-11);
   cursor: pointer;
   outline: none;
@@ -54,12 +59,13 @@
 .dl-select:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .dl-input {
-  height: var(--dw-control-h-lg);
-  padding: 0 var(--dw-space-4);
+  height: var(--dw-control-h-md);
+  padding: 0 var(--dw-space-3);
   background: var(--dw-fill-2);
   border: 1px solid var(--dw-border);
-  border-radius: var(--dw-radius-lg);
-  color: var(--dw-text-strong);
+  border-radius: var(--dw-radius-sm);
+  color: var(--dw-text-1);
+  font-family: inherit;
   font-size: var(--dw-fs-11);
   outline: none;
 }
@@ -68,13 +74,13 @@
 .dl-warning {
   display: flex;
   align-items: flex-start;
-  gap: var(--dw-space-3);
-  padding: var(--dw-space-4) var(--dw-space-5);
+  gap: var(--dw-space-2);
+  padding: var(--dw-space-3) var(--dw-space-4);
   background: var(--dw-warning-bg);
   border: 1px solid var(--dw-warning-border);
-  border-radius: var(--dw-radius-lg);
+  border-radius: var(--dw-radius-md);
   color: var(--dw-warning-l);
-  font-size: var(--dw-fs-11);
+  font-size: var(--dw-fs-10);
   line-height: 1.4;
 }
 .dl-warning svg { flex-shrink: 0; margin-top: 2px; }
@@ -82,33 +88,36 @@
 .dl-error {
   display: flex;
   align-items: flex-start;
-  gap: var(--dw-space-3);
-  padding: var(--dw-space-4) var(--dw-space-5);
-  background: rgba(248, 113, 113, 0.08);
+  gap: var(--dw-space-2);
+  padding: var(--dw-space-3) var(--dw-space-4);
+  background: var(--dw-danger-bg);
   border: 1px solid var(--dw-danger-border);
-  border-radius: var(--dw-radius-lg);
+  border-radius: var(--dw-radius-md);
   color: #fca5a5;
-  font-size: var(--dw-fs-11);
+  font-size: var(--dw-fs-10);
   line-height: 1.4;
 }
 .dl-error svg { flex-shrink: 0; margin-top: 2px; }
 
 .dl-export-btn {
   width: 100%;
-  height: var(--dw-control-h-xl);
+  height: var(--dw-control-h-lg);
   padding: 0 var(--dw-space-7);
   background: var(--dw-util);
   color: var(--dw-util-text-on);
-  font-size: var(--dw-fs-12);
+  font-family: inherit;
+  font-size: var(--dw-fs-11);
   font-weight: 700;
   border: none;
-  border-radius: var(--dw-radius-lg);
+  border-radius: var(--dw-radius-md);
   cursor: pointer;
   transition: background var(--dw-dur-fast), transform 0.06s;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: var(--dw-space-3);
+  gap: var(--dw-space-2);
+  letter-spacing: var(--dw-tracking-tight);
+  text-transform: uppercase;
 }
 .dl-export-btn:hover:not(:disabled) { background: var(--dw-util-hover); }
 .dl-export-btn:active { transform: scale(0.99); }
@@ -116,4 +125,5 @@
   background: var(--dw-fill-2);
   color: var(--dw-text-4);
   cursor: not-allowed;
+  text-transform: none;
 }

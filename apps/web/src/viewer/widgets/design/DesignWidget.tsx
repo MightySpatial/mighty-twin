@@ -1,14 +1,21 @@
 /**
  * MightyTwin — Design Widget
  *
- * Slim orchestrator. Composes the design state hooks, the rail navigation,
- * and the active panel. All visual subcomponents (rail nav, save indicator,
- * mobile mini-mode, individual panels) live in their own files.
+ * Layout (top to bottom, faithful port of v1 DesignWidget.vue):
+ *   [ design-rail ]               horizontal tab strip (with cyan/teal glow underline)
+ *   [ design-panel-header ]       title + ctx label + save badge + undo/redo + close
+ *   [ sketch-context-strip ]      active layer + default star + snap toggle (sticky)
+ *   [ design-panel-body ]         scrollable panel content
+ *   [ design-status-bar ]         current tool + cursor coords
+ *
+ * The widget itself is an orchestrator. State is in `hooks/`, primitives in
+ * `primitives/`, panels in `panels/`. No business logic lives here.
  */
 import { useCallback, useEffect } from 'react'
 import type { Viewer as CesiumViewerType } from 'cesium'
 import { RAIL_TABS } from './types'
 import { useDesignState, useSketchPersistence } from './hooks'
+import { useCursorCoords } from './hooks/useCursorCoords'
 import { useSolidTools } from './tools/useSolidTools'
 import { useMoveTool } from './tools/useMoveTool'
 import { useBreakpoint } from '../../hooks/useBreakpoint'
@@ -21,6 +28,8 @@ import SubmitPanel from './panels/SubmitPanel'
 import DownloadPanel from './panels/DownloadPanel'
 import SaveIndicator from './primitives/SaveIndicator'
 import MobileToolMini from './primitives/MobileToolMini'
+import SketchContextStrip from './primitives/SketchContextStrip'
+import StatusBar from './primitives/StatusBar'
 import './styles/index.css'
 
 interface DesignWidgetProps {
@@ -30,12 +39,26 @@ interface DesignWidgetProps {
   siteSlug?: string | null
 }
 
+const TOOL_HINTS: Record<string, string> = {
+  point:     'Click to place a point',
+  line:      'Click vertices, double-click to finish',
+  polygon:   'Click vertices, double-click to close',
+  rectangle: 'Click first corner, then opposite corner',
+  circle:    'Click centre, then radius',
+  traverse:  'Click start; add bearing/distance legs',
+  box:       'Click to place a box',
+  pit:       'Click to place an open-top pit',
+  cylinder:  'Click to place a cylinder',
+  select:    'Click a feature to select',
+}
+
 export default function DesignWidget({ viewer, onClose, siteSlug = null }: DesignWidgetProps) {
   const state = useDesignState(viewer)
+  const cursor = useCursorCoords(viewer)
   const { activeTab, setActiveTab } = state
   const { isPhone } = useBreakpoint()
 
-  // ── Persistence: hydrate sketch state on mount, debounce-save on change ──
+  // ── Persistence ─────────────────────────────────────────────────────────
   const handleHydrate = useCallback(
     (loadedLayers: typeof state.layers, loadedFeatures: typeof state.features) => {
       state.setLayers(loadedLayers)
@@ -54,14 +77,13 @@ export default function DesignWidget({ viewer, onClose, siteSlug = null }: Desig
     onHydrate: handleHydrate,
   })
 
-  // ── Tool ↔ tab linking: 'select' tool follows the Edit tab ──────────────
+  // ── Tool ↔ tab linking ──────────────────────────────────────────────────
   useEffect(() => {
     if (activeTab === 'edit') state.setActiveTool('select')
     else if (state.activeTool === 'select') state.setActiveTool(null)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab])
 
-  // ── Move + solid tools registered against the viewer ────────────────────
   useMoveTool({
     viewer,
     activeTool: state.activeTool,
@@ -82,16 +104,15 @@ export default function DesignWidget({ viewer, onClose, siteSlug = null }: Desig
     onFeatureAdded: state.addFeature,
   })
 
-  // ── Mobile mini-mode: tool active on phone → collapse to bottom strip ───
-  const isMiniMode = isPhone && state.activeTool !== null
-  if (isMiniMode) {
+  // ── Phone mini-mode ─────────────────────────────────────────────────────
+  if (isPhone && state.activeTool !== null) {
     const handleDone = () => {
       if (state.solidDraft) confirmSolidPlacement()
       else state.setActiveTool(null)
     }
     return (
       <MobileToolMini
-        tool={state.activeTool!}
+        tool={state.activeTool}
         elevationConfig={state.elevationConfig}
         onElevationChange={state.setElevationConfig}
         onCancel={() => state.setActiveTool(null)}
@@ -99,13 +120,27 @@ export default function DesignWidget({ viewer, onClose, siteSlug = null }: Desig
       />
     )
   }
+  if (isPhone) {
+    return (
+      <div className="design-widget design-phone-blocker">
+        <div className="design-phone-blocker__icon">🔧</div>
+        <p>Design tools require a tablet or desktop.</p>
+      </div>
+    )
+  }
+
+  const activeTabSpec = RAIL_TABS.find(t => t.id === activeTab)
+  const ctxStripVisible = (activeTab === 'sketch' || activeTab === 'edit') && state.layers.some(l => l.visible)
 
   return (
     <div className="design-widget">
-      <nav className="design-rail">
+      <nav className="design-rail" role="tablist" aria-label="Design modes">
         {RAIL_TABS.map(tab => (
           <button
             key={tab.id}
+            type="button"
+            role="tab"
+            aria-selected={activeTab === tab.id}
             className={`design-rail-btn${activeTab === tab.id ? ' active' : ''}`}
             title={tab.label}
             onClick={() => setActiveTab(tab.id)}
@@ -118,9 +153,8 @@ export default function DesignWidget({ viewer, onClose, siteSlug = null }: Desig
 
       <div className="design-panel-content">
         <div className="design-panel-header">
-          <span className="design-panel-title">
-            {RAIL_TABS.find(t => t.id === activeTab)?.label ?? 'Design'}
-          </span>
+          <h4 className="design-panel-title">Design</h4>
+          <span className="design-panel-ctx">{activeTabSpec?.label}</span>
           {siteSlug && (
             <SaveIndicator
               status={persistence.status}
@@ -129,8 +163,20 @@ export default function DesignWidget({ viewer, onClose, siteSlug = null }: Desig
               onRetry={persistence.saveNow}
             />
           )}
-          <button className="ext-panel-close" onClick={onClose}>×</button>
+          <button className="ext-panel-close" onClick={onClose} title="Close">×</button>
         </div>
+
+        {ctxStripVisible && (
+          <SketchContextStrip
+            layers={state.layers}
+            activeLayerId={state.activeLayerId}
+            onSetActiveLayer={state.setActiveLayerId}
+            defaultLayerId={state.defaultDrawLayerId}
+            onSetDefaultLayer={state.setDefaultDrawLayerId}
+            snapEnabled={state.snapEnabled}
+            onSnapToggle={state.setSnapEnabled}
+          />
+        )}
 
         <div className="design-panel-body">
           {activeTab === 'layers' && (
@@ -179,6 +225,7 @@ export default function DesignWidget({ viewer, onClose, siteSlug = null }: Desig
               onUpdateParams={state.updateFeatureParams}
               onUpdateAttribute={state.updateFeatureAttribute}
               onUpdateStyle={state.updateFeatureStyle}
+              onSnapToTerrain={state.snapFeatureToTerrain}
             />
           )}
 
@@ -216,6 +263,12 @@ export default function DesignWidget({ viewer, onClose, siteSlug = null }: Desig
             />
           )}
         </div>
+
+        <StatusBar
+          tool={state.activeTool}
+          hint={state.activeTool ? TOOL_HINTS[state.activeTool] ?? null : null}
+          cursor={cursor}
+        />
       </div>
     </div>
   )

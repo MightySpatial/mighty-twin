@@ -7,6 +7,7 @@ import { useState, useCallback, useMemo, type MutableRefObject } from 'react'
 import {
   Viewer as CesiumViewerType,
   Cartesian3,
+  Cartographic,
   Color,
   JulianDate,
   PolygonHierarchy,
@@ -192,6 +193,43 @@ export function useFeatureOps({ viewer, layersRef, layers, syntheticCollapsed }:
     }))
   }, [viewer])
 
+  /** Snap a solid feature's altitude to the terrain height at its lon/lat.
+   *  Reads `viewer.scene.globe.getHeight()` for the active terrain provider;
+   *  falls back to 0 when the terrain hasn't tiled in yet. v1 parity: the
+   *  Anchor section's "Terrain" button on box/pit/cylinder. */
+  const snapFeatureToTerrain = useCallback((featureId: string) => {
+    if (!viewer) return
+    setFeatures(prev => prev.map(f => {
+      if (f.id !== featureId) return f
+      const isSolid = f.geometry === 'box' || f.geometry === 'pit' || f.geometry === 'cylinder'
+      if (!isSolid) return f
+      const params = (f.solidParams ?? {}) as Record<string, unknown>
+      const lon = typeof params.lon === 'number' ? params.lon : (f.attributes as { lon?: number }).lon
+      const lat = typeof params.lat === 'number' ? params.lat : (f.attributes as { lat?: number }).lat
+      if (typeof lon !== 'number' || typeof lat !== 'number') return f
+      const carto = Cartographic.fromDegrees(lon, lat)
+      const terrainH = viewer.scene.globe.getHeight(carto) ?? 0
+      // Reuse the rebuild path so the entity geometry refreshes to the new alt.
+      const draft = { ...params, alt: terrainH }
+      const toRemove: string[] = []
+      for (const ent of viewer.entities.values) {
+        if (ent.id === f.entityId || ent.id.startsWith(f.entityId + '_') || ent.id.startsWith(f.entityId + '__')) {
+          toRemove.push(ent.id)
+        }
+      }
+      for (const id of toRemove) {
+        const ent = viewer.entities.getById(id)
+        if (ent) viewer.entities.remove(ent)
+      }
+      const fillCol = Color.fromCssColorString(f.style.fillColor).withAlpha(f.style.opacity * 0.65)
+      const outlineCol = Color.fromCssColorString(f.style.strokeColor).withAlpha(f.style.opacity)
+      if (f.geometry === 'box') commitBox(viewer, draft as unknown as BoxDraft, f.entityId, fillCol, outlineCol)
+      else if (f.geometry === 'cylinder') commitCylinder(viewer, draft as unknown as CylDraft, f.entityId, fillCol, outlineCol)
+      else if (f.geometry === 'pit') commitPit(viewer, draft as unknown as PitDraft, f.entityId, fillCol, outlineCol)
+      return { ...f, solidParams: draft, attributes: { ...(f.attributes as object), alt: terrainH } }
+    }))
+  }, [viewer])
+
   /** Update arbitrary attribute key/value on a feature. Used by AttributesEditor.
    *  Reserves the geometry/elevation/style namespaces for their own ops. */
   const updateFeatureAttribute = useCallback((featureId: string, key: string, value: unknown) => {
@@ -292,6 +330,7 @@ export function useFeatureOps({ viewer, layersRef, layers, syntheticCollapsed }:
     updateFeatureStyle,
     updateFeatureParams,
     updateFeatureAttribute,
+    snapFeatureToTerrain,
     selectFeature,
   }
 }

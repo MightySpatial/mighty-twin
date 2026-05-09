@@ -16,6 +16,7 @@ import type { SketchFeature, BoxDraft, PitDraft, CylDraft } from '../types'
 interface Props {
   feature: SketchFeature
   onParamChange: (featureId: string, patch: Record<string, unknown>) => void
+  onSnapToTerrain?: (featureId: string) => void
 }
 
 const DIMENSION_KEYS = new Set(['width', 'depth', 'height', 'radius', 'wallThickness', 'floorThickness'])
@@ -27,7 +28,8 @@ function readNum(raw: string): number | null {
   return Number.isFinite(v) ? v : null
 }
 
-export default function DesignObjectEditor({ feature, onParamChange }: Props) {
+export default function DesignObjectEditor({ feature, onParamChange, onSnapToTerrain }: Props) {
+  const snap = onSnapToTerrain ? () => onSnapToTerrain(feature.id) : undefined
   const params = (feature.solidParams ?? {}) as Record<string, unknown>
   const geom = feature.geometry
 
@@ -96,7 +98,7 @@ export default function DesignObjectEditor({ feature, onParamChange }: Props) {
           </div>
         </div>
 
-        <AnchorAlt altDisplay={altDisplay} onAlt={v => onParamChange(feature.id, { alt: v })} />
+        <AnchorAlt altDisplay={altDisplay} onAlt={v => onParamChange(feature.id, { alt: v })} onSnapToTerrain={snap} />
       </div>
     )
   }
@@ -155,7 +157,7 @@ export default function DesignObjectEditor({ feature, onParamChange }: Props) {
           </div>
         </div>
 
-        <AnchorAlt altDisplay={altDisplay} onAlt={v => onParamChange(feature.id, { alt: v })} />
+        <AnchorAlt altDisplay={altDisplay} onAlt={v => onParamChange(feature.id, { alt: v })} onSnapToTerrain={snap} />
       </div>
     )
   }
@@ -186,7 +188,7 @@ export default function DesignObjectEditor({ feature, onParamChange }: Props) {
           </div>
         </div>
 
-        <AnchorAlt altDisplay={altDisplay} onAlt={v => onParamChange(feature.id, { alt: v })} />
+        <AnchorAlt altDisplay={altDisplay} onAlt={v => onParamChange(feature.id, { alt: v })} onSnapToTerrain={snap} />
       </div>
     )
   }
@@ -213,7 +215,7 @@ function OrientationGroup({ params, onParam }: { params: Record<string, unknown>
   )
 }
 
-function AnchorAlt({ altDisplay, onAlt }: { altDisplay: number; onAlt: (v: number) => void }) {
+function AnchorAlt({ altDisplay, onAlt, onSnapToTerrain }: { altDisplay: number; onAlt: (v: number) => void; onSnapToTerrain?: () => void }) {
   return (
     <div className="doe-group">
       <div className="doe-group-label">Anchor · WGS84</div>
@@ -231,6 +233,24 @@ function AnchorAlt({ altDisplay, onAlt }: { altDisplay: number; onAlt: (v: numbe
             }}
           />
         </div>
+        {onSnapToTerrain && (
+          <div className="doe-field">
+            <label>&nbsp;</label>
+            <button
+              type="button"
+              className="doe-terrain-btn"
+              title="Snap to terrain height at this lon/lat"
+              onClick={onSnapToTerrain}
+            >
+              <svg viewBox="0 0 16 16" width={11} height={11} fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
+                <path d="M2 12l3-4 2.5 2L11 5l3 4" />
+                <line x1="8" y1="12" x2="8" y2="14.5" />
+                <line x1="6.5" y1="14.5" x2="9.5" y2="14.5" />
+              </svg>
+              Terrain
+            </button>
+          </div>
+        )}
       </div>
     </div>
   )

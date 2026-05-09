@@ -31,12 +31,13 @@ interface Props {
   onUpdateParams: (id: string, patch: Record<string, unknown>) => void
   onUpdateAttribute: (id: string, key: string, value: unknown) => void
   onUpdateStyle: (id: string, patch: Partial<FeatureStyle>) => void
+  onSnapToTerrain: (id: string) => void
 }
 
 export default function EditPanel({
   feature, layers, viewer,
   onMoveFeature, onDelete, onRename,
-  onUpdateParams, onUpdateAttribute, onUpdateStyle,
+  onUpdateParams, onUpdateAttribute, onUpdateStyle, onSnapToTerrain,
 }: Props) {
   const move = useMoveControls({ feature, viewer, onMoveFeature })
 
@@ -61,7 +62,7 @@ export default function EditPanel({
 
       {isSolid && (
         <>
-          <DesignObjectEditor feature={feature} onParamChange={onUpdateParams} />
+          <DesignObjectEditor feature={feature} onParamChange={onUpdateParams} onSnapToTerrain={onSnapToTerrain} />
           <AppearanceRow feature={feature} onUpdateStyle={onUpdateStyle} />
           <div className="edit-divider" />
         </>

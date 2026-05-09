@@ -1,83 +1,83 @@
 /**
- * MightyTwin — Design Widget Primitives
- *
- * Visual rules for the reusable primitive components in
- * `widgets/design/primitives/*`. Every value comes from tokens.css —
- * no magic numbers.
+ * Design widget primitives — visual rules for the reusable components in
+ * `widgets/design/primitives/*`. Tokens-only: every value is a CSS variable.
  */
 
-/* ── Section label (uppercase tracking-wide) ───────────────────────────── */
+@import './tokens.css';
+
+/* ── Section label (uppercase, tracking-wide) ──────────────────────────── */
 
 .dw-section-label {
-  font-size: var(--dw-fs-11);
-  font-weight: 700;
-  color: var(--color-text-secondary);
+  font-size: var(--dw-fs-10);
+  font-weight: 600;
+  color: var(--dw-text-3);
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: var(--dw-tracking-meta);
 }
 
-/* ── Row layout — label on top, control(s) below ───────────────────────── */
+/* ── Row layout — label on top, control(s) below ──────────────────────── */
 
 .dw-row {
   display: flex;
   flex-direction: column;
-  gap: var(--dw-space-2);
+  gap: var(--dw-space-1);
 }
 
 /* ── Hex input ─────────────────────────────────────────────────────────── */
 
 .dw-hex-input {
   flex: 1;
-  height: var(--dw-control-h-lg);
-  padding: 0 var(--dw-space-4);
+  height: var(--dw-control-h-md);
+  padding: 0 var(--dw-space-3);
   background: var(--dw-fill-2);
   border: 1px solid var(--dw-border);
-  border-radius: var(--dw-radius-lg);
+  border-radius: var(--dw-radius-sm);
   color: var(--dw-text-1);
-  font-size: var(--dw-fs-12);
-  font-family: monospace;
+  font-family: inherit;
+  font-size: var(--dw-fs-11);
   min-width: 0;
   outline: none;
-  transition: border-color var(--dw-dur-med), box-shadow var(--dw-dur-med);
+  transition: border-color var(--dw-dur-fast), box-shadow var(--dw-dur-fast);
 }
-.dw-hex-input:focus { border-color: var(--dw-util); box-shadow: 0 0 0 1px var(--dw-util); }
+.dw-hex-input:focus { border-color: var(--dw-util); box-shadow: 0 0 0 1px var(--dw-util-d); }
 
 /* ── Colour group: swatch + hex side-by-side ───────────────────────────── */
 
 .dw-color-group {
   display: flex;
   align-items: center;
-  gap: var(--dw-space-3);
+  gap: var(--dw-space-2);
 }
 .dw-color-swatch {
-  width: var(--dw-control-h-lg);
-  height: var(--dw-control-h-lg);
+  width: var(--dw-control-h-md);
+  height: var(--dw-control-h-md);
   padding: 0;
   border: 1px solid var(--dw-border-strong);
-  border-radius: var(--dw-radius-lg);
+  border-radius: var(--dw-radius-sm);
   background: none;
   cursor: pointer;
   flex-shrink: 0;
 }
 .dw-color-swatch::-webkit-color-swatch-wrapper { padding: 2px; }
-.dw-color-swatch::-webkit-color-swatch { border: none; border-radius: var(--dw-radius-sm); }
+.dw-color-swatch::-webkit-color-swatch { border: none; border-radius: 2px; }
 
 /* ── Slider group ──────────────────────────────────────────────────────── */
 
 .dw-slider-group {
   display: flex;
   align-items: center;
-  gap: var(--dw-space-4);
+  gap: var(--dw-space-3);
 }
 .dw-slider {
   flex: 1;
   min-width: 0;
+  accent-color: var(--dw-util);
 }
 .dw-slider-val {
-  font-size: var(--dw-fs-11);
+  font-size: var(--dw-fs-10);
   font-weight: 600;
   color: var(--dw-text-3);
-  min-width: 36px;
+  min-width: 32px;
   text-align: right;
   flex-shrink: 0;
   font-variant-numeric: tabular-nums;
@@ -88,24 +88,25 @@
 .dw-number-group {
   display: flex;
   align-items: center;
-  gap: var(--dw-space-3);
+  gap: var(--dw-space-2);
 }
 .dw-number-input {
   flex: 1;
   min-width: 0;
-  height: var(--dw-control-h-lg);
-  padding: 0 var(--dw-space-4);
+  height: var(--dw-control-h-md);
+  padding: 0 var(--dw-space-3);
   background: var(--dw-fill-2);
   border: 1px solid var(--dw-border);
-  border-radius: var(--dw-radius-lg);
+  border-radius: var(--dw-radius-sm);
   color: var(--dw-text-1);
-  font-size: var(--dw-fs-12);
-  outline: none;
-  transition: border-color var(--dw-dur-med);
-}
-.dw-number-input:focus { border-color: var(--dw-util); box-shadow: 0 0 0 1px var(--dw-util); }
-.dw-number-unit {
+  font-family: inherit;
   font-size: var(--dw-fs-11);
+  outline: none;
+  transition: border-color var(--dw-dur-fast);
+}
+.dw-number-input:focus { border-color: var(--dw-util); box-shadow: 0 0 0 1px var(--dw-util-d); }
+.dw-number-unit {
+  font-size: var(--dw-fs-10);
   color: var(--dw-text-3);
   flex-shrink: 0;
 }
@@ -113,17 +114,18 @@
 /* ── Native select ─────────────────────────────────────────────────────── */
 
 .dw-select {
-  height: var(--dw-control-h-lg);
-  padding: 0 var(--dw-space-4);
+  height: var(--dw-control-h-md);
+  padding: 0 var(--dw-space-3);
   background: var(--dw-fill-2);
   border: 1px solid var(--dw-border);
-  border-radius: var(--dw-radius-lg);
+  border-radius: var(--dw-radius-sm);
   color: var(--dw-text-1);
-  font-size: var(--dw-fs-12);
+  font-family: inherit;
+  font-size: var(--dw-fs-11);
   cursor: pointer;
   outline: none;
 }
-.dw-select:focus { border-color: var(--dw-util); box-shadow: 0 0 0 1px var(--dw-util); }
+.dw-select:focus { border-color: var(--dw-util); box-shadow: 0 0 0 1px var(--dw-util-d); }
 .dw-select:disabled { opacity: 0.5; cursor: not-allowed; }
 
 /* ── Toggle group (pill / tile variants) ───────────────────────────────── */
@@ -142,18 +144,19 @@
   flex: 1;
   background: transparent;
   border: none;
-  color: var(--color-text-muted);
-  font-size: var(--dw-fs-11);
+  color: var(--dw-text-3);
+  font-family: inherit;
+  font-size: var(--dw-fs-10);
   font-weight: 600;
-  padding: var(--dw-space-3) var(--dw-space-3);
-  border-radius: var(--dw-radius-md);
+  padding: var(--dw-space-2) var(--dw-space-3);
+  border-radius: var(--dw-radius-sm);
   cursor: pointer;
   transition: background var(--dw-dur-fast), color var(--dw-dur-fast), box-shadow var(--dw-dur-fast);
   white-space: nowrap;
 }
 .dw-toggle-btn:hover:not(.on) {
   background: var(--dw-fill-hover);
-  color: var(--color-text-secondary);
+  color: var(--dw-text-1);
 }
 .dw-toggle--pill .dw-toggle-btn.on {
   background: var(--dw-util-bg);
@@ -161,7 +164,7 @@
   box-shadow: 0 0 0 1px var(--dw-util-d);
 }
 .dw-toggle--tile {
-  border-radius: var(--dw-radius-md);
+  border-radius: var(--dw-radius-sm);
   background: transparent;
   padding: 0;
   border: none;
@@ -169,7 +172,7 @@
 .dw-toggle--tile .dw-toggle-btn {
   height: var(--dw-control-h-md);
   border: 1px solid var(--dw-border);
-  border-radius: var(--dw-radius-md);
+  border-radius: var(--dw-radius-sm);
   background: var(--dw-fill-1);
   color: var(--dw-text-2);
 }
@@ -177,17 +180,4 @@
   background: var(--dw-util-bg);
   color: var(--dw-util);
   border-color: var(--dw-util-d);
-}
-
-/* ── Standard focus ring ───────────────────────────────────────────────── */
-
-.dw-toggle-btn:focus-visible,
-.dw-color-swatch:focus-visible {
-  outline: 2px solid var(--dw-util);
-  outline-offset: 1px;
-}
-.dw-hex-input:focus-visible,
-.dw-number-input:focus-visible,
-.dw-select:focus-visible {
-  outline: none;
 }

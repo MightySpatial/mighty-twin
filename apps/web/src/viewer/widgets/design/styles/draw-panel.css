@@ -1,87 +1,90 @@
-/** Draw panel — tool tile grid, placing-mode bar, elevation datum picker. */
+/** Draw panel — placing-mode bar, tool tile grid, elevation datum,
+ *  active-layer indicator. */
 
 @import './tokens.css';
 
 .draw-panel {
   display: flex;
   flex-direction: column;
-  gap: var(--dw-space-6);
+  gap: var(--dw-space-4);
 }
 
-/* ── Placing-mode bar ──────────────────────────────────────────────────── */
+/* ── Placing-mode bar (v1 dt-pinned-row) ──────────────────────────────── */
 
 .draw-placing-bar {
   display: flex;
   align-items: center;
   gap: var(--dw-space-3);
-  padding: var(--dw-space-4) var(--dw-space-5);
-  background: rgba(99, 102, 241, 0.15);
-  border: 1px solid rgba(99, 102, 241, 0.3);
-  border-radius: var(--dw-radius-xl);
+  padding: var(--dw-space-3) var(--dw-space-4);
+  background: var(--dw-util-bg-soft);
+  border: 1px solid var(--dw-util-d);
+  border-radius: var(--dw-radius-lg);
   flex-wrap: wrap;
 }
-.draw-placing-icon { font-size: var(--dw-fs-14); color: var(--dw-indigo-l); flex-shrink: 0; }
-.draw-placing-label { font-size: var(--dw-fs-12); color: var(--dw-text-strong); flex-shrink: 0; }
-.draw-placing-label strong { color: var(--dw-indigo-l); }
+.draw-placing-icon { font-size: var(--dw-fs-13); color: var(--dw-util); flex-shrink: 0; }
+.draw-placing-label { font-size: var(--dw-fs-11); color: var(--dw-text-strong); flex-shrink: 0; }
+.draw-placing-label strong { color: var(--dw-util); font-weight: 600; }
 .draw-placing-hint {
-  font-size: var(--dw-fs-11);
-  color: var(--color-text-muted);
+  font-size: var(--dw-fs-10);
+  color: var(--dw-text-3);
   flex: 1;
   min-width: 0;
 }
 .draw-placing-cancel {
-  width: 24px;
-  height: 24px;
-  display: flex;
+  width: 22px;
+  height: 22px;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   background: var(--dw-fill-3);
   border: 1px solid var(--dw-border);
-  border-radius: var(--dw-radius-md);
+  border-radius: var(--dw-radius-sm);
   color: var(--dw-text-3);
   cursor: pointer;
-  font-size: var(--dw-fs-14);
+  font-size: var(--dw-fs-13);
   line-height: 1;
   padding: 0;
   flex-shrink: 0;
-  transition: background var(--dw-dur-med), color var(--dw-dur-med), border-color var(--dw-dur-med);
+  font-family: inherit;
+  transition: background var(--dw-dur-fast), color var(--dw-dur-fast), border-color var(--dw-dur-fast);
 }
 .draw-placing-cancel:hover {
-  background: rgba(248, 113, 113, 0.2);
+  background: var(--dw-danger-bg);
   color: var(--dw-danger);
-  border-color: rgba(248, 113, 113, 0.3);
+  border-color: var(--dw-danger-border);
 }
 
-/* ── Section labels (legacy class kept for back-compat) ────────────────── */
+/* ── Section labels ────────────────────────────────────────────────────── */
 
 .draw-section-label {
-  font-size: var(--dw-fs-11);
-  font-weight: 700;
-  color: var(--color-text-secondary);
+  font-size: var(--dw-fs-10);
+  font-weight: 600;
+  color: var(--dw-text-3);
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  margin-bottom: var(--dw-space-3);
+  letter-spacing: var(--dw-tracking-meta);
+  margin-bottom: var(--dw-space-2);
 }
 
-/* ── Tool tile grid ────────────────────────────────────────────────────── */
+/* ── Tool tile grid (v1 sketch-tile compact) ───────────────────────────── */
 
 .draw-tools-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: var(--dw-space-2);
+  gap: var(--dw-space-1);
 }
 .draw-tool-btn {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--dw-space-2);
-  padding: var(--dw-space-5) var(--dw-space-2);
+  gap: var(--dw-space-1);
+  padding: var(--dw-space-3) var(--dw-space-2);
   background: var(--dw-fill-1);
-  border: 1px solid var(--dw-fill-3);
-  border-radius: var(--dw-radius-xl);
+  border: 1px solid var(--dw-border);
+  border-radius: var(--dw-radius-lg);
   color: var(--dw-text-3);
+  font-family: inherit;
   cursor: pointer;
-  transition: background var(--dw-dur-med), border-color var(--dw-dur-med), color var(--dw-dur-med);
+  transition: background var(--dw-dur-fast), border-color var(--dw-dur-fast), color var(--dw-dur-fast);
 }
 .draw-tool-btn:hover:not(:disabled) {
   background: var(--dw-fill-3);
@@ -89,162 +92,125 @@
   color: var(--dw-text-strong);
 }
 .draw-tool-btn.active {
-  background: var(--dw-indigo-bg-strong);
-  border-color: rgba(99, 102, 241, 0.45);
-  color: var(--dw-indigo-l);
+  background: var(--dw-util-bg);
+  border-color: var(--dw-util-d);
+  color: var(--dw-util);
 }
 .draw-tool-btn:disabled { opacity: 0.35; cursor: not-allowed; }
-
-.draw-tool-icon { font-size: var(--dw-fs-16); line-height: 1; }
+.draw-tool-icon { font-size: var(--dw-fs-14); line-height: 1; }
 .draw-tool-label {
-  font-size: var(--dw-fs-11);
+  font-size: var(--dw-fs-10);
   font-weight: 600;
   letter-spacing: var(--dw-tracking-tight);
 }
+.draw-tool-shortcut {
+  font-size: var(--dw-fs-9);
+  font-family: inherit;
+  padding: 1px 4px;
+  border-radius: var(--dw-radius-sm);
+  background: var(--dw-fill-3);
+  border: 1px solid var(--dw-border);
+  color: var(--dw-text-3);
+  line-height: 1;
+}
+.draw-tool-btn.active .draw-tool-shortcut {
+  background: var(--dw-util-bg);
+  border-color: var(--dw-util-d);
+  color: var(--dw-util);
+}
 
-/* ── Elevation section ─────────────────────────────────────────────────── */
+/* ── Elevation datum picker ────────────────────────────────────────────── */
 
 .draw-elevation-section { display: flex; flex-direction: column; }
-
-.draw-elevation-btns {
-  display: flex;
-  gap: var(--dw-space-1);
-  background: var(--dw-fill-1);
-  border-radius: var(--dw-radius-lg);
-  padding: var(--dw-space-1);
-  border: 1px solid var(--dw-border-subtle);
-}
-.draw-elevation-btn {
-  flex: 1;
-  padding: var(--dw-space-3) 0;
-  background: transparent;
-  border: none;
-  border-radius: var(--dw-radius-md);
-  color: var(--color-text-muted);
-  font-size: var(--dw-fs-11);
-  font-weight: 600;
-  cursor: pointer;
-  transition: background var(--dw-dur-med), color var(--dw-dur-med), box-shadow var(--dw-dur-med);
-}
-.draw-elevation-btn:hover:not(.active) {
-  background: var(--dw-fill-hover);
-  color: var(--color-text-secondary);
-}
-.draw-elevation-btn.active {
-  background: rgba(99, 102, 241, 0.2);
-  color: var(--dw-indigo-l);
-  box-shadow: 0 0 0 1px var(--dw-indigo-border);
-}
-
-.draw-elevation-desc {
-  font-size: var(--dw-fs-11);
-  color: var(--color-text-muted);
-  margin: var(--dw-space-2) 0 0;
-  line-height: 1.4;
-}
 .draw-elevation-select {
   width: 100%;
+  height: var(--dw-control-h-sm);
   background: var(--dw-fill-2);
   color: var(--dw-text-strong);
   border: 1px solid var(--dw-border);
-  border-radius: var(--dw-radius-lg);
-  padding: var(--dw-space-3) var(--dw-space-4);
-  font-size: var(--dw-fs-12);
-  margin-bottom: var(--dw-space-2);
+  border-radius: var(--dw-radius-md);
+  padding: 0 var(--dw-space-3);
+  font-family: inherit;
+  font-size: var(--dw-fs-11);
+  margin-bottom: var(--dw-space-1);
   cursor: pointer;
+  outline: none;
 }
-.draw-elevation-select:focus { outline: none; border-color: var(--color-accent); }
-
+.draw-elevation-select:focus { border-color: var(--dw-util); }
+.draw-elevation-desc {
+  font-size: var(--dw-fs-10);
+  color: var(--dw-text-3);
+  margin: var(--dw-space-1) 0 0;
+  line-height: 1.4;
+}
 .draw-offset-row {
   display: flex;
   align-items: center;
-  gap: var(--dw-space-4);
-  margin-top: var(--dw-space-4);
+  gap: var(--dw-space-3);
+  margin-top: var(--dw-space-2);
 }
 .draw-offset-input {
   flex: 1;
   background: var(--dw-fill-2);
   color: var(--dw-text-strong);
   border: 1px solid var(--dw-border);
-  border-radius: var(--dw-radius-lg);
-  padding: var(--dw-space-3) var(--dw-space-4);
-  font-size: var(--dw-fs-12);
+  border-radius: var(--dw-radius-md);
+  padding: 0 var(--dw-space-3);
+  height: var(--dw-control-h-sm);
+  font-family: inherit;
+  font-size: var(--dw-fs-11);
   min-width: 0;
+  outline: none;
 }
-.draw-offset-input:focus { outline: none; border-color: var(--color-accent); }
+.draw-offset-input:focus { border-color: var(--dw-util); }
 
 /* ── Active layer indicator ────────────────────────────────────────────── */
 
 .draw-active-layer {
   display: flex;
   align-items: center;
-  gap: var(--dw-space-3);
+  gap: var(--dw-space-2);
   flex-wrap: wrap;
 }
 .draw-layer-badge {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  padding: var(--dw-space-2) var(--dw-space-4);
+  gap: var(--dw-space-2);
+  padding: var(--dw-space-1) var(--dw-space-3);
   background: var(--dw-fill-2);
   border: 1px solid var(--dw-border);
-  border-radius: var(--dw-radius-lg);
-  font-size: var(--dw-fs-11);
+  border-radius: var(--dw-radius-md);
+  font-size: var(--dw-fs-10);
   font-weight: 600;
   color: var(--dw-text-2);
 }
-.draw-layer-dot { width: 10px; height: 10px; border-radius: var(--dw-radius-sm); flex-shrink: 0; }
-.draw-layer-locked { font-size: var(--dw-fs-10); color: var(--dw-warning); font-weight: 600; }
+.draw-layer-dot { width: 9px; height: 9px; border-radius: var(--dw-radius-sm); flex-shrink: 0; }
+.draw-layer-locked {
+  font-size: var(--dw-fs-9);
+  color: var(--dw-warning);
+  font-weight: 600;
+}
 
 .draw-hint {
-  font-size: var(--dw-fs-11);
-  color: var(--color-text-muted);
-  margin: 0;
-  line-height: 1.5;
-}
-.draw-empty-state { padding: var(--dw-space-8) var(--dw-space-6); text-align: center; }
-.draw-empty-state p {
-  font-size: var(--dw-fs-12);
-  color: var(--color-text-muted);
-  margin: 0;
-  line-height: 1.5;
-}
-
-.draw-tool-shortcut {
   font-size: var(--dw-fs-10);
-  font-family: inherit;
-  padding: 2px 5px;
-  border-radius: var(--dw-radius-sm);
-  background: var(--dw-fill-3);
-  border: 1px solid var(--dw-border);
-  color: var(--color-text-muted);
-  line-height: 1;
+  color: var(--dw-text-3);
+  margin: 0;
+  line-height: 1.5;
 }
-.draw-tool-btn.active .draw-tool-shortcut {
-  background: rgba(99, 102, 241, 0.25);
-  border-color: var(--dw-indigo-border);
-  color: var(--dw-indigo-l);
+.draw-empty-state { padding: var(--dw-space-7) var(--dw-space-5); text-align: center; }
+.draw-empty-state p {
+  font-size: var(--dw-fs-11);
+  color: var(--dw-text-3);
+  margin: 0;
+  line-height: 1.5;
 }
 
 .draw-vertex-count {
-  font-size: var(--dw-fs-11);
+  font-size: var(--dw-fs-10);
   font-weight: 600;
-  color: var(--dw-indigo-l);
-  background: rgba(99, 102, 241, 0.15);
-  padding: var(--dw-space-1) var(--dw-space-4);
-  border-radius: 10px;
+  color: var(--dw-util);
+  background: var(--dw-util-bg);
+  padding: 1px var(--dw-space-3);
+  border-radius: var(--dw-radius-pill);
   white-space: nowrap;
-}
-
-.draw-tool-btn:focus-visible,
-.draw-elevation-btn:focus-visible,
-.draw-placing-cancel:focus-visible {
-  outline: 2px solid var(--color-accent);
-  outline-offset: 1px;
-}
-.draw-elevation-select:focus-visible,
-.draw-offset-input:focus-visible {
-  outline: none;
-  border-color: var(--color-accent);
-  box-shadow: 0 0 0 1px var(--color-accent);
 }
