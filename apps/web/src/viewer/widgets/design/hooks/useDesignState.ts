@@ -22,9 +22,10 @@ import type {
   PitDraft,
   CylDraft,
   TraverseDraft,
+  BuildingDraft,
   SketchLayer,
 } from '../types'
-import { DEFAULT_ELEVATION_CONFIG } from '../types'
+import { DEFAULT_ELEVATION_CONFIG, DEFAULT_BUILDING_DRAFT } from '../types'
 import { BUILTIN_PRESETS } from '../presets/builtinPresets'
 import type { LayerPreset } from '../presets/builtinPresets'
 import { useLayerOps, makeSketchLayer } from './useLayerOps'
@@ -63,6 +64,13 @@ export function useDesignState(viewer: CesiumViewerType | null) {
   //    mobile (< 1024px). Auto-toggles in DesignWidget via an effect that
   //    watches activeTool. Manually toggleable via the handle's chevron. ───
   const [mobileMinimised, setMobileMinimised] = useState(false)
+
+  // ── Building wizard draft ──────────────────────────────────────────────────
+  // Persisted in component state so the user can switch tabs without
+  // losing their archetype + dimensions.
+  const [buildingDraft, setBuildingDraft] = useState<BuildingDraft>(
+    DEFAULT_BUILDING_DRAFT,
+  )
 
   const handlerRef = useRef<ScreenSpaceEventHandler | null>(null)
 
@@ -271,6 +279,9 @@ export function useDesignState(viewer: CesiumViewerType | null) {
     // Mobile minimise
     mobileMinimised,
     setMobileMinimised,
+    // Building wizard draft
+    buildingDraft,
+    setBuildingDraft,
     // Features
     features,
     setFeatures,

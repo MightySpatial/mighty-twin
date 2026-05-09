@@ -27,6 +27,7 @@ export type DesignTool =
   | 'rectangle'
   | 'circle'
   | 'traverse'
+  | 'building'
   | SolidTool
   | DesignPrimitive
   | null
@@ -45,7 +46,7 @@ export const DEFAULT_ELEVATION_CONFIG: ElevationConfig = {
   offset: 0,
 }
 
-export type DesignRailTab = 'layers' | 'sketch' | 'edit' | 'style' | 'history' | 'submit' | 'download'
+export type DesignRailTab = 'layers' | 'sketch' | 'building' | 'edit' | 'style' | 'history' | 'submit' | 'download'
 
 export interface AttributeField {
   id: number
@@ -90,6 +91,49 @@ export interface FeatureStyle {
   labelField?: string | null
   /** v1: label font size (8–24). */
   labelSize?: number
+}
+
+export type BuildingArchetype = 'residential' | 'commercial' | 'warehouse' | 'mixed'
+
+export interface BuildingDraft {
+  /** Footprint width (X, east-west) in metres. */
+  width: number
+  /** Footprint depth (Y, north-south) in metres. */
+  depth: number
+  /** Number of above-ground floors. */
+  floors: number
+  /** Per-floor height in metres. Residential ≈ 2.7, commercial ≈ 3.5,
+   *  warehouse ≈ 6+. */
+  floorHeight: number
+  /** Roof slab thickness in metres. */
+  roofThickness: number
+  /** Heading in degrees clockwise from north. */
+  heading: number
+  /** Wall thickness in metres. 0 = solid stack of slabs. */
+  wallThickness: number
+  /** Archetype hint — sets reasonable defaults + a colour palette. */
+  archetype: BuildingArchetype
+  /** Emit a Site Context box at the footprint extents. */
+  includeSiteContext: boolean
+}
+
+export const DEFAULT_BUILDING_DRAFT: BuildingDraft = {
+  width: 12,
+  depth: 8,
+  floors: 2,
+  floorHeight: 3.0,
+  roofThickness: 0.3,
+  heading: 0,
+  wallThickness: 0,
+  archetype: 'residential',
+  includeSiteContext: true,
+}
+
+export const ARCHETYPE_DEFAULTS: Record<BuildingArchetype, Partial<BuildingDraft>> = {
+  residential: { floorHeight: 2.7, floors: 2, wallThickness: 0.2 },
+  commercial: { floorHeight: 3.5, floors: 4, wallThickness: 0.25 },
+  warehouse: { floorHeight: 6.0, floors: 1, wallThickness: 0.2 },
+  mixed: { floorHeight: 3.2, floors: 5, wallThickness: 0.25 },
 }
 
 export interface BoxDraft {
@@ -155,7 +199,7 @@ export interface TraverseDraft {
 export interface SketchFeature {
   id: string
   label: string
-  geometry: 'point' | 'line' | 'polygon' | 'rectangle' | 'circle' | 'traverse' | 'box' | 'pit' | 'cylinder' | 'other'
+  geometry: 'point' | 'line' | 'polygon' | 'rectangle' | 'circle' | 'traverse' | 'box' | 'pit' | 'cylinder' | 'building' | 'other'
   layerId: string
   entityId: string
   style: FeatureStyle
@@ -178,6 +222,7 @@ export const DEFAULT_FEATURE_STYLE: FeatureStyle = {
 export const RAIL_TABS: { id: DesignRailTab; label: string; icon: string }[] = [
   { id: 'layers',   label: 'Layers',   icon: '▤' },
   { id: 'sketch',   label: 'Sketch',   icon: '✎' },
+  { id: 'building', label: 'Building', icon: '⌂' },
   { id: 'edit',     label: 'Edit',     icon: '⌖' },
   { id: 'style',    label: 'Style',    icon: '◐' },
   { id: 'history',  label: 'History',  icon: '☰' },

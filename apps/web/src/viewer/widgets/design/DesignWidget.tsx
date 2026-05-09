@@ -29,6 +29,7 @@ import HistoryPanel from './panels/HistoryPanel'
 import StylePanel from './panels/StylePanel'
 import SubmitPanel from './panels/SubmitPanel'
 import DownloadPanel from './panels/DownloadPanel'
+import BuildingPanel from './panels/BuildingPanel'
 import SaveIndicator from './primitives/SaveIndicator'
 import SketchContextStrip from './primitives/SketchContextStrip'
 import StatusBar from './primitives/StatusBar'
@@ -236,6 +237,20 @@ export default function DesignWidget({ viewer, onClose, siteSlug = null }: Desig
                 onCancelSolid={cancelSolidDraft}
                 traverseDraft={state.traverseDraft}
                 onTraverseDraftChange={state.setTraverseDraft}
+              />
+            )}
+
+            {activeTab === 'building' && (
+              <BuildingPanel
+                viewer={viewer}
+                activeTool={state.activeTool}
+                elevationConfig={state.elevationConfig}
+                draft={state.buildingDraft}
+                onDraftChange={state.setBuildingDraft}
+                layers={state.layers}
+                activeLayerId={state.activeLayer?.id ?? ''}
+                onSetTool={state.setActiveTool}
+                onFeatureAdded={state.addFeature}
               />
             )}
 
