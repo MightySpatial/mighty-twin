@@ -1,5 +1,5 @@
 /** History Panel — view-mode toggle, layer/type group headers, feature
- *  list rows. */
+ *  list rows. v2 design language. */
 
 @import './tokens.css';
 
@@ -9,16 +9,14 @@
   gap: var(--dw-space-3);
 }
 
-/* The view-mode toggle uses the shared `dw-toggle--pill` primitive
- * (see primitives.css). It needs a small bottom margin in this panel. */
 .design-history > .dw-toggle--pill {
   margin-bottom: var(--dw-space-3);
 }
 
 .design-history-empty {
-  font-size: var(--dw-fs-10);
+  font-size: var(--dw-fs-11);
   color: var(--dw-text-3);
-  padding: var(--dw-space-7) var(--dw-space-4);
+  padding: var(--dw-space-7) var(--dw-space-5);
   text-align: center;
   line-height: 1.5;
 }
@@ -30,19 +28,20 @@
   gap: var(--dw-space-2);
   padding: var(--dw-space-2) var(--dw-space-3);
   cursor: pointer;
-  border-radius: var(--dw-radius-sm);
-  font-size: var(--dw-fs-10);
+  border-radius: var(--dw-radius-md);
+  font-size: var(--dw-fs-11);
   font-weight: 600;
   color: var(--dw-text-2);
   transition: background var(--dw-dur-fast);
   text-transform: uppercase;
   letter-spacing: var(--dw-tracking-meta);
+  min-height: var(--dw-control-h-sm);
 }
 .design-layer-header:hover { background: var(--dw-fill-1); }
-.design-layer-chevron { width: 10px; opacity: 0.55; }
+.design-layer-chevron { width: 12px; opacity: 0.55; }
 .design-layer-dot {
-  width: 9px;
-  height: 9px;
+  width: 10px;
+  height: 10px;
   border-radius: var(--dw-radius-sm);
   flex-shrink: 0;
 }
@@ -54,11 +53,11 @@
   white-space: nowrap;
 }
 .design-layer-count {
-  font-size: var(--dw-fs-9);
+  font-size: var(--dw-fs-10);
   font-weight: 600;
   color: var(--dw-indigo-l);
   background: var(--dw-indigo-bg);
-  padding: 1px 6px;
+  padding: 1px var(--dw-space-3);
   border-radius: var(--dw-radius-pill);
   letter-spacing: 0;
 }
@@ -66,7 +65,7 @@
 .design-feature-list {
   list-style: none;
   margin: 0;
-  padding: 0 0 var(--dw-space-1) 18px;
+  padding: 0 0 var(--dw-space-1) var(--dw-space-7);
   display: flex;
   flex-direction: column;
   gap: 1px;
@@ -75,19 +74,20 @@
   display: flex;
   align-items: center;
   gap: var(--dw-space-2);
-  padding: var(--dw-space-1) var(--dw-space-3);
-  font-size: var(--dw-fs-10);
+  padding: var(--dw-space-2) var(--dw-space-3);
+  font-size: var(--dw-fs-11);
   color: var(--dw-text-2);
-  border-radius: var(--dw-radius-sm);
+  border-radius: var(--dw-radius-md);
   cursor: pointer;
   transition: background var(--dw-dur-fast);
+  min-height: var(--dw-control-h-sm);
 }
 .design-feature-item:hover { background: var(--dw-fill-1); }
 .design-feature-item.selected {
   background: var(--dw-util-bg);
   color: var(--dw-util);
 }
-.design-feature-icon { width: 14px; opacity: 0.65; }
+.design-feature-icon { width: 16px; opacity: 0.65; }
 .design-feature-label {
   flex: 1;
   min-width: 0;
@@ -100,18 +100,18 @@
   text-transform: uppercase;
   letter-spacing: var(--dw-tracking-tight);
   color: var(--dw-text-3);
-  padding: 1px 4px;
+  padding: 1px var(--dw-space-2);
   background: var(--dw-fill-2);
   border-radius: var(--dw-radius-sm);
 }
 .design-feature-delete {
-  width: 20px;
-  height: 20px;
+  width: var(--dw-control-h-sm);
+  height: var(--dw-control-h-sm);
   background: none;
   border: none;
   color: rgba(255, 255, 255, 0.45);
   cursor: pointer;
-  border-radius: var(--dw-radius-sm);
+  border-radius: var(--dw-radius-md);
   display: inline-flex;
   align-items: center;
   justify-content: center;

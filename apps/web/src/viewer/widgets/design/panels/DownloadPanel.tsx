@@ -1,15 +1,15 @@
 /**
  * MightyTwin — Download Panel
  *
- * Pure rendering. State + side-effects live in `download/useDownload.ts`;
- * format catalogue in `download/formats.ts`; CSV/WKT/split helpers in their
- * own files. Faithful port of v1's Format / CRS / Scope / Split layout.
+ * Pure rendering. State + side-effects in `download/useDownload.ts`; format
+ * catalogue in `download/formats.ts`. All listed formats round-trip through
+ * the v2 backend (`/api/design/export`).
  */
 import { Download, Loader, AlertCircle } from 'lucide-react'
 import type { Viewer } from 'cesium'
 import type { SketchFeature, SketchLayer } from '../types'
 import { useDownload } from './download/useDownload'
-import { EXPORT_FORMATS, EXPORT_CRS_OPTIONS, type ExportFormat } from './download/formats'
+import { EXPORT_FORMATS, type ExportFormat } from './download/formats'
 import type { SplitMode } from './download/split'
 
 interface Props {
@@ -20,6 +20,8 @@ interface Props {
 
 export default function DownloadPanel({ viewer, layers, features }: Props) {
   const dl = useDownload({ viewer, layers, features })
+
+  const groupOrder = Array.from(new Set(EXPORT_FORMATS.map(f => f.group)))
 
   return (
     <div className="dl-panel">
@@ -38,7 +40,7 @@ export default function DownloadPanel({ viewer, layers, features }: Props) {
           onChange={e => dl.setFormat(e.target.value as ExportFormat)}
           title="Format"
         >
-          {Array.from(new Set(EXPORT_FORMATS.map(f => f.group))).map(group => (
+          {groupOrder.map(group => (
             <optgroup key={group} label={group}>
               {EXPORT_FORMATS.filter(f => f.group === group).map(f => (
                 <option key={f.id} value={f.id}>{f.label}</option>
@@ -53,7 +55,7 @@ export default function DownloadPanel({ viewer, layers, features }: Props) {
           title="CRS"
           disabled={dl.format === 'json_state'}
         >
-          {EXPORT_CRS_OPTIONS.map(o => (
+          {dl.crsOptions.map(o => (
             <option key={o.epsg} value={o.epsg}>{o.name}</option>
           ))}
         </select>
@@ -95,20 +97,16 @@ export default function DownloadPanel({ viewer, layers, features }: Props) {
         />
       )}
 
-      {dl.isBackendBlocked && (
-        <BlockedFormatNotice formatLabel={dl.formatSpec.label} />
-      )}
-
       {dl.error && <ErrorBanner message={dl.error} />}
 
       <button
         className="dl-export-btn"
         onClick={dl.download}
-        disabled={dl.downloading || dl.summary.featureCount === 0 || dl.isBackendBlocked}
+        disabled={dl.downloading || dl.summary.featureCount === 0}
       >
         {dl.downloading
-          ? <><Loader size={12} className="spin" /> Exporting…</>
-          : <>↓ Export</>}
+          ? <><Loader size={14} className="spin" /> Exporting…</>
+          : <><Download size={14} /> Export</>}
       </button>
     </div>
   )
@@ -117,7 +115,7 @@ export default function DownloadPanel({ viewer, layers, features }: Props) {
 function SummaryBanner({ featureCount, visibleLayers, totalLayers }: { featureCount: number; visibleLayers: number; totalLayers: number }) {
   return (
     <div className="dl-summary">
-      <Download size={16} className="dl-summary-icon" />
+      <Download size={18} className="dl-summary-icon" />
       <div>
         <div className="dl-summary-count">
           {featureCount} feature{featureCount === 1 ? '' : 's'} ready
@@ -130,19 +128,10 @@ function SummaryBanner({ featureCount, visibleLayers, totalLayers }: { featureCo
   )
 }
 
-function BlockedFormatNotice({ formatLabel }: { formatLabel: string }) {
-  return (
-    <div className="dl-warning">
-      <AlertCircle size={12} />
-      <span>{formatLabel} export needs the server-side export service (not yet wired up in v2).</span>
-    </div>
-  )
-}
-
 function ErrorBanner({ message }: { message: string }) {
   return (
     <div className="dl-error">
-      <AlertCircle size={12} />
+      <AlertCircle size={14} />
       <span>{message}</span>
     </div>
   )

@@ -32,12 +32,14 @@ interface Props {
   onUpdateAttribute: (id: string, key: string, value: unknown) => void
   onUpdateStyle: (id: string, patch: Partial<FeatureStyle>) => void
   onSnapToTerrain: (id: string) => void
+  siteSlug?: string | null
 }
 
 export default function EditPanel({
   feature, layers, viewer,
   onMoveFeature, onDelete, onRename,
   onUpdateParams, onUpdateAttribute, onUpdateStyle, onSnapToTerrain,
+  siteSlug = null,
 }: Props) {
   const move = useMoveControls({ feature, viewer, onMoveFeature })
 
@@ -73,6 +75,7 @@ export default function EditPanel({
         feature={feature}
         fields={layerFields}
         onUpdateAttribute={onUpdateAttribute}
+        siteSlug={siteSlug}
       />
 
       <div className="edit-divider" />

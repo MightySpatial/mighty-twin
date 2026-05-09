@@ -1,6 +1,5 @@
 /** Design Object Editor (.doe-*) + Attributes Editor (.ae-*) styles.
- *  Faithful port of v1's compact 26-28px control rows with 3-col grids
- *  for dimensions and orientation. Mono font, tight spacing. */
+ *  v2 design language: system font, larger spacing, 32-36px control rows. */
 
 @import './tokens.css';
 
@@ -11,11 +10,12 @@
   background: var(--dw-surface-1);
   border-top: 1px solid var(--dw-border-subtle);
   border-bottom: 1px solid var(--dw-border-subtle);
+  border-radius: var(--dw-radius-lg);
   display: flex;
   flex-direction: column;
   gap: var(--dw-space-4);
 }
-.doe--appearance { border-top: none; }
+.doe--appearance { border-top: none; border-radius: 0; }
 
 .doe-group {
   display: flex;
@@ -23,14 +23,14 @@
   gap: var(--dw-space-2);
 }
 .doe-group-label {
-  font-size: var(--dw-fs-9);
+  font-size: var(--dw-fs-10);
   text-transform: uppercase;
   letter-spacing: var(--dw-tracking-meta);
   color: var(--dw-text-3);
   display: flex;
   align-items: center;
   gap: var(--dw-space-3);
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .doe-grid {
@@ -43,8 +43,12 @@
 .doe-span-2 { grid-column: span 2; }
 .doe-span-3 { grid-column: span 3; }
 
-.doe-field { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
-.doe-field label { font-size: var(--dw-fs-9); color: var(--dw-text-4); }
+.doe-field { display: flex; flex-direction: column; gap: var(--dw-space-1); min-width: 0; }
+.doe-field label {
+  font-size: var(--dw-fs-10);
+  color: var(--dw-text-3);
+  font-weight: 500;
+}
 .doe-field .inp {
   width: 100%;
   height: var(--dw-control-h-md);
@@ -52,15 +56,15 @@
   border: 1px solid var(--dw-border);
   color: var(--dw-text-1);
   padding: 0 var(--dw-space-3);
-  border-radius: var(--dw-radius-sm);
+  border-radius: var(--dw-radius-md);
   font-family: inherit;
-  font-size: var(--dw-fs-11);
+  font-size: var(--dw-fs-12);
   outline: none;
   transition: border-color var(--dw-dur-fast), box-shadow var(--dw-dur-fast);
 }
 .doe-field .inp:focus {
   border-color: var(--dw-util);
-  box-shadow: 0 0 0 1px var(--dw-util-d);
+  box-shadow: 0 0 0 2px var(--dw-util-d);
 }
 
 /* ── Square / Round shape toggle ───────────────────────────────────────── */
@@ -70,11 +74,12 @@
   flex: 1;
   height: var(--dw-control-h-md);
   border: 1px solid var(--dw-border);
-  border-radius: var(--dw-radius-sm);
+  border-radius: var(--dw-radius-md);
   background: var(--dw-fill-1);
   color: var(--dw-text-2);
   font-family: inherit;
   font-size: var(--dw-fs-11);
+  font-weight: 600;
   cursor: pointer;
   transition: all var(--dw-dur-fast);
 }
@@ -88,11 +93,11 @@
 
 .doe-anchor-row { display: flex; align-items: center; gap: var(--dw-space-1); }
 .doe-anchor-btn {
-  width: 28px;
-  height: 28px;
+  width: var(--dw-control-h-md);
+  height: var(--dw-control-h-md);
   padding: 0;
   border: 1px solid var(--dw-border);
-  border-radius: var(--dw-radius-sm);
+  border-radius: var(--dw-radius-md);
   background: var(--dw-fill-1);
   color: var(--dw-text-2);
   font-family: inherit;
@@ -116,12 +121,12 @@
 }
 .doe-anchor-hint {
   margin-left: auto;
-  font-size: var(--dw-fs-9);
+  font-size: var(--dw-fs-10);
   color: var(--dw-text-3);
   letter-spacing: var(--dw-tracking-tight);
 }
 
-/* ── Snap-to-terrain button (v1 doe-terrain-btn) ───────────────────────── */
+/* ── Snap-to-terrain button ────────────────────────────────────────────── */
 
 .doe-terrain-btn {
   display: inline-flex;
@@ -132,10 +137,11 @@
   height: var(--dw-control-h-md);
   background: rgba(249, 115, 22, 0.12);
   border: 1px solid rgba(249, 115, 22, 0.3);
-  border-radius: var(--dw-radius-sm);
+  border-radius: var(--dw-radius-md);
   color: #fb923c;
   font-family: inherit;
-  font-size: var(--dw-fs-9);
+  font-size: var(--dw-fs-10);
+  font-weight: 600;
   cursor: pointer;
   transition: all var(--dw-dur-fast);
 }
@@ -153,7 +159,7 @@
   width: var(--dw-control-h-md);
   height: var(--dw-control-h-md);
   border: 1px solid var(--dw-border);
-  border-radius: var(--dw-radius-sm);
+  border-radius: var(--dw-radius-md);
   cursor: pointer;
   padding: 0;
   flex-shrink: 0;
@@ -171,16 +177,16 @@
 }
 .doe-opacity-slider::-webkit-slider-thumb {
   -webkit-appearance: none;
-  width: 12px;
-  height: 12px;
+  width: 14px;
+  height: 14px;
   border-radius: 50%;
   background: var(--dw-util);
   cursor: pointer;
 }
 .doe-opacity-label {
-  font-size: var(--dw-fs-9);
+  font-size: var(--dw-fs-10);
   color: var(--dw-text-3);
-  width: 32px;
+  width: 36px;
   text-align: right;
   flex-shrink: 0;
   font-variant-numeric: tabular-nums;
@@ -192,83 +198,107 @@
   padding: var(--dw-space-2) 0;
   display: flex;
   flex-direction: column;
-  gap: var(--dw-space-2);
+  gap: var(--dw-space-3);
 }
-.ae-fields { display: flex; flex-direction: column; gap: var(--dw-space-1); }
+.ae-fields { display: flex; flex-direction: column; gap: var(--dw-space-2); }
 .ae-field-row {
   display: flex;
   align-items: center;
-  gap: var(--dw-space-2);
-  font-size: var(--dw-fs-11);
+  gap: var(--dw-space-3);
+  font-size: var(--dw-fs-12);
 }
 .ae-field-lbl {
   flex-shrink: 0;
-  width: 72px;
-  font-size: var(--dw-fs-9);
+  width: 88px;
+  font-size: var(--dw-fs-10);
   color: var(--dw-text-3);
   letter-spacing: var(--dw-tracking-tight);
-  text-transform: lowercase;
+  font-weight: 500;
 }
 .ae-field-inp {
   flex: 1;
   min-width: 0;
-  height: var(--dw-control-h-sm);
+  height: var(--dw-control-h-md);
   padding: 0 var(--dw-space-3);
-  background: var(--dw-surface-1);
+  background: var(--dw-fill-2);
   border: 1px solid var(--dw-border);
   color: var(--dw-text-1);
   font-family: inherit;
-  font-size: var(--dw-fs-11);
-  border-radius: var(--dw-radius-sm);
+  font-size: var(--dw-fs-12);
+  border-radius: var(--dw-radius-md);
   outline: none;
 }
 .ae-field-inp:focus {
   border-color: var(--dw-util);
-  background: var(--dw-surface-2);
+  box-shadow: 0 0 0 2px var(--dw-util-d);
 }
+
+/* ── Template chips + picker ───────────────────────────────────────────── */
+
+.ae-tmpl-row {
+  display: flex;
+  align-items: center;
+  gap: var(--dw-space-2);
+}
+.ae-tmpl-sel {
+  flex: 1;
+  min-width: 0;
+  height: var(--dw-control-h-md);
+  padding: 0 var(--dw-space-3);
+  background: var(--dw-fill-2);
+  border: 1px solid var(--dw-border);
+  color: var(--dw-text-1);
+  font-family: inherit;
+  font-size: var(--dw-fs-11);
+  border-radius: var(--dw-radius-md);
+  outline: none;
+  cursor: pointer;
+}
+.ae-tmpl-sel:focus { border-color: var(--dw-indigo-border); }
 
 .ae-save-btn,
 .ae-add-btn {
   align-self: flex-start;
-  height: var(--dw-control-h-sm);
+  height: var(--dw-control-h-md);
   padding: 0 var(--dw-space-4);
   font-family: inherit;
-  font-size: var(--dw-fs-10);
+  font-size: var(--dw-fs-11);
   font-weight: 600;
   background: var(--dw-indigo-bg-strong);
   border: 1px solid var(--dw-indigo-border);
   color: var(--dw-indigo-l);
-  border-radius: var(--dw-radius-sm);
+  border-radius: var(--dw-radius-md);
   cursor: pointer;
   transition: background var(--dw-dur-fast), border-color var(--dw-dur-fast);
 }
 .ae-save-btn:hover:not(:disabled),
 .ae-add-btn:hover {
-  background: rgba(99, 102, 241, 0.3);
+  background: rgba(99, 102, 241, 0.32);
   border-color: rgba(99, 102, 241, 0.6);
   color: var(--dw-indigo-l2);
 }
+.ae-save-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
 .ae-save-form {
   display: flex;
   align-items: center;
-  gap: var(--dw-space-1);
-  padding: var(--dw-space-1) var(--dw-space-2);
+  gap: var(--dw-space-2);
+  padding: var(--dw-space-2) var(--dw-space-3);
   background: var(--dw-indigo-bg-soft);
   border: 1px solid var(--dw-indigo-border-soft);
-  border-radius: var(--dw-radius-sm);
+  border-radius: var(--dw-radius-md);
 }
 .ae-save-inp {
   flex: 1;
   min-width: 0;
   height: var(--dw-control-h-sm);
   padding: 0 var(--dw-space-3);
-  background: var(--dw-surface-2);
+  background: var(--dw-surface-1);
   border: 1px solid rgba(255, 255, 255, 0.14);
   color: var(--dw-text-strong);
   font-family: inherit;
   font-size: var(--dw-fs-11);
-  border-radius: 2px;
+  border-radius: var(--dw-radius-sm);
   outline: none;
 }
 .ae-save-inp:focus { border-color: rgba(99, 102, 241, 0.7); }
@@ -278,19 +308,31 @@
   padding: 0 var(--dw-space-3);
   font-family: inherit;
   font-size: var(--dw-fs-10);
-  border-radius: 2px;
-  cursor: pointer;
   font-weight: 600;
+  border-radius: var(--dw-radius-sm);
+  cursor: pointer;
+  border: none;
 }
 .ae-save-ok {
-  background: rgba(99, 102, 241, 0.25);
-  border: 1px solid rgba(99, 102, 241, 0.5);
+  background: rgba(99, 102, 241, 0.3);
+  border: 1px solid rgba(99, 102, 241, 0.55);
   color: var(--dw-indigo-l);
 }
-.ae-save-ok:disabled { opacity: 0.35; cursor: not-allowed; }
+.ae-save-ok:disabled { opacity: 0.4; cursor: not-allowed; }
 .ae-save-cancel {
   background: transparent;
   border: 1px solid var(--dw-border);
   color: var(--dw-text-3);
 }
 .ae-save-cancel:hover { color: var(--dw-text-strong); }
+
+.ae-error {
+  font-size: var(--dw-fs-10);
+  color: #fca5a5;
+  background: var(--dw-danger-bg);
+  border: 1px solid var(--dw-danger-border);
+  border-radius: var(--dw-radius-md);
+  padding: var(--dw-space-2) var(--dw-space-3);
+  margin: 0;
+  line-height: 1.4;
+}

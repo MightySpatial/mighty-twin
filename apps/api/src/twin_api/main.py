@@ -40,6 +40,8 @@ from .feature_routes import router as feature_router
 from .oauth_routes import router as oauth_router
 from .feature_import_routes import router as feature_import_router
 from .demo_routes import router as demo_router
+from .design_export_routes import router as design_export_router
+from .design_template_routes import router as design_template_router
 
 
 @asynccontextmanager
@@ -102,6 +104,8 @@ app.include_router(feature_router)
 app.include_router(oauth_router)
 app.include_router(feature_import_router)
 app.include_router(demo_router)
+app.include_router(design_export_router)
+app.include_router(design_template_router)
 
 
 # All real now — dev_stubs router is empty (kept the import + include

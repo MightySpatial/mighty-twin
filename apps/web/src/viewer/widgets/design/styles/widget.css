@@ -2,10 +2,10 @@
  * Design widget shell — horizontal rail navigation, header, sketch context
  * strip, panel body, status bar.
  *
- * Layout (top to bottom, faithful port of v1 DesignWidget.vue):
- *   [ design-rail ]               horizontal tab strip
- *   [ design-header ]             title + ctx + save badge + undo/redo
- *   [ sketch-context-strip ]      active layer + default star + snap toggle (sticky)
+ * Layout (v1 structure preserved, v2 design language):
+ *   [ design-rail ]               horizontal tab strip with teal underline
+ *   [ design-panel-header ]       title + ctx + save badge + close
+ *   [ sketch-context-strip ]      active layer + default star + snap toggle
  *   [ design-panel-body ]         scrollable panel content
  *   [ design-status-bar ]         current tool + cursor coords
  */
@@ -19,18 +19,19 @@
   flex-direction: column;
   background: var(--dw-surface-0);
   border: 1px solid var(--dw-border);
-  border-radius: var(--dw-radius-xl);
+  border-radius: var(--dw-radius-2xl);
   overflow: hidden;
-  backdrop-filter: blur(16px) saturate(1.3);
-  -webkit-backdrop-filter: blur(16px) saturate(1.3);
+  backdrop-filter: blur(16px) saturate(1.2);
+  -webkit-backdrop-filter: blur(16px) saturate(1.2);
   max-height: calc(100vh - 120px);
   font-family: var(--dw-font);
   color: var(--dw-text-strong);
   font-size: var(--dw-fs-12);
+  line-height: 1.4;
   position: relative;
 }
 
-/* ── Horizontal rail navigation (v1 design-rail) ───────────────────────── */
+/* ── Horizontal rail navigation ────────────────────────────────────────── */
 
 .design-rail {
   display: flex;
@@ -49,7 +50,7 @@
   flex: 1;
   min-width: 0;
   border: none;
-  border-radius: var(--dw-radius-sm) var(--dw-radius-sm) 0 0;
+  border-radius: var(--dw-radius-md) var(--dw-radius-md) 0 0;
   background: transparent;
   color: var(--dw-text-3);
   cursor: pointer;
@@ -58,9 +59,11 @@
   align-items: center;
   justify-content: center;
   gap: var(--dw-space-1);
-  padding: var(--dw-space-3) var(--dw-space-2) var(--dw-space-4);
+  padding: var(--dw-space-3) var(--dw-space-2) var(--dw-space-3);
   position: relative;
   transition: color var(--dw-dur-med), background var(--dw-dur-med);
+  font-family: inherit;
+  min-height: var(--dw-rail-h);
 }
 .design-rail-btn:hover {
   color: var(--dw-text-strong);
@@ -70,38 +73,37 @@
   color: var(--dw-util);
   background: var(--dw-util-bg-soft);
 }
-/* v1's signature glow underline on the active tab */
+/* Glow underline on active */
 .design-rail-btn.active::before {
   content: '';
   position: absolute;
-  left: 10%;
-  right: 10%;
+  left: 12%;
+  right: 12%;
   bottom: 0;
   height: 3px;
   background: var(--dw-util);
   border-radius: 3px 3px 0 0;
-  box-shadow: 0 0 8px var(--dw-util-d);
+  box-shadow: 0 0 10px var(--dw-util-d);
 }
 .design-rail-icon {
-  font-size: var(--dw-fs-16);
+  font-size: var(--dw-fs-14);
   line-height: 1;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
 }
 .design-rail-label {
-  font-size: var(--dw-fs-9);
+  font-size: var(--dw-fs-10);
   font-weight: 600;
   letter-spacing: var(--dw-tracking-tight);
   white-space: nowrap;
   color: inherit;
-  text-transform: uppercase;
   max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-/* ── Header (v1 design-header) ─────────────────────────────────────────── */
+/* ── Header ────────────────────────────────────────────────────────────── */
 
 .design-panel-content {
   flex: 1;
@@ -115,20 +117,21 @@
   display: flex;
   align-items: center;
   gap: var(--dw-space-3);
-  padding: var(--dw-space-3) var(--dw-space-4);
+  padding: var(--dw-space-4) var(--dw-space-5);
   border-bottom: 1px solid var(--dw-border);
   background: var(--dw-surface-2);
   flex-shrink: 0;
 }
 .design-panel-title {
-  font-size: var(--dw-fs-12);
-  font-weight: 600;
+  font-size: var(--dw-fs-13);
+  font-weight: 700;
   color: var(--dw-text-strong);
   margin: 0;
   white-space: nowrap;
+  letter-spacing: -0.01em;
 }
 .design-panel-ctx {
-  font-size: var(--dw-fs-12);
+  font-size: var(--dw-fs-11);
   color: var(--dw-text-2);
   white-space: nowrap;
   overflow: hidden;
@@ -143,11 +146,11 @@
   flex-shrink: 0;
 }
 .dh-icon-btn {
-  width: 26px;
-  height: 26px;
+  width: var(--dw-control-h-md);
+  height: var(--dw-control-h-md);
   padding: 0;
   border: 1px solid var(--dw-border);
-  border-radius: var(--dw-radius-xl);
+  border-radius: var(--dw-radius-lg);
   background: var(--dw-fill-2);
   color: var(--dw-text-2);
   font-size: var(--dw-fs-13);
@@ -165,18 +168,8 @@
   color: var(--dw-text-strong);
 }
 .dh-icon-btn:disabled {
-  opacity: 0.28;
+  opacity: 0.32;
   cursor: not-allowed;
-}
-.dh-icon-btn--accent:hover:not(:disabled) {
-  background: var(--dw-util-bg);
-  border-color: var(--dw-util-d);
-  color: var(--dw-util);
-}
-.dh-icon-btn--warn:hover:not(:disabled) {
-  background: var(--dw-danger-bg);
-  border-color: var(--dw-danger-border);
-  color: var(--dw-danger);
 }
 
 /* ── Save indicator pill ───────────────────────────────────────────────── */
@@ -184,32 +177,34 @@
 .dw-save-indicator {
   display: inline-flex;
   align-items: center;
-  gap: var(--dw-space-2);
-  padding: 1px var(--dw-space-3);
-  border-radius: var(--dw-radius-md);
-  font-size: var(--dw-fs-10);
+  gap: var(--dw-space-1);
+  padding: var(--dw-space-1) var(--dw-space-3);
+  border-radius: var(--dw-radius-pill);
+  font-size: var(--dw-fs-9);
   font-weight: 600;
   white-space: nowrap;
   flex-shrink: 0;
+  text-transform: uppercase;
+  letter-spacing: var(--dw-tracking-meta);
 }
 .dw-save-indicator.is-saving { color: var(--dw-warning-l); background: var(--dw-warning-bg); }
 .dw-save-indicator.is-saved  { color: #34d399;            background: rgba(52, 211, 153, 0.12); }
 .dw-save-indicator.is-error  { color: #fca5a5;            background: var(--dw-danger-bg); cursor: pointer; }
 
-/* ── Sketch context strip (v1 sketch-draw-workspace) ───────────────────── */
+/* ── Sketch context strip ──────────────────────────────────────────────── */
 
 .sketch-context-strip {
   display: flex;
   align-items: center;
   gap: var(--dw-space-3);
-  padding: var(--dw-space-3) var(--dw-space-4);
+  padding: var(--dw-space-3) var(--dw-space-5);
   border-bottom: 1px solid var(--dw-indigo-border-soft);
   background: linear-gradient(180deg, var(--dw-indigo-bg-soft) 0%, transparent 100%);
   flex-shrink: 0;
 }
 .sketch-context-strip__swatch {
-  width: 11px;
-  height: 11px;
+  width: 14px;
+  height: 14px;
   border-radius: var(--dw-radius-sm);
   flex-shrink: 0;
   border: 1px solid var(--dw-border-strong);
@@ -217,7 +212,7 @@
 .sketch-context-strip__select {
   flex: 1;
   min-width: 0;
-  height: var(--dw-control-h-sm);
+  height: var(--dw-control-h-md);
   font-size: var(--dw-fs-11);
   font-family: inherit;
   background: var(--dw-fill-2);
@@ -242,18 +237,19 @@
   text-overflow: ellipsis;
 }
 .sketch-context-strip__star {
-  width: 22px;
-  height: 22px;
+  width: var(--dw-control-h-md);
+  height: var(--dw-control-h-md);
   display: inline-flex;
   align-items: center;
   justify-content: center;
   background: none;
   border: none;
-  color: rgba(255, 255, 255, 0.28);
+  color: rgba(255, 255, 255, 0.32);
   cursor: pointer;
   border-radius: var(--dw-radius-md);
   flex-shrink: 0;
   transition: color var(--dw-dur-fast);
+  font-family: inherit;
 }
 .sketch-context-strip__star:hover { color: rgba(251, 191, 36, 0.75); }
 .sketch-context-strip__star.is-on { color: var(--dw-warning); }
@@ -261,7 +257,7 @@
   display: inline-flex;
   align-items: center;
   gap: var(--dw-space-2);
-  font-size: var(--dw-fs-10);
+  font-size: var(--dw-fs-11);
   color: var(--dw-text-3);
   cursor: pointer;
   user-select: none;
@@ -269,8 +265,8 @@
   margin-left: auto;
 }
 .sketch-context-strip__snap input[type=checkbox] {
-  width: 12px;
-  height: 12px;
+  width: 14px;
+  height: 14px;
   accent-color: var(--dw-indigo);
 }
 .sketch-context-strip__snap:hover { color: var(--dw-text-1); }
@@ -281,7 +277,7 @@
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-  padding: var(--dw-space-3) var(--dw-space-4);
+  padding: var(--dw-space-4) var(--dw-space-5);
 }
 .design-panel-body::-webkit-scrollbar { width: 4px; }
 .design-panel-body::-webkit-scrollbar-thumb {
@@ -289,12 +285,12 @@
   border-radius: 2px;
 }
 
-/* ── Status bar (v1 design-status-bar) ─────────────────────────────────── */
+/* ── Status bar ───────────────────────────────────────────────────────── */
 
 .design-status-bar {
   display: flex;
   align-items: center;
-  gap: var(--dw-space-4);
+  gap: var(--dw-space-3);
   height: var(--dw-status-h);
   padding: 0 var(--dw-space-5);
   border-top: 1px solid var(--dw-border);
@@ -307,6 +303,7 @@
   color: var(--dw-util);
   flex-shrink: 0;
   text-transform: capitalize;
+  letter-spacing: var(--dw-tracking-meta);
 }
 .design-status-bar__text {
   font-size: var(--dw-fs-10);
@@ -319,35 +316,42 @@
 }
 .design-status-bar__coords {
   font-size: var(--dw-fs-9);
-  color: rgba(99, 102, 241, 0.7);
+  color: var(--dw-indigo-l);
   flex-shrink: 0;
   font-variant-numeric: tabular-nums;
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
 }
 
 /* ── Header close button ───────────────────────────────────────────────── */
 
 .ext-panel-close {
-  background: var(--dw-fill-3);
-  border: none;
-  color: rgba(255, 255, 255, 0.8);
+  background: var(--dw-fill-2);
+  border: 1px solid var(--dw-border);
+  color: var(--dw-text-2);
   font-size: var(--dw-fs-14);
   cursor: pointer;
-  width: 26px;
-  height: 26px;
-  border-radius: var(--dw-radius-xl);
+  width: var(--dw-control-h-md);
+  height: var(--dw-control-h-md);
+  border-radius: var(--dw-radius-lg);
   flex-shrink: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  font-family: inherit;
+  line-height: 1;
 }
-.ext-panel-close:hover { background: rgba(255, 255, 255, 0.15); }
+.ext-panel-close:hover {
+  background: var(--dw-fill-3);
+  color: var(--dw-text-strong);
+  border-color: var(--dw-border-strong);
+}
 
 /* ── Generic placeholder cards ─────────────────────────────────────────── */
 
 .design-placeholder {
   display: flex;
   flex-direction: column;
-  gap: var(--dw-space-3);
+  gap: var(--dw-space-2);
   padding: var(--dw-space-4) 0;
 }
 .design-placeholder-title {
@@ -368,7 +372,7 @@
 .spin { animation: dw-spin 1s linear infinite; }
 @keyframes dw-spin { to { transform: rotate(360deg); } }
 
-/* ── Mobile mini-controller (phone) ────────────────────────────────────── */
+/* ── Mobile mini-controller ────────────────────────────────────────────── */
 
 .dw-mobile-mini {
   position: fixed;
@@ -382,17 +386,17 @@
   border-top: 1px solid var(--dw-border);
   display: flex;
   flex-direction: column;
-  padding: var(--dw-space-6) var(--dw-space-8);
+  padding: var(--dw-space-5) var(--dw-space-7);
   color: var(--dw-text-1);
   font-family: var(--dw-font);
 }
 .dw-mobile-mini__hd {
   display: flex;
   align-items: center;
-  gap: var(--dw-space-5);
-  margin-bottom: var(--dw-space-4);
+  gap: var(--dw-space-4);
+  margin-bottom: var(--dw-space-3);
 }
-.dw-mobile-mini__icon { font-size: 20px; }
+.dw-mobile-mini__icon { font-size: 22px; }
 .dw-mobile-mini__name {
   font-weight: 600;
   font-size: var(--dw-fs-14);
@@ -400,10 +404,11 @@
 }
 .dw-mobile-mini__spacer { flex: 1; }
 .dw-mobile-mini__btn {
-  padding: var(--dw-space-2) var(--dw-space-6);
+  height: var(--dw-control-h-tap);
+  padding: 0 var(--dw-space-7);
   border-radius: var(--dw-radius-xl);
-  font-size: var(--dw-fs-12);
-  font-weight: 500;
+  font-size: var(--dw-fs-13);
+  font-weight: 600;
   cursor: pointer;
   font-family: inherit;
 }
@@ -416,15 +421,15 @@
   background: var(--dw-util);
   border: none;
   color: var(--dw-util-text-on);
-  margin-left: var(--dw-space-3);
+  margin-left: var(--dw-space-2);
 }
 .dw-mobile-mini__body {
   display: flex;
-  gap: var(--dw-space-6);
+  gap: var(--dw-space-5);
   align-items: flex-end;
   flex-wrap: wrap;
 }
-.dw-mobile-mini__body .dw-row { flex: 1; min-width: 120px; }
+.dw-mobile-mini__body .dw-row { flex: 1; min-width: 140px; }
 
 /* ── Phone blocker (tablet+ feature) ──────────────────────────────────── */
 
@@ -440,6 +445,6 @@
   color: var(--dw-text-2);
   font-family: var(--dw-font);
   font-size: var(--dw-fs-12);
-  border-radius: var(--dw-radius-xl);
+  border-radius: var(--dw-radius-2xl);
 }
 .design-phone-blocker__icon { font-size: 32px; opacity: 0.6; }

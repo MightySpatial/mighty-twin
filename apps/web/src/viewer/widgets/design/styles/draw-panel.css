@@ -1,15 +1,15 @@
 /** Draw panel — placing-mode bar, tool tile grid, elevation datum,
- *  active-layer indicator. */
+ *  active-layer indicator. v2 design language. */
 
 @import './tokens.css';
 
 .draw-panel {
   display: flex;
   flex-direction: column;
-  gap: var(--dw-space-4);
+  gap: var(--dw-space-5);
 }
 
-/* ── Placing-mode bar (v1 dt-pinned-row) ──────────────────────────────── */
+/* ── Placing-mode bar ──────────────────────────────────────────────────── */
 
 .draw-placing-bar {
   display: flex;
@@ -21,8 +21,8 @@
   border-radius: var(--dw-radius-lg);
   flex-wrap: wrap;
 }
-.draw-placing-icon { font-size: var(--dw-fs-13); color: var(--dw-util); flex-shrink: 0; }
-.draw-placing-label { font-size: var(--dw-fs-11); color: var(--dw-text-strong); flex-shrink: 0; }
+.draw-placing-icon { font-size: var(--dw-fs-14); color: var(--dw-util); flex-shrink: 0; }
+.draw-placing-label { font-size: var(--dw-fs-12); color: var(--dw-text-strong); flex-shrink: 0; }
 .draw-placing-label strong { color: var(--dw-util); font-weight: 600; }
 .draw-placing-hint {
   font-size: var(--dw-fs-10);
@@ -31,14 +31,14 @@
   min-width: 0;
 }
 .draw-placing-cancel {
-  width: 22px;
-  height: 22px;
+  width: var(--dw-control-h-sm);
+  height: var(--dw-control-h-sm);
   display: inline-flex;
   align-items: center;
   justify-content: center;
   background: var(--dw-fill-3);
   border: 1px solid var(--dw-border);
-  border-radius: var(--dw-radius-sm);
+  border-radius: var(--dw-radius-md);
   color: var(--dw-text-3);
   cursor: pointer;
   font-size: var(--dw-fs-13);
@@ -54,23 +54,21 @@
   border-color: var(--dw-danger-border);
 }
 
-/* ── Section labels ────────────────────────────────────────────────────── */
-
 .draw-section-label {
   font-size: var(--dw-fs-10);
-  font-weight: 600;
+  font-weight: 700;
   color: var(--dw-text-3);
   text-transform: uppercase;
   letter-spacing: var(--dw-tracking-meta);
   margin-bottom: var(--dw-space-2);
 }
 
-/* ── Tool tile grid (v1 sketch-tile compact) ───────────────────────────── */
+/* ── Tool tile grid ────────────────────────────────────────────────────── */
 
 .draw-tools-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: var(--dw-space-1);
+  gap: var(--dw-space-2);
 }
 .draw-tool-btn {
   display: flex;
@@ -80,11 +78,12 @@
   padding: var(--dw-space-3) var(--dw-space-2);
   background: var(--dw-fill-1);
   border: 1px solid var(--dw-border);
-  border-radius: var(--dw-radius-lg);
+  border-radius: var(--dw-radius-xl);
   color: var(--dw-text-3);
   font-family: inherit;
   cursor: pointer;
   transition: background var(--dw-dur-fast), border-color var(--dw-dur-fast), color var(--dw-dur-fast);
+  min-height: 60px;
 }
 .draw-tool-btn:hover:not(:disabled) {
   background: var(--dw-fill-3);
@@ -97,7 +96,7 @@
   color: var(--dw-util);
 }
 .draw-tool-btn:disabled { opacity: 0.35; cursor: not-allowed; }
-.draw-tool-icon { font-size: var(--dw-fs-14); line-height: 1; }
+.draw-tool-icon { font-size: var(--dw-fs-16); line-height: 1; }
 .draw-tool-label {
   font-size: var(--dw-fs-10);
   font-weight: 600;
@@ -105,8 +104,8 @@
 }
 .draw-tool-shortcut {
   font-size: var(--dw-fs-9);
-  font-family: inherit;
-  padding: 1px 4px;
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  padding: 1px 5px;
   border-radius: var(--dw-radius-sm);
   background: var(--dw-fill-3);
   border: 1px solid var(--dw-border);
@@ -119,20 +118,20 @@
   color: var(--dw-util);
 }
 
-/* ── Elevation datum picker ────────────────────────────────────────────── */
+/* ── Elevation section ─────────────────────────────────────────────────── */
 
 .draw-elevation-section { display: flex; flex-direction: column; }
 .draw-elevation-select {
   width: 100%;
-  height: var(--dw-control-h-sm);
+  height: var(--dw-control-h-md);
   background: var(--dw-fill-2);
   color: var(--dw-text-strong);
   border: 1px solid var(--dw-border);
   border-radius: var(--dw-radius-md);
   padding: 0 var(--dw-space-3);
   font-family: inherit;
-  font-size: var(--dw-fs-11);
-  margin-bottom: var(--dw-space-1);
+  font-size: var(--dw-fs-12);
+  margin-bottom: var(--dw-space-2);
   cursor: pointer;
   outline: none;
 }
@@ -141,13 +140,13 @@
   font-size: var(--dw-fs-10);
   color: var(--dw-text-3);
   margin: var(--dw-space-1) 0 0;
-  line-height: 1.4;
+  line-height: 1.5;
 }
 .draw-offset-row {
   display: flex;
   align-items: center;
   gap: var(--dw-space-3);
-  margin-top: var(--dw-space-2);
+  margin-top: var(--dw-space-3);
 }
 .draw-offset-input {
   flex: 1;
@@ -156,9 +155,9 @@
   border: 1px solid var(--dw-border);
   border-radius: var(--dw-radius-md);
   padding: 0 var(--dw-space-3);
-  height: var(--dw-control-h-sm);
+  height: var(--dw-control-h-md);
   font-family: inherit;
-  font-size: var(--dw-fs-11);
+  font-size: var(--dw-fs-12);
   min-width: 0;
   outline: none;
 }
@@ -169,7 +168,7 @@
 .draw-active-layer {
   display: flex;
   align-items: center;
-  gap: var(--dw-space-2);
+  gap: var(--dw-space-3);
   flex-wrap: wrap;
 }
 .draw-layer-badge {
@@ -180,13 +179,18 @@
   background: var(--dw-fill-2);
   border: 1px solid var(--dw-border);
   border-radius: var(--dw-radius-md);
-  font-size: var(--dw-fs-10);
+  font-size: var(--dw-fs-11);
   font-weight: 600;
   color: var(--dw-text-2);
 }
-.draw-layer-dot { width: 9px; height: 9px; border-radius: var(--dw-radius-sm); flex-shrink: 0; }
+.draw-layer-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: var(--dw-radius-sm);
+  flex-shrink: 0;
+}
 .draw-layer-locked {
-  font-size: var(--dw-fs-9);
+  font-size: var(--dw-fs-10);
   color: var(--dw-warning);
   font-weight: 600;
 }
@@ -197,9 +201,9 @@
   margin: 0;
   line-height: 1.5;
 }
-.draw-empty-state { padding: var(--dw-space-7) var(--dw-space-5); text-align: center; }
+.draw-empty-state { padding: var(--dw-space-8) var(--dw-space-5); text-align: center; }
 .draw-empty-state p {
-  font-size: var(--dw-fs-11);
+  font-size: var(--dw-fs-12);
   color: var(--dw-text-3);
   margin: 0;
   line-height: 1.5;
@@ -210,7 +214,7 @@
   font-weight: 600;
   color: var(--dw-util);
   background: var(--dw-util-bg);
-  padding: 1px var(--dw-space-3);
+  padding: var(--dw-space-1) var(--dw-space-3);
   border-radius: var(--dw-radius-pill);
   white-space: nowrap;
 }

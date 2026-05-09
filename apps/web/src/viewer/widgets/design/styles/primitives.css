@@ -1,6 +1,6 @@
 /**
  * Design widget primitives — visual rules for the reusable components in
- * `widgets/design/primitives/*`. Tokens-only: every value is a CSS variable.
+ * `widgets/design/primitives/*`. v2 design language.
  */
 
 @import './tokens.css';
@@ -9,18 +9,18 @@
 
 .dw-section-label {
   font-size: var(--dw-fs-10);
-  font-weight: 600;
+  font-weight: 700;
   color: var(--dw-text-3);
   text-transform: uppercase;
   letter-spacing: var(--dw-tracking-meta);
 }
 
-/* ── Row layout — label on top, control(s) below ──────────────────────── */
+/* ── Row layout — label on top, control below ─────────────────────────── */
 
 .dw-row {
   display: flex;
   flex-direction: column;
-  gap: var(--dw-space-1);
+  gap: var(--dw-space-2);
 }
 
 /* ── Hex input ─────────────────────────────────────────────────────────── */
@@ -31,35 +31,35 @@
   padding: 0 var(--dw-space-3);
   background: var(--dw-fill-2);
   border: 1px solid var(--dw-border);
-  border-radius: var(--dw-radius-sm);
+  border-radius: var(--dw-radius-md);
   color: var(--dw-text-1);
-  font-family: inherit;
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
   font-size: var(--dw-fs-11);
   min-width: 0;
   outline: none;
   transition: border-color var(--dw-dur-fast), box-shadow var(--dw-dur-fast);
 }
-.dw-hex-input:focus { border-color: var(--dw-util); box-shadow: 0 0 0 1px var(--dw-util-d); }
+.dw-hex-input:focus { border-color: var(--dw-util); box-shadow: 0 0 0 2px var(--dw-util-d); }
 
 /* ── Colour group: swatch + hex side-by-side ───────────────────────────── */
 
 .dw-color-group {
   display: flex;
   align-items: center;
-  gap: var(--dw-space-2);
+  gap: var(--dw-space-3);
 }
 .dw-color-swatch {
   width: var(--dw-control-h-md);
   height: var(--dw-control-h-md);
   padding: 0;
   border: 1px solid var(--dw-border-strong);
-  border-radius: var(--dw-radius-sm);
+  border-radius: var(--dw-radius-md);
   background: none;
   cursor: pointer;
   flex-shrink: 0;
 }
-.dw-color-swatch::-webkit-color-swatch-wrapper { padding: 2px; }
-.dw-color-swatch::-webkit-color-swatch { border: none; border-radius: 2px; }
+.dw-color-swatch::-webkit-color-swatch-wrapper { padding: 3px; }
+.dw-color-swatch::-webkit-color-swatch { border: none; border-radius: 4px; }
 
 /* ── Slider group ──────────────────────────────────────────────────────── */
 
@@ -72,12 +72,13 @@
   flex: 1;
   min-width: 0;
   accent-color: var(--dw-util);
+  height: 4px;
 }
 .dw-slider-val {
-  font-size: var(--dw-fs-10);
+  font-size: var(--dw-fs-11);
   font-weight: 600;
   color: var(--dw-text-3);
-  min-width: 32px;
+  min-width: 40px;
   text-align: right;
   flex-shrink: 0;
   font-variant-numeric: tabular-nums;
@@ -88,7 +89,7 @@
 .dw-number-group {
   display: flex;
   align-items: center;
-  gap: var(--dw-space-2);
+  gap: var(--dw-space-3);
 }
 .dw-number-input {
   flex: 1;
@@ -97,16 +98,16 @@
   padding: 0 var(--dw-space-3);
   background: var(--dw-fill-2);
   border: 1px solid var(--dw-border);
-  border-radius: var(--dw-radius-sm);
+  border-radius: var(--dw-radius-md);
   color: var(--dw-text-1);
   font-family: inherit;
-  font-size: var(--dw-fs-11);
+  font-size: var(--dw-fs-12);
   outline: none;
   transition: border-color var(--dw-dur-fast);
 }
-.dw-number-input:focus { border-color: var(--dw-util); box-shadow: 0 0 0 1px var(--dw-util-d); }
+.dw-number-input:focus { border-color: var(--dw-util); box-shadow: 0 0 0 2px var(--dw-util-d); }
 .dw-number-unit {
-  font-size: var(--dw-fs-10);
+  font-size: var(--dw-fs-11);
   color: var(--dw-text-3);
   flex-shrink: 0;
 }
@@ -118,17 +119,17 @@
   padding: 0 var(--dw-space-3);
   background: var(--dw-fill-2);
   border: 1px solid var(--dw-border);
-  border-radius: var(--dw-radius-sm);
+  border-radius: var(--dw-radius-md);
   color: var(--dw-text-1);
   font-family: inherit;
-  font-size: var(--dw-fs-11);
+  font-size: var(--dw-fs-12);
   cursor: pointer;
   outline: none;
 }
-.dw-select:focus { border-color: var(--dw-util); box-shadow: 0 0 0 1px var(--dw-util-d); }
+.dw-select:focus { border-color: var(--dw-util); box-shadow: 0 0 0 2px var(--dw-util-d); }
 .dw-select:disabled { opacity: 0.5; cursor: not-allowed; }
 
-/* ── Toggle group (pill / tile variants) ───────────────────────────────── */
+/* ── Toggle group ──────────────────────────────────────────────────────── */
 
 .dw-toggle {
   display: flex;
@@ -146,13 +147,14 @@
   border: none;
   color: var(--dw-text-3);
   font-family: inherit;
-  font-size: var(--dw-fs-10);
+  font-size: var(--dw-fs-11);
   font-weight: 600;
   padding: var(--dw-space-2) var(--dw-space-3);
-  border-radius: var(--dw-radius-sm);
+  border-radius: var(--dw-radius-md);
   cursor: pointer;
   transition: background var(--dw-dur-fast), color var(--dw-dur-fast), box-shadow var(--dw-dur-fast);
   white-space: nowrap;
+  min-height: var(--dw-control-h-sm);
 }
 .dw-toggle-btn:hover:not(.on) {
   background: var(--dw-fill-hover);
@@ -164,7 +166,7 @@
   box-shadow: 0 0 0 1px var(--dw-util-d);
 }
 .dw-toggle--tile {
-  border-radius: var(--dw-radius-sm);
+  border-radius: var(--dw-radius-md);
   background: transparent;
   padding: 0;
   border: none;
@@ -172,7 +174,7 @@
 .dw-toggle--tile .dw-toggle-btn {
   height: var(--dw-control-h-md);
   border: 1px solid var(--dw-border);
-  border-radius: var(--dw-radius-sm);
+  border-radius: var(--dw-radius-md);
   background: var(--dw-fill-1);
   color: var(--dw-text-2);
 }

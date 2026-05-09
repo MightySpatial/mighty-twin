@@ -226,6 +226,7 @@ export default function DesignWidget({ viewer, onClose, siteSlug = null }: Desig
               onUpdateAttribute={state.updateFeatureAttribute}
               onUpdateStyle={state.updateFeatureStyle}
               onSnapToTerrain={state.snapFeatureToTerrain}
+              siteSlug={siteSlug}
             />
           )}
 
