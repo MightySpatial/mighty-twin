@@ -1,25 +1,28 @@
-/** Design Download panel — T+1310.
+/**
+ * MightyTwin — Design Download Panel (faithful port of v1 DownloadTab "Export
+ * Geometry" section).
  *
- *  Replaces the V1 "Available in Sprint 2" placeholder. Exports the
- *  current sketch state as either:
+ * v1 layout:
+ *   • Format dropdown: GeoJSON / Shapefile / KML / DXF / GeoPackage / CSV /
+ *     IFC (BIM)
+ *   • CRS dropdown: WGS84 (4326) + projected options
+ *   • Sketch scope dropdown: All sketches / single sketch
+ *   • Split mode dropdown: No split / By layer / By attribute (+ split-attr
+ *     input when 'attribute' is selected)
+ *   • Export button
  *
- *    - GeoJSON FeatureCollection (one collection per visible layer,
- *      bundled into a single FeatureCollection with _layer_id on
- *      each feature's properties for round-trip)
- *    - GeoJSON per-layer (one file per visible layer in a zip)
- *    - Plain JSON (full SketchLayer + SketchFeature dump for round-
- *      trip into another Twin via Sketch persistence)
- *
- *  Reuses serializeSketchLayers from T+420 — the same function that
- *  builds the submission payload — so Download and Submit see the
- *  exact same bytes.
+ * v2 backend gap: Shapefile, KML, DXF, GeoPackage, IFC need a server-side
+ * export service that the v2 backend doesn't yet expose. Those formats are
+ * present in the dropdown — matching v1's surface — but disabled with a
+ * server-required hint so the user sees the same shape and can request the
+ * service. GeoJSON, CSV (WKT), and JSON-state work entirely client-side.
  */
 
 import { useMemo, useState } from 'react'
-import { Download, Loader, Map as MapIcon, Code, X } from 'lucide-react'
+import { Download, Loader, AlertCircle } from 'lucide-react'
 import type { Viewer } from 'cesium'
 import type { SketchFeature, SketchLayer } from '../types'
-import { serializeSketchLayers } from '../serializeFeatures'
+import { serializeSketchLayers, type GeoJSONFeature } from '../serializeFeatures'
 
 interface Props {
   viewer: Viewer | null
@@ -27,10 +30,37 @@ interface Props {
   features: SketchFeature[]
 }
 
-type Format = 'geojson_combined' | 'geojson_per_layer' | 'json_state'
+type ExportFormat = 'geojson' | 'shapefile' | 'kml' | 'dxf' | 'geopackage' | 'csv' | 'ifc' | 'json_state'
+type SplitMode = 'none' | 'layer' | 'attribute'
+
+const FORMAT_LABELS: Record<ExportFormat, string> = {
+  geojson: 'GeoJSON',
+  shapefile: 'Shapefile',
+  kml: 'KML',
+  dxf: 'DXF',
+  geopackage: 'GeoPackage',
+  csv: 'CSV',
+  ifc: 'IFC (BIM)',
+  json_state: 'Design state · JSON',
+}
+
+/** Backend-required formats — surfaced in the dropdown for parity with v1
+ *  but disabled until a v2 export service ships. */
+const BACKEND_REQUIRED: ReadonlySet<ExportFormat> = new Set(['shapefile', 'kml', 'dxf', 'geopackage', 'ifc'])
+
+const CRS_OPTIONS: { epsg: number; name: string }[] = [
+  { epsg: 4326, name: 'WGS 84 (EPSG:4326)' },
+  { epsg: 3857, name: 'Web Mercator (EPSG:3857)' },
+  { epsg: 7855, name: 'GDA2020 / MGA Zone 55 (EPSG:7855)' },
+  { epsg: 7856, name: 'GDA2020 / MGA Zone 56 (EPSG:7856)' },
+]
 
 export default function DownloadPanel({ viewer, layers, features }: Props) {
-  const [format, setFormat] = useState<Format>('geojson_combined')
+  const [format, setFormat] = useState<ExportFormat>('geojson')
+  const [crs, setCrs] = useState<number>(4326)
+  const [sketchScope, setSketchScope] = useState<string>('__all__')
+  const [splitMode, setSplitMode] = useState<SplitMode>('none')
+  const [splitAttr, setSplitAttr] = useState<string>('')
   const [downloading, setDownloading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -49,6 +79,8 @@ export default function DownloadPanel({ viewer, layers, features }: Props) {
     }
   }, [layers, features])
 
+  const isBackendBlocked = BACKEND_REQUIRED.has(format)
+
   function trigger(filename: string, content: string, mime: string) {
     const blob = new Blob([content], { type: mime })
     const url = URL.createObjectURL(blob)
@@ -61,72 +93,107 @@ export default function DownloadPanel({ viewer, layers, features }: Props) {
     URL.revokeObjectURL(url)
   }
 
+  function geoJsonForScope(): { features: GeoJSONFeature[]; skipped: number } {
+    const inScope = sketchScope === '__all__'
+      ? features
+      : features.filter(f => f.layerId === sketchScope)
+    return serializeSketchLayers(layers, inScope, viewer)
+  }
+
+  /** GeoJSON FeatureCollection → CSV with WKT geometry column. v1 parity. */
+  function geojsonToCsv(gjFeatures: GeoJSONFeature[]): string {
+    const allKeys = new Set<string>()
+    for (const f of gjFeatures) {
+      for (const k of Object.keys(f.properties ?? {})) {
+        if (k !== '_design') allKeys.add(k)
+      }
+    }
+    const cols = ['id', 'geometry_wkt', ...allKeys]
+    const lines = [cols.join(',')]
+    for (const f of gjFeatures) {
+      const props = f.properties ?? {}
+      const wkt = geomToWkt(f.geometry)
+      const row = [
+        csvCell(f.id),
+        csvCell(wkt),
+        ...[...allKeys].map(k => csvCell(props[k])),
+      ]
+      lines.push(row.join(','))
+    }
+    return lines.join('\n')
+  }
+
   async function download() {
     setDownloading(true)
     setError(null)
     try {
       const stamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19)
-      if (format === 'geojson_combined') {
-        const { features: gjFeatures, skipped } = serializeSketchLayers(
-          layers,
-          features,
-          viewer,
-        )
-        if (gjFeatures.length === 0) {
-          throw new Error(
-            skipped > 0
-              ? `${skipped} feature(s) couldn't be serialised — usually means the entity has no realised geometry yet.`
-              : 'No features to download.',
-          )
-        }
-        trigger(
-          `mighty-twin-design-${stamp}.geojson`,
-          JSON.stringify({ type: 'FeatureCollection', features: gjFeatures }, null, 2),
-          'application/geo+json',
-        )
-      } else if (format === 'geojson_per_layer') {
-        const visibleLayers = layers.filter((l) => l.visible)
-        if (visibleLayers.length === 0) {
-          throw new Error('No visible layers to download.')
-        }
-        // No JSZip dep — write per-layer files one at a time. Browsers
-        // serialise these into the same downloads folder; users get a
-        // small batch of named files which is fine for dev / power
-        // users. (A real zip is a future iteration.)
-        let writtenAny = false
-        for (const layer of visibleLayers) {
-          const layerFeatures = features.filter((f) => f.layerId === layer.id)
-          if (layerFeatures.length === 0) continue
-          const { features: gjFeatures } = serializeSketchLayers(
-            [layer],
-            layerFeatures,
-            viewer,
-          )
-          if (gjFeatures.length === 0) continue
+
+      if (isBackendBlocked) {
+        throw new Error(`${FORMAT_LABELS[format]} export needs the server-side export service (not yet wired up in v2). Use GeoJSON or CSV for now.`)
+      }
+
+      // JSON state — full Twin round-trip dump. CRS/scope/split don't apply.
+      if (format === 'json_state') {
+        const payload = { schema: 1, exported_at: new Date().toISOString(), layers, features }
+        trigger(`mighty-twin-design-state-${stamp}.json`, JSON.stringify(payload, null, 2), 'application/json')
+        return
+      }
+
+      const { features: gjFeatures, skipped } = geoJsonForScope()
+      if (gjFeatures.length === 0) {
+        throw new Error(skipped > 0
+          ? `${skipped} feature(s) couldn't be serialised — usually means the entity has no realised geometry yet.`
+          : 'No features to download in scope.')
+      }
+
+      // CRS warning — v2 reprojects only on the server; client GeoJSON is
+      // always WGS84. v1 lets the user pick a target CRS but the client
+      // export ships in 4326 + a property tagging the requested CRS so a
+      // downstream tool can reproject deterministically.
+      if (crs !== 4326) {
+        gjFeatures.forEach(f => {
+          f.properties = { ...f.properties, _crs_requested: crs }
+        })
+      }
+
+      const splitGroups = splitFeatures(gjFeatures, splitMode, splitAttr)
+
+      if (format === 'geojson') {
+        if (splitGroups.length === 1) {
+          const [{ key, items }] = splitGroups
+          const filename = `${key || 'sketch'}-${stamp}.geojson`
           trigger(
-            `${slugify(layer.name)}-${stamp}.geojson`,
-            JSON.stringify({ type: 'FeatureCollection', features: gjFeatures }, null, 2),
+            filename,
+            JSON.stringify({ type: 'FeatureCollection', features: items }, null, 2),
             'application/geo+json',
           )
-          writtenAny = true
+        } else {
+          for (const { key, items } of splitGroups) {
+            if (items.length === 0) continue
+            trigger(
+              `${slugify(key)}-${stamp}.geojson`,
+              JSON.stringify({ type: 'FeatureCollection', features: items }, null, 2),
+              'application/geo+json',
+            )
+          }
         }
-        if (!writtenAny) {
-          throw new Error('No serialisable features in any visible layer.')
-        }
-      } else {
-        // Full state dump for round-trip
-        const payload = {
-          schema: 1,
-          exported_at: new Date().toISOString(),
-          layers,
-          features,
-        }
-        trigger(
-          `mighty-twin-design-state-${stamp}.json`,
-          JSON.stringify(payload, null, 2),
-          'application/json',
-        )
+        return
       }
+
+      if (format === 'csv') {
+        if (splitGroups.length === 1) {
+          trigger(`mighty-twin-design-${stamp}.csv`, geojsonToCsv(splitGroups[0].items), 'text/csv')
+        } else {
+          for (const { key, items } of splitGroups) {
+            if (items.length === 0) continue
+            trigger(`${slugify(key)}-${stamp}.csv`, geojsonToCsv(items), 'text/csv')
+          }
+        }
+        return
+      }
+
+      throw new Error(`Format "${format}" is not implemented client-side.`)
     } catch (e) {
       setError((e as Error).message)
     } finally {
@@ -135,161 +202,164 @@ export default function DownloadPanel({ viewer, layers, features }: Props) {
   }
 
   return (
-    <div style={{ padding: 14, color: '#f0f2f8' }}>
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 10,
-          padding: 12,
-          background: 'rgba(36,83,255,0.06)',
-          border: '1px solid rgba(36,83,255,0.32)',
-          borderRadius: 10,
-          marginBottom: 12,
-        }}
-      >
-        <Download size={18} color="#9bb3ff" />
-        <div style={{ flex: 1 }}>
-          <div style={{ fontSize: 13, fontWeight: 500 }}>
+    <div className="dl-panel">
+      {/* Summary banner */}
+      <div className="dl-summary">
+        <Download size={16} className="dl-summary-icon" />
+        <div>
+          <div className="dl-summary-count">
             {summary.featureCount} feature{summary.featureCount === 1 ? '' : 's'} ready
           </div>
-          <div style={{ fontSize: 11, color: 'rgba(240,242,248,0.55)', marginTop: 2 }}>
-            From {summary.visibleLayers.length} visible / {summary.totalLayers} total
-            layer{summary.totalLayers === 1 ? '' : 's'}
+          <div className="dl-summary-meta">
+            From {summary.visibleLayers.length} visible / {summary.totalLayers} total layer{summary.totalLayers === 1 ? '' : 's'}
           </div>
         </div>
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 12 }}>
-        <FormatRow
-          active={format === 'geojson_combined'}
-          icon={<MapIcon size={16} />}
-          title="GeoJSON · combined"
-          subtitle="One FeatureCollection with all visible features"
-          onClick={() => setFormat('geojson_combined')}
-        />
-        <FormatRow
-          active={format === 'geojson_per_layer'}
-          icon={<MapIcon size={16} />}
-          title="GeoJSON · per layer"
-          subtitle="One file per visible layer (sequential downloads)"
-          onClick={() => setFormat('geojson_per_layer')}
-        />
-        <FormatRow
-          active={format === 'json_state'}
-          icon={<Code size={16} />}
-          title="Design state · JSON"
-          subtitle="Full sketch state for round-trip into another Twin"
-          onClick={() => setFormat('json_state')}
-        />
+      <div className="dl-section-label">Export Geometry</div>
+
+      {/* Format + CRS row */}
+      <div className="dl-row">
+        <select
+          className="dl-select"
+          value={format}
+          onChange={e => setFormat(e.target.value as ExportFormat)}
+          title="Format"
+        >
+          <optgroup label="Client-side">
+            <option value="geojson">{FORMAT_LABELS.geojson}</option>
+            <option value="csv">{FORMAT_LABELS.csv}</option>
+            <option value="json_state">{FORMAT_LABELS.json_state}</option>
+          </optgroup>
+          <optgroup label="Needs export service">
+            <option value="shapefile">{FORMAT_LABELS.shapefile}</option>
+            <option value="kml">{FORMAT_LABELS.kml}</option>
+            <option value="dxf">{FORMAT_LABELS.dxf}</option>
+            <option value="geopackage">{FORMAT_LABELS.geopackage}</option>
+            <option value="ifc">{FORMAT_LABELS.ifc}</option>
+          </optgroup>
+        </select>
+        <select
+          className="dl-select"
+          value={crs}
+          onChange={e => setCrs(Number(e.target.value))}
+          title="CRS"
+          disabled={format === 'json_state'}
+        >
+          {CRS_OPTIONS.map(o => (
+            <option key={o.epsg} value={o.epsg}>{o.name}</option>
+          ))}
+        </select>
       </div>
 
-      {error && (
-        <div
-          style={{
-            padding: 10,
-            background: 'rgba(251,113,133,0.06)',
-            border: '1px solid rgba(251,113,133,0.32)',
-            borderRadius: 7,
-            color: '#fca5a5',
-            fontSize: 11,
-            marginBottom: 12,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 6,
-          }}
+      {/* Scope + Split row */}
+      <div className="dl-row">
+        <select
+          className="dl-select"
+          value={sketchScope}
+          onChange={e => setSketchScope(e.target.value)}
+          title="Scope"
+          disabled={format === 'json_state'}
         >
-          <X size={12} /> {error}
+          <option value="__all__">All visible</option>
+          {layers.map(l => (
+            <option key={l.id} value={l.id}>{l.name}</option>
+          ))}
+        </select>
+        <select
+          className="dl-select"
+          value={splitMode}
+          onChange={e => setSplitMode(e.target.value as SplitMode)}
+          title="Split mode"
+          disabled={format === 'json_state' || format === 'csv' && splitMode === 'attribute'}
+        >
+          <option value="none">No split</option>
+          <option value="layer">By layer</option>
+          <option value="attribute">By attribute</option>
+        </select>
+      </div>
+
+      {splitMode === 'attribute' && (
+        <input
+          className="dl-input"
+          type="text"
+          placeholder="Attribute name to split on"
+          value={splitAttr}
+          onChange={e => setSplitAttr(e.target.value)}
+        />
+      )}
+
+      {isBackendBlocked && (
+        <div className="dl-warning">
+          <AlertCircle size={12} />
+          <span>{FORMAT_LABELS[format]} export needs the server-side export service (not yet wired up in v2).</span>
+        </div>
+      )}
+
+      {error && (
+        <div className="dl-error">
+          <AlertCircle size={12} />
+          <span>{error}</span>
         </div>
       )}
 
       <button
+        className="dl-export-btn"
         onClick={download}
-        disabled={downloading || summary.featureCount === 0}
-        style={{
-          width: '100%',
-          padding: '10px',
-          background: summary.featureCount > 0 ? '#2453ff' : 'rgba(255,255,255,0.04)',
-          border: 'none',
-          borderRadius: 8,
-          color: summary.featureCount > 0 ? '#fff' : 'rgba(240,242,248,0.4)',
-          fontSize: 13,
-          fontWeight: 500,
-          cursor:
-            downloading || summary.featureCount === 0 ? 'not-allowed' : 'pointer',
-          display: 'inline-flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: 6,
-        }}
+        disabled={downloading || summary.featureCount === 0 || isBackendBlocked}
       >
-        {downloading ? (
-          <>
-            <Loader size={14} className="spin" /> Preparing…
-          </>
-        ) : (
-          <>
-            <Download size={14} /> Download
-          </>
-        )}
+        {downloading ? (<><Loader size={12} className="spin" /> Exporting…</>) : (<>↓ Export</>)}
       </button>
     </div>
   )
 }
 
-function FormatRow({
-  active,
-  icon,
-  title,
-  subtitle,
-  onClick,
-}: {
-  active: boolean
-  icon: React.ReactNode
-  title: string
-  subtitle: string
-  onClick: () => void
-}) {
-  return (
-    <button
-      onClick={onClick}
-      style={{
-        textAlign: 'left',
-        padding: 10,
-        background: active ? 'rgba(36,83,255,0.10)' : 'rgba(255,255,255,0.03)',
-        border: `1px solid ${active ? 'rgba(36,83,255,0.4)' : 'rgba(255,255,255,0.07)'}`,
-        borderRadius: 8,
-        color: '#f0f2f8',
-        cursor: 'pointer',
-        display: 'flex',
-        alignItems: 'center',
-        gap: 10,
-        font: 'inherit',
-      }}
-    >
-      <div
-        style={{
-          width: 28,
-          height: 28,
-          borderRadius: 6,
-          background: active ? 'rgba(36,83,255,0.18)' : 'rgba(255,255,255,0.06)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          color: active ? '#9bb3ff' : 'rgba(240,242,248,0.7)',
-          flexShrink: 0,
-        }}
-      >
-        {icon}
-      </div>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 12, fontWeight: 500 }}>{title}</div>
-        <div style={{ fontSize: 10, color: 'rgba(240,242,248,0.5)', marginTop: 1 }}>
-          {subtitle}
-        </div>
-      </div>
-    </button>
-  )
+function splitFeatures(
+  fs: GeoJSONFeature[],
+  mode: SplitMode,
+  attr: string,
+): { key: string; items: GeoJSONFeature[] }[] {
+  if (mode === 'none') return [{ key: 'mighty-twin-design', items: fs }]
+  if (mode === 'layer') {
+    const byLayer = new Map<string, GeoJSONFeature[]>()
+    for (const f of fs) {
+      const lid = (f.properties?._design as { layer_id?: string } | undefined)?.layer_id ?? 'unknown'
+      if (!byLayer.has(lid)) byLayer.set(lid, [])
+      byLayer.get(lid)!.push(f)
+    }
+    return Array.from(byLayer.entries()).map(([k, v]) => ({ key: k, items: v }))
+  }
+  // by attribute
+  const key = attr.trim()
+  if (!key) return [{ key: 'mighty-twin-design', items: fs }]
+  const groups = new Map<string, GeoJSONFeature[]>()
+  for (const f of fs) {
+    const v = (f.properties as Record<string, unknown>)?.[key]
+    const k = v == null ? '__null__' : String(v)
+    if (!groups.has(k)) groups.set(k, [])
+    groups.get(k)!.push(f)
+  }
+  return Array.from(groups.entries()).map(([k, v]) => ({ key: `${key}-${k}`, items: v }))
+}
+
+function csvCell(v: unknown): string {
+  if (v == null) return ''
+  const s = typeof v === 'string' ? v : JSON.stringify(v)
+  if (/[",\n]/.test(s)) return `"${s.replace(/"/g, '""')}"`
+  return s
+}
+
+function geomToWkt(g: GeoJSONFeature['geometry']): string {
+  const fmt = (c: readonly [number, number, number?] | number[]): string => {
+    const z = c[2]
+    return `${c[0]} ${c[1]}${z != null ? ' ' + z : ''}`
+  }
+  switch (g.type) {
+    case 'Point': return `POINT(${fmt(g.coordinates)})`
+    case 'LineString': return `LINESTRING(${g.coordinates.map(fmt).join(', ')})`
+    case 'Polygon': return `POLYGON((${g.coordinates[0].map(fmt).join(', ')}))`
+    default: return ''
+  }
 }
 
 function slugify(s: string): string {

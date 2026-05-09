@@ -57,13 +57,13 @@ interface UseSolidToolsOpts {
 
 function defaultBoxDraft(lon: number, lat: number, alt: number, scale = 20): BoxDraft {
   const s = Math.round(scale)
-  return { lon, lat, alt, width: s, height: Math.round(s * 0.5), depth: s, heading: 0, wallThickness: 0, shape: 'square' }
+  return { lon, lat, alt, width: s, height: Math.round(s * 0.5), depth: s, heading: 0, pitch: 0, roll: 0, wallThickness: 0, shape: 'square', refZ: 'bot' }
 }
 
 function defaultPitDraft(lon: number, lat: number, alt: number, scale = 10): PitDraft {
   const s = Math.round(scale)
   const wall = Math.max(0.5, Math.round(s * 0.25))
-  return { lon, lat, alt, width: s, depth: s, height: Math.round(s * 0.8), heading: 0, wallThickness: wall, floorThickness: Math.max(0.3, wall * 0.5), shape: 'square', radius: Math.round(s * 0.5) }
+  return { lon, lat, alt, width: s, depth: s, height: Math.round(s * 0.8), heading: 0, pitch: 0, roll: 0, wallThickness: wall, floorThickness: Math.max(0.3, wall * 0.5), shape: 'square', radius: Math.round(s * 0.5), refZ: 'top' }
 }
 
 function defaultCylDraft(lon: number, lat: number, alt: number, scale = 10): CylDraft {

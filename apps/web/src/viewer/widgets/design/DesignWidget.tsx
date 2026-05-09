@@ -281,10 +281,14 @@ export default function DesignWidget({ viewer, onClose, siteSlug = null }: Desig
           {activeTab === 'edit' && (
             <EditPanel
               feature={state.selectedFeature}
+              layers={state.layers}
               viewer={viewer}
               onMoveFeature={state.moveFeature}
               onDelete={state.removeFeature}
               onRename={state.renameFeature}
+              onUpdateParams={state.updateFeatureParams}
+              onUpdateAttribute={state.updateFeatureAttribute}
+              onUpdateStyle={state.updateFeatureStyle}
             />
           )}
 

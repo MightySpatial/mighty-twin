@@ -119,8 +119,10 @@ export function addBoxEntity(
   height: number,
   fill: Color,
   outline: Color,
+  pitchRad: number = 0,
+  rollRad: number = 0,
 ) {
-  const hpr = new HeadingPitchRoll(headingRad, 0, 0)
+  const hpr = new HeadingPitchRoll(headingRad, pitchRad, rollRad)
   const orientation = Transforms.headingPitchRollQuaternion(center, hpr)
   viewer.entities.add({
     id: entityId,

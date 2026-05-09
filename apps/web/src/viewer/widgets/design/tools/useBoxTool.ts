@@ -28,8 +28,11 @@ const DEFAULT_BOX: Omit<BoxDraft, 'lon' | 'lat' | 'alt'> = {
   height: 5,
   depth: 5,
   heading: 0,
+  pitch: 0,
+  roll: 0,
   wallThickness: 0,
   shape: 'square',
+  refZ: 'bot',
 }
 
 interface UseBoxToolOpts {

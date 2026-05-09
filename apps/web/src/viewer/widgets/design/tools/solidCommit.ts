@@ -2,6 +2,11 @@
  * MightyTwin — Solid Commit Rendering
  * Full geometry commit functions for Box, Pit, and Cylinder.
  * Produces accurate hollow geometry (walls, floors) when wallThickness > 0.
+ *
+ * Anchor semantics (`refZ`):
+ *   box  — 'bot' (default) sits on terrain, 'center' straddles, 'top' floats.
+ *   pit  — 'top' (default) extends below terrain, 'center' straddles, 'bot' sits on.
+ *   cyl  — Cylinder uses heading/pitch/roll natively; refZ is implicit (bottom).
  */
 import {
   Viewer as CesiumViewerType,
@@ -13,16 +18,41 @@ import {
 import type { BoxDraft, PitDraft, CylDraft } from '../types'
 import { addBoxEntity, addCylinderEntity, enuOffsetToWorld } from './drawUtils'
 
+/** Resolve refZ for a box → vertical offset of the box centre above the anchor. */
+function boxAnchorOffset(refZ: BoxDraft['refZ'] | undefined, height: number): number {
+  switch (refZ ?? 'bot') {
+    case 'top':    return -height / 2
+    case 'center': return 0
+    case 'bot':
+    default:       return height / 2
+  }
+}
+
+/** Resolve refZ for a pit — base of pit relative to anchor altitude. */
+function pitAnchorBaseOffset(refZ: PitDraft['refZ'] | undefined, height: number): number {
+  switch (refZ ?? 'top') {
+    case 'bot':    return 0
+    case 'center': return -height / 2
+    case 'top':
+    default:       return -height
+  }
+}
+
 export function commitBox(viewer: CesiumViewerType, draft: BoxDraft, entityId: string, fillCol: Color, outlineCol: Color) {
-  const { lon, lat, alt, width, depth, height, heading, wallThickness } = draft
+  const { lon, lat, alt, width, depth, height, heading, pitch, roll, wallThickness, refZ } = draft
   const headingRad = CesiumMath.toRadians(heading)
+  const pitchRad = CesiumMath.toRadians(pitch || 0)
+  const rollRad = CesiumMath.toRadians(roll || 0)
   const isHollow = wallThickness > 0 && wallThickness < Math.min(width, depth, height) / 2
+  const centerOffsetUp = boxAnchorOffset(refZ, height)
 
   if (!isHollow) {
-    const center = Cartesian3.fromDegrees(lon, lat, alt + height / 2)
-    addBoxEntity(viewer, entityId, center, headingRad, width, depth, height, fillCol, outlineCol)
+    const center = Cartesian3.fromDegrees(lon, lat, alt + centerOffsetUp)
+    addBoxEntity(viewer, entityId, center, headingRad, width, depth, height, fillCol, outlineCol, pitchRad, rollRad)
   } else {
-    const baseCart = Cartesian3.fromDegrees(lon, lat, alt)
+    // Compute the bottom-anchor cartesian, then offset all panels relative to it.
+    const baseAlt = alt + centerOffsetUp - height / 2
+    const baseCart = Cartesian3.fromDegrees(lon, lat, baseAlt)
     const t = wallThickness
     const hw = width / 2
     const hd = depth / 2
@@ -41,7 +71,7 @@ export function commitBox(viewer: CesiumViewerType, draft: BoxDraft, entityId: s
 
     for (const [suffix, e, n, u, bw, bd, bh] of panels) {
       const center = enuOffsetToWorld(baseCart, headingRad, e, n, u)
-      addBoxEntity(viewer, entityId + suffix, center, headingRad, bw, bd, bh, fillCol, outlineCol)
+      addBoxEntity(viewer, entityId + suffix, center, headingRad, bw, bd, bh, fillCol, outlineCol, pitchRad, rollRad)
     }
   }
 }
@@ -75,19 +105,20 @@ export function commitCylinder(viewer: CesiumViewerType, draft: CylDraft, entity
 }
 
 export function commitPit(viewer: CesiumViewerType, draft: PitDraft, entityId: string, fillCol: Color, outlineCol: Color) {
-  const { lon, lat, alt, width, depth, height, heading, wallThickness, floorThickness, shape, radius } = draft
+  const { lon, lat, alt, width, depth, height, heading, wallThickness, floorThickness, shape, radius, refZ } = draft
   const headingRad = CesiumMath.toRadians(heading)
-  const baseCart = Cartesian3.fromDegrees(lon, lat, alt)
+  const baseAlt = alt + pitAnchorBaseOffset(refZ, height)
+  const baseCart = Cartesian3.fromDegrees(lon, lat, baseAlt)
 
   if (shape === 'round') {
     const wallH = Math.max(0.01, height - floorThickness)
 
     // Floor disk
-    const floorCenter = Cartesian3.fromDegrees(lon, lat, alt + floorThickness / 2)
+    const floorCenter = Cartesian3.fromDegrees(lon, lat, baseAlt + floorThickness / 2)
     addCylinderEntity(viewer, entityId + '_rf', floorCenter, headingRad, 0, 0, radius, floorThickness, fillCol, outlineCol)
 
     // Outer wall
-    const wallCenter = Cartesian3.fromDegrees(lon, lat, alt + floorThickness + wallH / 2)
+    const wallCenter = Cartesian3.fromDegrees(lon, lat, baseAlt + floorThickness + wallH / 2)
     const wallFill = fillCol.withAlpha(0.7)
     addCylinderEntity(viewer, entityId + '_rwo', wallCenter, headingRad, 0, 0, radius, wallH, wallFill, outlineCol)
 

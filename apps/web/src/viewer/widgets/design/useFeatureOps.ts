@@ -146,13 +146,76 @@ export function useFeatureOps({ viewer, layersRef, layers, syntheticCollapsed }:
     }))
   }, [viewer])
 
+  /** Rebuild a solid feature's geometry from a partial param patch (heading,
+   *  pitch, roll, width, height, wallThickness, refZ, etc). Mirrors the v1
+   *  DesignObjectEditor's per-param emit pattern — every input change re-commits
+   *  the entity. The lon/lat/alt come from solidParams so move/edit operations
+   *  stay independent. */
+  const updateFeatureParams = useCallback((featureId: string, patch: Record<string, unknown>) => {
+    if (!viewer) return
+    setFeatures(prev => prev.map(f => {
+      if (f.id !== featureId) return f
+      const isSolid = f.geometry === 'box' || f.geometry === 'pit' || f.geometry === 'cylinder'
+      if (!isSolid) return f
+
+      const toRemove: string[] = []
+      for (const ent of viewer.entities.values) {
+        if (ent.id === f.entityId || ent.id.startsWith(f.entityId + '_') || ent.id.startsWith(f.entityId + '__')) {
+          toRemove.push(ent.id)
+        }
+      }
+      for (const id of toRemove) {
+        const ent = viewer.entities.getById(id)
+        if (ent) viewer.entities.remove(ent)
+      }
+
+      const draft = { ...(f.solidParams as Record<string, unknown> ?? {}), ...(f.attributes as Record<string, unknown>), ...patch }
+      const fillCol = Color.fromCssColorString(f.style.fillColor).withAlpha(f.style.opacity * 0.65)
+      const outlineCol = Color.fromCssColorString(f.style.strokeColor).withAlpha(f.style.opacity)
+      if (f.geometry === 'box') commitBox(viewer, draft as unknown as BoxDraft, f.entityId, fillCol, outlineCol)
+      else if (f.geometry === 'cylinder') commitCylinder(viewer, draft as unknown as CylDraft, f.entityId, fillCol, outlineCol)
+      else if (f.geometry === 'pit') commitPit(viewer, draft as unknown as PitDraft, f.entityId, fillCol, outlineCol)
+
+      const lon = (draft as { lon?: number }).lon
+      const lat = (draft as { lat?: number }).lat
+      const alt = (draft as { alt?: number }).alt
+      return {
+        ...f,
+        solidParams: draft,
+        attributes: {
+          ...(f.attributes as object),
+          ...(typeof lon === 'number' ? { lon } : {}),
+          ...(typeof lat === 'number' ? { lat } : {}),
+          ...(typeof alt === 'number' ? { alt } : {}),
+        },
+      }
+    }))
+  }, [viewer])
+
+  /** Update arbitrary attribute key/value on a feature. Used by AttributesEditor.
+   *  Reserves the geometry/elevation/style namespaces for their own ops. */
+  const updateFeatureAttribute = useCallback((featureId: string, key: string, value: unknown) => {
+    setFeatures(prev => prev.map(f => {
+      if (f.id !== featureId) return f
+      const updated = { ...f, attributes: { ...(f.attributes as object), [key]: value } }
+      // If a label field is set and this attribute drives it, refresh the entity label
+      // immediately so the live map reflects the typed value without an extra paint.
+      if (viewer && f.style.labelField === key) {
+        const entity = viewer.entities.getById(f.entityId)
+        if (entity) applyStyleToEntity(entity, updated.style, updated.attributes as Record<string, unknown>)
+      }
+      return updated
+    }))
+  }, [viewer])
+
   const updateFeatureStyle = useCallback((featureId: string, patch: Partial<FeatureStyle>) => {
     setFeatures(prev => prev.map(f => {
       if (f.id !== featureId) return f
       const updated = { ...f, style: { ...f.style, ...patch } }
       if (viewer) {
         const entity = viewer.entities.getById(f.entityId)
-        if (entity) applyStyleToEntity(entity, updated.style)
+        const attrs = updated.attributes as Record<string, unknown>
+        if (entity) applyStyleToEntity(entity, updated.style, attrs)
         const isSolid = f.geometry === 'box' || f.geometry === 'pit' || f.geometry === 'cylinder'
         if (isSolid) {
           const prefix = f.entityId
@@ -160,7 +223,7 @@ export function useFeatureOps({ viewer, layersRef, layers, syntheticCollapsed }:
           for (let i = 0; i < all.length; i++) {
             const sub = all[i]
             if (sub.id.startsWith(prefix) && sub.id !== prefix) {
-              applyStyleToEntity(sub, updated.style)
+              applyStyleToEntity(sub, updated.style, attrs)
             }
           }
         }
@@ -227,6 +290,8 @@ export function useFeatureOps({ viewer, layersRef, layers, syntheticCollapsed }:
     renameFeature,
     moveFeature,
     updateFeatureStyle,
+    updateFeatureParams,
+    updateFeatureAttribute,
     selectFeature,
   }
 }

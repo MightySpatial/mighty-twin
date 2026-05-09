@@ -29,10 +29,13 @@ const DEFAULT_PIT: Omit<PitDraft, 'lon' | 'lat' | 'alt'> = {
   depth: 3,
   height: 3,
   heading: 0,
+  pitch: 0,
+  roll: 0,
   wallThickness: 0.5,
   floorThickness: 0.3,
   shape: 'square',
   radius: 1.5,
+  refZ: 'top',
 }
 
 interface UsePitToolOpts {

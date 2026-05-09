@@ -1,28 +1,49 @@
 /**
- * MightyTwin — Edit Panel
- * Shown when the Edit rail tab is active.
- * Displays selected feature info + 3 precise move input modes:
- *   Coordinate | Bearing & Distance | Delta (ΔE/ΔN/ΔAlt)
- * All modes include elevation (altitude) control.
+ * MightyTwin — Edit Panel (mirrors v1 PropertiesTab + DesignObjectEditor)
+ *
+ * Layout (when a feature is selected):
+ *   1. Feature header (rename, geometry badge, delete)
+ *   2. DesignObjectEditor (solids only) — dimensions / anchor / orientation /
+ *      construction / appearance — every input rebuilds geometry on change.
+ *   3. AttributesEditor — schema-driven + freeform attribute editing.
+ *   4. Move modes — Coordinate / Bearing & Distance / ΔE/ΔN. v1's
+ *      precision-transform pattern, kept verbatim from prior v2.
+ *   5. Current position readout.
  */
 import { useState, useEffect } from 'react'
 import type { Viewer as CesiumViewerType } from 'cesium'
-import type { SketchFeature } from '../types'
+import type { SketchFeature, SketchLayer, FeatureStyle } from '../types'
 import { geodesicOffset, enuDelta, getAnchor, GEOM_LABELS } from './editHelpers'
+import DesignObjectEditor from './DesignObjectEditor'
+import AttributesEditor from './AttributesEditor'
 
 type MoveMode = 'coord' | 'bearing' | 'delta'
 
-// ── Component ─────────────────────────────────────────────────────────────────
+const SOLID_GEOMS = new Set(['box', 'pit', 'cylinder'])
 
 interface EditPanelProps {
   feature: SketchFeature | null
+  layers: SketchLayer[]
   viewer: CesiumViewerType
   onMoveFeature: (id: string, lon: number, lat: number, alt: number) => void
   onDelete: (id: string) => void
   onRename: (id: string, label: string) => void
+  onUpdateParams: (id: string, patch: Record<string, unknown>) => void
+  onUpdateAttribute: (id: string, key: string, value: unknown) => void
+  onUpdateStyle: (id: string, patch: Partial<FeatureStyle>) => void
 }
 
-export default function EditPanel({ feature, viewer, onMoveFeature, onDelete, onRename }: EditPanelProps) {
+export default function EditPanel({
+  feature,
+  layers,
+  viewer,
+  onMoveFeature,
+  onDelete,
+  onRename,
+  onUpdateParams,
+  onUpdateAttribute,
+  onUpdateStyle,
+}: EditPanelProps) {
   const [moveMode, setMoveMode] = useState<MoveMode>('coord')
   const [editingLabel, setEditingLabel] = useState(false)
   const [labelDraft, setLabelDraft] = useState('')
@@ -43,10 +64,8 @@ export default function EditPanel({ feature, viewer, onMoveFeature, onDelete, on
   const [dN, setDN] = useState('')
   const [dAlt, setDAlt] = useState('0')
 
-  // Current anchor readout
   const [anchor, setAnchor] = useState<[number, number, number] | null>(null)
 
-  // Refresh anchor when feature changes or on a tick
   useEffect(() => {
     if (!feature) { setAnchor(null); return }
     const a = getAnchor(feature, viewer)
@@ -71,7 +90,9 @@ export default function EditPanel({ feature, viewer, onMoveFeature, onDelete, on
     )
   }
 
-  // ── Label editing ───────────────────────────────────────────────────────────
+  const isSolid = SOLID_GEOMS.has(feature.geometry)
+  const featureLayer = layers.find(l => l.id === feature.layerId)
+  const layerFields = featureLayer?.fields ?? []
 
   function commitLabel() {
     if (labelDraft.trim() && labelDraft !== feature!.label) {
@@ -79,8 +100,6 @@ export default function EditPanel({ feature, viewer, onMoveFeature, onDelete, on
     }
     setEditingLabel(false)
   }
-
-  // ── Apply handlers ──────────────────────────────────────────────────────────
 
   function applyCoord() {
     const lon = parseFloat(cLon)
@@ -114,8 +133,6 @@ export default function EditPanel({ feature, viewer, onMoveFeature, onDelete, on
     setAnchor([lon, lat, alt])
     setCLon(lon.toFixed(6)); setCLat(lat.toFixed(6)); setCAlt(alt.toFixed(2))
   }
-
-  // ── Render ─────────────────────────────────────────────────────────────────
 
   return (
     <div className="edit-panel">
@@ -151,10 +168,50 @@ export default function EditPanel({ feature, viewer, onMoveFeature, onDelete, on
 
       <div className="edit-divider" />
 
-      {/* Drag hint */}
+      {/* Properties — solids get full DesignObjectEditor */}
+      {isSolid && (
+        <>
+          <DesignObjectEditor feature={feature} onParamChange={onUpdateParams} />
+
+          {/* Appearance — single colour + opacity, mirrors v1 doe-appearance. */}
+          <div className="doe doe--appearance">
+            <div className="doe-group">
+              <div className="doe-group-label">Appearance</div>
+              <div className="doe-appearance">
+                <input
+                  type="color"
+                  className="doe-color"
+                  value={feature.style.fillColor}
+                  onChange={e => onUpdateStyle(feature.id, { fillColor: e.target.value, strokeColor: e.target.value })}
+                />
+                <input
+                  type="range"
+                  className="doe-opacity-slider"
+                  min={0}
+                  max={100}
+                  value={Math.round(feature.style.opacity * 100)}
+                  onChange={e => onUpdateStyle(feature.id, { opacity: Number(e.target.value) / 100 })}
+                />
+                <span className="doe-opacity-label">{Math.round(feature.style.opacity * 100)}%</span>
+              </div>
+            </div>
+          </div>
+          <div className="edit-divider" />
+        </>
+      )}
+
+      {/* Attributes — schema-driven + freeform */}
+      <div className="edit-section-label">Attributes</div>
+      <AttributesEditor
+        feature={feature}
+        fields={layerFields}
+        onUpdateAttribute={onUpdateAttribute}
+      />
+
+      <div className="edit-divider" />
+
       <p className="edit-drag-hint">Drag on the map to move, or enter precise values below.</p>
 
-      {/* Move mode tabs */}
       <div className="move-mode-tabs">
         {(['coord', 'bearing', 'delta'] as MoveMode[]).map(m => (
           <button
@@ -167,7 +224,6 @@ export default function EditPanel({ feature, viewer, onMoveFeature, onDelete, on
         ))}
       </div>
 
-      {/* Coord mode */}
       {moveMode === 'coord' && (
         <div className="move-inputs">
           <div className="move-input-group">
@@ -189,7 +245,6 @@ export default function EditPanel({ feature, viewer, onMoveFeature, onDelete, on
         </div>
       )}
 
-      {/* Bearing + Distance mode */}
       {moveMode === 'bearing' && (
         <div className="move-inputs">
           <div className="move-input-group">
@@ -211,7 +266,6 @@ export default function EditPanel({ feature, viewer, onMoveFeature, onDelete, on
         </div>
       )}
 
-      {/* Delta mode */}
       {moveMode === 'delta' && (
         <div className="move-inputs">
           <div className="move-input-group">
@@ -233,7 +287,6 @@ export default function EditPanel({ feature, viewer, onMoveFeature, onDelete, on
         </div>
       )}
 
-      {/* Current position readout */}
       {anchor && (
         <div className="current-position">
           <span className="cur-pos-label">Current position</span>

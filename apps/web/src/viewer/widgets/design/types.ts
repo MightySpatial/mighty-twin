@@ -72,7 +72,24 @@ export interface FeatureStyle {
   fillColor: string
   lineWidth: number
   opacity: number
+  /** Optional point symbology — v2 enhancement; coexists with v1 pointSize/pointShape. */
   pointSymbol?: import('../../shared/pointSymbology').PointSymbolStyle
+  /** v1: separate fill opacity for polygons (defaults to opacity). */
+  fillOpacity?: number
+  /** v1: dashed/dotted line patterns. */
+  lineDash?: 'solid' | 'dash' | 'dot' | 'dashdot'
+  /** v1: outline colour for polygons + points (separate from stroke). */
+  outlineColor?: string
+  /** v1: outline width for polygons + points. */
+  outlineWidth?: number
+  /** v1: point size in px (4–32). */
+  pointSize?: number
+  /** v1: point shape (circle/square/diamond/triangle/cross). */
+  pointShape?: 'circle' | 'square' | 'diamond' | 'triangle' | 'cross'
+  /** v1: attribute key whose value is rendered as a map label. */
+  labelField?: string | null
+  /** v1: label font size (8–24). */
+  labelSize?: number
 }
 
 export interface BoxDraft {
@@ -83,8 +100,12 @@ export interface BoxDraft {
   height: number
   depth: number
   heading: number
+  pitch: number
+  roll: number
   wallThickness: number
   shape: 'square'
+  /** Vertical anchor reference: 'bot' (sits on terrain), 'center', 'top'. */
+  refZ?: 'bot' | 'center' | 'top'
 }
 
 export interface PitDraft {
@@ -95,10 +116,14 @@ export interface PitDraft {
   depth: number
   height: number
   heading: number
+  pitch: number
+  roll: number
   wallThickness: number
   floorThickness: number
   shape: 'square' | 'round'
   radius: number
+  /** Vertical anchor reference: 'top' (extends below terrain), 'center', 'bot'. */
+  refZ?: 'top' | 'center' | 'bot'
 }
 
 export interface CylDraft {
