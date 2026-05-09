@@ -59,6 +59,11 @@ export function useDesignState(viewer: CesiumViewerType | null) {
   // ── Default draw layer — preferred fallback layer (v1 sdw-star pattern) ───
   const [defaultDrawLayerId, setDefaultDrawLayerId] = useState<string | null>(null)
 
+  // ── Mobile minimised state — slid down to a 60px handle when drawing on
+  //    mobile (< 1024px). Auto-toggles in DesignWidget via an effect that
+  //    watches activeTool. Manually toggleable via the handle's chevron. ───
+  const [mobileMinimised, setMobileMinimised] = useState(false)
+
   const handlerRef = useRef<ScreenSpaceEventHandler | null>(null)
 
   // Refs to avoid re-registering event listeners on every state change
@@ -263,6 +268,9 @@ export function useDesignState(viewer: CesiumViewerType | null) {
     setSnapEnabled,
     defaultDrawLayerId,
     setDefaultDrawLayerId,
+    // Mobile minimise
+    mobileMinimised,
+    setMobileMinimised,
     // Features
     features,
     setFeatures,

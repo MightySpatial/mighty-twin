@@ -372,79 +372,152 @@
 .spin { animation: dw-spin 1s linear infinite; }
 @keyframes dw-spin { to { transform: rotate(360deg); } }
 
-/* ── Mobile mini-controller ────────────────────────────────────────────── */
+/* ── Mobile full-screen mode (< 1024px) ───────────────────────────────────
+ * On mobile the widget covers the whole viewport. When the user picks a
+ * draw tool, `is-minimised` slides the widget down off-screen while
+ * `MobileMinimiseHandle` slides up — both animate over 0.3s, giving a
+ * tray-swap feel that exposes the globe for picking. Tapping the handle
+ * chevron slides the widget back up.
+ */
+.design-widget--mobile {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  border-radius: 0;
+  border-left: none;
+  border-right: none;
+  max-height: none;
+  width: 100%;
+  height: 100%;
+  transition: transform 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+  /* Respect iOS safe areas so the rail/status bar don't slide under
+   * notches or home indicators. */
+  padding-top: var(--safe-top, 0);
+  padding-bottom: var(--safe-bottom, 0);
+}
+.design-widget--mobile.is-minimised {
+  transform: translateY(100%);
+  pointer-events: none;
+}
 
-.dw-mobile-mini {
+/* ── MobileMinimiseHandle ──────────────────────────────────────────────── */
+
+.dw-mobile-handle {
   position: fixed;
   bottom: 0;
   left: 0;
   right: 0;
-  z-index: 60;
-  height: 25vh;
-  background: rgba(18, 22, 30, 0.95);
-  backdrop-filter: blur(8px);
-  border-top: 1px solid var(--dw-border);
-  display: flex;
-  flex-direction: column;
-  padding: var(--dw-space-5) var(--dw-space-7);
-  color: var(--dw-text-1);
-  font-family: var(--dw-font);
-}
-.dw-mobile-mini__hd {
+  z-index: 51;
+  height: 60px;
   display: flex;
   align-items: center;
-  gap: var(--dw-space-4);
-  margin-bottom: var(--dw-space-3);
+  gap: var(--dw-space-3);
+  padding: 0 var(--dw-space-5);
+  padding-bottom: var(--safe-bottom, 0);
+  background: var(--dw-surface-0);
+  border-top: 1px solid var(--dw-border);
+  backdrop-filter: blur(16px) saturate(1.2);
+  -webkit-backdrop-filter: blur(16px) saturate(1.2);
+  font-family: var(--dw-font);
+  color: var(--dw-text-strong);
+  /* Slid off-screen by default; the visible state slides it up. */
+  transform: translateY(100%);
+  transition: transform 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+  pointer-events: none;
 }
-.dw-mobile-mini__icon { font-size: 22px; }
-.dw-mobile-mini__name {
-  font-weight: 600;
-  font-size: var(--dw-fs-14);
-  text-transform: capitalize;
+.dw-mobile-handle.is-visible {
+  transform: translateY(0);
+  pointer-events: auto;
 }
-.dw-mobile-mini__spacer { flex: 1; }
-.dw-mobile-mini__btn {
-  height: var(--dw-control-h-tap);
-  padding: 0 var(--dw-space-7);
-  border-radius: var(--dw-radius-xl);
-  font-size: var(--dw-fs-13);
-  font-weight: 600;
-  cursor: pointer;
-  font-family: inherit;
-}
-.dw-mobile-mini__btn--ghost {
-  border: 1px solid var(--dw-border-strong);
-  background: none;
-  color: inherit;
-}
-.dw-mobile-mini__btn--primary {
-  background: var(--dw-util);
-  border: none;
-  color: var(--dw-util-text-on);
-  margin-left: var(--dw-space-2);
-}
-.dw-mobile-mini__body {
-  display: flex;
-  gap: var(--dw-space-5);
-  align-items: flex-end;
-  flex-wrap: wrap;
-}
-.dw-mobile-mini__body .dw-row { flex: 1; min-width: 140px; }
 
-/* ── Phone blocker (tablet+ feature) ──────────────────────────────────── */
-
-.design-phone-blocker {
-  display: flex;
-  flex-direction: column;
+.dw-mobile-handle__expand {
+  flex-shrink: 0;
+  width: var(--dw-control-h-xl);
+  height: var(--dw-control-h-xl);
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: var(--dw-space-4);
-  padding: var(--dw-space-8);
-  text-align: center;
-  background: var(--dw-surface-0);
-  color: var(--dw-text-2);
-  font-family: var(--dw-font);
-  font-size: var(--dw-fs-12);
-  border-radius: var(--dw-radius-2xl);
+  background: var(--dw-fill-2);
+  border: 1px solid var(--dw-border);
+  border-radius: var(--dw-radius-lg);
+  color: var(--dw-text-1);
+  cursor: pointer;
+  transition: background var(--dw-dur-fast), border-color var(--dw-dur-fast);
+  font-family: inherit;
 }
-.design-phone-blocker__icon { font-size: 32px; opacity: 0.6; }
+.dw-mobile-handle__expand:hover {
+  background: var(--dw-fill-3);
+  border-color: var(--dw-border-strong);
+}
+
+.dw-mobile-handle__icon {
+  font-size: var(--dw-fs-16);
+  color: var(--dw-util);
+  flex-shrink: 0;
+  width: 22px;
+  text-align: center;
+}
+
+.dw-mobile-handle__text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.dw-mobile-handle__name {
+  font-size: var(--dw-fs-13);
+  font-weight: 600;
+  color: var(--dw-text-strong);
+  text-transform: capitalize;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.dw-mobile-handle__hint {
+  font-size: var(--dw-fs-10);
+  color: var(--dw-text-3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dw-mobile-handle__cancel {
+  flex-shrink: 0;
+  width: var(--dw-control-h-tap);
+  height: var(--dw-control-h-tap);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--dw-danger-bg);
+  border: 1px solid var(--dw-danger-border);
+  border-radius: var(--dw-radius-xl);
+  color: var(--dw-danger);
+  cursor: pointer;
+  transition: background var(--dw-dur-fast);
+  font-family: inherit;
+}
+.dw-mobile-handle__cancel:hover {
+  background: rgba(248, 113, 113, 0.22);
+}
+
+/* ── Mobile rail tweak — wider tap targets, smaller font ──────────────── */
+
+.design-widget--mobile .design-rail-btn {
+  min-height: 48px;
+  padding: var(--dw-space-3) var(--dw-space-2) var(--dw-space-2);
+}
+
+/* On phones, hide the tab labels for the narrowest layouts so the
+ * 7-tab rail fits without wrapping. Tablet keeps the labels. */
+@media (max-width: 480px) {
+  .design-widget--mobile .design-rail-label { display: none; }
+  .design-widget--mobile .design-rail-icon { font-size: var(--dw-fs-16); }
+  .design-widget--mobile .design-rail-btn { min-height: 44px; }
+}
+
+/* Larger tap targets for the close + close-like row in mobile header. */
+.design-widget--mobile .ext-panel-close {
+  width: var(--dw-control-h-lg);
+  height: var(--dw-control-h-lg);
+}
