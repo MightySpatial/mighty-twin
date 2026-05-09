@@ -285,7 +285,6 @@ export default function DesignWidget({ viewer, onClose, siteSlug = null }: Desig
               onMoveFeature={state.moveFeature}
               onDelete={state.removeFeature}
               onRename={state.renameFeature}
-              onUpdateOrientation={state.updateFeatureOrientation}
             />
           )}
 

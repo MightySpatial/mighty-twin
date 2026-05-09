@@ -146,68 +146,6 @@ export function useFeatureOps({ viewer, layersRef, layers, syntheticCollapsed }:
     }))
   }, [viewer])
 
-  /** Update heading/pitch/roll on a solid feature (box/pit/cylinder) by
-   *  re-committing its geometry with the new orientation values mixed
-   *  into the stored draft attributes. Box and pit only meaningfully
-   *  use heading; cylinder uses all three (pitch and roll are still
-   *  written to a box/pit's attributes for round-trip even though the
-   *  current solid commit ignores them). */
-  const updateFeatureOrientation = useCallback(
-    (
-      featureId: string,
-      orientation: { heading?: number; pitch?: number; roll?: number },
-    ) => {
-      if (!viewer) return
-      setFeatures((prev) =>
-        prev.map((f) => {
-          if (f.id !== featureId) return f
-          const isSolid =
-            f.geometry === 'box' || f.geometry === 'pit' || f.geometry === 'cylinder'
-          if (!isSolid) return f
-
-          const attrs = (f.attributes as Record<string, unknown>) || {}
-          const next = {
-            ...attrs,
-            ...(orientation.heading !== undefined ? { heading: orientation.heading } : {}),
-            ...(orientation.pitch !== undefined ? { pitch: orientation.pitch } : {}),
-            ...(orientation.roll !== undefined ? { roll: orientation.roll } : {}),
-          }
-
-          // Tear down + rebuild — same approach moveFeature uses for solids.
-          const toRemove: string[] = []
-          for (const ent of viewer.entities.values) {
-            if (
-              ent.id === f.entityId ||
-              ent.id.startsWith(f.entityId + '_') ||
-              ent.id.startsWith(f.entityId + '__')
-            ) {
-              toRemove.push(ent.id)
-            }
-          }
-          for (const id of toRemove) {
-            const ent = viewer.entities.getById(id)
-            if (ent) viewer.entities.remove(ent)
-          }
-          const fillCol = Color.fromCssColorString(f.style.fillColor).withAlpha(
-            f.style.opacity * 0.65,
-          )
-          const outlineCol = Color.fromCssColorString(f.style.strokeColor).withAlpha(
-            f.style.opacity,
-          )
-          if (f.geometry === 'box') {
-            commitBox(viewer, next as BoxDraft, f.entityId, fillCol, outlineCol)
-          } else if (f.geometry === 'cylinder') {
-            commitCylinder(viewer, next as CylDraft, f.entityId, fillCol, outlineCol)
-          } else {
-            commitPit(viewer, next as PitDraft, f.entityId, fillCol, outlineCol)
-          }
-          return { ...f, attributes: next }
-        }),
-      )
-    },
-    [viewer],
-  )
-
   const updateFeatureStyle = useCallback((featureId: string, patch: Partial<FeatureStyle>) => {
     setFeatures(prev => prev.map(f => {
       if (f.id !== featureId) return f
@@ -289,7 +227,6 @@ export function useFeatureOps({ viewer, layersRef, layers, syntheticCollapsed }:
     renameFeature,
     moveFeature,
     updateFeatureStyle,
-    updateFeatureOrientation,
     selectFeature,
   }
 }

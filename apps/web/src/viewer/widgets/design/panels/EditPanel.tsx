@@ -6,7 +6,7 @@
  * All modes include elevation (altitude) control.
  */
 import { useState, useEffect } from 'react'
-import { Cartographic, sampleTerrainMostDetailed, type Viewer as CesiumViewerType } from 'cesium'
+import type { Viewer as CesiumViewerType } from 'cesium'
 import type { SketchFeature } from '../types'
 import { geodesicOffset, enuDelta, getAnchor, GEOM_LABELS } from './editHelpers'
 
@@ -20,13 +20,9 @@ interface EditPanelProps {
   onMoveFeature: (id: string, lon: number, lat: number, alt: number) => void
   onDelete: (id: string) => void
   onRename: (id: string, label: string) => void
-  onUpdateOrientation: (
-    id: string,
-    orientation: { heading?: number; pitch?: number; roll?: number },
-  ) => void
 }
 
-export default function EditPanel({ feature, viewer, onMoveFeature, onDelete, onRename, onUpdateOrientation }: EditPanelProps) {
+export default function EditPanel({ feature, viewer, onMoveFeature, onDelete, onRename }: EditPanelProps) {
   const [moveMode, setMoveMode] = useState<MoveMode>('coord')
   const [editingLabel, setEditingLabel] = useState(false)
   const [labelDraft, setLabelDraft] = useState('')
@@ -245,179 +241,6 @@ export default function EditPanel({ feature, viewer, onMoveFeature, onDelete, on
             {anchor[1].toFixed(6)}°, {anchor[0].toFixed(6)}°
           </span>
           <span className="cur-pos-alt">{anchor[2].toFixed(2)} m alt</span>
-        </div>
-      )}
-
-      {/* 3D Transform — only meaningful for solid features (box / pit /
-          cylinder). Pitch + roll are wired through but only the cylinder
-          commit currently consumes them; box / pit walls always stay
-          gravity-aligned. */}
-      {(feature.geometry === 'box' ||
-        feature.geometry === 'pit' ||
-        feature.geometry === 'cylinder') && (
-        <TransformSection
-          feature={feature}
-          onApply={onUpdateOrientation}
-          viewer={viewer}
-          onMoveFeature={onMoveFeature}
-        />
-      )}
-    </div>
-  )
-}
-
-// ── 3D Transform section ──────────────────────────────────────────────────────
-
-function TransformSection({
-  feature,
-  onApply,
-  viewer,
-  onMoveFeature,
-}: {
-  feature: SketchFeature
-  onApply: (
-    id: string,
-    orientation: { heading?: number; pitch?: number; roll?: number },
-  ) => void
-  viewer: CesiumViewerType
-  onMoveFeature: (id: string, lon: number, lat: number, alt: number) => void
-}) {
-  const attrs = feature.attributes as Record<string, unknown>
-  const initial = {
-    heading: typeof attrs.heading === 'number' ? attrs.heading : 0,
-    pitch: typeof attrs.pitch === 'number' ? attrs.pitch : 0,
-    roll: typeof attrs.roll === 'number' ? attrs.roll : 0,
-  }
-
-  const [open, setOpen] = useState(true)
-  const [heading, setHeading] = useState(initial.heading.toFixed(2))
-  const [pitch, setPitch] = useState(initial.pitch.toFixed(2))
-  const [roll, setRoll] = useState(initial.roll.toFixed(2))
-  const [snapping, setSnapping] = useState(false)
-
-  // Re-seed on feature change so switching selection doesn't carry stale values
-  useEffect(() => {
-    const a = feature.attributes as Record<string, unknown>
-    setHeading(((typeof a.heading === 'number' ? a.heading : 0) as number).toFixed(2))
-    setPitch(((typeof a.pitch === 'number' ? a.pitch : 0) as number).toFixed(2))
-    setRoll(((typeof a.roll === 'number' ? a.roll : 0) as number).toFixed(2))
-  }, [feature.id])
-
-  // Cylinder is the only solid that consumes pitch/roll. We still allow
-  // entering them for box/pit so the values round-trip via attributes,
-  // but the inputs are disabled to surface the limitation.
-  const supportsPitchRoll = feature.geometry === 'cylinder'
-
-  function applyOrientation() {
-    const h = parseFloat(heading)
-    const p = parseFloat(pitch)
-    const r = parseFloat(roll)
-    onApply(feature.id, {
-      heading: isNaN(h) ? undefined : h,
-      pitch: isNaN(p) ? undefined : p,
-      roll: isNaN(r) ? undefined : r,
-    })
-  }
-
-  /** Sample terrain height at the feature's anchor and re-anchor at that
-   *  altitude. This is the v1 "snap to terrain" behaviour — useful after
-   *  moving a solid by ENU delta and finding it floating or buried. */
-  async function snapToTerrain() {
-    const a = (feature.attributes as Record<string, unknown>)
-    const lon = typeof a.lon === 'number' ? a.lon : null
-    const lat = typeof a.lat === 'number' ? a.lat : null
-    if (lon == null || lat == null) return
-    setSnapping(true)
-    try {
-      const terrain = viewer.terrainProvider
-      const carto = Cartographic.fromDegrees(lon, lat)
-      const sampled = await sampleTerrainMostDetailed(terrain, [carto])
-      const h = sampled[0]?.height
-      if (typeof h === 'number') {
-        onMoveFeature(feature.id, lon, lat, h)
-      }
-    } catch {
-      // Fall through silently — terrain sampling can fail on non-quantized
-      // providers; the existing alt is left as-is.
-    } finally {
-      setSnapping(false)
-    }
-  }
-
-  return (
-    <div className="transform-section">
-      <button
-        className={`transform-section-toggle${open ? ' open' : ''}`}
-        onClick={() => setOpen((v) => !v)}
-      >
-        <span>3D Transform</span>
-        <span className="transform-section-chevron">▾</span>
-      </button>
-      {open && (
-        <div className="transform-section-body">
-          <div className="transform-input-group">
-            <label>Heading</label>
-            <input
-              type="number"
-              step="0.5"
-              value={heading}
-              onChange={(e) => setHeading(e.target.value)}
-              placeholder="0.00"
-            />
-            <span className="transform-unit">°</span>
-          </div>
-          <div className="transform-input-group">
-            <label>Pitch</label>
-            <input
-              type="number"
-              step="0.5"
-              value={pitch}
-              onChange={(e) => setPitch(e.target.value)}
-              placeholder="0.00"
-              disabled={!supportsPitchRoll}
-              title={
-                supportsPitchRoll
-                  ? 'Rotation around the East axis'
-                  : 'Pitch is only applied to cylinders today'
-              }
-            />
-            <span className="transform-unit">°</span>
-          </div>
-          <div className="transform-input-group">
-            <label>Roll</label>
-            <input
-              type="number"
-              step="0.5"
-              value={roll}
-              onChange={(e) => setRoll(e.target.value)}
-              placeholder="0.00"
-              disabled={!supportsPitchRoll}
-              title={
-                supportsPitchRoll
-                  ? 'Rotation around the North axis'
-                  : 'Roll is only applied to cylinders today'
-              }
-            />
-            <span className="transform-unit">°</span>
-          </div>
-          <button className="transform-apply-btn" onClick={applyOrientation}>
-            Apply orientation
-          </button>
-          <label className="transform-snap-row">
-            <input
-              type="checkbox"
-              checked={snapping}
-              disabled={snapping}
-              onChange={() => snapToTerrain()}
-            />
-            <span>{snapping ? 'Sampling terrain…' : 'Snap to terrain'}</span>
-          </label>
-          {!supportsPitchRoll && (
-            <p className="transform-hint">
-              Pitch and roll round-trip via attributes but are only applied to
-              cylinder geometry today; box and pit walls stay gravity-aligned.
-            </p>
-          )}
         </div>
       )}
     </div>
