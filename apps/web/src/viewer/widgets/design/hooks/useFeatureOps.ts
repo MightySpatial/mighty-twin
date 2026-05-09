@@ -20,9 +20,9 @@ import type {
   BoxDraft,
   PitDraft,
   CylDraft,
-} from './types'
-import { applyStyleToEntity } from './tools/designStyleUtils'
-import { commitBox, commitCylinder, commitPit } from './tools/solidCommit'
+} from '../types'
+import { applyStyleToEntity } from '../tools/designStyleUtils'
+import { commitBox, commitCylinder, commitPit } from '../tools/solidCommit'
 
 interface UseFeatureOpsArgs {
   viewer: CesiumViewerType | null

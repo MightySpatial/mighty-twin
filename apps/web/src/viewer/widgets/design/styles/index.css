@@ -1,0 +1,14 @@
+/** Single import surface for the design widget's CSS. The order matters:
+ *  tokens first (so per-component files can reference variables), then
+ *  primitives (low-level classes), then per-component sheets. */
+
+@import './tokens.css';
+@import './primitives.css';
+@import './widget.css';
+@import './sketch-layers.css';
+@import './draw-panel.css';
+@import './edit-panel.css';
+@import './editor.css';
+@import './style-panel.css';
+@import './download.css';
+@import './history.css';

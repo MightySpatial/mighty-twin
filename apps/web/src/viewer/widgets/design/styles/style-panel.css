@@ -1,0 +1,171 @@
+/** Style Panel — stroke / fill / line / point / outline / label controls.
+ *  These rules sit on top of primitives.css; the panel itself uses .dw-row
+ *  primitives. The legacy `.design-style-*` classes remain for the wrapper
+ *  and PointSymbologyPicker compatibility. */
+
+@import './tokens.css';
+
+.design-style {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dw-space-5);
+}
+
+.design-style-empty {
+  padding: 20px var(--dw-space-4);
+  text-align: center;
+  font-size: var(--dw-fs-12);
+  color: var(--color-text-muted);
+  line-height: 1.5;
+}
+.design-style-empty-icon {
+  display: block;
+  font-size: 22px;
+  margin-bottom: var(--dw-space-3);
+  opacity: 0.5;
+}
+
+/* Legacy hex/swatch classes — kept for the PointSymbologyPicker which still
+ *  renders them. New StylePanel rows use ColorRow / SliderRow primitives. */
+.design-style-row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dw-space-2);
+}
+.design-style-label {
+  font-size: var(--dw-fs-11);
+  font-weight: 700;
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.design-style-color-group {
+  display: flex;
+  align-items: center;
+  gap: var(--dw-space-3);
+}
+.design-style-swatch {
+  width: var(--dw-control-h-lg);
+  height: var(--dw-control-h-lg);
+  padding: 0;
+  border: 1px solid var(--dw-border-strong);
+  border-radius: var(--dw-radius-lg);
+  background: none;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.design-style-swatch::-webkit-color-swatch-wrapper { padding: 2px; }
+.design-style-swatch::-webkit-color-swatch { border: none; border-radius: var(--dw-radius-sm); }
+
+.design-style-hex {
+  flex: 1;
+  height: var(--dw-control-h-lg);
+  padding: 0 var(--dw-space-4);
+  background: var(--dw-fill-2);
+  border: 1px solid var(--dw-border);
+  border-radius: var(--dw-radius-lg);
+  color: var(--dw-text-strong);
+  font-size: var(--dw-fs-12);
+  font-family: monospace;
+  min-width: 0;
+}
+.design-style-hex:focus { outline: none; border-color: var(--color-accent); }
+
+.design-style-slider-group {
+  display: flex;
+  align-items: center;
+  gap: var(--dw-space-4);
+}
+.design-style-slider-group .ext-slider { flex: 1; min-width: 0; }
+.design-style-val {
+  font-size: var(--dw-fs-11);
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.6);
+  min-width: 36px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+/* ── Point Symbology Picker (psym-*) ───────────────────────────────────── */
+
+.psym-picker {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dw-space-5);
+  padding-bottom: var(--dw-space-5);
+  border-bottom: 1px solid var(--dw-border);
+  margin-bottom: var(--dw-space-1);
+}
+.psym-row { display: flex; flex-direction: column; gap: var(--dw-space-2); }
+
+.psym-tabs {
+  display: flex;
+  gap: var(--dw-space-1);
+  background: var(--dw-fill-1);
+  border-radius: var(--dw-radius-lg);
+  padding: var(--dw-space-1);
+  border: 1px solid var(--dw-border-subtle);
+}
+.psym-tab {
+  flex: 1;
+  padding: 5px 0;
+  background: transparent;
+  border: none;
+  border-radius: var(--dw-radius-md);
+  color: var(--color-text-muted);
+  font-size: var(--dw-fs-11);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--dw-dur-med), color var(--dw-dur-med);
+}
+.psym-tab:hover:not(.psym-tab--active) {
+  background: var(--dw-fill-hover);
+  color: var(--color-text-secondary);
+}
+.psym-tab--active {
+  background: rgba(99, 102, 241, 0.2);
+  color: var(--dw-indigo-l);
+  box-shadow: 0 0 0 1px var(--dw-indigo-border);
+}
+
+.psym-type-grid { display: flex; gap: var(--dw-space-2); }
+.psym-type-grid--wrap {
+  flex-wrap: wrap;
+  max-height: 120px;
+  overflow-y: auto;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+}
+.psym-type-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid var(--dw-border);
+  border-radius: var(--dw-radius-lg);
+  background: var(--dw-fill-1);
+  cursor: pointer;
+  transition: background var(--dw-dur-med), border-color var(--dw-dur-med);
+}
+.psym-type-btn:hover { background: var(--dw-fill-3); }
+.psym-type-btn--active {
+  background: rgba(99, 102, 241, 0.25);
+  border-color: var(--color-accent);
+}
+.psym-preview {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 48px;
+  background: var(--dw-fill-1);
+  border-radius: var(--dw-radius-lg);
+  border: 1px solid var(--dw-border);
+}
+
+.psym-tab:focus-visible,
+.psym-type-btn:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 1px;
+}

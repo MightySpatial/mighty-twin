@@ -23,10 +23,10 @@ import type {
   CylDraft,
   TraverseDraft,
   SketchLayer,
-} from './types'
-import { DEFAULT_ELEVATION_CONFIG } from './types'
-import { BUILTIN_PRESETS } from './presets/builtinPresets'
-import type { LayerPreset } from './presets/builtinPresets'
+} from '../types'
+import { DEFAULT_ELEVATION_CONFIG } from '../types'
+import { BUILTIN_PRESETS } from '../presets/builtinPresets'
+import type { LayerPreset } from '../presets/builtinPresets'
 import { useLayerOps, makeSketchLayer } from './useLayerOps'
 import { useFeatureOps } from './useFeatureOps'
 

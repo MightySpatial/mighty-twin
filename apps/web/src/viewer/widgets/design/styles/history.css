@@ -1,0 +1,112 @@
+/** History Panel — view-mode toggle, layer/type group headers, feature
+ *  list rows. */
+
+@import './tokens.css';
+
+/* The view-mode toggle uses the shared `dw-toggle--pill` primitive
+ * (see primitives.css). It needs a small bottom margin in this panel. */
+.design-history > .dw-toggle--pill { margin-bottom: var(--dw-space-3); }
+
+/* Layer / type group */
+.design-history { display: flex; flex-direction: column; gap: var(--dw-space-3); }
+.design-history-empty {
+  font-size: var(--dw-fs-11);
+  color: var(--color-text-muted);
+  padding: var(--dw-space-8) var(--dw-space-4);
+  text-align: center;
+  line-height: 1.5;
+}
+.design-layer-group { display: flex; flex-direction: column; }
+.design-layer-header {
+  display: flex;
+  align-items: center;
+  gap: var(--dw-space-3);
+  padding: var(--dw-space-2) var(--dw-space-3);
+  cursor: pointer;
+  border-radius: var(--dw-radius-md);
+  font-size: var(--dw-fs-11);
+  font-weight: 600;
+  color: var(--dw-text-2);
+  transition: background var(--dw-dur-fast);
+}
+.design-layer-header:hover { background: var(--dw-fill-1); }
+.design-layer-chevron { width: 10px; opacity: 0.55; }
+.design-layer-dot { width: 10px; height: 10px; border-radius: var(--dw-radius-sm); flex-shrink: 0; }
+.design-layer-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.design-layer-count {
+  font-size: var(--dw-fs-10);
+  font-weight: 600;
+  color: var(--dw-indigo-l);
+  background: rgba(99, 102, 241, 0.15);
+  padding: 1px 7px;
+  border-radius: 9px;
+}
+
+/* Feature row */
+.design-feature-list {
+  list-style: none;
+  margin: 0;
+  padding: 0 0 var(--dw-space-2) 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.design-feature-item {
+  display: flex;
+  align-items: center;
+  gap: var(--dw-space-3);
+  padding: var(--dw-space-2) var(--dw-space-3);
+  font-size: var(--dw-fs-11);
+  color: var(--dw-text-2);
+  border-radius: var(--dw-radius-md);
+  cursor: pointer;
+  transition: background var(--dw-dur-fast);
+}
+.design-feature-item:hover { background: var(--dw-fill-1); }
+.design-feature-item.selected {
+  background: var(--dw-util-bg);
+  color: var(--dw-util);
+}
+.design-feature-icon { width: 14px; opacity: 0.65; }
+.design-feature-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.design-feature-geom {
+  font-size: var(--dw-fs-9);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-text-muted);
+  padding: 1px 5px;
+  background: var(--dw-fill-2);
+  border-radius: var(--dw-radius-sm);
+}
+.design-feature-delete {
+  width: 22px;
+  height: 22px;
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.45);
+  cursor: pointer;
+  border-radius: var(--dw-radius-md);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity var(--dw-dur-fast), color var(--dw-dur-fast), background var(--dw-dur-fast);
+}
+.design-feature-item:hover .design-feature-delete,
+.design-feature-item.selected .design-feature-delete { opacity: 1; }
+.design-feature-delete:hover {
+  color: var(--dw-danger);
+  background: var(--dw-danger-bg);
+}

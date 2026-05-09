@@ -1,0 +1,262 @@
+/** Edit Panel — feature header, divider, drag hint, move-mode inputs,
+ *  current-position readout, empty state. */
+
+@import './tokens.css';
+
+.edit-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dw-space-5);
+  padding: var(--dw-space-2) 0;
+}
+
+/* ── Feature header (rename + geometry badge + delete) ─────────────────── */
+
+.edit-feature-header {
+  display: flex;
+  align-items: center;
+  gap: var(--dw-space-4);
+  flex-wrap: wrap;
+}
+.edit-label-btn {
+  flex: 1;
+  background: none;
+  border: none;
+  color: var(--dw-text-strong);
+  font-size: var(--dw-fs-13);
+  font-weight: 600;
+  cursor: pointer;
+  text-align: left;
+  padding: var(--dw-space-1) var(--dw-space-2);
+  border-radius: var(--dw-radius-md);
+  display: flex;
+  align-items: center;
+  gap: var(--dw-space-2);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transition: background var(--dw-dur-med);
+}
+.edit-label-btn:hover { background: rgba(255, 255, 255, 0.07); }
+.edit-label-pencil { opacity: 0.5; font-size: var(--dw-fs-11); flex-shrink: 0; }
+
+.edit-label-input {
+  flex: 1;
+  background: var(--color-bg-tertiary);
+  border: 1px solid var(--color-accent);
+  border-radius: var(--dw-radius-md);
+  color: var(--dw-text-strong);
+  font-size: var(--dw-fs-13);
+  font-weight: 600;
+  padding: var(--dw-space-2) var(--dw-space-3);
+  outline: none;
+}
+
+/* ── Geometry badge — colour-keyed by geometry kind ────────────────────── */
+
+.geometry-badge {
+  flex-shrink: 0;
+  font-size: var(--dw-fs-11);
+  font-family: monospace;
+  background: var(--dw-fill-3);
+  color: var(--dw-text-3);
+  padding: var(--dw-space-1) var(--dw-space-4);
+  border-radius: 10px;
+}
+.geometry-badge[data-geom="box"],
+.geometry-badge[data-geom="pit"],
+.geometry-badge[data-geom="cylinder"] { background: rgba(139, 92, 246, 0.2); color: #c4b5fd; }
+.geometry-badge[data-geom="point"]    { background: rgba(34, 211, 238, 0.15); color: #67e8f9; }
+.geometry-badge[data-geom="line"],
+.geometry-badge[data-geom="traverse"] { background: rgba(251, 191, 36, 0.15); color: var(--dw-warning-l); }
+.geometry-badge[data-geom="polygon"],
+.geometry-badge[data-geom="rectangle"] { background: rgba(52, 211, 153, 0.15); color: #6ee7b7; }
+
+/* ── Delete confirm row ────────────────────────────────────────────────── */
+
+.edit-delete-btn {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: var(--dw-fs-14);
+  color: rgba(255, 255, 255, 0.45);
+  padding: 0;
+  border-radius: var(--dw-radius-md);
+  transition: color var(--dw-dur-med), background var(--dw-dur-med);
+}
+.edit-delete-btn:hover { color: var(--dw-danger); background: rgba(248, 113, 113, 0.1); }
+
+.edit-delete-confirm { display: flex; gap: var(--dw-space-3); flex-shrink: 0; }
+.edit-delete-yes {
+  background: #dc2626;
+  color: #fff;
+  border: none;
+  border-radius: var(--dw-radius-md);
+  padding: var(--dw-space-2) var(--dw-space-5);
+  font-size: var(--dw-fs-11);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--dw-dur-med);
+}
+.edit-delete-yes:hover { background: #ef4444; }
+.edit-delete-no {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--dw-text-3);
+  border: none;
+  border-radius: var(--dw-radius-md);
+  padding: var(--dw-space-2) var(--dw-space-5);
+  font-size: var(--dw-fs-11);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--dw-dur-med), color var(--dw-dur-med);
+}
+.edit-delete-no:hover { background: var(--dw-fill-3); color: var(--dw-text-1); }
+
+/* ── Divider + hint ────────────────────────────────────────────────────── */
+
+.edit-divider {
+  height: 1px;
+  background: var(--dw-border);
+  margin: 0 calc(-1 * var(--dw-space-2));
+}
+.edit-drag-hint {
+  font-size: var(--dw-fs-11);
+  color: var(--color-text-muted);
+  margin: 0;
+}
+.edit-section-label {
+  font-size: var(--dw-fs-9);
+  text-transform: uppercase;
+  letter-spacing: var(--dw-tracking-meta);
+  color: var(--color-text-muted);
+  margin-top: var(--dw-space-2);
+}
+
+/* ── Move-mode tabs ────────────────────────────────────────────────────── */
+
+.move-mode-tabs {
+  display: flex;
+  gap: var(--dw-space-1);
+  background: var(--dw-fill-1);
+  border-radius: var(--dw-radius-lg);
+  padding: var(--dw-space-1);
+  border: 1px solid var(--dw-border-subtle);
+}
+.move-mode-tab {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: var(--color-text-muted);
+  font-size: var(--dw-fs-11);
+  font-weight: 600;
+  padding: 5px var(--dw-space-3);
+  border-radius: var(--dw-radius-md);
+  cursor: pointer;
+  transition: background var(--dw-dur-med), color var(--dw-dur-med);
+  white-space: nowrap;
+}
+.move-mode-tab.active { background: rgba(99, 102, 241, 0.2); color: var(--dw-indigo-l); }
+.move-mode-tab:hover:not(.active) { background: var(--dw-fill-hover); color: var(--color-text-secondary); }
+
+.move-inputs { display: flex; flex-direction: column; gap: var(--dw-space-4); }
+.move-input-group {
+  display: grid;
+  grid-template-columns: 80px 1fr 40px;
+  align-items: center;
+  gap: var(--dw-space-3);
+}
+.move-input-group label { font-size: var(--dw-fs-11); color: var(--color-text-muted); }
+.move-input-group input {
+  background: var(--dw-fill-2);
+  border: 1px solid var(--dw-border);
+  border-radius: var(--dw-radius-md);
+  color: var(--dw-text-strong);
+  font-size: var(--dw-fs-12);
+  padding: var(--dw-space-2) var(--dw-space-3);
+  outline: none;
+  width: 100%;
+}
+.move-input-group input:focus { border-color: var(--color-accent); }
+.move-unit {
+  font-size: var(--dw-fs-11);
+  color: var(--color-text-muted);
+  text-align: right;
+}
+.move-apply-btn {
+  align-self: flex-start;
+  background: var(--color-accent);
+  border: none;
+  border-radius: var(--dw-radius-lg);
+  color: #fff;
+  font-size: var(--dw-fs-12);
+  font-weight: 600;
+  padding: var(--dw-space-3) 18px;
+  cursor: pointer;
+  transition: background var(--dw-dur-med);
+}
+.move-apply-btn:hover { background: var(--color-accent-light); }
+
+/* ── Current-position readout ──────────────────────────────────────────── */
+
+.current-position {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dw-space-1);
+  padding: var(--dw-space-3) var(--dw-space-4);
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: var(--dw-radius-lg);
+  border: 1px solid var(--dw-fill-2);
+}
+.cur-pos-label {
+  font-size: var(--dw-fs-11);
+  font-weight: 700;
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.cur-pos-value,
+.cur-pos-alt {
+  font-size: var(--dw-fs-11);
+  font-family: monospace;
+  font-variant-numeric: tabular-nums;
+}
+.cur-pos-value { color: var(--color-text-secondary); }
+.cur-pos-alt { color: var(--color-text-muted); }
+
+/* ── Empty state ───────────────────────────────────────────────────────── */
+
+.edit-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--dw-space-4);
+  padding: 32px var(--dw-space-8);
+  text-align: center;
+}
+.edit-empty-icon { font-size: 28px; opacity: 0.35; }
+.edit-empty-text { font-size: var(--dw-fs-13); color: var(--color-text-muted); margin: 0; }
+.edit-empty-hint { font-size: var(--dw-fs-11); color: var(--dw-text-4); margin: 0; }
+
+.edit-label-input:focus-visible,
+.move-input-group input:focus-visible {
+  outline: none;
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 1px var(--color-accent);
+}
+.move-mode-tab:focus-visible,
+.edit-label-btn:focus-visible,
+.edit-delete-btn:focus-visible,
+.edit-delete-yes:focus-visible,
+.edit-delete-no:focus-visible,
+.move-apply-btn:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 1px;
+}

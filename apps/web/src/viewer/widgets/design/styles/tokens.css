@@ -1,0 +1,101 @@
+/**
+ * MightyTwin — Design Widget Tokens
+ *
+ * Single source of truth for the widget's visual language. Every other CSS
+ * file in this directory consumes these tokens — no magic numbers, no
+ * inline colour literals, no per-rule paddings.
+ *
+ * v1 token palette (faithful port from MightyDT):
+ *   --dw-util:        #22D3EE   cyan accent — selected tools, focus rings
+ *   --dw-indigo:      #6366F1   secondary accent — sidebar, layer cards
+ *   --dw-warning:     #fbbf24   origin pickers, locked-layer hint
+ *   --dw-danger:      #f87171   destructive actions
+ */
+.design-widget {
+  /* ── Accent palette ─────────────────────────────────────────────────── */
+  --dw-util: #22d3ee;
+  --dw-util-hover: #06b6d4;
+  --dw-util-d: rgba(34, 211, 238, 0.4);
+  --dw-util-bg: rgba(34, 211, 238, 0.12);
+  --dw-util-bg-soft: rgba(34, 211, 238, 0.06);
+  --dw-util-text-on: #052431;
+
+  --dw-indigo: #6366f1;
+  --dw-indigo-l: #a5b4fc;
+  --dw-indigo-l2: #c7d2fe;
+  --dw-indigo-bg: rgba(99, 102, 241, 0.12);
+  --dw-indigo-bg-strong: rgba(99, 102, 241, 0.22);
+  --dw-indigo-bg-soft: rgba(99, 102, 241, 0.06);
+  --dw-indigo-border: rgba(99, 102, 241, 0.4);
+  --dw-indigo-border-soft: rgba(99, 102, 241, 0.25);
+
+  --dw-warning: #fbbf24;
+  --dw-warning-l: #fcd34d;
+  --dw-warning-bg: rgba(251, 191, 36, 0.08);
+  --dw-warning-border: rgba(251, 191, 36, 0.32);
+
+  --dw-danger: #f87171;
+  --dw-danger-bg: rgba(248, 113, 113, 0.12);
+  --dw-danger-border: rgba(248, 113, 113, 0.32);
+
+  /* ── Neutral surface ramp ───────────────────────────────────────────── */
+  --dw-surface-0: rgba(15, 15, 20, 0.95);
+  --dw-surface-1: rgba(0, 0, 0, 0.2);
+  --dw-surface-2: rgba(0, 0, 0, 0.3);
+  --dw-surface-glass: rgba(20, 20, 28, 0.98);
+
+  --dw-fill-1: rgba(255, 255, 255, 0.04);
+  --dw-fill-2: rgba(255, 255, 255, 0.06);
+  --dw-fill-3: rgba(255, 255, 255, 0.08);
+  --dw-fill-hover: rgba(255, 255, 255, 0.06);
+
+  --dw-border: var(--color-border);
+  --dw-border-strong: rgba(255, 255, 255, 0.18);
+  --dw-border-subtle: rgba(255, 255, 255, 0.04);
+
+  --dw-text-strong: rgba(255, 255, 255, 0.95);
+  --dw-text-1: rgba(255, 255, 255, 0.9);
+  --dw-text-2: rgba(255, 255, 255, 0.78);
+  --dw-text-3: rgba(255, 255, 255, 0.55);
+  --dw-text-4: rgba(255, 255, 255, 0.4);
+
+  /* ── Spacing scale (4px grid) ───────────────────────────────────────── */
+  --dw-space-1: 2px;
+  --dw-space-2: 4px;
+  --dw-space-3: 6px;
+  --dw-space-4: 8px;
+  --dw-space-5: 10px;
+  --dw-space-6: 12px;
+  --dw-space-7: 14px;
+  --dw-space-8: 16px;
+
+  /* ── Radii ──────────────────────────────────────────────────────────── */
+  --dw-radius-sm: 3px;
+  --dw-radius-md: 4px;
+  --dw-radius-lg: 6px;
+  --dw-radius-xl: 8px;
+  --dw-radius-2xl: 12px;
+  --dw-radius-pill: 999px;
+
+  /* ── Type scale ─────────────────────────────────────────────────────── */
+  --dw-fs-9: 9px;
+  --dw-fs-10: 10px;
+  --dw-fs-11: 11px;
+  --dw-fs-12: 12px;
+  --dw-fs-13: 13px;
+  --dw-fs-14: 14px;
+  --dw-fs-16: 16px;
+  --dw-tracking-meta: 0.08em;
+  --dw-tracking-tight: 0.02em;
+
+  /* ── Control sizing ─────────────────────────────────────────────────── */
+  --dw-control-h-sm: 22px;
+  --dw-control-h-md: 26px;
+  --dw-control-h-lg: 28px;
+  --dw-control-h-xl: 32px;
+
+  /* ── Motion ─────────────────────────────────────────────────────────── */
+  --dw-dur-fast: 0.12s;
+  --dw-dur-med: 0.15s;
+  --dw-easing: ease;
+}

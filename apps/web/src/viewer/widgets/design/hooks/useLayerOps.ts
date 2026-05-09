@@ -5,8 +5,8 @@
 import { useState, useCallback, useRef } from 'react'
 import type { Dispatch, SetStateAction } from 'react'
 import type { Viewer as CesiumViewerType } from 'cesium'
-import type { SketchLayer, SketchFeature } from './types'
-import { applyStyleToEntity } from './tools/designStyleUtils'
+import type { SketchLayer, SketchFeature } from '../types'
+import { applyStyleToEntity } from '../tools/designStyleUtils'
 
 function makeLayerId(): string {
   return 'lyr_' + Math.random().toString(36).slice(2, 9)

@@ -1,15 +1,14 @@
 /**
  * MightyTwin — Design Widget
- * Rail navigation on the left, panel content on the right.
- * Orchestrates all design sub-panels.
+ *
+ * Slim orchestrator. Composes the design state hooks, the rail navigation,
+ * and the active panel. All visual subcomponents (rail nav, save indicator,
+ * mobile mini-mode, individual panels) live in their own files.
  */
 import { useCallback, useEffect } from 'react'
 import type { Viewer as CesiumViewerType } from 'cesium'
-import { Check, CloudOff, Loader, RefreshCw } from 'lucide-react'
 import { RAIL_TABS } from './types'
-import type { DesignRailTab, ElevationDatum } from './types'
-import { useDesignState } from './useDesignState'
-import { useSketchPersistence } from './useSketchPersistence'
+import { useDesignState, useSketchPersistence } from './hooks'
 import { useSolidTools } from './tools/useSolidTools'
 import { useMoveTool } from './tools/useMoveTool'
 import { useBreakpoint } from '../../hooks/useBreakpoint'
@@ -20,14 +19,9 @@ import HistoryPanel from './panels/HistoryPanel'
 import StylePanel from './panels/StylePanel'
 import SubmitPanel from './panels/SubmitPanel'
 import DownloadPanel from './panels/DownloadPanel'
-import './DesignWidget.css'
-
-/** Glyph index for the mobile mini-controller header. Keys mirror
- *  DesignTool — anything missing falls through to the pencil. */
-const TOOL_ICON: Record<string, string> = {
-  point: '📍', line: '📏', polygon: '⬡', rectangle: '▭',
-  circle: '○', traverse: '↗', box: '⬛', pit: '⬇', cylinder: '⬤', select: '↖',
-}
+import SaveIndicator from './primitives/SaveIndicator'
+import MobileToolMini from './primitives/MobileToolMini'
+import './styles/index.css'
 
 interface DesignWidgetProps {
   viewer: CesiumViewerType
@@ -41,10 +35,7 @@ export default function DesignWidget({ viewer, onClose, siteSlug = null }: Desig
   const { activeTab, setActiveTab } = state
   const { isPhone } = useBreakpoint()
 
-  // Persistence: hydrate the design state from /api/me/sketch-layers
-  // on mount, then debounce-save back on every change. The hook
-  // handles the round-trip so the widget keeps its existing local
-  // state surface and we just pass an onHydrate callback.
+  // ── Persistence: hydrate sketch state on mount, debounce-save on change ──
   const handleHydrate = useCallback(
     (loadedLayers: typeof state.layers, loadedFeatures: typeof state.features) => {
       state.setLayers(loadedLayers)
@@ -63,15 +54,14 @@ export default function DesignWidget({ viewer, onClose, siteSlug = null }: Desig
     onHydrate: handleHydrate,
   })
 
-  // Auto-activate 'select' tool when Edit tab is active
+  // ── Tool ↔ tab linking: 'select' tool follows the Edit tab ──────────────
   useEffect(() => {
-    if (activeTab === 'edit') {
-      state.setActiveTool('select')
-    } else if (state.activeTool === 'select') {
-      state.setActiveTool(null)
-    }
+    if (activeTab === 'edit') state.setActiveTool('select')
+    else if (state.activeTool === 'select') state.setActiveTool(null)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab])
 
+  // ── Move + solid tools registered against the viewer ────────────────────
   useMoveTool({
     viewer,
     activeTool: state.activeTool,
@@ -92,125 +82,26 @@ export default function DesignWidget({ viewer, onClose, siteSlug = null }: Desig
     onFeatureAdded: state.addFeature,
   })
 
-  const groups = state.featuresByLayer
-
-  // Mobile mini-mode — when a tool is active on phones we collapse the
-  // entire widget to a 25vh controller pinned to the bottom of the
-  // viewport so the user has the map to interact with. Mirrors the way
-  // the design widget shrinks on touch devices in the spec.
+  // ── Mobile mini-mode: tool active on phone → collapse to bottom strip ───
   const isMiniMode = isPhone && state.activeTool !== null
-
   if (isMiniMode) {
-    const tool = state.activeTool!
     const handleDone = () => {
-      if (state.solidDraft) {
-        confirmSolidPlacement()
-        return
-      }
-      state.setActiveTool(null)
+      if (state.solidDraft) confirmSolidPlacement()
+      else state.setActiveTool(null)
     }
     return (
-      <div
-        style={{
-          position: 'fixed',
-          bottom: 0,
-          left: 0,
-          right: 0,
-          zIndex: 60,
-          height: '25vh',
-          background: 'rgba(18,22,30,0.95)',
-          backdropFilter: 'blur(8px)',
-          borderTop: '1px solid rgba(255,255,255,0.1)',
-          display: 'flex',
-          flexDirection: 'column',
-          padding: '12px 16px',
-          color: 'rgba(255,255,255,0.9)',
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-          <span style={{ fontSize: 20 }}>{TOOL_ICON[tool] ?? '✏️'}</span>
-          <span style={{ fontWeight: 600, fontSize: 14, textTransform: 'capitalize' }}>{tool}</span>
-          <div style={{ flex: 1 }} />
-          <button
-            onClick={() => state.setActiveTool(null)}
-            style={{
-              padding: '4px 12px',
-              borderRadius: 6,
-              border: '1px solid rgba(255,255,255,0.2)',
-              background: 'none',
-              color: 'inherit',
-              cursor: 'pointer',
-            }}
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleDone}
-            style={{
-              padding: '4px 12px',
-              borderRadius: 6,
-              background: 'var(--accent, #4f8ef7)',
-              border: 'none',
-              color: '#fff',
-              cursor: 'pointer',
-              marginLeft: 6,
-            }}
-          >
-            Done
-          </button>
-        </div>
-        <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
-          <label style={{ fontSize: 12, opacity: 0.7 }}>Datum</label>
-          <select
-            value={state.elevationConfig.datum}
-            onChange={(e) =>
-              state.setElevationConfig({
-                ...state.elevationConfig,
-                datum: e.target.value as ElevationDatum,
-              })
-            }
-            style={{
-              background: 'rgba(255,255,255,0.07)',
-              border: '1px solid rgba(255,255,255,0.15)',
-              borderRadius: 4,
-              color: 'inherit',
-              padding: '3px 6px',
-              fontSize: 12,
-            }}
-          >
-            <option value="terrain">Terrain</option>
-            <option value="ellipsoid">Ellipsoid</option>
-            <option value="mga2020">MGA2020</option>
-            <option value="custom_terrain">Custom terrain</option>
-          </select>
-          <label style={{ fontSize: 12, opacity: 0.7 }}>Offset</label>
-          <input
-            type="number"
-            value={state.elevationConfig.offset}
-            onChange={(e) =>
-              state.setElevationConfig({
-                ...state.elevationConfig,
-                offset: Number(e.target.value),
-              })
-            }
-            style={{
-              width: 80,
-              background: 'rgba(255,255,255,0.07)',
-              border: '1px solid rgba(255,255,255,0.15)',
-              borderRadius: 4,
-              color: 'inherit',
-              padding: '3px 6px',
-              fontSize: 12,
-            }}
-          />
-        </div>
-      </div>
+      <MobileToolMini
+        tool={state.activeTool!}
+        elevationConfig={state.elevationConfig}
+        onElevationChange={state.setElevationConfig}
+        onCancel={() => state.setActiveTool(null)}
+        onDone={handleDone}
+      />
     )
   }
 
   return (
     <div className="design-widget">
-      {/* Rail navigation */}
       <nav className="design-rail">
         {RAIL_TABS.map(tab => (
           <button
@@ -225,7 +116,6 @@ export default function DesignWidget({ viewer, onClose, siteSlug = null }: Desig
         ))}
       </nav>
 
-      {/* Panel content */}
       <div className="design-panel-content">
         <div className="design-panel-header">
           <span className="design-panel-title">
@@ -301,7 +191,7 @@ export default function DesignWidget({ viewer, onClose, siteSlug = null }: Desig
 
           {activeTab === 'history' && (
             <HistoryPanel
-              groups={groups}
+              groups={state.featuresByLayer}
               selectedFeatureId={state.selectedFeatureId}
               onSelect={state.selectFeature}
               onDelete={state.removeFeature}
@@ -328,78 +218,5 @@ export default function DesignWidget({ viewer, onClose, siteSlug = null }: Desig
         </div>
       </div>
     </div>
-  )
-}
-
-function DesignPlaceholder({ tab, description }: { tab: DesignRailTab; description: string }) {
-  return (
-    <div className="design-placeholder">
-      <p className="design-placeholder-title">
-        {RAIL_TABS.find(t => t.id === tab)?.label}
-      </p>
-      <p className="design-placeholder-desc">{description}</p>
-      <p className="design-placeholder-hint">Available in Sprint 2.</p>
-    </div>
-  )
-}
-
-function SaveIndicator({
-  status,
-  lastSavedAt,
-  lastError,
-  onRetry,
-}: {
-  status: 'idle' | 'saving' | 'saved' | 'error'
-  lastSavedAt: number | null
-  lastError: string | null
-  onRetry: () => void
-}) {
-  const tint =
-    status === 'error' ? '#fb7185' : status === 'saving' ? '#9bb3ff' : '#34d399'
-  const icon =
-    status === 'saving' ? (
-      <Loader size={11} className="spin" />
-    ) : status === 'error' ? (
-      <CloudOff size={11} />
-    ) : (
-      <Check size={11} />
-    )
-  const label =
-    status === 'saving'
-      ? 'Saving…'
-      : status === 'error'
-      ? 'Save failed'
-      : lastSavedAt
-      ? 'Saved'
-      : 'Up to date'
-  const title = lastError
-    ? lastError
-    : lastSavedAt
-    ? `Last saved ${new Date(lastSavedAt).toLocaleTimeString()}`
-    : 'No unsaved changes'
-  return (
-    <span
-      title={title}
-      style={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: 4,
-        marginLeft: 'auto',
-        padding: '2px 8px',
-        borderRadius: 999,
-        background: `${tint}1a`,
-        color: tint,
-        fontSize: 10,
-        fontWeight: 600,
-        textTransform: 'uppercase',
-        letterSpacing: '0.04em',
-        cursor: status === 'error' ? 'pointer' : 'default',
-      }}
-      onClick={status === 'error' ? onRetry : undefined}
-    >
-      {icon}
-      {label}
-      {status === 'error' && <RefreshCw size={10} />}
-    </span>
   )
 }
