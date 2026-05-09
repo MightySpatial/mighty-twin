@@ -74,12 +74,19 @@ export default function LayerStyleEditor({ siteSlug, layer, onClose, onSaved }: 
   }, [layer])
 
   const isVector = ['vector', 'geojson', 'feature', 'kml', 'czml'].includes(layer.type)
+  const isSplat = layer.type === 'splat'
 
   const stroke = style.strokeColor ?? style.outlineColor ?? '#2453ff'
   const fill = style.fillColor ?? '#2453ff'
   const lineWidth = numericOr(style.lineWidth, 3)
   const pointSize = numericOr(style.pointSize, 8)
   const opacity = numericOr(style.opacity, 1)
+  const anchor =
+    (style.anchor as { lon?: number; lat?: number; height?: number } | undefined) ??
+    {}
+  const anchorLon = numericOr(anchor.lon, 0)
+  const anchorLat = numericOr(anchor.lat, 0)
+  const anchorHeight = numericOr(anchor.height, 0)
   const labelField = (style.labelField as string) || ''
   const labelColor = (style.labelColor as string) || '#f0f2f8'
   const labelSize = numericOr(style.labelSize, 12)
@@ -219,6 +226,60 @@ export default function LayerStyleEditor({ siteSlug, layer, onClose, onSaved }: 
             onChange={(v) => patch({ opacity: v / 100 })}
           />
         </Section>
+
+        {/* Splat anchor — only for type='splat'. The viewer uses
+            anchor.lon / lat / height as the world placement of the
+            splat scene. Without an anchor the layer is invisible. */}
+        {isSplat && (
+          <Section title="Anchor (where the splat sits in the world)">
+            <p
+              style={{
+                margin: '0 0 8px',
+                fontSize: 11,
+                color: 'rgba(240,242,248,0.5)',
+                lineHeight: 1.4,
+              }}
+            >
+              Splats are anchored by their bounding-box origin. Most
+              capture pipelines export with the origin at the centre of
+              the scene; offset accordingly if your splat appears below
+              ground or skewed.
+            </p>
+            <NumberRow
+              label="Longitude"
+              value={anchorLon}
+              step={0.000001}
+              unit="°"
+              onChange={(v) =>
+                patch({
+                  anchor: { ...anchor, lon: v, lat: anchorLat, height: anchorHeight },
+                })
+              }
+            />
+            <NumberRow
+              label="Latitude"
+              value={anchorLat}
+              step={0.000001}
+              unit="°"
+              onChange={(v) =>
+                patch({
+                  anchor: { ...anchor, lon: anchorLon, lat: v, height: anchorHeight },
+                })
+              }
+            />
+            <NumberRow
+              label="Height (m above terrain)"
+              value={anchorHeight}
+              step={0.1}
+              unit="m"
+              onChange={(v) =>
+                patch({
+                  anchor: { ...anchor, lon: anchorLon, lat: anchorLat, height: v },
+                })
+              }
+            />
+          </Section>
+        )}
 
         {/* Outline */}
         <Section title="Outline">
@@ -572,6 +633,49 @@ function CheckRow({
       />
       <span style={{ fontSize: 12 }}>{label}</span>
     </label>
+  )
+}
+
+function NumberRow({
+  label,
+  value,
+  step,
+  unit,
+  onChange,
+}: {
+  label: string
+  value: number
+  step: number
+  unit?: string
+  onChange: (v: number) => void
+}) {
+  return (
+    <Field label={label}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <input
+          type="number"
+          value={value}
+          step={step}
+          onChange={(e) => {
+            const n = parseFloat(e.target.value)
+            if (!Number.isNaN(n)) onChange(n)
+          }}
+          style={{ ...inputStyle, flex: 1, fontVariantNumeric: 'tabular-nums' }}
+        />
+        {unit && (
+          <span
+            style={{
+              minWidth: 24,
+              fontSize: 11,
+              color: 'rgba(240,242,248,0.5)',
+              textAlign: 'right',
+            }}
+          >
+            {unit}
+          </span>
+        )}
+      </div>
+    </Field>
   )
 }
 
