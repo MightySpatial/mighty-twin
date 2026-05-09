@@ -1,4 +1,3 @@
-import { useEffect } from 'react'
 import { BASEMAPS } from './constants'
 
 interface BasemapWidgetProps {
@@ -14,13 +13,8 @@ export default function BasemapWidget({
   onClose,
   isMobile = false,
 }: BasemapWidgetProps) {
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose()
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [onClose])
+  // ESC handling lives in CesiumViewer's `closeActivePanel`, which closes
+  // every open panel (including this one) in priority order.
 
   const panel = (
     <div className="basemap-panel" role="dialog" aria-label="Map Style">

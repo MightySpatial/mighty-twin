@@ -358,7 +358,7 @@ function featuresToCsv(gjFeatures: GeoJSONFeature[]): string {
     row.push(JSON.stringify(f.properties._design ?? null))
     rows.push(row.map(csvCell).join(','))
   }
-  return rows.join('\n')
+  return rows.join('\r\n')
 }
 
 function centroid(f: GeoJSONFeature): [number | null, number | null, number | null] {

@@ -95,15 +95,10 @@
     --font-size-md: 16px; /* Prevent iOS zoom */
   }
 
-  /* Inputs sized below 16px trigger zoom-on-focus on iOS Safari. Several
-     panels still use inline `fontSize: 13` for compact desktop tables;
-     bump them to 16px on phone with !important since inline styles win
-     against class rules. */
-  input:not([type="checkbox"]):not([type="radio"]):not([type="color"]),
-  textarea,
-  select {
-    font-size: 16px !important;
-  }
+  /* Note: the iOS-zoom !important font-size override lives in
+     packages/settings-panels/src/SettingsShell.module.css, scoped to
+     `.shell` so compact admin tables outside Settings keep their
+     tighter density. */
 
   /* Standard form/button class targets get a comfortable touch height. */
   .btn,

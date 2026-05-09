@@ -354,30 +354,6 @@
   transform: scale(0.95);
 }
 
-/* Position FAB */
-/* Phone: clear the inner Atlas bottom-nav (64px @ bottom: 64px, ending
-   at 128px from viewport bottom) AND the outer Map/Atlas/Settings tabs. */
-.fab-br {
-  bottom: calc(2 * var(--bottom-nav-height) + var(--space-4));
-  right: var(--space-5);
-}
-
-@media (min-width: 768px) and (max-width: 1023px) {
-  /* Tablet: only the inner Atlas bottom nav is rendered, scoped to the
-     pane via absolute positioning (drawer mode), so a single nav-height
-     of clearance is enough. */
-  .fab-br {
-    bottom: calc(var(--bottom-nav-height) + var(--space-5) + var(--safe-bottom));
-  }
-}
-
-@media (min-width: 1024px) {
-  .fab-br {
-    bottom: var(--space-6);
-    right: var(--space-6);
-  }
-}
-
 /* ─── Empty State ─────────────────────────────────────────────────────────── */
 
 .empty-state {
