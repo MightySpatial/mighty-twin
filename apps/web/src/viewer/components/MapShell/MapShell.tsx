@@ -155,7 +155,6 @@ export function MapShell({
     const base = publicMode ? publicWidgets(DEFAULT_WIDGETS) : DEFAULT_WIDGETS
     return applyWidgetOverrides(base, widgetOverrides)
   }, [publicMode, widgetOverrides])
-  const primary = useMemo(() => widgetsForController(widgets, 'primary'), [widgets])
   const secondary = useMemo(() => widgetsForController(widgets, 'secondary'), [widgets])
 
   // Phone-only: tools sheet open/closed.
@@ -270,26 +269,10 @@ export function MapShell({
         >
           <div className={styles.toolsSheet} onClick={(e) => e.stopPropagation()}>
             <div className={styles.toolsSheetHandle} />
-            {/* Primary tools — exclude Layers (accessible via sidebar on desktop,
-                and via the dedicated Layers FAB on mobile) */}
-            {primary.filter(w => w.id !== 'layers').length > 0 && (
-              <div className={styles.toolsSheetSection}>
-                <div className={styles.toolsSheetSectionLabel}>Tools</div>
-                <div className={styles.toolsSheetGrid}>
-                  {primary.filter(w => w.id !== 'layers').map((w) => (
-                    <SheetTile
-                      key={w.id}
-                      widget={w}
-                      active={activeToolId === w.id}
-                      onClick={() => {
-                        onAction(w.id)
-                        setToolsOpen(false)
-                      }}
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
+            {/* Primary tools (Search / Measure / Legend / Layers) live as
+                standalone floating buttons on the left column on phones —
+                they intentionally do NOT appear in this sheet. Only the
+                secondary "Widgets" section is rendered here. */}
             {!publicMode && secondary.length > 0 && (
               <div className={styles.toolsSheetSection}>
                 <div className={styles.toolsSheetSectionLabel}>Widgets</div>
