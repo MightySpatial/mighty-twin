@@ -72,6 +72,9 @@ importers:
       '@vitejs/plugin-react':
         specifier: ^4.3.4
         version: 4.7.0(vite@5.4.21(@types/node@25.6.0))
+      jsdom:
+        specifier: ^25.0.1
+        version: 25.0.1
       typescript:
         specifier: ^5.7.2
         version: 5.9.3
@@ -81,6 +84,9 @@ importers:
       vite-plugin-cesium:
         specifier: ^1.2.23
         version: 1.2.23(cesium@1.140.0)(rollup@4.60.1)(vite@5.4.21(@types/node@25.6.0))
+      vitest:
+        specifier: ^2.1.8
+        version: 2.1.9(@types/node@25.6.0)(jsdom@25.0.1)
 
   packages/admin-panels:
     dependencies:
