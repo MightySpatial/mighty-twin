@@ -342,3 +342,332 @@
   margin: 0;
   padding: var(--dw-space-2);
 }
+
+/* ── LayersTab gallery header (title + preset menu trigger) ────────── */
+
+.layers-tab__hd-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--dw-space-3);
+}
+.layers-tab__hd-row .layers-tab__hd {
+  margin: 0;
+  flex: 1;
+}
+
+/* ── Preset selector (Load preset dropdown) ────────────────────────── */
+
+.preset-menu {
+  position: relative;
+}
+.preset-menu__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--dw-space-2);
+  min-height: 44px;
+  padding: 0 var(--dw-space-3);
+  background: var(--dw-fill-1);
+  border: 1px solid var(--dw-border);
+  border-radius: var(--dw-radius-md);
+  color: var(--dw-text-2);
+  font-family: inherit;
+  font-size: var(--dw-fs-11);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--dw-dur-fast), color var(--dw-dur-fast),
+              border-color var(--dw-dur-fast);
+}
+.preset-menu__btn:hover {
+  color: var(--dw-text-strong);
+  background: var(--dw-fill-2);
+  border-color: var(--dw-util-d);
+}
+.preset-menu__btn[aria-expanded="true"] {
+  color: var(--dw-util);
+  border-color: var(--dw-util-d);
+  background: var(--dw-util-bg-soft);
+}
+.preset-menu__pop {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  z-index: 50;
+  min-width: 240px;
+  max-width: 320px;
+  max-height: 320px;
+  overflow-y: auto;
+  background: var(--dw-surface-glass);
+  border: 1px solid var(--dw-border-strong);
+  border-radius: var(--dw-radius-lg);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  padding: var(--dw-space-2);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.preset-menu__hd {
+  font-size: var(--dw-fs-9);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--dw-text-3);
+  padding: var(--dw-space-2) var(--dw-space-3);
+}
+.preset-menu__msg {
+  font-size: var(--dw-fs-10);
+  color: var(--dw-text-3);
+  padding: var(--dw-space-3);
+  font-style: italic;
+}
+.preset-menu__msg--err {
+  color: var(--dw-danger);
+  font-style: normal;
+}
+.preset-menu__item {
+  display: flex;
+  align-items: center;
+  gap: var(--dw-space-3);
+  min-height: 44px;
+  padding: var(--dw-space-2) var(--dw-space-3);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--dw-radius-md);
+  color: var(--dw-text-1);
+  font-family: inherit;
+  font-size: var(--dw-fs-11);
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--dw-dur-fast), border-color var(--dw-dur-fast);
+}
+.preset-menu__item:hover {
+  background: var(--dw-util-bg-soft);
+  border-color: var(--dw-util-d);
+}
+.preset-menu__dot {
+  flex-shrink: 0;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--dw-text-3);
+}
+.preset-menu__name {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.preset-menu__meta {
+  flex-shrink: 0;
+  font-size: var(--dw-fs-9);
+  letter-spacing: 0.02em;
+  color: var(--dw-text-3);
+  background: var(--dw-fill-2);
+  padding: 2px 8px;
+  border-radius: var(--dw-radius-pill);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* ── Sketch tile — settings gear + default badge + popover ─────────── */
+
+.sketch-tile__name {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sketch-tile__title {
+  display: flex;
+  align-items: center;
+  gap: var(--dw-space-2);
+  min-width: 0;
+  padding-right: 28px; /* clearance for the absolute settings gear */
+}
+.sketch-tile__default-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  flex-shrink: 0;
+  font-size: var(--dw-fs-9);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--dw-util);
+  background: var(--dw-util-bg);
+  border: 1px solid var(--dw-util-d);
+  padding: 1px 6px;
+  border-radius: var(--dw-radius-pill);
+}
+.sketch-tile.is-default {
+  border-color: var(--dw-util-d);
+}
+.sketch-tile__settings {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: var(--dw-text-3);
+  cursor: pointer;
+  border-radius: var(--dw-radius-md);
+  transition: color var(--dw-dur-fast), background var(--dw-dur-fast);
+}
+.sketch-tile__settings:hover {
+  color: var(--dw-text-strong);
+  background: var(--dw-fill-3);
+}
+.sketch-tile__settings[aria-expanded="true"] {
+  color: var(--dw-util);
+  background: var(--dw-util-bg);
+}
+
+/* Popover — anchored to the sketch tile via absolute positioning. */
+.sketch-popover {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  z-index: 50;
+  width: 240px;
+  background: var(--dw-surface-glass);
+  border: 1px solid var(--dw-border-strong);
+  border-radius: var(--dw-radius-lg);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  padding: var(--dw-space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--dw-space-2);
+  cursor: default;
+}
+.sketch-popover__hd {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: var(--dw-fs-9);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--dw-text-3);
+  padding-bottom: var(--dw-space-1);
+}
+.sketch-popover__close {
+  width: 24px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: var(--dw-text-3);
+  cursor: pointer;
+  border-radius: var(--dw-radius-sm);
+}
+.sketch-popover__close:hover {
+  color: var(--dw-text-strong);
+  background: var(--dw-fill-3);
+}
+.sketch-popover__field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.sketch-popover__field-label {
+  font-size: var(--dw-fs-9);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--dw-text-3);
+}
+.sketch-popover__input {
+  min-height: 44px;
+  padding: 0 var(--dw-space-3);
+  background: var(--dw-fill-2);
+  border: 1px solid var(--dw-border);
+  border-radius: var(--dw-radius-md);
+  color: var(--dw-text-strong);
+  font-family: inherit;
+  font-size: var(--dw-fs-12);
+  outline: none;
+}
+.sketch-popover__input:focus {
+  border-color: var(--dw-util-d);
+  background: var(--dw-fill-3);
+}
+.sketch-popover__item {
+  display: flex;
+  align-items: center;
+  gap: var(--dw-space-3);
+  min-height: 44px;
+  padding: 0 var(--dw-space-3);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--dw-radius-md);
+  color: var(--dw-text-1);
+  font-family: inherit;
+  font-size: var(--dw-fs-11);
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--dw-dur-fast), border-color var(--dw-dur-fast),
+              color var(--dw-dur-fast);
+}
+.sketch-popover__item:hover:not([disabled]) {
+  background: var(--dw-util-bg-soft);
+  border-color: var(--dw-util-d);
+  color: var(--dw-text-strong);
+}
+.sketch-popover__item[disabled] {
+  cursor: default;
+  opacity: 0.65;
+}
+.sketch-popover__item.is-on {
+  color: var(--dw-util);
+  background: var(--dw-util-bg-soft);
+  border-color: var(--dw-util-d);
+}
+.sketch-popover__item--danger:hover:not([disabled]) {
+  color: var(--dw-danger);
+  background: var(--dw-danger-bg);
+  border-color: var(--dw-danger-border);
+}
+.sketch-popover__sep {
+  height: 1px;
+  background: var(--dw-border);
+  margin: var(--dw-space-1) 0;
+}
+.sketch-popover__confirm-row {
+  display: flex;
+  gap: var(--dw-space-2);
+}
+.sketch-popover__confirm-yes,
+.sketch-popover__confirm-no {
+  flex: 1;
+  min-height: 44px;
+  padding: 0 var(--dw-space-3);
+  border-radius: var(--dw-radius-md);
+  font-family: inherit;
+  font-size: var(--dw-fs-11);
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid transparent;
+}
+.sketch-popover__confirm-yes {
+  background: var(--dw-danger-bg);
+  border-color: var(--dw-danger-border);
+  color: var(--dw-danger);
+}
+.sketch-popover__confirm-yes:hover {
+  background: rgba(248, 113, 113, 0.22);
+}
+.sketch-popover__confirm-no {
+  background: var(--dw-fill-2);
+  border-color: var(--dw-border);
+  color: var(--dw-text-2);
+}
+.sketch-popover__confirm-no:hover {
+  background: var(--dw-fill-3);
+  color: var(--dw-text-strong);
+}

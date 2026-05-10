@@ -16,7 +16,7 @@
  * The store deliberately holds no Cesium primitives — `useDagCesium`
  * subscribes to dirty events and reconciles entities. Spec §9.2.
  */
-import { create } from 'zustand'
+import { create, type StateCreator } from 'zustand'
 import { subscribeWithSelector } from 'zustand/middleware'
 import type {
   CadEngineState,
@@ -167,8 +167,13 @@ function makeBlankSketch(id: string, name: string, siteId: string): Sketch {
 
 // ── Store factory ───────────────────────────────────────────────────────
 
-export const useCadEngine = create<CadEngine>()(
-  subscribeWithSelector((set, get) => ({
+// Zustand v5 + `subscribeWithSelector` need an explicit `StateCreator`
+// generic on the inner factory or `set`/`get` (and `useCadEngine.subscribe`
+// at every consumer) lose their narrowed types and fall back to `any`.
+const cadEngineCreator: StateCreator<
+  CadEngine,
+  [['zustand/subscribeWithSelector', never]]
+> = (set, get) => ({
     ...INITIAL,
 
     // ── Sketches ──────────────────────────────────────────────────────
@@ -472,8 +477,9 @@ export const useCadEngine = create<CadEngine>()(
         outputIds: topoSort(next.nodes ?? state.nodes),
       }))
     },
-  })),
-)
+})
+
+export const useCadEngine = create<CadEngine>()(subscribeWithSelector(cadEngineCreator))
 
 // Helper: layer-level patcher used by the four small layer actions.
 function patchLayer(
