@@ -2,10 +2,10 @@
  *  `.sketch-draw-workspace` / `.sdw-meta` pattern. Shows the active
  *  draw layer (swatch + dropdown), the "remember this layer" star, and
  *  a snap toggle. */
-import type { SketchLayer } from '../types'
+import type { SketchLayerSpec } from '../sketch/types'
 
 interface Props {
-  layers: SketchLayer[]
+  layers: SketchLayerSpec[]
   activeLayerId: string
   onSetActiveLayer: (id: string) => void
   defaultLayerId: string | null

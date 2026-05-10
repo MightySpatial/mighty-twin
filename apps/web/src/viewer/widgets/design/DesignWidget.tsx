@@ -1,171 +1,122 @@
 /**
- * MightyTwin — Design Widget
+ * MightyTwin — Design Widget (DAG-engine driven shell).
  *
  * Layout (top to bottom):
- *   [ design-rail ]               horizontal tab strip (teal glow underline)
- *   [ design-panel-header ]       title + ctx + save badge + close
+ *   [ design-rail ]               horizontal tab strip with teal glow
+ *   [ design-panel-header ]       Design title + active sketch + save badge + close
  *   [ sketch-context-strip ]      active layer + default star + snap toggle
- *   [ design-panel-body ]         scrollable panel content
+ *   [ place-mode-bar ]            overlay when activeToolId !== null
+ *   [ design-panel-body ]         active tab content
  *   [ design-status-bar ]         current tool + cursor coords
  *
- * Mobile (< 1024px) overlays the whole viewport (full-screen). When the
- * user picks a draw tool, the widget auto-slides down to a 60px handle
- * so the globe is fully visible for the pick. Finishing or cancelling
- * the tool auto-restores. The handle's chevron lets the user manually
- * pull the widget back up mid-draw.
+ * State backbone is `useCadEngine` (Zustand). Persistence + Cesium
+ * lifecycle are wired by useDagPersistence / useDagCesium.
+ *
+ * Mobile (< 1024px): the widget overlays the viewport. Picking a draw
+ * tool auto-slides the widget down to a 60px handle so the user sees
+ * the globe; finishing/cancelling auto-restores. The handle's chevron
+ * lets the user manually pull the widget back up mid-draw.
  */
-import { useCallback, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import type { Viewer as CesiumViewerType } from 'cesium'
-import { RAIL_TABS, type DesignRailTab } from './types'
-import { useDesignState, useSketchPersistence } from './hooks'
-import { useCursorCoords } from './hooks/useCursorCoords'
-import { useSolidTools } from './tools/useSolidTools'
-import { useMoveTool } from './tools/useMoveTool'
 import { useBreakpoint } from '../../hooks/useBreakpoint'
-import SketchLayersPanel from './panels/SketchLayersPanel'
-import DrawPanel from './panels/DrawPanel'
-import EditPanel from './panels/EditPanel'
-import HistoryPanel from './panels/HistoryPanel'
-import StylePanel from './panels/StylePanel'
-import SubmitPanel from './panels/SubmitPanel'
-import DownloadPanel from './panels/DownloadPanel'
-import BuildingPanel from './panels/BuildingPanel'
+import { useCadEngine } from './sketch/useCadEngine'
+import { useDagPersistence } from './sketch/useDagPersistence'
+import { useDagCesium } from './sketch/useDagCesium'
+import { useCursorCoords } from './hooks/useCursorCoords'
+import LayersTab from './panels/tabs/LayersTab'
+import SketchTab from './panels/tabs/SketchTab'
+import FeaturesTab from './panels/tabs/FeaturesTab'
+import PropertiesTab from './panels/tabs/PropertiesTab'
+import HistoryTab from './panels/tabs/HistoryTab'
+import DownloadTab from './panels/tabs/DownloadTab'
+import PlaceModeBar from './panels/PlaceModeBar'
 import SaveIndicator from './primitives/SaveIndicator'
-import SketchContextStrip from './primitives/SketchContextStrip'
 import StatusBar from './primitives/StatusBar'
 import MobileMinimiseHandle from './primitives/MobileMinimiseHandle'
+import { lookupTool } from './sketch/tools/registry'
 import './styles/index.css'
 
 interface DesignWidgetProps {
   viewer: CesiumViewerType
   onClose: () => void
-  /** Site slug — needed for the Submit tab + the attribute template registry. */
+  /** Site slug — needed for the templates registry + submissions. */
   siteSlug?: string | null
 }
 
-const TOOL_HINTS: Record<string, string> = {
-  point:     'Click to place a point',
-  line:      'Click vertices, double-click to finish',
-  polygon:   'Click vertices, double-click to close',
-  rectangle: 'Click first corner, then opposite corner',
-  circle:    'Click centre, then radius',
-  traverse:  'Click start; add bearing/distance legs',
-  box:       'Click to place a box',
-  pit:       'Click to place an open-top pit',
-  cylinder:  'Click to place a cylinder',
-  select:    'Click a feature to select',
-}
+export type DesignTabId = 'layers' | 'sketch' | 'features' | 'properties' | 'history' | 'download'
 
-/** Tools that should auto-minimise on mobile. The 'select' pseudo-tool
- *  doesn't need full screen, so we leave the widget open for it. */
-const DRAW_TOOLS_ON_MOBILE = new Set([
-  'point', 'line', 'polygon', 'rectangle', 'circle', 'traverse',
-  'box', 'pit', 'cylinder',
+const TABS: { id: DesignTabId; label: string; icon: string }[] = [
+  { id: 'layers',     label: 'Layers',     icon: '▤' },
+  { id: 'sketch',     label: 'Sketch',     icon: '✎' },
+  { id: 'features',   label: 'Features',   icon: '☷' },
+  { id: 'properties', label: 'Properties', icon: '⌖' },
+  { id: 'history',    label: 'History',    icon: '☰' },
+  { id: 'download',   label: 'Export',     icon: '↓' },
+]
+
+/** Tools that should auto-minimise on mobile when active. */
+const MOBILE_DRAW_TOOLS = new Set([
+  'point', 'line', 'polygon', 'rectangle', 'curve', 'ellipse', 'polygon_n',
+  'pipe_draw', 'traverse', 'pt_line', 'pt_circle', 'pt_cylinder',
+  'pt_sphere', 'pt_cone', 'pt_box', 'pt_pit', 'building',
 ])
 
 export default function DesignWidget({ viewer, onClose, siteSlug = null }: DesignWidgetProps) {
-  const state = useDesignState(viewer)
-  const cursor = useCursorCoords(viewer)
-  const { activeTab, setActiveTab } = state
+  const [activeTab, setActiveTab] = useState<DesignTabId>('layers')
+  const [mobileMinimised, setMobileMinimised] = useState(false)
   const { isMobile } = useBreakpoint()
+  const cursor = useCursorCoords(viewer)
 
-  // Deep-link contract: Atlas → /viewer/sites/<slug>?widget=design&tool=building
-  // dispatches a one-off 'design:request-tab' event before the widget
-  // mounts (URL params are consumed in CesiumViewer). Replay any pending
-  // request when the widget mounts so the user lands on the right tab.
-  useEffect(() => {
-    function onRequestTab(e: Event) {
-      const detail = (e as CustomEvent).detail as { tab?: DesignRailTab } | undefined
-      if (detail?.tab) setActiveTab(detail.tab)
-    }
-    window.addEventListener('design:request-tab', onRequestTab)
-    return () => window.removeEventListener('design:request-tab', onRequestTab)
-  }, [setActiveTab])
+  const persistence = useDagPersistence({ siteSlug })
+  useDagCesium({ viewer })
 
-  // ── Persistence ─────────────────────────────────────────────────────────
-  const handleHydrate = useCallback(
-    (loadedLayers: typeof state.layers, loadedFeatures: typeof state.features) => {
-      state.setLayers(loadedLayers)
-      state.setFeatures(loadedFeatures)
-      if (loadedLayers.length > 0 && !state.activeLayerId) {
-        state.setActiveLayerId(loadedLayers[0].id)
-      }
-    },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [],
-  )
-  const persistence = useSketchPersistence({
-    siteSlug,
-    layers: state.layers,
-    features: state.features,
-    onHydrate: handleHydrate,
-  })
+  const activeToolId = useCadEngine(s => s.activeToolId)
+  const setActiveTool = useCadEngine(s => s.setActiveTool)
+  const activeSketchId = useCadEngine(s => s.activeSketchId)
+  const sketches = useCadEngine(s => s.sketches)
+  const activeSketch = activeSketchId ? sketches[activeSketchId] : null
+  const tool = lookupTool(activeToolId)
 
-  // ── Tool ↔ tab linking ──────────────────────────────────────────────────
-  useEffect(() => {
-    if (activeTab === 'edit') state.setActiveTool('select')
-    else if (state.activeTool === 'select') state.setActiveTool(null)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTab])
-
-  // ── Mobile auto-minimise / restore ──────────────────────────────────────
-  // When a draw tool activates on mobile, slide the widget down so the
-  // user has the globe to interact with. When the tool clears (commit
-  // / cancel / ESC), auto-restore. Manual chevron toggles override
-  // mid-draw — they live in mobileMinimised state independently.
+  // Mobile auto-minimise on draw.
   useEffect(() => {
     if (!isMobile) {
-      // Always reset on desktop so re-narrowing the window doesn't trap
-      // the widget in a hidden state.
-      if (state.mobileMinimised) state.setMobileMinimised(false)
+      if (mobileMinimised) setMobileMinimised(false)
       return
     }
-    const isDrawing = state.activeTool != null && DRAW_TOOLS_ON_MOBILE.has(state.activeTool)
-    state.setMobileMinimised(isDrawing)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isMobile, state.activeTool])
+    setMobileMinimised(activeToolId != null && MOBILE_DRAW_TOOLS.has(activeToolId))
+  }, [isMobile, activeToolId, mobileMinimised])
 
-  useMoveTool({
-    viewer,
-    activeTool: state.activeTool,
-    features: state.features,
-    layers: state.layers,
-    selectedFeatureId: state.selectedFeatureId,
-    onSelectFeature: state.selectFeature,
-  })
+  // Keyboard: ESC cancels active tool.
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      const tag = (e.target as HTMLElement)?.tagName
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return
+      if (e.key === 'Escape' && activeToolId) {
+        e.stopPropagation()
+        setActiveTool(null)
+      }
+    }
+    document.addEventListener('keydown', onKey, true)
+    return () => document.removeEventListener('keydown', onKey, true)
+  }, [activeToolId, setActiveTool])
 
-  const { confirmSolidPlacement, cancelSolidDraft } = useSolidTools({
-    viewer,
-    activeTool: state.activeTool,
-    elevationConfig: state.elevationConfig,
-    activeLayerId: state.activeLayerId,
-    layerColour: state.activeLayer?.colour ?? '#94a3b8',
-    solidDraft: state.solidDraft,
-    onSolidDraftChange: state.setSolidDraft,
-    onFeatureAdded: state.addFeature,
-  })
-
-  const cancelActiveTool = useCallback(() => {
-    if (state.solidDraft) cancelSolidDraft()
-    state.setActiveTool(null)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state.solidDraft])
-
-  const activeTabSpec = RAIL_TABS.find(t => t.id === activeTab)
-  const ctxStripVisible = (activeTab === 'sketch' || activeTab === 'edit')
-    && state.layers.some(l => l.visible)
+  // Selecting in Properties tab → auto-cancel any active tool.
+  useEffect(() => {
+    if (activeTab === 'properties' && activeToolId) setActiveTool(null)
+  }, [activeTab, activeToolId, setActiveTool])
 
   const widgetClass = [
     'design-widget',
     isMobile ? 'design-widget--mobile' : '',
-    isMobile && state.mobileMinimised ? 'is-minimised' : '',
+    isMobile && mobileMinimised ? 'is-minimised' : '',
   ].filter(Boolean).join(' ')
 
   return (
     <>
       <div className={widgetClass}>
-        <nav className="design-rail" role="tablist" aria-label="Design modes">
-          {RAIL_TABS.map(tab => (
+        <nav className="design-rail" role="tablist" aria-label="Design tabs">
+          {TABS.map(tab => (
             <button
               key={tab.id}
               type="button"
@@ -184,143 +135,37 @@ export default function DesignWidget({ viewer, onClose, siteSlug = null }: Desig
         <div className="design-panel-content">
           <div className="design-panel-header">
             <h4 className="design-panel-title">Design</h4>
-            <span className="design-panel-ctx">{activeTabSpec?.label}</span>
+            <span className="design-panel-ctx">{activeSketch?.name ?? 'No sketch'}</span>
             {siteSlug && (
               <SaveIndicator
-                status={persistence.status}
+                status={
+                  persistence.status === 'loading' ? 'saving'
+                  : persistence.status === 'saving' ? 'saving'
+                  : persistence.status === 'error' ? 'error'
+                  : persistence.lastSavedAt ? 'saved' : 'idle'
+                }
                 lastSavedAt={persistence.lastSavedAt}
                 lastError={persistence.lastError}
-                onRetry={persistence.saveNow}
+                onRetry={persistence.flushNow}
               />
-            )}
-            {isMobile && state.activeTool && (
-              <button
-                type="button"
-                className="ext-panel-close"
-                onClick={() => state.setMobileMinimised(true)}
-                title="Minimise"
-                aria-label="Minimise widget"
-              >▾</button>
             )}
             <button className="ext-panel-close" onClick={onClose} title="Close">×</button>
           </div>
 
-          {ctxStripVisible && (
-            <SketchContextStrip
-              layers={state.layers}
-              activeLayerId={state.activeLayerId}
-              onSetActiveLayer={state.setActiveLayerId}
-              defaultLayerId={state.defaultDrawLayerId}
-              onSetDefaultLayer={state.setDefaultDrawLayerId}
-              snapEnabled={state.snapEnabled}
-              onSnapToggle={state.setSnapEnabled}
-            />
-          )}
+          {activeToolId && tool && <PlaceModeBar />}
 
           <div className="design-panel-body">
-            {activeTab === 'layers' && (
-              <SketchLayersPanel
-                layers={state.layers}
-                activeLayerId={state.activeLayerId}
-                onSetActiveLayer={state.setActiveLayerId}
-                onAddLayer={state.addLayer}
-                onRemoveLayer={state.removeLayer}
-                onRenameLayer={state.renameLayer}
-                onSetLayerColour={state.setLayerColour}
-                onToggleVisibility={state.toggleLayerVisibility}
-                onToggleLock={state.toggleLayerLock}
-                presets={state.allPresets}
-                onLoadPreset={state.loadPreset}
-              />
-            )}
-
-            {activeTab === 'sketch' && (
-              <DrawPanel
-                viewer={viewer}
-                activeTool={state.activeTool}
-                elevationConfig={state.elevationConfig}
-                activeLayer={state.activeLayer}
-                onSetTool={state.setActiveTool}
-                onSetElevation={state.setElevationConfig}
-                onCancelTool={state.cancelTool}
-                onFeatureAdded={state.addFeature}
-                solidDraft={state.solidDraft}
-                onSolidDraftChange={state.setSolidDraft}
-                onConfirmSolid={confirmSolidPlacement}
-                onCancelSolid={cancelSolidDraft}
-                traverseDraft={state.traverseDraft}
-                onTraverseDraftChange={state.setTraverseDraft}
-              />
-            )}
-
-            {activeTab === 'building' && (
-              <BuildingPanel
-                viewer={viewer}
-                activeTool={state.activeTool}
-                elevationConfig={state.elevationConfig}
-                draft={state.buildingDraft}
-                onDraftChange={state.setBuildingDraft}
-                layers={state.layers}
-                activeLayerId={state.activeLayer?.id ?? ''}
-                onSetTool={state.setActiveTool}
-                onFeatureAdded={state.addFeature}
-              />
-            )}
-
-            {activeTab === 'edit' && (
-              <EditPanel
-                feature={state.selectedFeature}
-                layers={state.layers}
-                viewer={viewer}
-                onMoveFeature={state.moveFeature}
-                onDelete={state.removeFeature}
-                onRename={state.renameFeature}
-                onUpdateParams={state.updateFeatureParams}
-                onUpdateAttribute={state.updateFeatureAttribute}
-                onUpdateStyle={state.updateFeatureStyle}
-                onSnapToTerrain={state.snapFeatureToTerrain}
-                siteSlug={siteSlug}
-              />
-            )}
-
-            {activeTab === 'style' && (
-              <StylePanel
-                feature={state.selectedFeature}
-                onStyleChange={state.updateFeatureStyle}
-              />
-            )}
-
-            {activeTab === 'history' && (
-              <HistoryPanel
-                groups={state.featuresByLayer}
-                selectedFeatureId={state.selectedFeatureId}
-                onSelect={state.selectFeature}
-                onDelete={state.removeFeature}
-                onToggleCollapse={state.toggleLayerCollapse}
-              />
-            )}
-
-            {activeTab === 'submit' && (
-              <SubmitPanel
-                viewer={viewer}
-                layers={state.layers}
-                features={state.features}
-                siteSlug={siteSlug}
-              />
-            )}
-
-            {activeTab === 'download' && (
-              <DownloadPanel
-                viewer={viewer}
-                layers={state.layers}
-                features={state.features}
-              />
-            )}
+            {activeTab === 'layers' && <LayersTab siteSlug={siteSlug} />}
+            {activeTab === 'sketch' && <SketchTab viewer={viewer} />}
+            {activeTab === 'features' && <FeaturesTab />}
+            {activeTab === 'properties' && <PropertiesTab />}
+            {activeTab === 'history' && <HistoryTab />}
+            {activeTab === 'download' && <DownloadTab viewer={viewer} siteSlug={siteSlug} />}
           </div>
 
           <StatusBar
-            tool={state.activeTool}
-            hint={state.activeTool ? TOOL_HINTS[state.activeTool] ?? null : null}
+            tool={activeToolId}
+            hint={tool?.label}
             cursor={cursor}
           />
         </div>
@@ -328,11 +173,10 @@ export default function DesignWidget({ viewer, onClose, siteSlug = null }: Desig
 
       {isMobile && (
         <MobileMinimiseHandle
-          visible={state.mobileMinimised}
-          tool={state.activeTool}
-          hint={state.activeTool ? TOOL_HINTS[state.activeTool] ?? null : null}
-          onExpand={() => state.setMobileMinimised(false)}
-          onCancel={cancelActiveTool}
+          visible={mobileMinimised}
+          tool={tool?.label ?? null}
+          onExpand={() => setMobileMinimised(false)}
+          onCancel={() => setActiveTool(null)}
         />
       )}
     </>

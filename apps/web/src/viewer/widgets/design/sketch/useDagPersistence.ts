@@ -42,12 +42,16 @@ const FLUSH_DEBOUNCE_MS = 500
 export type PersistStatus = 'idle' | 'loading' | 'saving' | 'saved' | 'error'
 
 export interface UseDagPersistenceArgs {
-  siteId: string | null
+  /** Site slug (or any unique site key). Used as the namespace for
+   *  localStorage keys + the `{siteId}` token in the json-files names.
+   *  Null = no site context, hydration is skipped. */
+  siteSlug?: string | null
   /** Inject for tests. Defaults to a fetch-backed IO. */
   io?: PersistenceIO
 }
 
-export function useDagPersistence({ siteId, io }: UseDagPersistenceArgs) {
+export function useDagPersistence({ siteSlug, io }: UseDagPersistenceArgs) {
+  const siteId = siteSlug ?? null
   const [status, setStatus] = useState<PersistStatus>('idle')
   const [lastSavedAt, setLastSavedAt] = useState<number | null>(null)
   const [lastError, setLastError] = useState<string | null>(null)

@@ -1,3 +1,5 @@
 export { default as DesignWidget } from './DesignWidget'
-export { useDesignState } from './hooks/useDesignState'
-export type { SketchLayer, SketchFeature, DesignTool, ElevationMode, DesignRailTab, FeatureStyle } from './types'
+export { useCadEngine } from './sketch/useCadEngine'
+export type {
+  Sketch, SketchNode, SketchLayerSpec, NodeStyle,
+} from './sketch/types'
