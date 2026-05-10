@@ -4,7 +4,7 @@
  */
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import type { SiteConfigState } from '../../types/api'
-import { Cartesian3, Math as CesiumMath } from 'cesium'
+import { Cartesian3, CameraEventType, Math as CesiumMath } from 'cesium'
 import { useBreakpoint } from '../../hooks/useBreakpoint'
 import { useWidgetLayout } from '../../hooks/useWidgetLayout'
 import { HelpCircle, Search as SearchIcon, Ruler, List as LegendIcon } from 'lucide-react'
@@ -338,23 +338,50 @@ export default function CesiumViewerComponent({
     return () => window.removeEventListener('keydown', onEsc)
   }, [walkActive])
 
-  // Look-around mode: hold compass → first-person free-look, release anywhere → restore orbit.
+  // Look-around mode: hold compass → first-person free-look (camera
+  // pivots on its own lens, position stays still — like Ctrl+drag in
+  // a 3D modeller), release anywhere → restore orbit.
+  //
+  // Cesium's "look" gesture is bound to RIGHT_DRAG by default, so just
+  // flipping enableLook does nothing for a user who's left-dragging.
+  // We rebind the gesture types so left-drag maps to look while held,
+  // and snapshot the originals to restore on release. Rotate + tilt
+  // are dropped from the gesture set so they don't fight the look.
   const [lookAroundActive, setLookAroundActive] = useState(false)
   const toggleLookAround = useCallback(() => {
     const viewer = viewerRef.current
     if (!viewer) return
     const ctrl = viewer.scene.screenSpaceCameraController
-    // Enable first-person look immediately
+    const prev = {
+      enableRotate: ctrl.enableRotate,
+      enableTilt: ctrl.enableTilt,
+      enableLook: ctrl.enableLook,
+      rotateEventTypes: ctrl.rotateEventTypes,
+      tiltEventTypes: ctrl.tiltEventTypes,
+      lookEventTypes: ctrl.lookEventTypes,
+    }
     ctrl.enableRotate = false
     ctrl.enableTilt = false
     ctrl.enableLook = true
+    // Drop rotate + tilt from any bound gestures so they don't fight
+    // the look mode (a stray default tilt on middle-drag would still
+    // move the eye otherwise).
+    ctrl.rotateEventTypes = []
+    ctrl.tiltEventTypes = []
+    // Bind look to BOTH left-drag and right-drag so any pointer the
+    // user is holding pivots the lens. Touch goes through left-drag too.
+    ctrl.lookEventTypes = [CameraEventType.LEFT_DRAG, CameraEventType.RIGHT_DRAG]
     setLookAroundActive(true)
-    // Single window pointerup restores orbit mode
+    // Single window pointerup restores orbit mode + the original
+    // gesture bindings.
     const stop = () => {
       try {
-        ctrl.enableRotate = true
-        ctrl.enableTilt = true
-        ctrl.enableLook = false
+        ctrl.enableRotate = prev.enableRotate
+        ctrl.enableTilt = prev.enableTilt
+        ctrl.enableLook = prev.enableLook
+        ctrl.rotateEventTypes = prev.rotateEventTypes
+        ctrl.tiltEventTypes = prev.tiltEventTypes
+        ctrl.lookEventTypes = prev.lookEventTypes
       } catch { /* viewer may have been destroyed */ }
       setLookAroundActive(false)
     }
