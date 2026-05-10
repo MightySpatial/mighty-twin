@@ -30,6 +30,7 @@ import {
   addNode as opAddNode,
   removeNode as opRemoveNode,
   updateNodeAttributes as opUpdateAttributes,
+  replaceNodeAttributes as opReplaceAttributes,
   updateNodePositions as opUpdatePositions,
   updateNodeStyle as opUpdateStyle,
   updateNodeParam as opUpdateParam,
@@ -64,6 +65,9 @@ export interface CadEngineActions {
   addNode: (node: SketchNode) => void
   removeNode: (nodeId: string) => void
   updateNodeAttributes: (nodeId: string, attrs: Record<string, unknown>) => void
+  /** Replace attributes wholesale — used by the AttributesEditor to
+   *  drop keys (merge can't remove). */
+  replaceNodeAttributes: (nodeId: string, attrs: Record<string, unknown>) => void
   updateNodePositions: (nodeId: string, positions: NodeParams['positions']) => void
   updateNodeStyle: (nodeId: string, style: Partial<NodeStyle>) => void
   updateNodeParam: (nodeId: string, patch: Partial<NodeParams>) => void
@@ -73,6 +77,12 @@ export interface CadEngineActions {
   setLiveHistory: (on: boolean) => void
   rebuild: () => void
   setActiveTool: (toolId: string | null) => void
+  /** Set the current draft node id — called by useToolPicks when it
+   *  stamps a draft into the engine, cleared on tool teardown. */
+  setActiveDraftNode: (nodeId: string | null) => void
+  /** Set the active attribute template id — populates AttributesEditor
+   *  defaults and is stamped onto the next committed draft. */
+  setActiveTemplate: (templateId: string | null) => void
 
   // Undo / redo
   undo: () => boolean
@@ -98,6 +108,8 @@ const INITIAL: CadEngineState = {
   activeSketchId: null,
   activeLayerId: null,
   activeToolId: null,
+  activeDraftNodeId: null,
+  activeTemplateId: null,
   liveHistoryEnabled: true,
   staleNodeIds: new Set(),
   _persistReady: false,
@@ -353,6 +365,12 @@ export const useCadEngine = create<CadEngine>()(
         return { ...pushUndo(state), ...result.state }
       })
     },
+    replaceNodeAttributes: (nodeId, attrs) => {
+      set(state => {
+        const result = opReplaceAttributes(state, nodeId, attrs)
+        return { ...pushUndo(state), ...result.state }
+      })
+    },
     updateNodePositions: (nodeId, positions) => {
       set(state => {
         const result = opUpdatePositions(state, nodeId, positions)
@@ -386,7 +404,15 @@ export const useCadEngine = create<CadEngine>()(
         staleNodeIds: new Set(),
       }))
     },
-    setActiveTool: (toolId) => set(state => ({ ...state, activeToolId: toolId })),
+    setActiveTool: (toolId) => set(state => ({
+      ...state,
+      activeToolId: toolId,
+      // Tool-switch clears any in-flight draft pointer; useToolPicks
+      // owns the lifecycle and re-stamps via setActiveDraftNode.
+      activeDraftNodeId: toolId === null ? null : state.activeDraftNodeId,
+    })),
+    setActiveDraftNode: (nodeId) => set(state => ({ ...state, activeDraftNodeId: nodeId })),
+    setActiveTemplate: (templateId) => set(state => ({ ...state, activeTemplateId: templateId })),
 
     // ── Undo / redo ───────────────────────────────────────────────────
     undo: () => {

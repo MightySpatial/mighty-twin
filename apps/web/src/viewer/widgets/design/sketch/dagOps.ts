@@ -234,6 +234,17 @@ export function updateNodeAttributes(
   }))
 }
 
+/** Replace the node's attributes wholesale — used by the
+ *  AttributesEditor when the user removes a key (the merge-style
+ *  updater can't drop keys). */
+export function replaceNodeAttributes(
+  state: CadEngineState,
+  nodeId: string,
+  attrs: Record<string, unknown>,
+): MutationResult {
+  return patchNode(state, nodeId, n => ({ ...n, attributes: attrs }))
+}
+
 export function updateNodePositions(
   state: CadEngineState,
   nodeId: string,
