@@ -341,3 +341,173 @@
   margin: 0;
   padding: var(--dw-space-2);
 }
+
+/* ── LayersTab — gear icon on active sketch tile ─────────────────── */
+
+.sketch-tile__gear {
+  position: absolute;
+  top: 6px;
+  right: 28px;
+  background: none;
+  border: none;
+  color: var(--dw-text-3);
+  cursor: pointer;
+  padding: 2px;
+  border-radius: var(--dw-radius-sm);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.sketch-tile__gear:hover {
+  color: var(--dw-text-strong);
+  background: var(--dw-fill-3);
+}
+
+/* ── Sketch settings popover (anchored under the gear) ───────────── */
+
+.dw-sketch-settings {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  z-index: 50;
+  width: 260px;
+  background: var(--dw-surface-glass);
+  border: 1px solid var(--dw-border-strong);
+  border-radius: var(--dw-radius-xl);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  display: flex;
+  flex-direction: column;
+  font-family: var(--dw-font);
+  text-align: left;
+  cursor: default;
+}
+.dw-sketch-settings__hd {
+  font-size: var(--dw-fs-9);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: var(--dw-tracking-meta);
+  color: var(--dw-text-3);
+  padding: var(--dw-space-3) var(--dw-space-4) var(--dw-space-2);
+  border-bottom: 1px solid var(--dw-border);
+}
+.dw-sketch-settings__body {
+  padding: var(--dw-space-3) var(--dw-space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--dw-space-3);
+}
+.dw-sketch-settings__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--dw-space-2);
+  border-top: 1px solid var(--dw-border);
+}
+.dw-sketch-action {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--dw-space-2);
+  padding: var(--dw-space-2) var(--dw-space-3);
+  background: none;
+  border: none;
+  border-radius: var(--dw-radius-md);
+  color: var(--dw-text-2);
+  font-family: inherit;
+  font-size: var(--dw-fs-11);
+  font-weight: 500;
+  cursor: pointer;
+  text-align: left;
+  transition: background var(--dw-dur-fast), color var(--dw-dur-fast);
+}
+.dw-sketch-action:hover {
+  background: var(--dw-fill-2);
+  color: var(--dw-text-strong);
+}
+.dw-sketch-action--danger { color: var(--dw-text-2); }
+.dw-sketch-action--danger:hover {
+  color: var(--dw-danger);
+  background: var(--dw-danger-bg);
+}
+.dw-sketch-action--danger.is-confirm {
+  color: var(--dw-danger);
+  background: var(--dw-danger-bg);
+  font-weight: 600;
+}
+
+/* ── Preset selector (gallery → presets → layer list) ────────────── */
+
+.dw-presets {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dw-space-2);
+}
+.dw-presets__hd {
+  font-size: var(--dw-fs-10);
+  text-transform: uppercase;
+  letter-spacing: var(--dw-tracking-meta);
+  color: var(--dw-text-3);
+  font-weight: 700;
+}
+.dw-presets__hint {
+  font-size: var(--dw-fs-10);
+  color: var(--dw-text-3);
+  font-style: italic;
+}
+.dw-presets__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(112px, 1fr));
+  gap: var(--dw-space-2);
+}
+.dw-preset-tile {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dw-space-1);
+  padding: var(--dw-space-3);
+  background: var(--dw-fill-1);
+  border: 1px solid var(--dw-border);
+  border-radius: var(--dw-radius-lg);
+  color: var(--dw-text-1);
+  font-family: inherit;
+  font-size: var(--dw-fs-11);
+  cursor: pointer;
+  text-align: left;
+  transition: background var(--dw-dur-fast), border-color var(--dw-dur-fast),
+              transform var(--dw-dur-fast);
+}
+.dw-preset-tile:hover:not(:disabled) {
+  background: var(--dw-fill-2);
+  border-color: var(--dw-border-strong);
+}
+.dw-preset-tile:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.dw-preset-tile.is-applied {
+  border-color: var(--dw-util);
+  background: var(--dw-util-bg);
+  transform: scale(0.98);
+}
+.dw-preset-tile__swatches {
+  display: flex;
+  gap: 3px;
+  align-items: center;
+  height: 14px;
+}
+.dw-preset-tile__swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: var(--dw-radius-sm);
+  border: 1px solid var(--dw-border-strong);
+}
+.dw-preset-tile__name {
+  font-size: var(--dw-fs-11);
+  font-weight: 600;
+  color: var(--dw-text-strong);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.dw-preset-tile__count {
+  font-size: var(--dw-fs-9);
+  color: var(--dw-text-3);
+}

@@ -6,13 +6,25 @@
  * v2 keeps that structure: top half is the gallery (one tile per
  * sketch), bottom half is the active sketch's layer list.
  *
- * Redline creation modal lives next door (RedlineCreationModal); the
- * "+ Redline" button opens it.
+ * Three modal/popover surfaces hang off this tab:
+ *   • RedlineCreationModal — opened by the "+ Redline" tile.
+ *   • SchemaEditorModal    — opened from the pencil icon on each layer
+ *                            row (scope='layer').
+ *   • SketchSettingsPopover— opened from the gear icon on the active
+ *                            sketch tile (CRS / datum / site affinity /
+ *                            duplicate / download / delete).
+ *
+ * The PresetSelector lives between the gallery and layer list — when
+ * the site has design-layer-presets configured, a grid of preset tiles
+ * appears so users can stamp curated layer bundles in one click.
  */
 import { useState } from 'react'
-import { Eye, EyeOff, Lock, Plus, Trash2, Unlock } from 'lucide-react'
+import { Eye, EyeOff, Lock, Plus, Settings, Sliders, Trash2, Unlock } from 'lucide-react'
 import { useCadEngine } from '../../sketch/useCadEngine'
 import RedlineCreationModal from '../modals/RedlineCreationModal'
+import SchemaEditorModal from '../modals/SchemaEditorModal'
+import SketchSettingsPopover from '../SketchSettingsPopover'
+import PresetSelector from '../PresetSelector'
 
 interface Props {
   siteSlug?: string | null
@@ -42,6 +54,8 @@ export default function LayersTab({ siteSlug = null }: Props) {
   const [editingLayerName, setEditingLayerName] = useState('')
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null)
   const [redlineModalOpen, setRedlineModalOpen] = useState(false)
+  const [settingsOpenForSketchId, setSettingsOpenForSketchId] = useState<string | null>(null)
+  const [schemaEditorLayerId, setSchemaEditorLayerId] = useState<string | null>(null)
 
   const sketchList = Object.values(sketches)
   const activeSketch = activeSketchId ? sketches[activeSketchId] : null
@@ -112,21 +126,40 @@ export default function LayersTab({ siteSlug = null }: Props) {
                 {isRedline && <span className="sketch-tile__redline-badge">redline</span>}
               </div>
               {isActive && (
-                <button
-                  className="sketch-tile__del"
-                  title="Delete sketch"
-                  onClick={e => {
-                    e.stopPropagation()
-                    if (confirmDelete === s.id) {
-                      deleteSketch(s.id)
+                <>
+                  <button
+                    className="sketch-tile__gear"
+                    title="Sketch settings"
+                    onClick={e => {
+                      e.stopPropagation()
+                      setSettingsOpenForSketchId(prev => prev === s.id ? null : s.id)
                       setConfirmDelete(null)
-                    } else {
-                      setConfirmDelete(s.id)
-                    }
-                  }}
-                >
-                  {confirmDelete === s.id ? '✓?' : <Trash2 size={12} />}
-                </button>
+                    }}
+                  >
+                    <Settings size={12} />
+                  </button>
+                  <button
+                    className="sketch-tile__del"
+                    title="Delete sketch"
+                    onClick={e => {
+                      e.stopPropagation()
+                      if (confirmDelete === s.id) {
+                        deleteSketch(s.id)
+                        setConfirmDelete(null)
+                      } else {
+                        setConfirmDelete(s.id)
+                      }
+                    }}
+                  >
+                    {confirmDelete === s.id ? '✓?' : <Trash2 size={12} />}
+                  </button>
+                  {settingsOpenForSketchId === s.id && (
+                    <SketchSettingsPopover
+                      sketch={s}
+                      onClose={() => setSettingsOpenForSketchId(null)}
+                    />
+                  )}
+                </>
               )}
             </div>
           )
@@ -140,6 +173,11 @@ export default function LayersTab({ siteSlug = null }: Props) {
           </button>
         )}
       </div>
+
+      {/* ── Preset selector (only when site has presets configured) ─── */}
+      {siteSlug && activeSketch && (
+        <PresetSelector siteSlug={siteSlug} activeSketchId={activeSketch.id} />
+      )}
 
       {/* ── Active sketch's layer list ──────────────────────────────── */}
       {activeSketch && (
@@ -191,6 +229,13 @@ export default function LayersTab({ siteSlug = null }: Props) {
                   <div className="sketch-layer-actions" onClick={e => e.stopPropagation()}>
                     <button
                       className="sketch-layer-action-btn"
+                      title="Edit schema"
+                      onClick={() => setSchemaEditorLayerId(layer.id)}
+                    >
+                      <Sliders size={13} />
+                    </button>
+                    <button
+                      className="sketch-layer-action-btn"
                       title={layer.visible ? 'Hide layer' : 'Show layer'}
                       onClick={() => toggleLayerVisibility(activeSketch.id, layer.id)}
                     >
@@ -232,6 +277,14 @@ export default function LayersTab({ siteSlug = null }: Props) {
         <RedlineCreationModal
           siteSlug={siteSlug}
           onClose={() => setRedlineModalOpen(false)}
+        />
+      )}
+
+      {schemaEditorLayerId && activeSketch && (
+        <SchemaEditorModal
+          initialScope="layer"
+          layerId={schemaEditorLayerId}
+          onClose={() => setSchemaEditorLayerId(null)}
         />
       )}
     </div>

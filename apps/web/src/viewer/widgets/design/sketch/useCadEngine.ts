@@ -34,6 +34,7 @@ import {
   updateNodeStyle as opUpdateStyle,
   updateNodeParam as opUpdateParam,
   generateLayerId,
+  generateNodeId,
   generateSketchId,
   snapshot,
   topoSort,
@@ -50,6 +51,10 @@ export interface CadEngineActions {
   setActiveSketch: (sketchId: string | null) => void
   renameSketch: (sketchId: string, name: string) => void
   patchSketch: (sketchId: string, patch: Partial<Sketch>) => void
+  /** Deep-clone a sketch (layers + all nodes pinned to it). Layers and
+   *  node ids are regenerated; node `inputs[]` are remapped through the
+   *  same id table so the DAG topology is preserved end-to-end. */
+  duplicateSketch: (sketchId: string, name?: string) => string | null
 
   // Layers
   addLayer: (sketchId: string, layer?: Partial<SketchLayerSpec>) => string
@@ -245,6 +250,67 @@ export const useCadEngine = create<CadEngine>()(
           dirtySketches: new Set([...state.dirtySketches, sketchId]),
         }
       })
+    },
+
+    duplicateSketch: (sketchId, name) => {
+      const src = get().sketches[sketchId]
+      if (!src) return null
+      const newSketchId = generateSketchId()
+      // Remap layer ids 1:1 so node.params.sketchLayer can be rewritten.
+      const layerIdMap: Record<string, string> = {}
+      const newLayers: SketchLayerSpec[] = src.layers.map(l => {
+        const id = generateLayerId()
+        layerIdMap[l.id] = id
+        return { ...l, id }
+      })
+      const newSketch: Sketch = {
+        ...src,
+        id: newSketchId,
+        name: name?.trim() || `${src.name} (copy)`,
+        layers: newLayers,
+        activeLayerId: layerIdMap[src.activeLayerId] ?? newLayers[0]?.id ?? '',
+        // Drop redline metadata + changeSet — clones are blank slates so
+        // they can't accidentally double-promote the same source rows.
+        targetDataSourceId: undefined,
+        redline: undefined,
+        changeSet: undefined,
+        _schemaModified: false,
+      }
+
+      // Clone every node pinned to the source sketch. Two-pass so node.inputs
+      // can be remapped through the same id table.
+      const sourceNodes = Object.values(get().nodes).filter(
+        n => n.params.sketchId === sketchId,
+      )
+      const nodeIdMap: Record<string, string> = {}
+      for (const n of sourceNodes) {
+        nodeIdMap[n.id] = generateNodeId()
+      }
+      const clonedNodes: Record<string, SketchNode> = {}
+      for (const n of sourceNodes) {
+        const newId = nodeIdMap[n.id]
+        clonedNodes[newId] = {
+          ...n,
+          id: newId,
+          inputs: n.inputs.map(i => nodeIdMap[i] ?? i).filter(i => clonedNodes[i] || nodeIdMap[i]),
+          params: {
+            ...n.params,
+            sketchId: newSketchId,
+            sketchLayer: n.params.sketchLayer ? (layerIdMap[n.params.sketchLayer] ?? n.params.sketchLayer) : undefined,
+          },
+        }
+      }
+
+      set(state => ({
+        ...pushUndo(state),
+        sketches: { ...state.sketches, [newSketchId]: newSketch },
+        nodes: { ...state.nodes, ...clonedNodes },
+        outputIds: topoSort({ ...state.nodes, ...clonedNodes }),
+        activeSketchId: newSketchId,
+        activeLayerId: newSketch.activeLayerId,
+        dirtySketches: new Set([...state.dirtySketches, newSketchId]),
+      }))
+      return newSketchId
     },
 
     // ── Layers ────────────────────────────────────────────────────────

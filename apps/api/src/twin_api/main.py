@@ -44,6 +44,7 @@ from .design_data_routes import router as design_data_router
 from .design_export_routes import router as design_export_router
 from .design_import_routes import router as design_import_router
 from .design_models_routes import router as design_models_router
+from .design_layer_preset_routes import router as design_layer_preset_router
 from .design_template_routes import router as design_template_router
 
 
@@ -112,6 +113,7 @@ app.include_router(design_export_router)
 app.include_router(design_import_router)
 app.include_router(design_models_router)
 app.include_router(design_template_router)
+app.include_router(design_layer_preset_router)
 
 
 # All real now — dev_stubs router is empty (kept the import + include
