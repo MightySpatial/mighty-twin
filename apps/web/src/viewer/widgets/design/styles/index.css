@@ -12,3 +12,332 @@
 @import './style-panel.css';
 @import './download.css';
 @import './history.css';
+
+/* ── Modals (RedlineCreationModal + SchemaEditorModal) ────────────── */
+
+.dw-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 200;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: inherit;
+}
+.dw-modal {
+  background: var(--dw-surface-glass);
+  border: 1px solid var(--dw-border-strong);
+  border-radius: var(--dw-radius-2xl);
+  padding: 0;
+  max-width: 320px;
+  width: 90%;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  font-family: var(--dw-font);
+}
+.dw-modal__hd {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--dw-space-4) var(--dw-space-5);
+  border-bottom: 1px solid var(--dw-border);
+}
+.dw-modal__hd h3 {
+  margin: 0;
+  font-size: var(--dw-fs-13);
+  font-weight: 700;
+  color: var(--dw-text-strong);
+}
+.dw-modal__close {
+  background: var(--dw-fill-2);
+  border: none;
+  color: var(--dw-text-2);
+  font-size: var(--dw-fs-14);
+  width: var(--dw-control-h-md);
+  height: var(--dw-control-h-md);
+  border-radius: var(--dw-radius-lg);
+  cursor: pointer;
+  line-height: 1;
+}
+.dw-modal__body {
+  padding: var(--dw-space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--dw-space-4);
+  overflow-y: auto;
+  flex: 1;
+}
+.dw-modal__hint {
+  font-size: var(--dw-fs-10);
+  color: var(--dw-text-3);
+  line-height: 1.5;
+  margin: 0;
+}
+.dw-modal__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--dw-space-3);
+  padding: var(--dw-space-4) var(--dw-space-5);
+  border-top: 1px solid var(--dw-border);
+}
+
+/* ── Schema editor field row ──────────────────────────────────────── */
+
+.schema-field-row {
+  display: grid;
+  grid-template-columns: 1fr 110px 1fr 24px;
+  gap: var(--dw-space-2);
+  align-items: center;
+}
+
+/* ── Sketch gallery (LayersTab) ───────────────────────────────────── */
+
+.layers-tab {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dw-space-3);
+}
+.layers-tab__hd {
+  font-size: var(--dw-fs-10);
+  text-transform: uppercase;
+  letter-spacing: var(--dw-tracking-meta);
+  color: var(--dw-text-3);
+  font-weight: 700;
+  margin-top: var(--dw-space-3);
+}
+
+.sketch-gallery {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--dw-space-2);
+}
+.sketch-tile {
+  flex: 1 1 calc(50% - var(--dw-space-2));
+  min-width: 110px;
+  background: var(--dw-fill-1);
+  border: 1px solid var(--dw-border);
+  border-radius: var(--dw-radius-lg);
+  padding: var(--dw-space-3) var(--dw-space-4);
+  cursor: pointer;
+  position: relative;
+  transition: background var(--dw-dur-fast), border-color var(--dw-dur-fast);
+  font-family: inherit;
+  text-align: left;
+  color: inherit;
+}
+.sketch-tile:hover { background: var(--dw-fill-2); }
+.sketch-tile.is-active {
+  background: var(--dw-util-bg-soft);
+  border-color: var(--dw-util-d);
+}
+.sketch-tile.is-redline { border-color: var(--dw-warning-border); }
+.sketch-tile__title {
+  font-size: var(--dw-fs-12);
+  font-weight: 600;
+  color: var(--dw-text-strong);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sketch-tile__meta {
+  font-size: var(--dw-fs-10);
+  color: var(--dw-text-3);
+  margin-top: 2px;
+  display: flex;
+  gap: var(--dw-space-2);
+  align-items: center;
+}
+.sketch-tile__redline-badge {
+  font-size: var(--dw-fs-9);
+  color: var(--dw-warning-l);
+  background: var(--dw-warning-bg);
+  padding: 1px 6px;
+  border-radius: var(--dw-radius-pill);
+}
+.sketch-tile__del {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  background: none;
+  border: none;
+  color: var(--dw-text-3);
+  cursor: pointer;
+  padding: 2px;
+  border-radius: var(--dw-radius-sm);
+}
+.sketch-tile__del:hover { color: var(--dw-danger); background: var(--dw-danger-bg); }
+.sketch-tile__name-edit {
+  width: 100%;
+  background: var(--dw-fill-3);
+  border: 1px solid var(--dw-util);
+  border-radius: var(--dw-radius-sm);
+  color: var(--dw-text-strong);
+  font-family: inherit;
+  font-size: var(--dw-fs-12);
+  font-weight: 600;
+  padding: 2px 4px;
+  outline: none;
+}
+.sketch-tile--add,
+.sketch-tile--redline {
+  background: transparent;
+  border-style: dashed;
+  color: var(--dw-text-3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--dw-space-2);
+  font-weight: 600;
+  min-height: 56px;
+}
+.sketch-tile--add:hover { color: var(--dw-text-1); }
+.sketch-tile--redline { border-color: var(--dw-warning-border); color: var(--dw-warning-l); }
+
+/* ── SketchTab groups ─────────────────────────────────────────────── */
+
+.sketch-tab {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dw-space-4);
+}
+.sketch-tab__group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dw-space-2);
+}
+.sketch-tab__group-label {
+  font-size: var(--dw-fs-9);
+  text-transform: uppercase;
+  letter-spacing: var(--dw-tracking-meta);
+  color: var(--dw-text-3);
+  font-weight: 700;
+}
+.sketch-tab__empty,
+.features-tab__empty,
+.properties-tab__empty {
+  text-align: center;
+  padding: var(--dw-space-8) var(--dw-space-5);
+  color: var(--dw-text-3);
+  font-size: var(--dw-fs-11);
+  line-height: 1.5;
+}
+
+/* ── PlaceModeBar overlay ─────────────────────────────────────────── */
+
+.place-mode-bar {
+  background: var(--dw-util-bg-soft);
+  border-bottom: 1px solid var(--dw-util-d);
+  padding: var(--dw-space-3) var(--dw-space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--dw-space-3);
+  flex-shrink: 0;
+}
+.place-mode-bar__chrome {
+  display: flex;
+  align-items: center;
+  gap: var(--dw-space-2);
+}
+.place-mode-bar__icon { font-size: var(--dw-fs-14); }
+.place-mode-bar__name { color: var(--dw-util); font-weight: 700; }
+.place-mode-bar__cancel {
+  margin-left: auto;
+  width: 24px;
+  height: 24px;
+  background: var(--dw-fill-3);
+  border: 1px solid var(--dw-border);
+  border-radius: var(--dw-radius-sm);
+  color: var(--dw-text-3);
+  cursor: pointer;
+  font-size: var(--dw-fs-13);
+  line-height: 1;
+}
+.place-mode-bar__cancel:hover { background: var(--dw-danger-bg); color: var(--dw-danger); }
+.place-mode-bar__section { display: flex; flex-direction: column; gap: var(--dw-space-2); }
+.place-mode-bar__actions { display: flex; justify-content: flex-end; }
+.place-mode-bar__loading {
+  font-size: var(--dw-fs-11);
+  color: var(--dw-text-3);
+  padding: var(--dw-space-2);
+}
+
+/* ── HistoryTab toolbar ───────────────────────────────────────────── */
+
+.history-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--dw-space-3);
+  padding-bottom: var(--dw-space-2);
+  border-bottom: 1px solid var(--dw-border);
+}
+.ch-toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--dw-space-2);
+  font-size: var(--dw-fs-11);
+  color: var(--dw-text-2);
+  cursor: pointer;
+}
+.ch-toggle input[type=checkbox] {
+  width: 14px; height: 14px;
+  accent-color: var(--dw-util);
+}
+
+/* ── FeaturesTab count badge ──────────────────────────────────────── */
+
+.features-count {
+  font-size: var(--dw-fs-10);
+  color: var(--dw-text-3);
+  margin: var(--dw-space-2) 0;
+}
+
+/* ── My Submissions list (DownloadTab) ────────────────────────────── */
+
+.my-subs {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--dw-space-1);
+}
+.my-sub {
+  display: flex;
+  align-items: center;
+  gap: var(--dw-space-2);
+  padding: var(--dw-space-2) var(--dw-space-3);
+  background: var(--dw-fill-1);
+  border-radius: var(--dw-radius-md);
+  font-size: var(--dw-fs-10);
+  color: var(--dw-text-2);
+}
+.my-sub__status {
+  flex-shrink: 0;
+  font-weight: 700;
+  width: 14px;
+}
+.my-sub__status--approved { color: #34d399; }
+.my-sub__status--rejected { color: var(--dw-danger); }
+.my-sub__status--promoted { color: var(--dw-util); }
+.my-sub__status--pending { color: var(--dw-warning-l); }
+.my-sub__count, .my-sub__date { font-variant-numeric: tabular-nums; }
+.my-sub__schema {
+  margin-left: auto;
+  font-size: var(--dw-fs-9);
+  color: var(--dw-warning-l);
+  background: var(--dw-warning-bg);
+  padding: 1px 6px;
+  border-radius: var(--dw-radius-pill);
+}
+
+.ae-empty {
+  font-size: var(--dw-fs-10);
+  color: var(--dw-text-3);
+  font-style: italic;
+  margin: 0;
+  padding: var(--dw-space-2);
+}
