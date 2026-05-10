@@ -1,0 +1,876 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Render modes — Voxel UX Spec — MightyTwin v2</title>
+<style>
+:root {
+  --dw-util: #2dd4bf;
+  --dw-util-hover: #14b8a6;
+  --dw-util-d: rgba(45, 212, 191, 0.4);
+  --dw-util-bg: rgba(45, 212, 191, 0.14);
+  --dw-util-bg-soft: rgba(45, 212, 191, 0.08);
+  --dw-util-text-on: #042f2e;
+  --dw-warning: #fbbf24;
+  --dw-bg: #0f0f14;
+  --dw-bg-2: #14141c;
+  --dw-surface-glass: rgba(20, 20, 28, 0.98);
+  --dw-fill-1: rgba(255, 255, 255, 0.04);
+  --dw-fill-2: rgba(255, 255, 255, 0.06);
+  --dw-fill-3: rgba(255, 255, 255, 0.08);
+  --dw-border: rgba(255, 255, 255, 0.10);
+  --dw-border-strong: rgba(255, 255, 255, 0.18);
+  --dw-text-strong: #ffffff;
+  --dw-text-1: rgba(255, 255, 255, 0.92);
+  --dw-text-2: rgba(255, 255, 255, 0.70);
+  --dw-text-3: #8b8fa8;
+  --dw-text-4: rgba(255, 255, 255, 0.35);
+  --dw-radius-sm: 4px;
+  --dw-radius-md: 6px;
+  --dw-radius-lg: 8px;
+  --dw-radius-xl: 10px;
+  --dw-radius-2xl: 12px;
+  --dw-radius-pill: 999px;
+  --dw-font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+body {
+  background: var(--dw-bg); color: var(--dw-text-1);
+  font-family: var(--dw-font); font-size: 13px; line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+.shell { max-width: 1080px; margin: 0 auto; padding: 32px 24px 80px; }
+.crumb {
+  font-size: 11px; color: var(--dw-text-3);
+  text-transform: uppercase; letter-spacing: 0.06em;
+  margin-bottom: 18px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+}
+.crumb a { color: var(--dw-text-3); text-decoration: none; }
+.crumb a:hover { color: var(--dw-util); }
+.crumb__sep { color: var(--dw-text-4); }
+.crumb__cur { color: var(--dw-util); }
+.hero { margin-bottom: 32px; }
+.hero h1 {
+  font-size: 28px; font-weight: 700; letter-spacing: -0.02em;
+  color: var(--dw-text-strong); margin-bottom: 6px;
+}
+.hero p { color: var(--dw-text-2); font-size: 14px; max-width: 640px; }
+
+/* ── Layout: control panel + preview ─────────────────────────────── */
+.rm {
+  display: grid;
+  grid-template-columns: 360px 1fr;
+  gap: 24px;
+  align-items: start;
+}
+
+/* ── Tab strip ────────────────────────────────────────────────────── */
+.tabs {
+  display: flex;
+  background: var(--dw-fill-1);
+  border: 1px solid var(--dw-border);
+  border-radius: var(--dw-radius-lg);
+  padding: 3px;
+  gap: 2px;
+  margin-bottom: 16px;
+}
+.tabs__btn {
+  flex: 1;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--dw-radius-md);
+  color: var(--dw-text-2);
+  font: 600 12px var(--dw-font);
+  cursor: pointer;
+  transition: all 0.12s;
+}
+.tabs__btn:hover { color: var(--dw-text-1); }
+.tabs__btn.active {
+  background: var(--dw-util-bg);
+  border-color: var(--dw-util-d);
+  color: var(--dw-util);
+}
+
+/* ── Panel ────────────────────────────────────────────────────────── */
+.panel {
+  background: var(--dw-fill-1);
+  border: 1px solid var(--dw-border);
+  border-radius: var(--dw-radius-2xl);
+  padding: 18px;
+  display: flex; flex-direction: column; gap: 16px;
+}
+.panel__head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--dw-border);
+}
+.panel__title { font-size: 13px; font-weight: 700; color: var(--dw-text-strong); }
+.panel__pill {
+  font-size: 9px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.08em;
+  color: var(--dw-util);
+  background: var(--dw-util-bg);
+  border: 1px solid var(--dw-util-d);
+  padding: 2px 8px;
+  border-radius: var(--dw-radius-pill);
+}
+
+.field { display: flex; flex-direction: column; gap: 6px; }
+.field__row { display: flex; gap: 8px; }
+.field__row .field { flex: 1; }
+.field__label {
+  font-size: 10px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.06em;
+  color: var(--dw-text-3);
+  display: flex; justify-content: space-between; align-items: center;
+}
+.field__label .unit { font-weight: 500; color: var(--dw-text-4); text-transform: none; letter-spacing: 0; }
+
+.input, .select {
+  height: 32px;
+  background: var(--dw-fill-2);
+  border: 1px solid var(--dw-border);
+  border-radius: var(--dw-radius-md);
+  padding: 0 10px;
+  color: var(--dw-text-1);
+  font: 500 12px var(--dw-font);
+  outline: none;
+}
+.input:focus, .select:focus { border-color: var(--dw-util); }
+.select {
+  appearance: none;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238b8fa8' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'><path d='m6 9 6 6 6-6'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  padding-right: 28px;
+}
+
+.range {
+  position: relative;
+  height: 32px;
+  background: var(--dw-fill-2);
+  border: 1px solid var(--dw-border);
+  border-radius: var(--dw-radius-md);
+  display: flex; align-items: center;
+  padding: 0 10px; gap: 8px;
+}
+.range input[type=range] {
+  flex: 1; -webkit-appearance: none; appearance: none;
+  background: transparent; height: 4px; outline: none; cursor: pointer;
+}
+.range input[type=range]::-webkit-slider-runnable-track {
+  height: 4px;
+  background: linear-gradient(to right, var(--dw-util) var(--pct, 50%), rgba(255,255,255,0.10) var(--pct, 50%));
+  border-radius: var(--dw-radius-pill);
+}
+.range input[type=range]::-moz-range-track { height: 4px; background: rgba(255,255,255,0.10); border-radius: 999px; }
+.range input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none;
+  width: 14px; height: 14px;
+  background: var(--dw-util);
+  border-radius: 50%;
+  margin-top: -5px;
+  box-shadow: 0 0 0 3px rgba(45, 212, 191, 0.18);
+  cursor: pointer;
+}
+.range input[type=range]::-moz-range-thumb { width: 14px; height: 14px; background: var(--dw-util); border: none; border-radius: 50%; cursor: pointer; }
+.range__val {
+  font: 600 12px ui-monospace, Menlo, monospace;
+  color: var(--dw-util);
+  min-width: 50px; text-align: right;
+}
+
+.row-toggle {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 12px;
+  background: var(--dw-fill-2);
+  border: 1px solid var(--dw-border);
+  border-radius: var(--dw-radius-md);
+  cursor: pointer; user-select: none;
+  font-size: 12px;
+}
+.row-toggle input { display: none; }
+.row-toggle__pip {
+  width: 14px; height: 14px;
+  background: var(--dw-fill-3);
+  border: 1px solid var(--dw-border-strong);
+  border-radius: var(--dw-radius-sm);
+  flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  color: transparent;
+}
+.row-toggle.on .row-toggle__pip {
+  background: var(--dw-util);
+  border-color: var(--dw-util);
+  color: var(--dw-util-text-on);
+}
+
+/* ── Light dome (sun azimuth/elevation visualiser) ───────────────── */
+.dome {
+  background: var(--dw-fill-1);
+  border: 1px solid var(--dw-border);
+  border-radius: var(--dw-radius-lg);
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+.dome svg { display: block; }
+
+/* ── Texture atlas preview ───────────────────────────────────────── */
+.atlas {
+  background: var(--dw-fill-2);
+  border: 1px solid var(--dw-border);
+  border-radius: var(--dw-radius-lg);
+  padding: 8px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+}
+.atlas__cell {
+  aspect-ratio: 1;
+  background: var(--dw-fill-3);
+  border: 1px solid var(--dw-border);
+  border-radius: var(--dw-radius-sm);
+  background-size: cover;
+  background-position: center;
+}
+
+/* ── Preview canvas ──────────────────────────────────────────────── */
+.preview {
+  background:
+    linear-gradient(rgba(255,255,255,0.02), rgba(255,255,255,0.02)),
+    radial-gradient(circle at 50% 30%, rgba(45,212,191,0.08), transparent 60%);
+  border: 1px solid var(--dw-border);
+  border-radius: var(--dw-radius-2xl);
+  padding: 18px;
+  display: flex; flex-direction: column; gap: 14px;
+  min-height: 480px;
+  position: relative;
+  overflow: hidden;
+}
+.preview__head {
+  display: flex; align-items: center; justify-content: space-between;
+}
+.preview__title { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--dw-text-3); font-weight: 700; }
+.preview__samples {
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 11px; color: var(--dw-util);
+  background: var(--dw-util-bg);
+  border: 1px solid var(--dw-util-d);
+  padding: 4px 10px;
+  border-radius: var(--dw-radius-pill);
+  display: none;
+  align-items: center; gap: 8px;
+}
+.preview__samples.show { display: inline-flex; }
+.preview__samples .pip {
+  width: 6px; height: 6px;
+  background: var(--dw-util);
+  border-radius: 50%;
+  animation: pulse 1.4s infinite;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 1; }
+}
+
+.canvas {
+  flex: 1;
+  background: var(--dw-bg);
+  border: 1px solid var(--dw-border);
+  border-radius: var(--dw-radius-lg);
+  position: relative;
+  overflow: hidden;
+}
+.canvas svg { width: 100%; height: 100%; display: block; }
+
+.export-row {
+  display: flex; gap: 8px; justify-content: flex-end;
+}
+.btn {
+  height: 36px; padding: 0 16px;
+  border-radius: var(--dw-radius-md);
+  font: 700 12px var(--dw-font);
+  cursor: pointer;
+  display: inline-flex; align-items: center; gap: 6px;
+}
+.btn--ghost {
+  background: transparent;
+  border: 1px solid var(--dw-border);
+  color: var(--dw-text-2);
+}
+.btn--ghost:hover { background: var(--dw-fill-2); color: var(--dw-text-1); }
+.btn--util {
+  background: var(--dw-util);
+  border: 1px solid var(--dw-util-d);
+  color: var(--dw-util-text-on);
+}
+.btn--util:hover { background: var(--dw-util-hover); }
+
+/* ── Mode-specific panels (show only when active) ────────────────── */
+.mode-panel { display: none; flex-direction: column; gap: 16px; }
+.mode-panel.active { display: flex; }
+
+@media (max-width: 760px) {
+  .rm { grid-template-columns: 1fr; }
+  .preview { min-height: 360px; }
+  .shell { padding: 18px 14px 60px; }
+  .hero h1 { font-size: 22px; }
+}
+</style>
+</head>
+<body>
+<main class="shell">
+  <nav class="crumb" aria-label="Breadcrumb">
+    <a href="./index.html">MightyTwin v2</a>
+    <span class="crumb__sep">/</span>
+    <span>Design Widget</span>
+    <span class="crumb__sep">/</span>
+    <a href="./index.html">Voxel UX Spec</a>
+    <span class="crumb__sep">/</span>
+    <span class="crumb__cur">Render modes</span>
+  </nav>
+
+  <header class="hero">
+    <h1>Render modes</h1>
+    <p>Three way segmented switch. Each mode reveals its own controls
+       and re-renders the preview canvas. The preview stays roughly
+       isometric so the user can compare modes head-to-head.</p>
+  </header>
+
+  <div class="rm">
+    <!-- Left: tabs + mode panels -->
+    <aside>
+      <div class="tabs" role="tablist" id="rm-tabs">
+        <button class="tabs__btn active" role="tab" aria-selected="true" data-mode="solid">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/></svg>
+          Solid
+        </button>
+        <button class="tabs__btn" role="tab" data-mode="textured">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><circle cx="9" cy="9" r="1.5" fill="currentColor"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
+          Textured
+        </button>
+        <button class="tabs__btn" role="tab" data-mode="raytrace">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
+          Ray trace
+        </button>
+      </div>
+
+      <!-- ─── Solid ───────────────────────────────────────────────── -->
+      <section class="mode-panel active" data-mode="solid">
+        <div class="panel">
+          <header class="panel__head">
+            <span class="panel__title">Solid mode</span>
+            <span class="panel__pill">Default</span>
+          </header>
+          <p style="font-size: 12px; color: var(--dw-text-2); line-height: 1.55;">
+            Material flat colours with face shading only. Top face is
+            brightest, sides mid, bottom darkest. No texture lookups,
+            no shadow casting — fastest mode and the best one for live
+            edits.
+          </p>
+          <div class="field">
+            <span class="field__label">Face shading <span class="unit">read-only</span></span>
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px;">
+              <div style="background: rgba(255,255,255,0.18); border-radius: var(--dw-radius-md); padding: 12px; text-align: center; font-size: 10px; color: var(--dw-text-1); font-weight: 600;">Top<br><span style="color: var(--dw-text-3); font-weight: 500;">+18%</span></div>
+              <div style="background: rgba(255,255,255,0.06); border-radius: var(--dw-radius-md); padding: 12px; text-align: center; font-size: 10px; color: var(--dw-text-2); font-weight: 600;">Side<br><span style="color: var(--dw-text-3); font-weight: 500;">−10%</span></div>
+              <div style="background: rgba(0,0,0,0.30); border-radius: var(--dw-radius-md); padding: 12px; text-align: center; font-size: 10px; color: var(--dw-text-3); font-weight: 600;">Bottom<br><span style="color: var(--dw-text-4); font-weight: 500;">−30%</span></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ─── Textured ────────────────────────────────────────────── -->
+      <section class="mode-panel" data-mode="textured">
+        <div class="panel">
+          <header class="panel__head">
+            <span class="panel__title">Textured mode</span>
+            <span class="panel__pill" style="color: var(--dw-warning); background: rgba(251, 191, 36, 0.14); border-color: rgba(251, 191, 36, 0.40);">+12% GPU</span>
+          </header>
+
+          <div class="field">
+            <span class="field__label">Texture atlas <span class="unit">2048 × 2048</span></span>
+            <div class="atlas" id="atlas"></div>
+          </div>
+
+          <div class="field">
+            <label class="field__label" for="tex-tile-size">Tile size <span class="unit"><span id="tex-tile-l">1.0</span> m</span></label>
+            <div class="range">
+              <input id="tex-tile-size" type="range" min="0.25" max="4" step="0.05" value="1">
+              <span class="range__val" id="tex-tile-val">1.0 m</span>
+            </div>
+          </div>
+
+          <div class="field">
+            <label class="field__label" for="tex-preset">Per-layer preset</label>
+            <select class="select" id="tex-preset">
+              <option>Inherit (use material)</option>
+              <option selected>Stone — quarry</option>
+              <option>Stone — granite</option>
+              <option>Concrete — formed</option>
+              <option>Soil — silty</option>
+              <option>Clay — wet</option>
+              <option>Custom upload…</option>
+            </select>
+          </div>
+
+          <label class="row-toggle on" data-toggle="textured-normals">
+            <input type="checkbox" checked>
+            <span class="row-toggle__pip">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            </span>
+            <span>Normal map</span>
+          </label>
+
+          <p style="font-size: 11px; color: var(--dw-text-3); line-height: 1.55;">
+            Per-block face overrides take priority over the layer preset.
+            Tile size scales the UV; values below 1.0 m repeat the texture
+            sub-block, above 1.0 m stretch a single tile across multiple
+            blocks for a softer, larger-scale read.
+          </p>
+        </div>
+      </section>
+
+      <!-- ─── Ray trace ───────────────────────────────────────────── -->
+      <section class="mode-panel" data-mode="raytrace">
+        <div class="panel">
+          <header class="panel__head">
+            <span class="panel__title">Ray trace · quality</span>
+            <span class="panel__pill" style="color: #f87171; background: rgba(248, 113, 113, 0.14); border-color: rgba(248, 113, 113, 0.40);">Heavy</span>
+          </header>
+
+          <div class="field">
+            <span class="field__label">Progressive samples</span>
+            <div style="background: var(--dw-fill-2); border: 1px solid var(--dw-border); border-radius: var(--dw-radius-md); padding: 12px;">
+              <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px;">
+                <span style="font: 700 18px ui-monospace, Menlo, monospace; color: var(--dw-util);" id="rt-samples">128</span>
+                <span style="font-size: 11px; color: var(--dw-text-3);">/ <span id="rt-target">256</span> target</span>
+              </div>
+              <div style="height: 4px; background: rgba(255,255,255,0.08); border-radius: 999px; overflow: hidden;">
+                <div id="rt-prog" style="height: 100%; background: var(--dw-util); width: 50%; transition: width 0.4s;"></div>
+              </div>
+              <div style="font-size: 10px; color: var(--dw-text-3); margin-top: 6px; font-family: ui-monospace, Menlo, monospace;">
+                ~ <span id="rt-time">3.4 s</span> · <span id="rt-noise">noise: med</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="dome">
+            <span style="font-size: 10px; color: var(--dw-text-3); font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;">Sun</span>
+            <svg width="180" height="100" viewBox="0 0 180 100" id="sun-dome">
+              <!-- ground line -->
+              <line x1="0" y1="92" x2="180" y2="92" stroke="rgba(255,255,255,0.20)"/>
+              <!-- dome arc -->
+              <path d="M 6 92 A 84 84 0 0 1 174 92" fill="none" stroke="rgba(45, 212, 191, 0.30)" stroke-width="1.5" stroke-dasharray="3 4"/>
+              <!-- elevation arcs -->
+              <path d="M 30 92 A 60 60 0 0 1 150 92" fill="none" stroke="rgba(255, 255, 255, 0.08)" stroke-dasharray="2 3"/>
+              <path d="M 60 92 A 30 30 0 0 1 120 92" fill="none" stroke="rgba(255, 255, 255, 0.06)" stroke-dasharray="2 3"/>
+              <!-- compass labels -->
+              <text x="2" y="98" fill="#8b8fa8" font-size="9" font-family="-apple-system">W</text>
+              <text x="170" y="98" fill="#8b8fa8" font-size="9" font-family="-apple-system">E</text>
+              <text x="84" y="10" fill="#8b8fa8" font-size="9" font-family="-apple-system">N</text>
+              <!-- rays from sun -->
+              <g id="sun-rays" stroke="rgba(251, 191, 36, 0.4)" stroke-width="0.8"></g>
+              <!-- the sun -->
+              <circle id="sun-pos" cx="135" cy="40" r="6" fill="#fbbf24" stroke="rgba(251, 191, 36, 0.5)" stroke-width="3"/>
+            </svg>
+          </div>
+
+          <div class="field">
+            <label class="field__label" for="rt-az">Sun azimuth <span class="unit"><span id="rt-az-l">135°</span></span></label>
+            <div class="range">
+              <input id="rt-az" type="range" min="0" max="359" step="1" value="135">
+              <span class="range__val" id="rt-az-val">135°</span>
+            </div>
+          </div>
+          <div class="field">
+            <label class="field__label" for="rt-el">Sun elevation <span class="unit"><span id="rt-el-l">42°</span></span></label>
+            <div class="range">
+              <input id="rt-el" type="range" min="0" max="90" step="1" value="42">
+              <span class="range__val" id="rt-el-val">42°</span>
+            </div>
+          </div>
+          <div class="field">
+            <label class="field__label" for="rt-sky">Sky ambient <span class="unit"><span id="rt-sky-l">0.30</span></span></label>
+            <div class="range">
+              <input id="rt-sky" type="range" min="0" max="1" step="0.01" value="0.30">
+              <span class="range__val" id="rt-sky-val">0.30</span>
+            </div>
+          </div>
+
+          <div class="field">
+            <span class="field__label">Water</span>
+            <label class="row-toggle on" data-toggle="rt-sss">
+              <input type="checkbox" checked>
+              <span class="row-toggle__pip">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+              </span>
+              <span>Subsurface scattering</span>
+            </label>
+            <div class="field" style="margin-top: 8px;">
+              <label class="field__label" for="rt-sss-depth">Scattering depth <span class="unit"><span id="rt-sss-l">2.0</span> m</span></label>
+              <div class="range">
+                <input id="rt-sss-depth" type="range" min="0.1" max="8" step="0.1" value="2">
+                <span class="range__val" id="rt-sss-val">2.0 m</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="export-row">
+            <button class="btn btn--util" type="button" id="rt-export">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              Export render
+            </button>
+          </div>
+        </div>
+      </section>
+    </aside>
+
+    <!-- Right: preview canvas -->
+    <section class="preview">
+      <header class="preview__head">
+        <span class="preview__title">Preview · <span id="prev-mode">Solid</span></span>
+        <span class="preview__samples" id="prev-samples">
+          <span class="pip"></span>
+          sampling… <span id="prev-samples-n">128 / 256</span>
+        </span>
+      </header>
+      <div class="canvas" id="rm-canvas"></div>
+      <div style="font-size: 10px; color: var(--dw-text-4); display: flex; gap: 16px; font-variant-numeric: tabular-nums;">
+        <span>360 × 360 viewport</span>
+        <span>· <span id="prev-tris">12 348</span> faces</span>
+        <span>· camera 35° iso</span>
+      </div>
+    </section>
+  </div>
+</main>
+
+<script>
+const NS = 'http://www.w3.org/2000/svg';
+function el(t, a = {}, p) {
+  const n = document.createElementNS(NS, t);
+  for (const k in a) n.setAttribute(k, String(a[k]));
+  if (p) p.appendChild(n);
+  return n;
+}
+function clear(n) { while (n.firstChild) n.removeChild(n.firstChild); }
+function rgb(hex) {
+  const h = hex.replace('#','');
+  return { r: parseInt(h.slice(0,2),16), g: parseInt(h.slice(2,4),16), b: parseInt(h.slice(4,6),16) };
+}
+function cl(v) { return Math.max(0, Math.min(255, Math.round(v))); }
+function lighten(h, a) { const c = rgb(h); return `rgb(${cl(c.r + 255*a)},${cl(c.g + 255*a)},${cl(c.b + 255*a)})`; }
+function darken(h, a) { const c = rgb(h); return `rgb(${cl(c.r*(1-a))},${cl(c.g*(1-a))},${cl(c.b*(1-a))})`; }
+
+// ── Scene: a small voxel mound (asymmetric so shadows are interesting) ──
+// Each entry: [gx, gy, gz, materialKey]
+function buildScene() {
+  const blocks = [];
+  // base 8x8 of overburden, height 1
+  for (let x = 0; x < 8; x++) for (let y = 0; y < 8; y++) blocks.push([x, y, 0, 'overburden']);
+  // mid 5x5 of rock at z=1
+  for (let x = 1; x < 6; x++) for (let y = 1; y < 6; y++) blocks.push([x, y, 1, 'rock']);
+  // step 4x4 of ore at z=2
+  for (let x = 2; x < 6; x++) for (let y = 2; y < 5; y++) blocks.push([x, y, 2, 'ore']);
+  // peak at z=3 — single concrete block (a marker / outpost)
+  blocks.push([3, 3, 3, 'concrete']);
+  blocks.push([4, 3, 3, 'concrete']);
+  // water pool x=6..7, y=0..3 at z=1
+  for (let x = 6; x < 8; x++) for (let y = 0; y < 4; y++) blocks.push([x, y, 1, 'water']);
+  return blocks;
+}
+const SCENE = buildScene();
+const MAT = {
+  overburden: '#8b7355',
+  rock:       '#4a5568',
+  ore:        '#d69e2e',
+  concrete:   '#b3b3b3',
+  water:      '#06b6d4',
+};
+const TEXTURE_URLS = {
+  overburden: 'data:image/svg+xml;utf8,' + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64"><rect width="100%" height="100%" fill="#7a6448"/><circle cx="14" cy="14" r="2" fill="#5b4a32" opacity="0.6"/><circle cx="42" cy="22" r="2" fill="#9c8366" opacity="0.5"/><circle cx="20" cy="44" r="2.4" fill="#5b4a32" opacity="0.6"/><circle cx="50" cy="50" r="1.8" fill="#9c8366" opacity="0.5"/></svg>`),
+  rock: 'data:image/svg+xml;utf8,' + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64"><rect width="100%" height="100%" fill="#3d4250"/><circle cx="14" cy="14" r="5" fill="#4a5160" opacity="0.6"/><circle cx="42" cy="22" r="7" fill="#525968" opacity="0.5"/><circle cx="20" cy="44" r="6" fill="#3a414f" opacity="0.7"/><circle cx="50" cy="50" r="5" fill="#48505e" opacity="0.5"/></svg>`),
+  ore: 'data:image/svg+xml;utf8,' + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64"><rect width="100%" height="100%" fill="#b88324"/><circle cx="14" cy="14" r="2" fill="#fcd34d" opacity="0.7"/><circle cx="42" cy="22" r="3" fill="#92400e" opacity="0.5"/><circle cx="20" cy="44" r="2.4" fill="#fcd34d" opacity="0.6"/><circle cx="50" cy="50" r="1.8" fill="#fcd34d" opacity="0.7"/></svg>`),
+  concrete: 'data:image/svg+xml;utf8,' + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64"><rect width="100%" height="100%" fill="#9a9a9a"/><circle cx="20" cy="20" r="1" fill="#7a7a7a"/><circle cx="44" cy="32" r="1.4" fill="#aeaeae"/><circle cx="10" cy="48" r="1" fill="#7a7a7a"/></svg>`),
+  water: 'data:image/svg+xml;utf8,' + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64"><rect width="100%" height="100%" fill="#0891b2"/><path d="M0 16 Q16 8 32 16 T64 16" fill="none" stroke="#22d3ee" stroke-width="0.8" opacity="0.6"/><path d="M0 32 Q16 24 32 32 T64 32" fill="none" stroke="#22d3ee" stroke-width="0.8" opacity="0.5"/><path d="M0 48 Q16 40 32 48 T64 48" fill="none" stroke="#22d3ee" stroke-width="0.8" opacity="0.5"/></svg>`),
+};
+
+// ── Render the scene to the preview canvas ────────────────────────
+const canvasWrap = document.getElementById('rm-canvas');
+
+function render(mode) {
+  clear(canvasWrap);
+  const svg = el('svg', { viewBox: '0 0 360 360', preserveAspectRatio: 'xMidYMid meet' }, canvasWrap);
+
+  // Sky / horizon backdrop (mode-specific)
+  if (mode === 'raytrace') {
+    const sky = el('linearGradient', { id: 'sky-grad', x1: '0', y1: '0', x2: '0', y2: '1' }, svg);
+    el('stop', { offset: '0', 'stop-color': '#1e2a3d', 'stop-opacity': '1' }, sky);
+    el('stop', { offset: '1', 'stop-color': '#0a1018', 'stop-opacity': '1' }, sky);
+    el('rect', { x: 0, y: 0, width: 360, height: 360, fill: 'url(#sky-grad)' }, svg);
+  } else if (mode === 'textured') {
+    el('rect', { x: 0, y: 0, width: 360, height: 360, fill: 'rgba(15, 15, 20, 0.85)' }, svg);
+  } else {
+    el('rect', { x: 0, y: 0, width: 360, height: 360, fill: 'rgba(20, 20, 28, 0.6)' }, svg);
+  }
+
+  // Iso transform
+  const ax = Math.cos(Math.PI / 6), ay = Math.sin(Math.PI / 6);
+  const sz = 22;
+  // Centre on canvas, biased upward to leave room for taller scenes
+  const ox = 180, oy = 240;
+  const project = (gx, gy, gz) => ({
+    x: ox + (gx - gy) * ax * sz,
+    y: oy + (gx + gy) * ay * sz - gz * sz,
+  });
+
+  // Sun direction (only used in ray-trace mode; for solid/textured we use a fixed top-light)
+  const az = parseFloat(document.getElementById('rt-az').value) * Math.PI / 180;
+  const elv = parseFloat(document.getElementById('rt-el').value) * Math.PI / 180;
+  const sky = parseFloat(document.getElementById('rt-sky').value);
+
+  // Painter's order: sort by depth = gx + gy + gz (ascending)
+  const sorted = [...SCENE].sort((a, b) => (a[0] + a[1] + a[2]) - (b[0] + b[1] + b[2]));
+
+  // Texture pattern defs (textured mode)
+  if (mode === 'textured') {
+    const defs = el('defs', {}, svg);
+    for (const k in TEXTURE_URLS) {
+      const pat = el('pattern', { id: `tex-${k}`, patternUnits: 'userSpaceOnUse', width: 22, height: 22 }, defs);
+      el('image', { href: TEXTURE_URLS[k], x: 0, y: 0, width: 22, height: 22, preserveAspectRatio: 'none' }, pat);
+    }
+  }
+
+  for (const [gx, gy, gz, mk] of sorted) {
+    const p000 = project(gx,     gy,     gz);
+    const p100 = project(gx + 1, gy,     gz);
+    const p010 = project(gx,     gy + 1, gz);
+    const p110 = project(gx + 1, gy + 1, gz);
+    const p001 = project(gx,     gy,     gz + 1);
+    const p101 = project(gx + 1, gy,     gz + 1);
+    const p011 = project(gx,     gy + 1, gz + 1);
+    const p111 = project(gx + 1, gy + 1, gz + 1);
+
+    const top = `${p001.x},${p001.y} ${p101.x},${p101.y} ${p111.x},${p111.y} ${p011.x},${p011.y}`;
+    const left = `${p000.x},${p000.y} ${p010.x},${p010.y} ${p011.x},${p011.y} ${p001.x},${p001.y}`;
+    const right = `${p100.x},${p100.y} ${p110.x},${p110.y} ${p111.x},${p111.y} ${p101.x},${p101.y}`;
+
+    const baseHex = MAT[mk];
+    const stroke = darken(baseHex, 0.55);
+
+    let topFill, leftFill, rightFill;
+    if (mode === 'solid') {
+      topFill = lighten(baseHex, 0.18);
+      leftFill = darken(baseHex, 0.10);
+      rightFill = darken(baseHex, 0.30);
+    } else if (mode === 'textured') {
+      topFill = `url(#tex-${mk})`;
+      leftFill = `url(#tex-${mk})`;
+      rightFill = `url(#tex-${mk})`;
+    } else {
+      // raytrace — apply sun + sky
+      // dot products with face normals (simplified):
+      // top face normal (0,0,1): brightness = max(sin(elv), 0)
+      const topL = Math.max(Math.sin(elv), 0);
+      // right face (1,0,0): cos(az) * cos(elv)
+      const rightL = Math.max(Math.cos(az - 0) * Math.cos(elv), 0);
+      // left face (0,-1,0): cos(az - 90°) * cos(elv)
+      const leftL = Math.max(Math.cos(az - Math.PI / 2) * Math.cos(elv), 0);
+      const ambient = sky * 0.5;
+      topFill   = applyLight(baseHex, topL,   ambient);
+      leftFill  = applyLight(baseHex, leftL,  ambient);
+      rightFill = applyLight(baseHex, rightL, ambient);
+    }
+
+    el('polygon', { points: top, fill: topFill, stroke, 'stroke-width': 0.6 }, svg);
+    el('polygon', { points: right, fill: rightFill, stroke, 'stroke-width': 0.6 }, svg);
+    el('polygon', { points: left, fill: leftFill, stroke, 'stroke-width': 0.6 }, svg);
+  }
+
+  // Ray-trace: cast a soft ground shadow
+  if (mode === 'raytrace') {
+    // Compute horizontal sun shift per unit elevation
+    const sunOffsetX = Math.cos(az) * Math.tan(Math.PI/2 - elv) * sz;
+    const sunOffsetY = Math.sin(az) * Math.tan(Math.PI/2 - elv) * sz;
+    // Ground polygon shadow approximating the mound's footprint
+    const shadow = el('polygon', {
+      points: `${project(0,0,0).x},${project(0,0,0).y} ${project(8,0,0).x},${project(8,0,0).y} ${project(8,8,0).x},${project(8,8,0).y} ${project(0,8,0).x},${project(0,8,0).y}`,
+      fill: 'rgba(0, 0, 0, 0.18)',
+      transform: `translate(${sunOffsetX * 0.4}, ${sunOffsetY * 0.4})`,
+    }, svg);
+    shadow.parentNode.insertBefore(shadow, shadow.parentNode.firstChild.nextSibling);
+  }
+
+  document.getElementById('prev-tris').textContent = (sorted.length * 3).toLocaleString();
+}
+
+function applyLight(hex, dot, amb) {
+  const c = rgb(hex);
+  const sun = Math.max(dot, 0);
+  // A warmish sun + cool ambient blend
+  const sR = c.r * (sun + amb * 0.85);
+  const sG = c.g * (sun + amb * 0.95);
+  const sB = c.b * (sun + amb * 1.10);
+  return `rgb(${cl(sR)},${cl(sG)},${cl(sB)})`;
+}
+
+// ── Tabs ──────────────────────────────────────────────────────────
+const tabRoot = document.getElementById('rm-tabs');
+let CURRENT_MODE = 'solid';
+tabRoot.querySelectorAll('.tabs__btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    tabRoot.querySelectorAll('.tabs__btn.active').forEach(a => { a.classList.remove('active'); a.removeAttribute('aria-selected'); });
+    btn.classList.add('active');
+    btn.setAttribute('aria-selected', 'true');
+    const mode = btn.dataset.mode;
+    CURRENT_MODE = mode;
+    document.querySelectorAll('.mode-panel').forEach(p => p.classList.toggle('active', p.dataset.mode === mode));
+    document.getElementById('prev-mode').textContent = btn.textContent.trim();
+    document.getElementById('prev-samples').classList.toggle('show', mode === 'raytrace');
+    render(mode);
+  });
+});
+
+// ── Range hookups ─────────────────────────────────────────────────
+function syncRange(input) {
+  const min = parseFloat(input.min || '0');
+  const max = parseFloat(input.max || '100');
+  const v = parseFloat(input.value);
+  input.style.setProperty('--pct', ((v - min) / (max - min)) * 100 + '%');
+}
+document.querySelectorAll('input[type=range]').forEach(r => {
+  syncRange(r);
+  r.addEventListener('input', () => syncRange(r));
+});
+
+// Textured controls
+document.getElementById('tex-tile-size').addEventListener('input', e => {
+  const v = parseFloat(e.target.value).toFixed(1);
+  document.getElementById('tex-tile-val').textContent = `${v} m`;
+  document.getElementById('tex-tile-l').textContent = v;
+  if (CURRENT_MODE === 'textured') render('textured');
+});
+
+// Ray-trace controls
+['rt-az', 'rt-el', 'rt-sky', 'rt-sss-depth'].forEach(id => {
+  document.getElementById(id).addEventListener('input', () => {
+    document.getElementById('rt-az-val').textContent = `${document.getElementById('rt-az').value}°`;
+    document.getElementById('rt-az-l').textContent = `${document.getElementById('rt-az').value}°`;
+    document.getElementById('rt-el-val').textContent = `${document.getElementById('rt-el').value}°`;
+    document.getElementById('rt-el-l').textContent = `${document.getElementById('rt-el').value}°`;
+    document.getElementById('rt-sky-val').textContent = parseFloat(document.getElementById('rt-sky').value).toFixed(2);
+    document.getElementById('rt-sky-l').textContent = parseFloat(document.getElementById('rt-sky').value).toFixed(2);
+    document.getElementById('rt-sss-val').textContent = `${parseFloat(document.getElementById('rt-sss-depth').value).toFixed(1)} m`;
+    document.getElementById('rt-sss-l').textContent = `${parseFloat(document.getElementById('rt-sss-depth').value).toFixed(1)}`;
+    drawSunDome();
+    if (CURRENT_MODE === 'raytrace') render('raytrace');
+  });
+});
+
+// ── Sun dome visualisation ────────────────────────────────────────
+function drawSunDome() {
+  const az = parseFloat(document.getElementById('rt-az').value) * Math.PI / 180;
+  const elv = parseFloat(document.getElementById('rt-el').value) * Math.PI / 180;
+  const sun = document.getElementById('sun-pos');
+  // Map azimuth to x: 0° = N (top), 90° = E (right)
+  // Project onto a 2D dome view from the south
+  const r = 84;
+  const cx = 90, cy = 92;
+  const x = cx + Math.sin(az) * r * Math.cos(elv);
+  const y = cy - Math.sin(elv) * r;
+  sun.setAttribute('cx', x);
+  sun.setAttribute('cy', y);
+
+  // Rays
+  const rays = document.getElementById('sun-rays');
+  rays.innerHTML = '';
+  for (let i = 0; i < 8; i++) {
+    const a = (i / 8) * Math.PI * 2;
+    const rx = Math.cos(a) * 12, ry = Math.sin(a) * 12;
+    const ln = el('line', { x1: x + rx * 0.6, y1: y + ry * 0.6, x2: x + rx, y2: y + ry, stroke: 'rgba(251, 191, 36, 0.55)', 'stroke-width': 1, 'stroke-linecap': 'round' }, rays);
+  }
+}
+drawSunDome();
+
+// ── Texture atlas content ────────────────────────────────────────
+const atlas = document.getElementById('atlas');
+const atlasOrder = ['rock', 'overburden', 'ore', 'concrete', 'water', 'rock', 'overburden', 'ore'];
+for (let i = 0; i < 16; i++) {
+  const cell = document.createElement('div');
+  cell.className = 'atlas__cell';
+  const k = atlasOrder[i % atlasOrder.length];
+  cell.style.backgroundImage = `url("${TEXTURE_URLS[k]}")`;
+  atlas.appendChild(cell);
+}
+
+// ── Toggle helper ─────────────────────────────────────────────────
+document.querySelectorAll('[data-toggle]').forEach(t => {
+  const cb = t.querySelector('input');
+  t.addEventListener('click', e => {
+    if (e.target.tagName !== 'INPUT') cb.checked = !cb.checked;
+    t.classList.toggle('on', cb.checked);
+  });
+});
+
+// ── Ray-trace progressive sampler simulation ─────────────────────
+let rtTimer = null;
+function startSampling() {
+  if (rtTimer) return;
+  let n = 128;
+  document.getElementById('rt-samples').textContent = n;
+  document.getElementById('rt-prog').style.width = `${(n / 256) * 100}%`;
+  rtTimer = setInterval(() => {
+    if (n >= 256) { clearInterval(rtTimer); rtTimer = null; document.getElementById('rt-noise').textContent = 'noise: low'; return; }
+    n += 8;
+    document.getElementById('rt-samples').textContent = n;
+    document.getElementById('rt-prog').style.width = `${(n / 256) * 100}%`;
+    document.getElementById('rt-time').textContent = `${(n * 0.026).toFixed(1)} s`;
+    if (n > 200) document.getElementById('rt-noise').textContent = 'noise: low';
+    else if (n > 160) document.getElementById('rt-noise').textContent = 'noise: med-low';
+  }, 220);
+}
+// Restart sampler on tab switch to ray-trace
+tabRoot.querySelector('[data-mode="raytrace"]').addEventListener('click', () => {
+  if (rtTimer) clearInterval(rtTimer);
+  rtTimer = null;
+  let n = 16;
+  document.getElementById('rt-samples').textContent = n;
+  document.getElementById('rt-prog').style.width = `${(n / 256) * 100}%`;
+  document.getElementById('rt-time').textContent = `0.4 s`;
+  document.getElementById('rt-noise').textContent = 'noise: high';
+  // Sample up
+  rtTimer = setInterval(() => {
+    if (n >= 256) { clearInterval(rtTimer); rtTimer = null; document.getElementById('rt-noise').textContent = 'noise: low'; return; }
+    n += 16;
+    document.getElementById('rt-samples').textContent = Math.min(n, 256);
+    document.getElementById('rt-prog').style.width = `${(Math.min(n, 256) / 256) * 100}%`;
+    document.getElementById('rt-time').textContent = `${(n * 0.026).toFixed(1)} s`;
+    if (n > 200) document.getElementById('rt-noise').textContent = 'noise: low';
+    else if (n > 160) document.getElementById('rt-noise').textContent = 'noise: med-low';
+    else if (n > 80) document.getElementById('rt-noise').textContent = 'noise: med';
+  }, 180);
+});
+
+// Export render — pretend
+document.getElementById('rt-export').addEventListener('click', () => {
+  const btn = document.getElementById('rt-export');
+  const orig = btn.innerHTML;
+  btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Saved render.png';
+  btn.disabled = true;
+  setTimeout(() => { btn.innerHTML = orig; btn.disabled = false; }, 1800);
+});
+
+// ── Initial render ───────────────────────────────────────────────
+render('solid');
+</script>
+</body>
+</html>

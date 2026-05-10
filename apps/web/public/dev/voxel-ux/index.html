@@ -1,0 +1,482 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Voxel UX Spec — MightyTwin v2</title>
+<style>
+:root {
+  --dw-util: #2dd4bf;
+  --dw-util-hover: #14b8a6;
+  --dw-util-d: rgba(45, 212, 191, 0.4);
+  --dw-util-bg: rgba(45, 212, 191, 0.14);
+  --dw-util-bg-soft: rgba(45, 212, 191, 0.08);
+  --dw-indigo: #6366f1;
+  --dw-warning: #fbbf24;
+  --dw-warning-l: #fcd34d;
+  --dw-danger: #f87171;
+  --dw-bg: #0f0f14;
+  --dw-bg-2: #14141c;
+  --dw-surface-glass: rgba(20, 20, 28, 0.98);
+  --dw-fill-1: rgba(255, 255, 255, 0.04);
+  --dw-fill-2: rgba(255, 255, 255, 0.06);
+  --dw-fill-3: rgba(255, 255, 255, 0.08);
+  --dw-border: rgba(255, 255, 255, 0.10);
+  --dw-border-strong: rgba(255, 255, 255, 0.18);
+  --dw-text-strong: #ffffff;
+  --dw-text-1: rgba(255, 255, 255, 0.92);
+  --dw-text-2: rgba(255, 255, 255, 0.70);
+  --dw-text-3: #8b8fa8;
+  --dw-text-4: rgba(255, 255, 255, 0.35);
+  --dw-radius-md: 6px;
+  --dw-radius-lg: 8px;
+  --dw-radius-xl: 10px;
+  --dw-radius-2xl: 12px;
+  --dw-font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+body {
+  background: var(--dw-bg);
+  color: var(--dw-text-1);
+  font-family: var(--dw-font);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  background-image:
+    radial-gradient(circle at 20% 0%, rgba(45, 212, 191, 0.06), transparent 40%),
+    radial-gradient(circle at 80% 90%, rgba(99, 102, 241, 0.05), transparent 50%);
+}
+
+a { color: var(--dw-util); text-decoration: none; }
+a:hover { color: var(--dw-util-hover); }
+
+/* ── Layout ────────────────────────────────────────────────────────── */
+.shell { max-width: 1080px; margin: 0 auto; padding: 32px 24px 80px; }
+.crumb {
+  font-size: 11px;
+  color: var(--dw-text-3);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 18px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.crumb__sep { color: var(--dw-text-4); }
+.crumb__cur { color: var(--dw-util); }
+
+.hero { margin-bottom: 36px; }
+.hero h1 {
+  font-size: 32px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--dw-text-strong);
+  margin-bottom: 8px;
+}
+.hero p {
+  font-size: 15px;
+  color: var(--dw-text-2);
+  max-width: 620px;
+}
+
+/* ── Layer overview SVG ───────────────────────────────────────────── */
+.layers-overview {
+  background: var(--dw-fill-1);
+  border: 1px solid var(--dw-border);
+  border-radius: var(--dw-radius-2xl);
+  padding: 28px;
+  margin-bottom: 36px;
+  display: grid;
+  grid-template-columns: 1fr 280px;
+  gap: 32px;
+  align-items: center;
+}
+.layers-overview__legend {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.layers-overview__row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  background: var(--dw-fill-1);
+  border: 1px solid var(--dw-border);
+  border-radius: var(--dw-radius-lg);
+  cursor: default;
+  transition: background 0.12s, border-color 0.12s;
+}
+.layers-overview__row:hover {
+  background: var(--dw-fill-2);
+  border-color: var(--dw-border-strong);
+}
+.layers-overview__dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+.layers-overview__name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--dw-text-strong);
+}
+.layers-overview__sub {
+  font-size: 11px;
+  color: var(--dw-text-3);
+  margin-left: auto;
+}
+
+/* ── Tile grid for page links ─────────────────────────────────────── */
+.section-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--dw-text-3);
+  margin: 28px 0 14px;
+}
+
+.tile-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+}
+.tile {
+  background: var(--dw-fill-1);
+  border: 1px solid var(--dw-border);
+  border-radius: var(--dw-radius-2xl);
+  padding: 20px;
+  display: block;
+  color: inherit;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.14s, border-color 0.14s, transform 0.14s;
+  position: relative;
+  overflow: hidden;
+}
+.tile:hover {
+  background: var(--dw-fill-2);
+  border-color: var(--dw-util-d);
+  transform: translateY(-1px);
+}
+.tile__icon {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--dw-radius-lg);
+  background: var(--dw-util-bg);
+  border: 1px solid var(--dw-util-d);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--dw-util);
+  margin-bottom: 14px;
+}
+.tile__title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--dw-text-strong);
+  margin-bottom: 4px;
+  letter-spacing: -0.005em;
+}
+.tile__desc {
+  font-size: 12px;
+  color: var(--dw-text-3);
+  line-height: 1.55;
+}
+.tile__chev {
+  position: absolute;
+  right: 16px;
+  bottom: 16px;
+  color: var(--dw-text-4);
+  transition: color 0.14s;
+}
+.tile:hover .tile__chev { color: var(--dw-util); }
+
+/* ── Footer ────────────────────────────────────────────────────────── */
+.foot {
+  margin-top: 48px;
+  padding-top: 20px;
+  border-top: 1px solid var(--dw-border);
+  font-size: 11px;
+  color: var(--dw-text-4);
+  display: flex;
+  gap: 18px;
+  align-items: center;
+}
+.kbd {
+  display: inline-block;
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 11px;
+  padding: 2px 6px;
+  background: var(--dw-fill-2);
+  border: 1px solid var(--dw-border);
+  border-radius: var(--dw-radius-md);
+  color: var(--dw-text-2);
+}
+
+@media (max-width: 760px) {
+  .shell { padding: 22px 16px 60px; }
+  .hero h1 { font-size: 24px; }
+  .layers-overview {
+    grid-template-columns: 1fr;
+    padding: 18px;
+  }
+}
+</style>
+</head>
+<body>
+<main class="shell">
+  <nav class="crumb" aria-label="Breadcrumb">
+    <span>MightyTwin v2</span>
+    <span class="crumb__sep">/</span>
+    <span>Design Widget</span>
+    <span class="crumb__sep">/</span>
+    <span>Voxel UX Spec</span>
+    <span class="crumb__sep">/</span>
+    <span class="crumb__cur">Index</span>
+  </nav>
+
+  <header class="hero">
+    <h1>Voxel design widget — UX spec</h1>
+    <p>
+      Six dev-only mockups for the new voxel layer being added to the
+      MightyTwin v2 design widget. Each page demonstrates a slice of
+      the interaction model, pixel-accurate to the production dark
+      theme. Open one of the tiles below to inspect.
+    </p>
+  </header>
+
+  <section class="layers-overview" aria-labelledby="layers-overview-title">
+    <svg viewBox="0 0 480 280" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="layers-overview-title layers-overview-desc">
+      <title id="layers-overview-title">Four rendering layers — stacked overview</title>
+      <desc id="layers-overview-desc">Globe at the bottom, then voxel blocks, splat point cloud, and CAD vector geometry on top.</desc>
+      <defs>
+        <linearGradient id="globe-grad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#1e2a3d"/>
+          <stop offset="1" stop-color="#0a1018"/>
+        </linearGradient>
+        <linearGradient id="voxel-grad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#5b4f3d"/>
+          <stop offset="1" stop-color="#322b22"/>
+        </linearGradient>
+        <linearGradient id="splat-grad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="rgba(167, 139, 250, 0.35)"/>
+          <stop offset="1" stop-color="rgba(99, 102, 241, 0.05)"/>
+        </linearGradient>
+        <linearGradient id="cad-grad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="rgba(45, 212, 191, 0.18)"/>
+          <stop offset="1" stop-color="rgba(45, 212, 191, 0)"/>
+        </linearGradient>
+      </defs>
+
+      <!-- Stacked tilted slabs (isometric-ish) -->
+      <g transform="translate(60, 30)">
+        <!-- Globe slab -->
+        <g>
+          <polygon points="0,180 220,140 360,180 140,220" fill="url(#globe-grad)" stroke="rgba(255,255,255,0.06)"/>
+          <polygon points="20,180 160,160 320,180 180,200" fill="rgba(45, 212, 191, 0.04)" stroke="rgba(45, 212, 191, 0.15)" stroke-dasharray="4 4"/>
+          <text x="370" y="186" fill="#8b8fa8" font-size="11" font-family="-apple-system">Globe</text>
+        </g>
+
+        <!-- Voxel slab — stepped block silhouette -->
+        <g transform="translate(0, -32)">
+          <polygon points="40,180 240,140 360,180 160,220" fill="url(#voxel-grad)" stroke="rgba(255,255,255,0.10)"/>
+          <!-- block grid hint -->
+          <g stroke="rgba(255,255,255,0.06)" stroke-width="0.5" fill="none">
+            <line x1="80" y1="172" x2="280" y2="132"/>
+            <line x1="120" y1="164" x2="320" y2="124"/>
+            <line x1="160" y1="156" x2="160" y2="216"/>
+            <line x1="200" y1="148" x2="200" y2="208"/>
+            <line x1="240" y1="140" x2="240" y2="200"/>
+          </g>
+          <!-- a few highlighted blocks -->
+          <polygon points="160,156 180,152 196,160 176,164" fill="rgba(45, 212, 191, 0.5)" stroke="rgba(45, 212, 191, 0.9)" stroke-width="0.7"/>
+          <polygon points="200,148 220,144 236,152 216,156" fill="rgba(251, 191, 36, 0.4)" stroke="rgba(251, 191, 36, 0.85)" stroke-width="0.7"/>
+          <text x="370" y="154" fill="#8b8fa8" font-size="11" font-family="-apple-system">Voxel</text>
+        </g>
+
+        <!-- Splat slab -->
+        <g transform="translate(0, -64)">
+          <polygon points="60,180 260,140 360,180 180,220" fill="url(#splat-grad)" stroke="rgba(167, 139, 250, 0.30)"/>
+          <!-- gaussian-splat-like dots -->
+          <g fill="#a78bfa">
+            <circle cx="120" cy="170" r="2.4" opacity="0.7"/>
+            <circle cx="170" cy="160" r="3" opacity="0.85"/>
+            <circle cx="220" cy="158" r="2.2" opacity="0.6"/>
+            <circle cx="270" cy="166" r="3.5" opacity="0.95"/>
+            <circle cx="200" cy="172" r="2" opacity="0.55"/>
+            <circle cx="150" cy="180" r="2.4" opacity="0.7"/>
+            <circle cx="240" cy="184" r="2.6" opacity="0.65"/>
+            <circle cx="295" cy="172" r="2.1" opacity="0.55"/>
+          </g>
+          <text x="370" y="124" fill="#8b8fa8" font-size="11" font-family="-apple-system">Splat</text>
+        </g>
+
+        <!-- CAD slab — wireframe lines -->
+        <g transform="translate(0, -96)">
+          <polygon points="80,180 280,140 360,180 200,220" fill="url(#cad-grad)" stroke="rgba(45, 212, 191, 0.50)"/>
+          <g stroke="#2dd4bf" stroke-width="1.1" fill="none">
+            <polyline points="140,176 200,164 240,160 270,168"/>
+            <polyline points="180,170 200,150 230,148"/>
+            <polyline points="170,184 220,178 260,184"/>
+            <circle cx="200" cy="162" r="2.5" fill="#2dd4bf"/>
+            <circle cx="240" cy="160" r="2.5" fill="#2dd4bf"/>
+            <circle cx="170" cy="184" r="2" fill="#2dd4bf"/>
+          </g>
+          <text x="370" y="92" fill="#2dd4bf" font-size="11" font-family="-apple-system" font-weight="600">CAD</text>
+        </g>
+
+        <!-- Stack-direction arrow -->
+        <g stroke="rgba(255,255,255,0.20)" fill="none" stroke-width="1">
+          <line x1="20" y1="60" x2="20" y2="220" stroke-dasharray="3 4"/>
+          <polygon points="20,52 16,62 24,62" fill="rgba(255,255,255,0.20)" stroke="none"/>
+        </g>
+        <text x="-40" y="88" fill="#8b8fa8" font-size="9" font-family="-apple-system" letter-spacing="0.1em">UP</text>
+      </g>
+    </svg>
+
+    <div class="layers-overview__legend">
+      <div class="layers-overview__row">
+        <span class="layers-overview__dot" style="background: #2dd4bf"></span>
+        <span class="layers-overview__name">CAD</span>
+        <span class="layers-overview__sub">Vector geometry</span>
+      </div>
+      <div class="layers-overview__row">
+        <span class="layers-overview__dot" style="background: #a78bfa"></span>
+        <span class="layers-overview__name">Splat</span>
+        <span class="layers-overview__sub">Captured point cloud</span>
+      </div>
+      <div class="layers-overview__row">
+        <span class="layers-overview__dot" style="background: #c08e57"></span>
+        <span class="layers-overview__name">Voxel</span>
+        <span class="layers-overview__sub">Block volume</span>
+      </div>
+      <div class="layers-overview__row">
+        <span class="layers-overview__dot" style="background: #1e2a3d"></span>
+        <span class="layers-overview__name">Globe</span>
+        <span class="layers-overview__sub">Terrain + imagery</span>
+      </div>
+    </div>
+  </section>
+
+  <h2 class="section-label">Pages</h2>
+
+  <div class="tile-grid">
+    <a class="tile" href="./toolbox.html">
+      <span class="tile__icon" aria-hidden="true">
+        <!-- Lucide: layout-panel-left -->
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect width="18" height="18" x="3" y="3" rx="2"/>
+          <path d="M9 21V3"/>
+        </svg>
+      </span>
+      <div class="tile__title">Toolbox</div>
+      <div class="tile__desc">
+        Voxel tool group inside the design-widget sidebar. Place /
+        Generator / Fill rows, block-level resolution, material palette,
+        render-mode tabs.
+      </div>
+      <span class="tile__chev" aria-hidden="true">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="m9 18 6-6-6-6"/>
+        </svg>
+      </span>
+    </a>
+
+    <a class="tile" href="./generators.html">
+      <span class="tile__icon" aria-hidden="true">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="m21 16-4 4-4-4"/>
+          <path d="M17 20V4"/>
+          <path d="m3 8 4-4 4 4"/>
+          <path d="M7 4v16"/>
+        </svg>
+      </span>
+      <div class="tile__title">Generators</div>
+      <div class="tile__desc">
+        Box / Pyramid / Wedge / Water-fill / Terrain-mask parameter panels.
+        Live SVG previews react to every input change.
+      </div>
+      <span class="tile__chev" aria-hidden="true">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="m9 18 6-6-6-6"/>
+        </svg>
+      </span>
+    </a>
+
+    <a class="tile" href="./materials.html">
+      <span class="tile__icon" aria-hidden="true">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/>
+          <circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/>
+          <circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/>
+          <circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/>
+          <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/>
+        </svg>
+      </span>
+      <div class="tile__title">Materials</div>
+      <div class="tile__desc">
+        Material palette tile grid with IFC class labels, per-face texture
+        override picker, custom-material creator.
+      </div>
+      <span class="tile__chev" aria-hidden="true">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="m9 18 6-6-6-6"/>
+        </svg>
+      </span>
+    </a>
+
+    <a class="tile" href="./render-modes.html">
+      <span class="tile__icon" aria-hidden="true">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/>
+          <circle cx="12" cy="12" r="3"/>
+        </svg>
+      </span>
+      <div class="tile__title">Render modes</div>
+      <div class="tile__desc">
+        Solid · Textured · Ray-trace tab strip. Each mode reveals its own
+        controls (face shading / texture atlas / sun + sky / SSS).
+      </div>
+      <span class="tile__chev" aria-hidden="true">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="m9 18 6-6-6-6"/>
+        </svg>
+      </span>
+    </a>
+
+    <a class="tile" href="./map-behaviors.html">
+      <span class="tile__icon" aria-hidden="true">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M14.106 5.553a2 2 0 0 0 1.788 0l3.659-1.83A1 1 0 0 1 21 4.619v12.764a1 1 0 0 1-.553.894l-4.553 2.277a2 2 0 0 1-1.788 0l-4.212-2.106a2 2 0 0 0-1.788 0l-3.659 1.83A1 1 0 0 1 3 19.381V6.618a1 1 0 0 1 .553-.894l4.553-2.277a2 2 0 0 1 1.788 0Z"/>
+          <path d="M15 5.764v15"/>
+          <path d="M9 3.236v15"/>
+        </svg>
+      </span>
+      <div class="tile__title">Map behaviors</div>
+      <div class="tile__desc">
+        How each tool looks on the globe — block-paint cursor ghost,
+        generator gizmo handles, terrain-mask preview, water-fill
+        elevation slider, batch selection box.
+      </div>
+      <span class="tile__chev" aria-hidden="true">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="m9 18 6-6-6-6"/>
+        </svg>
+      </span>
+    </a>
+  </div>
+
+  <footer class="foot">
+    <span>Dev-only · not shipped to users</span>
+    <span>·</span>
+    <span>Pixel-aligned to the design-widget tokens</span>
+  </footer>
+</main>
+</body>
+</html>
