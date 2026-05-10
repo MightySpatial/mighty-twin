@@ -81,6 +81,24 @@ class Submission(Base):
     )
     promoted_feature_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
+    #: Schema-change DDL gating (spec §9.8). Promote refuses to run when
+    #: schema_changes is non-empty AND schema_changes_approved_at is null.
+    schema_changes_approved_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    schema_changes_approved_by: Mapped[uuid.UUID | None] = mapped_column(
+        GUID(), ForeignKey("users.id", ondelete="SET NULL"), nullable=True,
+    )
+
+    #: Sketch-level metadata snapshot (redline scope, target, sublayer
+    #: field, table routing, coord/CRS settings). Was sketch_data.sketch
+    #: in v1; v2 keeps node-style `features` separate.
+    sketch_metadata: Mapped[dict] = mapped_column(JSONType, nullable=False, default=dict)
+
+    #: Cached node count for the admin queue stats (avoids unmarshalling
+    #: features just to display "N nodes").
+    node_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc),
@@ -95,3 +113,36 @@ class Submission(Base):
 
     def __repr__(self) -> str:  # pragma: no cover
         return f"<Submission {self.id} status={self.status}>"
+
+
+class SchemaChangeLog(Base):
+    """Audit row for every DDL applied via approve-schema-changes.
+
+    One row per ADD COLUMN per approval batch. Keeps a permanent record
+    of who/when/what so non-canonical schema drift across PostGIS tables
+    is recoverable. Spec §9.8."""
+
+    __tablename__ = "schema_change_log"
+
+    id: Mapped[uuid.UUID] = mapped_column(GUID(), primary_key=True, default=uuid.uuid4)
+    submission_id: Mapped[uuid.UUID | None] = mapped_column(
+        GUID(),
+        ForeignKey("submissions.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    table_name: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
+    column_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    column_type: Mapped[str] = mapped_column(String(64), nullable=False)
+    applied_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        nullable=False,
+    )
+    applied_by: Mapped[uuid.UUID | None] = mapped_column(
+        GUID(), ForeignKey("users.id", ondelete="SET NULL"), nullable=True,
+    )
+    sql_executed: Mapped[str] = mapped_column(String, nullable=False)
+
+    def __repr__(self) -> str:  # pragma: no cover
+        return f"<SchemaChangeLog {self.table_name}.{self.column_name} ({self.column_type})>"
