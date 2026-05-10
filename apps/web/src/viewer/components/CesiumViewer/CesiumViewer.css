@@ -1111,7 +1111,50 @@
   to   { transform: translateX(0); opacity: 1; }
 }
 
-/* ── Hide Cesium branding ───────────────────────────────────────────────────── */
+/* ── Cesium branding + credits ──────────────────────────────────────────────
+   Hide the Cesium logo (paid plan) + the "Data attribution" expand link
+   (we render attribution inline) + the perf display. KEEP the credit
+   container itself visible so basemap providers (Mapbox / OSM / Esri /
+   Bing / etc.) get the attribution their TOS requires. */
 .cesium-credit-logoContainer,
 .cesium-credit-expand-link,
 .cesium-performanceDisplay-defaultContainer { display: none !important; }
+
+/* Style the inline attribution band — small dark pill anchored to the
+   bottom-left corner of the canvas, well above any bottom rail. */
+.cesium-widget-credits {
+  position: absolute !important;
+  left: 8px !important;
+  right: auto !important;
+  bottom: 8px !important;
+  padding: 3px 8px !important;
+  background: rgba(15, 15, 20, 0.55) !important;
+  color: rgba(240, 242, 248, 0.78) !important;
+  border-radius: 6px !important;
+  font-size: 10px !important;
+  line-height: 1.3 !important;
+  pointer-events: auto !important;
+  z-index: 5 !important;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  max-width: min(60vw, 520px) !important;
+}
+.cesium-widget-credits a {
+  color: #9bb3ff !important;
+  text-decoration: none;
+}
+.cesium-widget-credits a:hover {
+  text-decoration: underline;
+}
+.cesium-credit-textContainer {
+  display: inline !important;
+}
+/* On phones, push the band above the bottom-nav so it doesn't get
+   covered. Bottom-nav is 64px on Twin. */
+@media (max-width: 767px) {
+  .cesium-widget-credits {
+    bottom: 76px !important;
+    font-size: 9px !important;
+    max-width: calc(100vw - 16px) !important;
+  }
+}

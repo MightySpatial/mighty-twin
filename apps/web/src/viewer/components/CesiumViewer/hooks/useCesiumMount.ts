@@ -24,6 +24,15 @@ export function useCesiumMount(
   useEffect(() => {
     if (!tokenReady || !containerRef.current || viewerRef.current || destroyedRef.current) return
 
+    // Basemap attribution lives in the default credit container Cesium
+    // creates inside the viewer host (.cesium-widget-credits). Previously
+    // we passed an orphan ``document.createElement('div')`` which
+    // detached the container from the DOM entirely — fine for the
+    // dev "no chrome" look, broken for Mapbox / OSM / Esri TOS which
+    // require visible attribution. Letting Cesium own the container
+    // (and the CSS in CesiumViewer.css already hides the Cesium logo
+    // + "Data attribution" expand link) gives us the right balance:
+    // a small inline credit band, no Cesium branding.
     const viewer = new CesiumViewerType(containerRef.current, {
       timeline: false,
       animation: false,
@@ -35,7 +44,6 @@ export function useCesiumMount(
       navigationHelpButton: false,
       infoBox: false,
       terrain: Terrain.fromWorldTerrain(),
-      creditContainer: document.createElement('div'),
     })
 
     viewer.scene.globe.enableLighting = false

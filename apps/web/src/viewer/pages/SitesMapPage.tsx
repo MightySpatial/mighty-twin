@@ -166,7 +166,10 @@ export default function SitesMapPage() {
       navigationHelpButton: false,
       infoBox: false,
       terrain: Terrain.fromWorldTerrain(),
-      creditContainer: document.createElement('div'),
+      // creditContainer omitted — Cesium creates one inside the viewer
+      // host so basemap attribution renders. The Cesium logo + "Data
+      // attribution" expand link are hidden via CSS (see
+      // CesiumViewer.css :: .cesium-credit-logoContainer).
     })
 
     viewer.scene.globe.enableLighting = false

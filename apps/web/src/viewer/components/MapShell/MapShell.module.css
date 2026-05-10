@@ -161,17 +161,21 @@
   border-color: rgba(255,255,255,0.08);
 }
 
-/* Scrollable secondary rail — all items inline, hidden scrollbar, fade-right mask */
+/* Scrollable secondary rail — all items inline, hidden scrollbar.
+   Fade-right mask is opt-in (see .railFadeRight) and only applied
+   by SecondaryRail when scrollWidth > clientWidth. Always-on mask
+   was eating the right edge of the last tile when the rail fit. */
 .railScrollable {
   overflow-x: auto;
   scrollbar-width: none;       /* Firefox */
   -webkit-overflow-scrolling: touch;
   flex-wrap: nowrap;
-  /* Fade mask on the right to hint at more content */
+}
+.railScrollable::-webkit-scrollbar { display: none; } /* Chrome/Safari */
+.railFadeRight {
   -webkit-mask-image: linear-gradient(to right, black calc(100% - 28px), transparent 100%);
   mask-image: linear-gradient(to right, black calc(100% - 28px), transparent 100%);
 }
-.railScrollable::-webkit-scrollbar { display: none; } /* Chrome/Safari */
 
 /* Customer brand zone (rendered in app shell topbar via slot) */
 .brandZone {

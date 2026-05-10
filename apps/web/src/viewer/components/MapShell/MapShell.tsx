@@ -21,7 +21,7 @@
  *  rails are filtered to widgets with ``publicVisible: true`` only.
  */
 
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   Layers as LayersIcon,
   List as ListIcon,
@@ -241,16 +241,11 @@ export function MapShell({
           Primary widgets (Search, Measure, Layers, Legend) are in the sidebar. */}
       {!publicMode && secondary.length > 0 && (
         <div className={styles.rails}>
-          <div className={`${styles.rail} ${styles.railSecondary} ${styles.railScrollable}`}>
-            {secondary.map((w) => (
-              <RailTile
-                key={w.id}
-                widget={w}
-                active={activeToolId === w.id}
-                onClick={() => onAction(w.id)}
-              />
-            ))}
-          </div>
+          <SecondaryRail
+            widgets={secondary}
+            activeToolId={activeToolId}
+            onAction={onAction}
+          />
         </div>
       )}
 
@@ -321,6 +316,57 @@ function SheetTile({
       {Icon ? <Icon size={20} /> : null}
       {widget.label}
     </button>
+  )
+}
+
+/** Secondary rail wrapper — measures overflow and only applies the
+ *  fade-right mask when there's actually content scrolling out of view.
+ *  Otherwise the mask just turns the right edge of "Terrain" /
+ *  whatever-the-last-tile-is into a faded ghost which looks broken.
+ *
+ *  ResizeObserver fires both on viewport change and on widget catalog
+ *  change (admin enables/disables a widget → tile count changes →
+ *  scrollWidth changes → we re-measure). */
+function SecondaryRail({
+  widgets,
+  activeToolId,
+  onAction,
+}: {
+  widgets: WidgetDef[]
+  activeToolId: string | null
+  onAction: (id: string) => void
+}) {
+  const railRef = useRef<HTMLDivElement | null>(null)
+  const [overflowing, setOverflowing] = useState(false)
+  useEffect(() => {
+    const el = railRef.current
+    if (!el) return
+    const measure = () => {
+      // 2px tolerance — sub-pixel rounding can make a perfectly-fitting
+      // rail report a 0.4px overflow which still triggers the mask.
+      setOverflowing(el.scrollWidth - el.clientWidth > 2)
+    }
+    measure()
+    const ro = new ResizeObserver(measure)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [widgets.length])
+  return (
+    <div
+      ref={railRef}
+      className={`${styles.rail} ${styles.railSecondary} ${styles.railScrollable}${
+        overflowing ? ' ' + styles.railFadeRight : ''
+      }`}
+    >
+      {widgets.map((w) => (
+        <RailTile
+          key={w.id}
+          widget={w}
+          active={activeToolId === w.id}
+          onClick={() => onAction(w.id)}
+        />
+      ))}
+    </div>
   )
 }
 
