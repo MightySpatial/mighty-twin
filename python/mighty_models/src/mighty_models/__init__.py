@@ -26,6 +26,7 @@ from .library import LIBRARY_MAX_DEPTH, LibraryFolder, LibraryItem
 from .submission import Submission, SchemaChangeLog
 from .design_model import DesignModel
 from .feed import Feed
+from .voxel_layer import VoxelLayer
 
 __all__ = [
     "GUID",
@@ -47,4 +48,5 @@ __all__ = [
     "SchemaChangeLog",
     "DesignModel",
     "Feed",
+    "VoxelLayer",
 ]
