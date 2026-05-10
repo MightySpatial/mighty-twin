@@ -46,6 +46,7 @@ from .design_import_routes import router as design_import_router
 from .design_models_routes import router as design_models_router
 from .design_template_routes import router as design_template_router
 from .voxel_routes import router as voxel_router
+from .mai_voxel_routes import router as mai_voxel_router
 
 
 @asynccontextmanager
@@ -114,6 +115,7 @@ app.include_router(design_import_router)
 app.include_router(design_models_router)
 app.include_router(design_template_router)
 app.include_router(voxel_router)
+app.include_router(mai_voxel_router)
 
 
 # All real now — dev_stubs router is empty (kept the import + include
