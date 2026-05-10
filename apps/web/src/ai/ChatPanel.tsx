@@ -1,22 +1,39 @@
 /** Right-rail AI chat panel — always-on per the Mighty UX system.
  *
- *  v1: plain text in/out, no MCP tool calls yet. The chat history is
- *  in-memory only (lost on reload); persistence + tool execution come
- *  in subsequent commits.
+ *  Two modes:
+ *   • Plain BYOK chat — direct browser-to-Anthropic via `client.ts`.
+ *   • Voxel mode — when `useMaiVoxelContext()` returns a context (set by
+ *     the design widget when a voxel layer activates), the panel routes
+ *     through the server-side `/api/mai/chat` SSE endpoint so Claude
+ *     can call voxel tools (search_location, terrain_mask, pyramid_fill,
+ *     box_fill, water_fill) and the panel renders each tool call /
+ *     result inline as it streams in.
  *
  *  Knows nothing about the surrounding shell beyond its own dimensions.
  *  The shell decides where to mount it (right rail in Map / Atlas).
  */
 
 import { useEffect, useRef, useState } from 'react'
-import { Sparkles, Send, ChevronsRight, ChevronUp } from 'lucide-react'
+import { Sparkles, Send, ChevronsRight, ChevronUp, Boxes } from 'lucide-react'
 import { chat, MissingApiKeyError } from './client'
 import { loadSettings } from './storage'
+import { useMaiVoxelContext } from './voxelContext'
+import { describeToolCall, streamMaiChat, type MaiStreamEvent } from './voxelChat'
 import type { AIMessage } from './types'
+
+interface ToolEvent {
+  id: string
+  name: string
+  input: Record<string, unknown>
+  status: 'running' | 'done' | 'error'
+  result?: Record<string, unknown>
+}
 
 interface ChatTurn {
   role: 'user' | 'assistant' | 'error'
   content: string
+  /** Voxel-mode only: tool calls Claude executed during this turn. */
+  toolEvents?: ToolEvent[]
 }
 
 export default function ChatPanel() {
@@ -27,7 +44,9 @@ export default function ChatPanel() {
   const scrollRef = useRef<HTMLDivElement>(null)
   const abortRef = useRef<AbortController | null>(null)
 
-  // Auto-scroll to bottom on new turn.
+  const voxelCtx = useMaiVoxelContext()
+
+  // Auto-scroll to bottom on new turn / streaming update.
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight
   }, [turns, pending])
@@ -61,20 +80,22 @@ export default function ChatPanel() {
     abortRef.current = ctrl
 
     try {
-      const messages: AIMessage[] = [
-        {
-          role: 'system',
-          content:
-            'You are an AI assistant inside MightyTwin, a spatial digital-twin app. Be concise; you can reference the user\'s current site and selection in conversation. Tool use comes online in a future release.',
-        },
-        ...turns.filter((t) => t.role !== 'error').map((t) => ({
-          role: t.role as 'user' | 'assistant',
-          content: t.content,
-        })),
-        { role: 'user', content: text },
-      ]
-      const reply = await chat(messages, { signal: ctrl.signal })
-      setTurns((prev) => [...prev, { role: 'assistant', content: reply }])
+      if (voxelCtx) {
+        await runVoxelTurn({
+          text,
+          ctx: voxelCtx,
+          history: turns,
+          setTurns,
+          signal: ctrl.signal,
+        })
+      } else {
+        await runPlainTurn({
+          text,
+          history: turns,
+          setTurns,
+          signal: ctrl.signal,
+        })
+      }
     } catch (err) {
       if ((err as Error).name === 'AbortError') return
       const detail =
@@ -225,12 +246,42 @@ export default function ChatPanel() {
         </button>
       </header>
 
+      {voxelCtx && (
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            padding: '8px 12px',
+            background: 'rgba(45,212,191,0.08)',
+            borderBottom: '1px solid rgba(45,212,191,0.25)',
+            color: '#5eead4',
+            fontSize: 11,
+          }}
+          title="Mai is in voxel mode — tools execute server-side"
+        >
+          <Boxes size={13} />
+          <span style={{ fontWeight: 600 }}>Voxel mode</span>
+          <span style={{ opacity: 0.65 }}>·</span>
+          <span
+            style={{
+              flex: 1,
+              minWidth: 0,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}
+          >{voxelCtx.layerName}</span>
+          <span style={{ opacity: 0.65 }}>L{voxelCtx.blockLevel}</span>
+        </div>
+      )}
+
       <div ref={scrollRef} style={{ flex: 1, overflow: 'auto', padding: '12px 14px' }}>
         {turns.length === 0 && (
           <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 13, lineHeight: 1.5 }}>
-            Ask anything about the current site. Tool use (camera control, layer
-            toggles, measurements, annotations) lands in v1.1 — for now this is
-            plain chat.
+            {voxelCtx
+              ? `Ask Mai to draw shapes in your voxel layer. Try "Draw an open cut mine pit, 500m wide, 200m deep, 45° walls, at the centre of the site".`
+              : `Ask anything about the current site. Tool use (camera control, layer toggles, measurements, annotations) lands in v1.1 — for now this is plain chat.`}
           </div>
         )}
         {turns.map((t, i) => (
@@ -254,7 +305,7 @@ export default function ChatPanel() {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={onKeyDown}
-          placeholder="Ask Mai (Mighty AI)…"
+          placeholder={voxelCtx ? 'Describe a shape or location…' : 'Ask Mai (Mighty AI)…'}
           style={{
             flex: 1,
             padding: '8px 10px',
@@ -275,8 +326,8 @@ export default function ChatPanel() {
           style={{
             padding: '8px 12px',
             borderRadius: 8,
-            background: '#6366f1',
-            color: '#fff',
+            background: voxelCtx ? '#2dd4bf' : '#6366f1',
+            color: voxelCtx ? '#042f2e' : '#fff',
             border: 'none',
             cursor: input.trim() && !pending ? 'pointer' : 'not-allowed',
             opacity: input.trim() && !pending ? 1 : 0.5,
@@ -288,6 +339,8 @@ export default function ChatPanel() {
     </aside>
   )
 }
+
+// ── Turn renderers ──────────────────────────────────────────────────────
 
 function Turn({ turn }: { turn: ChatTurn }) {
   const isUser = turn.role === 'user'
@@ -311,7 +364,139 @@ function Turn({ turn }: { turn: ChatTurn }) {
         wordBreak: 'break-word',
       }}
     >
+      {turn.toolEvents?.map(ev => <ToolEventRow key={ev.id} ev={ev} />)}
       {turn.content}
     </div>
   )
+}
+
+function ToolEventRow({ ev }: { ev: ToolEvent }) {
+  const meta = describeToolCall(ev.name)
+  const blocks = (ev.result?.blocks_added as number | undefined) ?? null
+  const blockSize = (ev.result?.block_size_m as number | undefined) ?? null
+  const stub = ev.result?.stub === true
+  return (
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 8,
+        padding: '4px 6px',
+        marginBottom: 4,
+        background: 'rgba(45,212,191,0.06)',
+        border: '1px solid rgba(45,212,191,0.2)',
+        borderRadius: 6,
+        fontSize: 11,
+        color: 'rgba(255,255,255,0.85)',
+      }}
+    >
+      <span style={{ fontSize: 14 }}>{meta.icon}</span>
+      <span style={{ flex: 1, minWidth: 0 }}>
+        {ev.status === 'running' && `${meta.label}…`}
+        {ev.status === 'done' && (
+          blocks !== null
+            ? `Added ${blocks.toLocaleString()} blocks${blockSize ? ` at ${formatBlockSize(blockSize)}` : ''}${stub ? ' (stub)' : ''}`
+            : `${meta.label} · ok${stub ? ' (stub)' : ''}`
+        )}
+        {ev.status === 'error' && `${meta.label} · failed`}
+      </span>
+    </div>
+  )
+}
+
+function formatBlockSize(m: number): string {
+  if (m < 1) return `${(m * 100).toFixed(0)}cm`
+  return `${m % 1 === 0 ? m.toFixed(0) : m.toFixed(1)}m`
+}
+
+// ── Mode runners ────────────────────────────────────────────────────────
+
+interface RunOpts {
+  text: string
+  history: ChatTurn[]
+  setTurns: React.Dispatch<React.SetStateAction<ChatTurn[]>>
+  signal: AbortSignal
+}
+
+async function runPlainTurn(opts: RunOpts): Promise<void> {
+  const messages: AIMessage[] = [
+    {
+      role: 'system',
+      content:
+        'You are an AI assistant inside MightyTwin, a spatial digital-twin app. Be concise; you can reference the user\'s current site and selection in conversation. Tool use comes online in a future release.',
+    },
+    ...opts.history.filter((t) => t.role !== 'error').map((t) => ({
+      role: t.role as 'user' | 'assistant',
+      content: t.content,
+    })),
+    { role: 'user', content: opts.text },
+  ]
+  const reply = await chat(messages, { signal: opts.signal })
+  opts.setTurns((prev) => [...prev, { role: 'assistant', content: reply }])
+}
+
+interface VoxelRunOpts extends RunOpts {
+  ctx: { siteSlug: string; sketchId?: string }
+}
+
+async function runVoxelTurn(opts: VoxelRunOpts): Promise<void> {
+  // Add a placeholder assistant turn that we'll update as events stream in.
+  const initialTurn: ChatTurn = { role: 'assistant', content: '', toolEvents: [] }
+  opts.setTurns((prev) => [...prev, initialTurn])
+
+  const updateLast = (mut: (t: ChatTurn) => ChatTurn) => {
+    opts.setTurns((prev) => {
+      if (prev.length === 0) return prev
+      const next = [...prev]
+      next[next.length - 1] = mut(next[next.length - 1])
+      return next
+    })
+  }
+
+  const history = opts.history
+    .filter(t => t.role === 'user' || t.role === 'assistant')
+    .map(t => ({ role: t.role as 'user' | 'assistant', content: t.content }))
+
+  for await (const ev of streamMaiChat({
+    message: opts.text,
+    siteSlug: opts.ctx.siteSlug,
+    sketchId: opts.ctx.sketchId,
+    history,
+    signal: opts.signal,
+  })) {
+    applyEvent(ev, updateLast)
+  }
+}
+
+function applyEvent(ev: MaiStreamEvent, updateLast: (mut: (t: ChatTurn) => ChatTurn) => void) {
+  if (ev.event === 'text') {
+    updateLast(t => ({ ...t, content: (t.content || '') + ev.content }))
+    return
+  }
+  if (ev.event === 'tool_call') {
+    updateLast(t => ({
+      ...t,
+      toolEvents: [
+        ...(t.toolEvents ?? []),
+        { id: ev.id, name: ev.name, input: ev.input, status: 'running' },
+      ],
+    }))
+    return
+  }
+  if (ev.event === 'tool_result') {
+    updateLast(t => ({
+      ...t,
+      toolEvents: (t.toolEvents ?? []).map(te =>
+        te.id === ev.id
+          ? { ...te, status: ev.is_error ? 'error' : 'done', result: ev.result }
+          : te,
+      ),
+    }))
+    return
+  }
+  if (ev.event === 'error') {
+    updateLast(t => ({ ...t, content: t.content || `Error: ${ev.message}` }))
+    return
+  }
+  // start / done — no UI change needed.
 }
