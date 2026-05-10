@@ -48,6 +48,20 @@ import {
 } from './svoOps'
 import { positionToChunkCoords } from './enuMath'
 
+/** Editor-side slice — which tool the voxel toolbox has armed and the
+ *  active material the next stamp will use. Held on the engine so it
+ *  survives panel remounts and undo/redo doesn't accidentally drop the
+ *  user's tool selection. */
+export interface SvoEditorSlice {
+  activeToolId: string | null
+  activeMaterialType: BlockType
+}
+
+const INITIAL_EDITOR: SvoEditorSlice = {
+  activeToolId: null,
+  activeMaterialType: 'rock',
+}
+
 const API_URL = ((import.meta as unknown as { env?: { VITE_API_URL?: string } })
   .env?.VITE_API_URL) || ''
 
@@ -98,9 +112,34 @@ export interface SvoEngineActions {
 
   // Hydration helper for tests / restore
   hydrate: (next: Partial<Pick<SVOState, 'layers' | 'chunks' | 'activeLayerId' | 'activeLevel' | 'renderMode'>>) => void
+
+  // ── Editor slice (toolbox state) ──────────────────────────────────
+  setActiveTool: (toolId: string | null) => void
+  setActiveMaterialType: (type: BlockType) => void
+
+  /** Applied by the DesignWidget integration layer once Cesium has
+   *  sampled terrain heights into a heightmap[di][dj] grid. The action
+   *  registers a `terrain_mask` generator on the layer and immediately
+   *  applies it. Returns the generator id so the caller can surface
+   *  it in the layer panel.
+   *
+   *  The Cesium-aware terrain sampling stays out of the engine; this
+   *  signature mirrors what `evaluateGenerator('terrain_mask', …)`
+   *  expects, plus a `materialType`. */
+  applyTerrainMask: (
+    layerId: string,
+    args: {
+      iMin: number
+      jMin: number
+      baseK: number
+      heightmap: number[][]
+      materialType: BlockType
+      level: number
+    },
+  ) => string
 }
 
-export type SvoEngine = SVOState & SvoEngineActions
+export type SvoEngine = SVOState & SvoEditorSlice & SvoEngineActions
 
 const INITIAL: SVOState = {
   layers: [],
@@ -115,6 +154,7 @@ const svoEngineCreator: StateCreator<
   [['zustand/subscribeWithSelector', never]]
 > = (set, get) => ({
   ...INITIAL,
+  ...INITIAL_EDITOR,
 
   // ── Layer registry ────────────────────────────────────────────────
   addLayer: (layer) => {
@@ -344,6 +384,48 @@ const svoEngineCreator: StateCreator<
 
   hydrate: (next) => {
     set(state => ({ ...state, ...next }))
+  },
+
+  // ── Editor slice ──────────────────────────────────────────────────
+  setActiveTool: (toolId) => {
+    set(state => ({ ...state, activeToolId: toolId }))
+  },
+  setActiveMaterialType: (type) => {
+    set(state => ({ ...state, activeMaterialType: type }))
+  },
+
+  applyTerrainMask: (layerId, args) => {
+    const id = `gen_terrain_mask_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`
+    const generator: SVOGenerator = {
+      id,
+      type: 'terrain_mask',
+      level: args.level,
+      materialType: args.materialType,
+      params: {
+        iMin: args.iMin,
+        jMin: args.jMin,
+        baseK: args.baseK,
+        heightmap: args.heightmap,
+      },
+    }
+    // addGenerator + applyGenerator inline so we can do both atomically
+    // and read the layer datum from the post-add state.
+    set(state => ({
+      ...state,
+      layers: state.layers.map(l =>
+        l.id === layerId ? { ...l, generators: [...l.generators, generator] } : l,
+      ),
+    }))
+    const layer = get().layers.find(l => l.id === layerId)
+    if (!layer) return id
+    const blocks = evaluateGenerator(generator, layer.datum)
+    if (blocks.length === 0) return id
+    set(s => {
+      let next = s.chunks
+      for (const b of blocks) next = opSetBlock(next, layerId, b)
+      return { ...s, chunks: next }
+    })
+    return id
   },
 })
 

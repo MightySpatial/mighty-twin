@@ -1,0 +1,450 @@
+/** Voxel toolbox + layer panel — extends the design widget tokens with
+ *  the per-component classes the voxel surface needs. Reuses the dark
+ *  glass surfaces, teal accent, and section-label tracking from
+ *  tokens.css; nothing here re-defines core variables. */
+
+@import './tokens.css';
+
+/* ── Voxel toolbox ────────────────────────────────────────────────────── */
+
+.vx-toolbox {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dw-space-4);
+}
+.vx-toolbox--empty {
+  text-align: center;
+  padding: var(--dw-space-8) var(--dw-space-5);
+  color: var(--dw-text-3);
+  font-size: var(--dw-fs-11);
+}
+.vx-toolbox__hint {
+  font-size: var(--dw-fs-10);
+  color: var(--dw-text-3);
+  line-height: 1.5;
+}
+
+/* Tool grid — same column count as draw tools but icons are SVG. */
+.vx-tool-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--dw-space-2);
+}
+.vx-tool-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--dw-space-1);
+  min-height: var(--dw-control-h-tap, 44px);
+  padding: var(--dw-space-2);
+  background: var(--dw-fill-1);
+  border: 1px solid var(--dw-border);
+  border-radius: var(--dw-radius-lg);
+  color: var(--dw-text-2);
+  cursor: pointer;
+  font-family: inherit;
+  transition: background var(--dw-dur-fast), border-color var(--dw-dur-fast),
+              color var(--dw-dur-fast);
+}
+.vx-tool-btn:hover { background: var(--dw-fill-2); color: var(--dw-text-1); }
+.vx-tool-btn.is-active {
+  background: var(--dw-util-bg);
+  border-color: var(--dw-util-d);
+  color: var(--dw-util);
+}
+.vx-tool-icon {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+.vx-tool-label {
+  font-size: var(--dw-fs-9);
+  font-weight: 600;
+  letter-spacing: var(--dw-tracking-tight);
+  text-align: center;
+  line-height: 1.2;
+}
+
+/* Editor settings (level / palette / render mode) */
+.vx-settings {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dw-space-3);
+  padding: var(--dw-space-3);
+  background: var(--dw-surface-1);
+  border: 1px solid var(--dw-border-subtle);
+  border-radius: var(--dw-radius-lg);
+}
+
+/* Material palette swatches */
+.vx-palette {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--dw-space-1);
+}
+.vx-swatch {
+  position: relative;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 2px solid transparent;
+  border-radius: var(--dw-radius-md);
+  cursor: pointer;
+  outline: 1px solid var(--dw-border-subtle);
+  outline-offset: -1px;
+  transition: transform var(--dw-dur-fast), border-color var(--dw-dur-fast),
+              box-shadow var(--dw-dur-fast);
+}
+.vx-swatch:hover { transform: scale(1.06); }
+.vx-swatch.is-on {
+  border-color: var(--dw-util);
+  box-shadow: 0 0 0 2px var(--dw-util-d);
+}
+.vx-swatch-label {
+  position: absolute;
+  inset: 0;
+  display: none;
+}
+.vx-swatch:focus-visible {
+  border-color: var(--dw-util);
+  box-shadow: 0 0 0 2px var(--dw-util-d);
+}
+
+/* Render mode tabs */
+.vx-render-tabs {
+  display: flex;
+  background: var(--dw-fill-1);
+  border: 1px solid var(--dw-border);
+  border-radius: var(--dw-radius-lg);
+  padding: 2px;
+  gap: 2px;
+}
+.vx-render-tab {
+  flex: 1;
+  padding: var(--dw-space-2);
+  background: transparent;
+  border: none;
+  border-radius: var(--dw-radius-md);
+  color: var(--dw-text-3);
+  font-family: inherit;
+  font-size: var(--dw-fs-10);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--dw-dur-fast), color var(--dw-dur-fast);
+}
+.vx-render-tab:hover { color: var(--dw-text-1); }
+.vx-render-tab.is-on {
+  background: var(--dw-util-bg);
+  color: var(--dw-util);
+}
+
+/* Active tool params card */
+.vx-tool-params {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dw-space-3);
+  padding: var(--dw-space-3);
+  background: var(--dw-util-bg-soft);
+  border: 1px solid var(--dw-util-d);
+  border-radius: var(--dw-radius-lg);
+}
+.vx-tool-params__hd {
+  display: flex;
+  align-items: center;
+  gap: var(--dw-space-2);
+  color: var(--dw-util);
+  font-weight: 600;
+  font-size: var(--dw-fs-12);
+}
+.vx-tool-params__hd strong { flex: 1; }
+.vx-tool-params__cancel {
+  width: 22px;
+  height: 22px;
+  background: var(--dw-fill-3);
+  border: 1px solid var(--dw-border);
+  border-radius: var(--dw-radius-sm);
+  color: var(--dw-text-3);
+  cursor: pointer;
+  font-size: var(--dw-fs-13);
+  line-height: 1;
+}
+.vx-tool-params__cancel:hover { background: var(--dw-danger-bg); color: var(--dw-danger); }
+.vx-tool-params__loading {
+  font-size: var(--dw-fs-10);
+  color: var(--dw-text-3);
+  padding: var(--dw-space-2);
+}
+
+.vx-tool-hint {
+  font-size: var(--dw-fs-10);
+  color: var(--dw-text-3);
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* Generic checkbox row used by tool params */
+.vx-checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: var(--dw-space-2);
+  font-size: var(--dw-fs-11);
+  color: var(--dw-text-2);
+  cursor: pointer;
+  user-select: none;
+}
+.vx-checkbox-row input[type="checkbox"] {
+  width: 14px;
+  height: 14px;
+  accent-color: var(--dw-util);
+}
+
+/* Compass rose for the Wedge tool */
+.vx-compass {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 2px;
+}
+.vx-compass-btn {
+  padding: var(--dw-space-2);
+  background: var(--dw-fill-1);
+  border: 1px solid var(--dw-border);
+  border-radius: var(--dw-radius-sm);
+  color: var(--dw-text-2);
+  font-family: inherit;
+  font-size: var(--dw-fs-10);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--dw-dur-fast), color var(--dw-dur-fast),
+              border-color var(--dw-dur-fast);
+}
+.vx-compass-btn:hover { background: var(--dw-fill-3); color: var(--dw-text-1); }
+.vx-compass-btn.is-on {
+  background: var(--dw-util-bg);
+  border-color: var(--dw-util-d);
+  color: var(--dw-util);
+}
+
+/* Pyramid live preview */
+.vx-preview {
+  padding: var(--dw-space-2) var(--dw-space-3);
+  background: var(--dw-surface-1);
+  border-radius: var(--dw-radius-md);
+  border: 1px solid var(--dw-border-subtle);
+  display: flex;
+  flex-direction: column;
+  gap: var(--dw-space-1);
+}
+.vx-preview-rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: var(--dw-fs-10);
+  color: var(--dw-text-2);
+  font-variant-numeric: tabular-nums;
+}
+.vx-preview-rows b { color: var(--dw-text-strong); }
+.vx-preview-more { color: var(--dw-text-3); font-style: italic; }
+.vx-preview-total {
+  font-size: var(--dw-fs-10);
+  color: var(--dw-text-2);
+  border-top: 1px solid var(--dw-border-subtle);
+  padding-top: var(--dw-space-1);
+}
+.vx-preview-total b {
+  color: var(--dw-util);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Voxel layer panel (in LayersTab) ────────────────────────────────── */
+
+.vx-layer-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dw-space-3);
+  padding: var(--dw-space-3);
+  background: var(--dw-fill-1);
+  border: 1px solid var(--dw-border);
+  border-radius: var(--dw-radius-lg);
+}
+.vx-layer-panel--empty {
+  text-align: center;
+  color: var(--dw-text-3);
+  font-size: var(--dw-fs-11);
+  padding: var(--dw-space-5);
+}
+.vx-layer-panel__hd {
+  display: flex;
+  align-items: center;
+  gap: var(--dw-space-2);
+}
+.vx-layer-panel__name {
+  flex: 1;
+  font-size: var(--dw-fs-13);
+  font-weight: 600;
+  color: var(--dw-text-strong);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.vx-scope-badge {
+  flex-shrink: 0;
+  font-size: var(--dw-fs-9);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  border-radius: var(--dw-radius-pill);
+  border: 1px solid transparent;
+}
+.vx-scope-badge--site {
+  background: var(--dw-util-bg);
+  color: var(--dw-util);
+  border-color: var(--dw-util-d);
+}
+.vx-scope-badge--sketch {
+  background: var(--dw-indigo-bg);
+  color: var(--dw-indigo-l);
+  border-color: var(--dw-indigo-border);
+}
+
+.vx-layer-datum {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--dw-space-2) var(--dw-space-3);
+  background: var(--dw-surface-1);
+  border: 1px solid var(--dw-border-subtle);
+  border-radius: var(--dw-radius-md);
+}
+.vx-layer-datum__row {
+  display: flex;
+  justify-content: space-between;
+  font-size: var(--dw-fs-10);
+  color: var(--dw-text-2);
+  font-variant-numeric: tabular-nums;
+}
+.vx-layer-datum__row span:first-child { color: var(--dw-text-3); }
+.vx-layer-datum__row b { color: var(--dw-text-strong); font-family: ui-monospace, 'SF Mono', Menlo, monospace; }
+
+/* Generator list */
+.vx-layer-gens {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dw-space-1);
+}
+.vx-layer-gens__empty {
+  font-size: var(--dw-fs-10);
+  color: var(--dw-text-3);
+  font-style: italic;
+  margin: 0;
+}
+.vx-gen-row {
+  display: grid;
+  grid-template-columns: minmax(80px, 110px) 1fr 24px;
+  align-items: center;
+  gap: var(--dw-space-2);
+  padding: var(--dw-space-1) var(--dw-space-2);
+  background: var(--dw-fill-2);
+  border-radius: var(--dw-radius-sm);
+  font-size: var(--dw-fs-10);
+}
+.vx-gen-row__type {
+  color: var(--dw-util);
+  font-weight: 600;
+  text-transform: capitalize;
+}
+.vx-gen-row__summary {
+  color: var(--dw-text-2);
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  font-size: var(--dw-fs-9);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.vx-gen-row__del {
+  background: none;
+  border: none;
+  color: var(--dw-text-3);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: var(--dw-radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.vx-gen-row__del:hover { color: var(--dw-danger); background: var(--dw-danger-bg); }
+
+.vx-layer-actions {
+  display: flex;
+  gap: var(--dw-space-2);
+}
+.vx-export-btn {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--dw-space-1);
+  min-height: 36px;
+  padding: 0 var(--dw-space-3);
+  background: var(--dw-fill-2);
+  border: 1px solid var(--dw-border);
+  border-radius: var(--dw-radius-md);
+  color: var(--dw-text-2);
+  font-family: inherit;
+  font-size: var(--dw-fs-10);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--dw-dur-fast), border-color var(--dw-dur-fast),
+              color var(--dw-dur-fast);
+}
+.vx-export-btn:hover:not(:disabled) {
+  background: var(--dw-util-bg-soft);
+  border-color: var(--dw-util-d);
+  color: var(--dw-util);
+}
+.vx-export-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.vx-layer-panel__error {
+  font-size: var(--dw-fs-10);
+  color: var(--dw-danger);
+  background: var(--dw-danger-bg);
+  border: 1px solid var(--dw-danger-border);
+  padding: var(--dw-space-2) var(--dw-space-3);
+  border-radius: var(--dw-radius-sm);
+}
+
+/* ── Tools panel header — voxel/sketch group toggle ─────────────────── */
+
+.dw-tool-group-toggle {
+  display: flex;
+  background: var(--dw-fill-1);
+  border: 1px solid var(--dw-border);
+  border-radius: var(--dw-radius-lg);
+  padding: 2px;
+  gap: 2px;
+  margin-bottom: var(--dw-space-3);
+}
+.dw-tool-group-btn {
+  flex: 1;
+  padding: var(--dw-space-2);
+  background: transparent;
+  border: none;
+  border-radius: var(--dw-radius-md);
+  color: var(--dw-text-3);
+  font-family: inherit;
+  font-size: var(--dw-fs-10);
+  font-weight: 600;
+  letter-spacing: var(--dw-tracking-tight);
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background var(--dw-dur-fast), color var(--dw-dur-fast);
+}
+.dw-tool-group-btn:hover { color: var(--dw-text-1); }
+.dw-tool-group-btn.is-on {
+  background: var(--dw-util-bg);
+  color: var(--dw-util);
+}
