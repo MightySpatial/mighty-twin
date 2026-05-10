@@ -152,11 +152,11 @@ export default function DesignWidget({ viewer, onClose, siteSlug = null }: Desig
             <button className="ext-panel-close" onClick={onClose} title="Close">×</button>
           </div>
 
-          {activeToolId && tool && <PlaceModeBar />}
+          {activeToolId && tool && <PlaceModeBar siteSlug={siteSlug} />}
 
           <div className="design-panel-body">
             {activeTab === 'layers' && <LayersTab siteSlug={siteSlug} />}
-            {activeTab === 'sketch' && <SketchTab viewer={viewer} />}
+            {activeTab === 'sketch' && <SketchTab viewer={viewer} siteSlug={siteSlug} />}
             {activeTab === 'features' && <FeaturesTab />}
             {activeTab === 'properties' && <PropertiesTab />}
             {activeTab === 'history' && <HistoryTab />}

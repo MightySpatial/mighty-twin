@@ -59,8 +59,15 @@ export function useToolPicks({ viewer }: Args) {
     if (!draftIdRef.current) {
       const id = generateNodeId()
       draftIdRef.current = id
-      const draft = makeDraftNode(id, tool.id, tool.geometryType, activeSketchId, activeLayerId)
-      useCadEngine.getState().addNode(draft)
+      const engine = useCadEngine.getState()
+      const draft = makeDraftNode(
+        id, tool.id, tool.geometryType, activeSketchId, activeLayerId,
+        engine.activeTemplateId,
+      )
+      engine.addNode(draft)
+      // Expose the draft id so PlaceModeBar's Parameters / ELEV /
+      // ATTRIBUTES / VERTICES sections can read+write the same node.
+      engine.setActiveDraftNode(id)
     }
 
     // ── Subscribe to LEFT_CLICK ──
@@ -112,6 +119,7 @@ export function useToolPicks({ viewer }: Args) {
         if (positions.length === 0) {
           state.removeNode(draftId)
         }
+        state.setActiveDraftNode(null)
         draftIdRef.current = null
       }
     }
@@ -140,6 +148,7 @@ function makeDraftNode(
   geometryType: GeometryKind,
   sketchId: string,
   layerId: string,
+  templateId: string | null,
 ): SketchNode {
   const nodeType: NodeType = (
     toolId === 'pt_box'      ? 'box'
@@ -153,7 +162,7 @@ function makeDraftNode(
     id,
     type: nodeType,
     inputs: [],
-    template_id: null,
+    template_id: templateId,
     params: {
       geometry: geometryType,
       positions: [],

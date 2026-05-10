@@ -235,6 +235,14 @@ export interface CadEngineState {
   activeLayerId: string | null
   /** Active tool — null when no draw is in progress. */
   activeToolId: string | null
+  /** Currently in-progress draft node id. The pick handler stamps a
+   *  draft into `nodes` when a tool activates and writes its id here so
+   *  the PlaceModeBar's Parameters / VertexListEditor can read+write it
+   *  via `updateNodeParam` / `updateNodePositions`. */
+  activeDraftNodeId: string | null
+  /** Selected attribute-template id — populates the AttributesEditor's
+   *  default fields and is stamped onto the next committed draft. */
+  activeTemplateId: string | null
   /** Live-history mode toggle. When false, the engine defers re-evaluation
    *  until an explicit rebuild() call. */
   liveHistoryEnabled: boolean

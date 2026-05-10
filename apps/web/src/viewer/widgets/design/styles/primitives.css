@@ -183,3 +183,258 @@
   color: var(--dw-util);
   border-color: var(--dw-util-d);
 }
+
+/* ── AttributesEditor ──────────────────────────────────────────────────── */
+
+.dw-attrs-editor {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dw-space-3);
+}
+.dw-attrs-template-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: var(--dw-space-2);
+  align-items: center;
+}
+.dw-attrs-save-btn,
+.dw-attrs-add-btn,
+.dw-attrs-save-confirm,
+.dw-attrs-save-cancel {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--dw-space-1);
+  height: var(--dw-control-h-md);
+  padding: 0 var(--dw-space-3);
+  background: var(--dw-fill-2);
+  border: 1px solid var(--dw-border);
+  border-radius: var(--dw-radius-md);
+  color: var(--dw-text-2);
+  font-family: inherit;
+  font-size: var(--dw-fs-11);
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background var(--dw-dur-fast), color var(--dw-dur-fast);
+}
+.dw-attrs-save-btn:hover:not(:disabled),
+.dw-attrs-add-btn:hover:not(:disabled),
+.dw-attrs-save-confirm:hover:not(:disabled),
+.dw-attrs-save-cancel:hover:not(:disabled) {
+  background: var(--dw-fill-3);
+  color: var(--dw-text-1);
+}
+.dw-attrs-save-confirm {
+  background: var(--dw-util);
+  color: var(--dw-util-text-on);
+  border-color: var(--dw-util-d);
+}
+.dw-attrs-save-confirm:hover:not(:disabled) {
+  background: var(--dw-util-hover);
+  color: var(--dw-util-text-on);
+}
+.dw-attrs-save-btn:disabled,
+.dw-attrs-add-btn:disabled,
+.dw-attrs-save-confirm:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.dw-attrs-save-form {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: var(--dw-space-2);
+  align-items: center;
+}
+
+.dw-attrs-rows {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dw-space-2);
+}
+.dw-attrs-row {
+  display: grid;
+  grid-template-columns: 90px 1fr auto;
+  gap: var(--dw-space-2);
+  align-items: center;
+}
+.dw-attrs-key {
+  font-size: var(--dw-fs-11);
+  font-weight: 600;
+  color: var(--dw-text-2);
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.dw-attrs-value { font-size: var(--dw-fs-11); }
+.dw-attrs-row-del {
+  width: var(--dw-control-h-sm);
+  height: var(--dw-control-h-sm);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--dw-text-3);
+  border-radius: var(--dw-radius-md);
+  padding: 0;
+  transition: background var(--dw-dur-fast), color var(--dw-dur-fast);
+}
+.dw-attrs-row-del:hover { background: var(--dw-danger-bg); color: var(--dw-danger); }
+
+.dw-attrs-add {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: var(--dw-space-2);
+  align-items: center;
+}
+
+/* ── VertexListEditor ──────────────────────────────────────────────────── */
+
+.dw-vertex-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dw-space-1);
+  max-height: 280px;
+  overflow-y: auto;
+  padding-right: var(--dw-space-1);
+}
+.dw-vertex-head,
+.dw-vertex-row {
+  display: grid;
+  grid-template-columns: 28px 1fr 1fr 80px 28px;
+  gap: var(--dw-space-2);
+  align-items: center;
+}
+.dw-vertex-head {
+  font-size: var(--dw-fs-9);
+  text-transform: uppercase;
+  letter-spacing: var(--dw-tracking-meta);
+  color: var(--dw-text-3);
+  font-weight: 700;
+  padding: 0 var(--dw-space-1);
+}
+.dw-vertex-idx {
+  font-size: var(--dw-fs-10);
+  color: var(--dw-text-3);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  font-weight: 600;
+}
+.dw-vertex-input {
+  height: var(--dw-control-h-sm);
+  min-width: 0;
+  padding: 0 var(--dw-space-2);
+  background: var(--dw-fill-2);
+  border: 1px solid var(--dw-border);
+  border-radius: var(--dw-radius-sm);
+  color: var(--dw-text-1);
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  font-size: var(--dw-fs-10);
+  font-variant-numeric: tabular-nums;
+  outline: none;
+  transition: border-color var(--dw-dur-fast);
+}
+.dw-vertex-input:focus { border-color: var(--dw-util); }
+.dw-vertex-input:disabled { opacity: 0.5; cursor: not-allowed; }
+.dw-vertex-del {
+  width: var(--dw-control-h-sm);
+  height: var(--dw-control-h-sm);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  color: var(--dw-text-3);
+  cursor: pointer;
+  border-radius: var(--dw-radius-sm);
+  padding: 0;
+  transition: background var(--dw-dur-fast), color var(--dw-dur-fast);
+}
+.dw-vertex-del:hover { background: var(--dw-danger-bg); color: var(--dw-danger); }
+.dw-vertex-truncated {
+  font-size: var(--dw-fs-10);
+  color: var(--dw-text-3);
+  padding: var(--dw-space-2) 0 0;
+  text-align: center;
+  font-style: italic;
+}
+.dw-vertex-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--dw-space-2);
+  padding: var(--dw-space-3) 0;
+}
+.dw-vertex-empty p {
+  font-size: var(--dw-fs-11);
+  color: var(--dw-text-3);
+  margin: 0;
+}
+.dw-vertex-add {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--dw-space-1);
+  background: var(--dw-fill-2);
+  border: 1px dashed var(--dw-border-strong);
+  border-radius: var(--dw-radius-md);
+  color: var(--dw-text-2);
+  font-family: inherit;
+  font-size: var(--dw-fs-11);
+  font-weight: 600;
+  padding: var(--dw-space-2) var(--dw-space-4);
+  cursor: pointer;
+  align-self: flex-start;
+  transition: background var(--dw-dur-fast), color var(--dw-dur-fast);
+}
+.dw-vertex-add:hover { background: var(--dw-fill-3); color: var(--dw-text-1); }
+
+/* ── Sketch template chips ─────────────────────────────────────────────── */
+
+.sketch-tpl-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--dw-space-2);
+}
+.sketch-tpl-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--dw-space-2);
+  height: var(--dw-control-h-sm);
+  padding: 0 var(--dw-space-3);
+  background: var(--dw-fill-1);
+  border: 1px solid var(--dw-border);
+  border-radius: var(--dw-radius-pill);
+  color: var(--dw-text-2);
+  font-family: inherit;
+  font-size: var(--dw-fs-11);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--dw-dur-fast), border-color var(--dw-dur-fast), color var(--dw-dur-fast);
+  max-width: 100%;
+}
+.sketch-tpl-chip:hover:not(:disabled) {
+  background: var(--dw-fill-3);
+  border-color: var(--dw-border-strong);
+  color: var(--dw-text-1);
+}
+.sketch-tpl-chip.active {
+  background: var(--dw-util-bg);
+  border-color: var(--dw-util-d);
+  color: var(--dw-util);
+}
+.sketch-tpl-chip:disabled { opacity: 0.4; cursor: not-allowed; }
+.sketch-tpl-chip-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.sketch-tpl-chip-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 140px;
+}
