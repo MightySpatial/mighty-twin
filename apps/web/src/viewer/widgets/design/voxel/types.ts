@@ -135,6 +135,19 @@ export interface SVOLayer {
 
 export type SVORenderMode = 'solid' | 'textured' | 'raytrace'
 
+/** Alias kept for the renderer module which was authored before the
+ *  engine landed and uses the unprefixed name. */
+export type RenderMode = SVORenderMode
+
+/** Edge length of a level-N block in metres. Mirror of
+ *  `enuMath.blockSizeAtLevel` — kept here so the renderer can
+ *  compute mesh extents without importing the Cesium-bound
+ *  enuMath module (the renderer's own Cesium imports already drag
+ *  in the runtime). Both names resolve to the same value. */
+export function blockEdgeMeters(level: number): number {
+  return BASE_BLOCK_SIZE * Math.pow(2, level)
+}
+
 export interface SVOState {
   layers: SVOLayer[]
   activeLayerId: string | null
