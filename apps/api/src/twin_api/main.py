@@ -40,6 +40,7 @@ from .feature_routes import router as feature_router
 from .oauth_routes import router as oauth_router
 from .feature_import_routes import router as feature_import_router
 from .demo_routes import router as demo_router
+from .design_data_routes import router as design_data_router
 from .design_export_routes import router as design_export_router
 from .design_import_routes import router as design_import_router
 from .design_models_routes import router as design_models_router
@@ -106,6 +107,7 @@ app.include_router(feature_router)
 app.include_router(oauth_router)
 app.include_router(feature_import_router)
 app.include_router(demo_router)
+app.include_router(design_data_router)
 app.include_router(design_export_router)
 app.include_router(design_import_router)
 app.include_router(design_models_router)
