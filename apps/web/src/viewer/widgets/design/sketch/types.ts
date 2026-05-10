@@ -189,6 +189,10 @@ export interface Sketch {
   fields: SchemaField[]
   /** Dirty flag bumped by the schema editor. */
   _schemaModified?: boolean
+  /** Per-user-per-site default — at most one sketch in the gallery has
+   *  this set; persistence loads the default sketch as the active one
+   *  on next session. Toggled from the LayersTab settings popover. */
+  isDefault?: boolean
 }
 
 /** Persisted shape on disk — what `/api/me/json-files/design-sketch-*.json`
