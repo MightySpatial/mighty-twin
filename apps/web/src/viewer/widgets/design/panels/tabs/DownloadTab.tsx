@@ -1,5 +1,6 @@
 /**
- * DownloadTab — export geometry + Submit-for-Review.
+ * DownloadTab — import objects + import geometry + export geometry +
+ * Submit-for-Review.
  *
  * The Export panel re-uses the existing format catalogue + useDownload
  * helper; we adapt the engine's nodes into the GeoJSON FeatureCollection
@@ -8,6 +9,10 @@
  * Submit-for-Review is the user-side of the redline submission pipeline.
  * Posts the engine's current sketch features to /api/design/submissions,
  * then lists "My Submissions" pulled from /api/design/submissions/mine/list.
+ *
+ * Import sections:
+ *   • ModelLibrary    — 3D model preset browser (glb/gltf/stl/ifc).
+ *   • GeometryImport  — file picker → /api/design/import → commit nodes.
  */
 import { useEffect, useMemo, useState } from 'react'
 import { Download, Loader, AlertCircle } from 'lucide-react'
@@ -21,6 +26,8 @@ import type { SplitMode } from '../download/split'
 import { geojsonToCsv } from '../download/csv'
 import { splitFeatures, slugifySplitKey } from '../download/split'
 import type { GeoJSONFeature } from '../../serializeFeatures'
+import ModelLibrary from '../download/ModelLibrary'
+import GeometryImport from '../download/GeometryImport'
 
 const API_URL = ((import.meta as unknown as { env?: { VITE_API_URL?: string } })
   .env?.VITE_API_URL) || ''
@@ -241,7 +248,13 @@ export default function DownloadTab({ viewer: _viewer, siteSlug = null }: Props)
         </div>
       </div>
 
-      <div className="dl-section-label">Export Geometry</div>
+      <div className="dl-section-label">Import Objects</div>
+      <ModelLibrary />
+
+      <div className="dl-section-label" style={{ marginTop: 12 }}>Import Geometry</div>
+      <GeometryImport />
+
+      <div className="dl-section-label" style={{ marginTop: 12 }}>Export Geometry</div>
       <div className="dl-row">
         <select className="dl-select" value={format} onChange={e => setFormat(e.target.value as ExportFormat)}>
           {Array.from(new Set(EXPORT_FORMATS.map(f => f.group))).map(g => (
