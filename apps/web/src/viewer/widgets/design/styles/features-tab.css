@@ -1,0 +1,490 @@
+/**
+ * FeaturesTab — tree + table browser, bulk-select footer, CSV diff modal.
+ * v2 design language — system font, 12px outer radius, teal accent.
+ */
+
+@import './tokens.css';
+
+.features-tab {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dw-space-3);
+  position: relative;
+}
+
+.features-tab__toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--dw-space-2);
+}
+.features-tab__toolbar .dw-toggle--pill { flex: 1; }
+
+.features-csv-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--dw-space-2);
+  height: var(--dw-control-h-md);
+  padding: 0 var(--dw-space-3);
+  background: var(--dw-fill-2);
+  border: 1px solid var(--dw-border);
+  border-radius: var(--dw-radius-md);
+  color: var(--dw-text-2);
+  font-family: inherit;
+  font-size: var(--dw-fs-11);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--dw-dur-fast), border-color var(--dw-dur-fast), color var(--dw-dur-fast);
+}
+.features-csv-btn:hover {
+  background: var(--dw-util-bg);
+  border-color: var(--dw-util-d);
+  color: var(--dw-util);
+}
+
+.features-csv-err {
+  font-size: var(--dw-fs-10);
+  color: #fca5a5;
+  background: var(--dw-danger-bg);
+  border: 1px solid var(--dw-danger-border);
+  border-radius: var(--dw-radius-md);
+  padding: var(--dw-space-2) var(--dw-space-3);
+  line-height: 1.4;
+}
+.features-csv-empty {
+  font-size: var(--dw-fs-11);
+  color: var(--dw-text-3);
+  font-style: italic;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.features-count__sel {
+  color: var(--dw-util);
+  font-weight: 600;
+}
+
+/* ── Tree view ─────────────────────────────────────────────────────────── */
+
+.features-tree {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dw-space-1);
+}
+
+.features-layer-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.features-layer-header {
+  display: flex;
+  align-items: center;
+  gap: var(--dw-space-2);
+  padding: var(--dw-space-2) var(--dw-space-3);
+  border: 1px solid transparent;
+  border-radius: var(--dw-radius-md);
+  cursor: pointer;
+  font-size: var(--dw-fs-11);
+  font-weight: 600;
+  color: var(--dw-text-2);
+  text-transform: uppercase;
+  letter-spacing: var(--dw-tracking-meta);
+  min-height: var(--dw-control-h-sm);
+  transition: background var(--dw-dur-fast), border-color var(--dw-dur-fast);
+}
+.features-layer-header:hover { background: var(--dw-fill-1); }
+.features-layer-header.is-drag-over {
+  background: var(--dw-util-bg);
+  border-color: var(--dw-util-d);
+  color: var(--dw-util);
+}
+.features-layer-chevron {
+  display: inline-flex;
+  width: 14px;
+  opacity: 0.6;
+  flex-shrink: 0;
+}
+.features-layer-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: var(--dw-radius-sm);
+  flex-shrink: 0;
+}
+.features-layer-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.features-layer-name--orphan {
+  font-style: italic;
+  color: var(--dw-text-3);
+  text-transform: none;
+  letter-spacing: 0;
+}
+.features-layer-count {
+  font-size: var(--dw-fs-10);
+  font-weight: 600;
+  color: var(--dw-indigo-l);
+  background: var(--dw-indigo-bg);
+  padding: 1px var(--dw-space-3);
+  border-radius: var(--dw-radius-pill);
+  letter-spacing: 0;
+}
+
+.features-tree-list {
+  list-style: none;
+  margin: 0;
+  padding: 0 0 var(--dw-space-1) var(--dw-space-7);
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.features-tree-item {
+  display: flex;
+  align-items: center;
+  gap: var(--dw-space-2);
+  padding: var(--dw-space-2) var(--dw-space-3);
+  font-size: var(--dw-fs-11);
+  color: var(--dw-text-2);
+  border-radius: var(--dw-radius-md);
+  cursor: pointer;
+  transition: background var(--dw-dur-fast);
+  min-height: var(--dw-control-h-sm);
+  user-select: none;
+}
+.features-tree-item:hover { background: var(--dw-fill-1); }
+.features-tree-item.is-selected {
+  background: var(--dw-util-bg);
+  color: var(--dw-util);
+  box-shadow: 0 0 0 1px var(--dw-util-d) inset;
+}
+
+.features-drag-handle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  color: var(--dw-text-4);
+  cursor: grab;
+  flex-shrink: 0;
+}
+.features-drag-handle:active { cursor: grabbing; }
+
+.features-geom-icon {
+  width: 14px;
+  text-align: center;
+  font-size: var(--dw-fs-12);
+  flex-shrink: 0;
+  opacity: 0.85;
+}
+
+.features-tree-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.features-rename-input {
+  flex: 1;
+  height: var(--dw-control-h-sm);
+  padding: 0 var(--dw-space-2);
+  background: var(--dw-fill-3);
+  border: 1px solid var(--dw-util);
+  border-radius: var(--dw-radius-sm);
+  color: var(--dw-text-strong);
+  font-family: inherit;
+  font-size: var(--dw-fs-11);
+  font-weight: 600;
+  outline: none;
+  min-width: 0;
+}
+
+.features-row-del {
+  width: var(--dw-control-h-sm);
+  height: var(--dw-control-h-sm);
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.45);
+  cursor: pointer;
+  border-radius: var(--dw-radius-md);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  flex-shrink: 0;
+  transition: opacity var(--dw-dur-fast), color var(--dw-dur-fast), background var(--dw-dur-fast);
+}
+.features-tree-item:hover .features-row-del,
+.features-tree-item.is-selected .features-row-del { opacity: 1; }
+.features-row-del:hover {
+  color: var(--dw-danger);
+  background: var(--dw-danger-bg);
+}
+
+.features-tree-empty {
+  font-size: var(--dw-fs-10);
+  font-style: italic;
+  color: var(--dw-text-4);
+  padding: var(--dw-space-2) var(--dw-space-3);
+}
+
+/* ── Table view ────────────────────────────────────────────────────────── */
+
+.features-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--dw-border);
+  border-radius: var(--dw-radius-lg);
+  background: var(--dw-surface-1);
+  /* Reserve some rows of vertical room before scrolling. */
+  max-height: 420px;
+  overflow-y: auto;
+}
+
+.features-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--dw-fs-10);
+  color: var(--dw-text-2);
+}
+.features-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--dw-surface-glass);
+  border-bottom: 1px solid var(--dw-border);
+  text-align: left;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: var(--dw-tracking-meta);
+  color: var(--dw-text-3);
+  padding: var(--dw-space-2) var(--dw-space-3);
+  font-size: var(--dw-fs-9);
+  white-space: nowrap;
+}
+.features-table tbody tr {
+  cursor: pointer;
+  transition: background var(--dw-dur-fast);
+  user-select: none;
+}
+.features-table tbody tr:hover { background: var(--dw-fill-1); }
+.features-table tbody tr.is-selected {
+  background: var(--dw-util-bg);
+  color: var(--dw-util);
+}
+.features-table tbody td {
+  padding: var(--dw-space-2) var(--dw-space-3);
+  border-bottom: 1px solid var(--dw-border-subtle);
+  white-space: nowrap;
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.features-table .ft-col-handle { width: 22px; padding-left: var(--dw-space-2); padding-right: 0; }
+.features-table .ft-col-id code {
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  font-size: var(--dw-fs-9);
+  color: var(--dw-text-3);
+}
+.features-table .ft-col-name { font-weight: 600; color: var(--dw-text-1); }
+.features-table .ft-col-type {
+  font-size: var(--dw-fs-9);
+  color: var(--dw-text-3);
+  text-transform: uppercase;
+  letter-spacing: var(--dw-tracking-tight);
+}
+.features-table .ft-col-layer {
+  display: flex;
+  align-items: center;
+  gap: var(--dw-space-2);
+  border-radius: var(--dw-radius-sm);
+}
+.features-table .ft-col-layer.is-drag-over {
+  outline: 1px solid var(--dw-util-d);
+  background: var(--dw-util-bg);
+  color: var(--dw-util);
+}
+.features-table .ft-col-attr {
+  font-variant-numeric: tabular-nums;
+  color: var(--dw-text-2);
+}
+
+/* ── Selection footer ──────────────────────────────────────────────────── */
+
+.features-selection-bar {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--dw-space-2);
+  padding: var(--dw-space-2) var(--dw-space-3);
+  background: var(--dw-surface-glass);
+  border: 1px solid var(--dw-util-d);
+  border-radius: var(--dw-radius-lg);
+  flex-wrap: wrap;
+  /* Float above any tree/table content scrolled behind. */
+  z-index: 5;
+}
+.features-selection-count {
+  font-size: var(--dw-fs-11);
+  font-weight: 700;
+  color: var(--dw-util);
+  flex: 1;
+}
+.features-bulk-del {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--dw-space-2);
+  height: var(--dw-control-h-sm);
+  padding: 0 var(--dw-space-3);
+  background: var(--dw-danger-bg);
+  border: 1px solid var(--dw-danger-border);
+  border-radius: var(--dw-radius-md);
+  color: var(--dw-danger);
+  font-family: inherit;
+  font-size: var(--dw-fs-10);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--dw-dur-fast);
+}
+.features-bulk-del:hover { background: rgba(248, 113, 113, 0.22); }
+
+.features-layer-picker {
+  position: absolute;
+  bottom: calc(100% + var(--dw-space-2));
+  right: 0;
+  min-width: 180px;
+  background: var(--dw-surface-glass);
+  border: 1px solid var(--dw-border-strong);
+  border-radius: var(--dw-radius-lg);
+  padding: var(--dw-space-1);
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.45);
+  z-index: 10;
+}
+.features-layer-pick {
+  display: flex;
+  align-items: center;
+  gap: var(--dw-space-2);
+  width: 100%;
+  height: var(--dw-control-h-sm);
+  padding: 0 var(--dw-space-3);
+  background: none;
+  border: none;
+  color: var(--dw-text-2);
+  font-family: inherit;
+  font-size: var(--dw-fs-11);
+  text-align: left;
+  cursor: pointer;
+  border-radius: var(--dw-radius-sm);
+  transition: background var(--dw-dur-fast), color var(--dw-dur-fast);
+}
+.features-layer-pick:hover {
+  background: var(--dw-util-bg);
+  color: var(--dw-util);
+}
+
+/* ── CSV diff modal ────────────────────────────────────────────────────── */
+
+.csv-diff-modal {
+  max-width: 480px;
+}
+
+.csv-diff-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dw-space-2);
+  max-height: 320px;
+  overflow-y: auto;
+  padding-right: var(--dw-space-1);
+}
+
+.csv-diff-row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dw-space-1);
+  padding: var(--dw-space-2) var(--dw-space-3);
+  background: var(--dw-fill-1);
+  border: 1px solid var(--dw-border-subtle);
+  border-radius: var(--dw-radius-md);
+}
+.csv-diff-row__hd {
+  display: flex;
+  align-items: baseline;
+  gap: var(--dw-space-3);
+  font-size: var(--dw-fs-11);
+}
+.csv-diff-row__node {
+  font-weight: 600;
+  color: var(--dw-text-1);
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.csv-diff-row__key {
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  font-size: var(--dw-fs-9);
+  color: var(--dw-text-3);
+}
+
+.csv-diff-change {
+  display: grid;
+  grid-template-columns: 1fr 1fr 18px 1fr;
+  align-items: center;
+  gap: var(--dw-space-2);
+  font-size: var(--dw-fs-10);
+  font-variant-numeric: tabular-nums;
+}
+.csv-diff-field {
+  color: var(--dw-text-3);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: var(--dw-tracking-meta);
+  font-size: var(--dw-fs-9);
+}
+.csv-diff-old {
+  color: var(--dw-text-3);
+  text-decoration: line-through;
+  text-decoration-color: rgba(248, 113, 113, 0.5);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.csv-diff-new {
+  color: var(--dw-util);
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.csv-diff-arr { color: var(--dw-text-4); text-align: center; }
+
+.csv-diff-unmatched {
+  font-size: var(--dw-fs-10);
+  color: var(--dw-text-3);
+}
+.csv-diff-unmatched summary {
+  cursor: pointer;
+  padding: var(--dw-space-1) 0;
+  font-weight: 600;
+}
+.csv-diff-unmatched ul {
+  margin: var(--dw-space-1) 0 0;
+  padding-left: var(--dw-space-7);
+  list-style: disc;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.csv-diff-unmatched code {
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  font-size: var(--dw-fs-9);
+}

@@ -12,6 +12,7 @@
 @import './style-panel.css';
 @import './download.css';
 @import './history.css';
+@import './features-tab.css';
 
 /* ── Modals (RedlineCreationModal + SchemaEditorModal) ────────────── */
 
