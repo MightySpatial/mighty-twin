@@ -21,6 +21,8 @@ import type { SplitMode } from '../download/split'
 import { geojsonToCsv } from '../download/csv'
 import { splitFeatures, slugifySplitKey } from '../download/split'
 import type { GeoJSONFeature } from '../../serializeFeatures'
+import ModelsLibrary from '../ModelsLibrary'
+import GeometryImport from '../GeometryImport'
 
 const API_URL = ((import.meta as unknown as { env?: { VITE_API_URL?: string } })
   .env?.VITE_API_URL) || ''
@@ -40,7 +42,7 @@ interface Submission {
   schema_changes_approved: boolean
 }
 
-export default function DownloadTab({ viewer: _viewer, siteSlug = null }: Props) {
+export default function DownloadTab({ viewer, siteSlug = null }: Props) {
   const sketches = useCadEngine(s => s.sketches)
   const nodes = useCadEngine(s => s.nodes)
   const activeSketchId = useCadEngine(s => s.activeSketchId)
@@ -240,6 +242,9 @@ export default function DownloadTab({ viewer: _viewer, siteSlug = null }: Props)
           </div>
         </div>
       </div>
+
+      <ModelsLibrary viewer={viewer} />
+      <GeometryImport />
 
       <div className="dl-section-label">Export Geometry</div>
       <div className="dl-row">
