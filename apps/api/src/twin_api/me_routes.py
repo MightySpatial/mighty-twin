@@ -380,3 +380,38 @@ def delete_user_json(name: str, user: CurrentUser) -> None:
     p = _user_dir(user.id) / name
     if p.exists():
         p.unlink()
+
+
+# ── /api/me/json-files/{name} — spec §4 alias ───────────────────────────
+#
+# v1's URL was /api/me/json-files/{name}. v2 chose /api/me/json/{name}
+# but the design widget speaks the v1 path natively (it consumes
+# design-sketch-index-{siteId}.json, design-sketch-{siteId}-{sketchId}.json,
+# design-templates-{siteId}.json, design-user-prefs.json). Re-export the
+# four endpoints under the spec URL so the frontend can ship the v1
+# contract verbatim.
+#
+# These delegate to the json/{name} handlers — same backing storage,
+# same quota, same name validator.
+
+
+@router.get("/json-files")
+def list_user_json_files(user: CurrentUser) -> dict[str, Any]:
+    return list_user_json(user)
+
+
+@router.get("/json-files/{name}")
+def read_user_json_file(name: str, user: CurrentUser) -> dict[str, Any]:
+    return read_user_json(name, user)
+
+
+@router.put("/json-files/{name}")
+def write_user_json_file(
+    name: str, body: dict[str, Any], user: CurrentUser
+) -> dict[str, Any]:
+    return write_user_json(name, body, user)
+
+
+@router.delete("/json-files/{name}", status_code=204)
+def delete_user_json_file(name: str, user: CurrentUser) -> None:
+    delete_user_json(name, user)
