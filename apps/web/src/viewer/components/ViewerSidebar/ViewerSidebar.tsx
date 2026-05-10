@@ -4,12 +4,24 @@
  * On mobile, falls back to the traditional floating layer panel.
  */
 import { useState } from 'react'
-import { Layers, ChevronLeft, ChevronRight, Mountain, Search, Ruler, List } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import {
+  Layers,
+  ChevronLeft,
+  ChevronRight,
+  Mountain,
+  Search,
+  Ruler,
+  List,
+  Home,
+} from 'lucide-react'
 import type { Layer } from '../CesiumViewer/types'
 import type { ViewerContext, PanelProps } from '../../extensions/types'
 import type { Viewer as CesiumViewerType } from 'cesium'
 import { AttributeTable } from '@mightydt/ui'
 import LayerItem from '../../widgets/layers/LayerItem'
+import { SitePickerContent, pushRecentSite, type SiteEntry } from '../SitePicker'
+import HomePanel from './HomePanel'
 import './ViewerSidebar.css'
 
 interface SidebarTab {
@@ -22,7 +34,23 @@ interface SidebarTab {
 interface ViewerSidebarProps {
   // Site chip — shown at top of ribbon so it never overlaps the canvas topBar
   site?: { slug: string; name: string } | null
+  /** All sites visible to the user — feeds the in-sidebar SitePicker.
+   *  When omitted (e.g. public viewer pages), the Site tab falls back
+   *  to a single read-only chip and won't open a picker. */
+  pickerSites?: SiteEntry[]
+  pickerLoading?: boolean
+  /** Optional override — used by mobile to fall back to the legacy
+   *  popover/sheet behaviour from CesiumViewer. */
   onOpenSitePicker?: () => void
+  /** Welcome content shown in the new Home tab. Pulled from
+   *  site.config.home — schema is { hero_image_url?, hero_video_url?,
+   *  intro_html?, links?: [{label, url}] }. */
+  homeContent?: {
+    hero_image_url?: string | null
+    hero_video_url?: string | null
+    intro_html?: string | null
+    links?: { label: string; url: string }[]
+  } | null
   // Layers
   layers: Layer[]
   layersLoading?: boolean
@@ -71,7 +99,10 @@ function LayerSkeleton() {
 
 export default function ViewerSidebar({
   site,
+  pickerSites = [],
+  pickerLoading = false,
   onOpenSitePicker,
+  homeContent,
   layers,
   layersLoading = false,
   onLayerToggle,
@@ -92,8 +123,9 @@ export default function ViewerSidebar({
   activeWidgetId,
   onWidgetTabClick,
 }: ViewerSidebarProps) {
+  const navigate = useNavigate()
   const [attrLayerId, setAttrLayerId] = useState<string | null>(null)
-  const [activeTab, setActiveTab] = useState<string>('layers')
+  const [activeTab, setActiveTab] = useState<string>('home')
 
   // Sync activeTab when ext panel changes
   if (activeExtPanel && activeTab !== activeExtPanel) {
@@ -102,7 +134,7 @@ export default function ViewerSidebar({
 
   const handleTabClick = (tabId: string) => {
     setActiveTab(tabId)
-    if (tabId === 'layers') {
+    if (tabId === 'layers' || tabId === 'site' || tabId === 'home') {
       setActiveExtPanel(null)
     } else {
       setActiveExtPanel(tabId)
@@ -111,6 +143,39 @@ export default function ViewerSidebar({
   }
 
   const tabs: SidebarTab[] = [
+    {
+      id: 'home',
+      label: 'Home',
+      icon: <Home size={16} />,
+      content: <HomePanel siteName={site?.name ?? null} content={homeContent ?? null} />,
+    },
+    ...(site && pickerSites.length > 0
+      ? [
+          {
+            id: 'site',
+            label: 'Site',
+            icon: (
+              <span className="sidebar-site-chip-icon">
+                {site.name.slice(0, 1).toUpperCase()}
+              </span>
+            ),
+            content: (
+              <div className="sidebar-site-panel">
+                <SitePickerContent
+                  sites={pickerSites}
+                  currentSlug={site.slug}
+                  loading={pickerLoading}
+                  autoFocusInput={!isMobile}
+                  onSelect={(slug) => {
+                    pushRecentSite(slug)
+                    navigate(`/viewer/site/${encodeURIComponent(slug)}`)
+                  }}
+                />
+              </div>
+            ),
+          } as SidebarTab,
+        ]
+      : []),
     {
       id: 'layers',
       label: 'Layers',
@@ -172,19 +237,20 @@ export default function ViewerSidebar({
       <div className={`viewer-sidebar${sidebarOpen ? ' viewer-sidebar--open' : ''}`}>
         {/* Tab Bar */}
         <div className="sidebar-tabs">
-          {/* Site chip — top of ribbon, opens site picker */}
-          {site && (
+          {/* Legacy fallback — when the sidebar can't host the in-tab
+              picker (no pickerSites passed, e.g. mobile or public viewer)
+              we still need a way to open the picker. Show the original
+              chip and route the click to the host's onOpenSitePicker
+              callback (which opens the popover/sheet). */}
+          {site && pickerSites.length === 0 && onOpenSitePicker && (
             <button
-              className="sidebar-site-chip"
+              className="sidebar-site-chip-legacy"
               onClick={onOpenSitePicker}
               title={`Switch site — ${site.name}`}
             >
               <span className="sidebar-site-chip-icon">
                 {site.name.slice(0, 1).toUpperCase()}
               </span>
-              {sidebarOpen && (
-                <span className="sidebar-site-chip-name">{site.name}</span>
-              )}
             </button>
           )}
           {tabs.map(tab => (

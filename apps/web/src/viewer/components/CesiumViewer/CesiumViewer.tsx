@@ -568,6 +568,9 @@ export default function CesiumViewerComponent({
         activeWidgetId={activeToolId}
         onWidgetTabClick={onMapShellAction}
         site={site ? { slug: siteId ?? '', name: site.name } : null}
+        pickerSites={!isMobile ? pickerSites : []}
+        pickerLoading={pickerLoading}
+        homeContent={site?.home_content ?? null}
         onOpenSitePicker={() => setPickerOpen(o => !o)}
       />
 

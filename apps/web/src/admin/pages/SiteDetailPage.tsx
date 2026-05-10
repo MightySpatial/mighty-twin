@@ -79,6 +79,13 @@ interface SiteDetail {
   marker_color?: string
   marker_symbol?: string
   default_camera?: { longitude: number; latitude: number; height: number }
+  /** Welcome panel content rendered by the viewer's sidebar Home tab. */
+  home_content?: {
+    hero_image_url?: string | null
+    hero_video_url?: string | null
+    intro_html?: string | null
+    links?: { label: string; url: string }[]
+  }
 }
 
 export default function SiteDetailPage() {
@@ -493,6 +500,78 @@ export default function SiteDetailPage() {
               placeholder="What's this site for?"
               style={input(true)}
             />
+          </Card>
+
+          <Card title="Welcome content">
+            <p
+              style={{
+                margin: '0 0 10px',
+                fontSize: 12,
+                color: 'rgba(240,242,248,0.55)',
+                lineHeight: 1.5,
+              }}
+            >
+              Shown in the viewer's Home tab — first thing visitors see when
+              they open this site. Drop a hero image or video URL, write an
+              intro, and add quick links.
+            </p>
+            <Row label="Hero image URL">
+              <input
+                type="url"
+                defaultValue={site.home_content?.hero_image_url ?? ''}
+                onBlur={(e) => {
+                  patchConfig(
+                    {
+                      home_content: {
+                        ...(site.home_content ?? {}),
+                        hero_image_url: e.target.value || null,
+                      },
+                    },
+                    'home_image',
+                  )
+                }}
+                placeholder="https://…"
+                style={input()}
+              />
+            </Row>
+            <Row label="Hero video URL">
+              <input
+                type="url"
+                defaultValue={site.home_content?.hero_video_url ?? ''}
+                onBlur={(e) => {
+                  patchConfig(
+                    {
+                      home_content: {
+                        ...(site.home_content ?? {}),
+                        hero_video_url: e.target.value || null,
+                      },
+                    },
+                    'home_video',
+                  )
+                }}
+                placeholder="https://…/walkthrough.mp4"
+                style={input()}
+              />
+            </Row>
+            <Row label="Intro (HTML)">
+              <textarea
+                defaultValue={site.home_content?.intro_html ?? ''}
+                onBlur={(e) => {
+                  patchConfig(
+                    {
+                      home_content: {
+                        ...(site.home_content ?? {}),
+                        intro_html: e.target.value || null,
+                      },
+                    },
+                    'home_intro',
+                  )
+                }}
+                rows={4}
+                placeholder="<p>Welcome to our project…</p>"
+                style={input(true)}
+              />
+            </Row>
           </Card>
 
           <Card title="Branding">

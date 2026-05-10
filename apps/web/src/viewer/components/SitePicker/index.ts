@@ -1,2 +1,2 @@
-export { default as SitePicker, pushRecentSite } from './SitePicker'
+export { default as SitePicker, SitePickerContent, pushRecentSite } from './SitePicker'
 export type { SiteEntry } from './SitePicker'

@@ -117,6 +117,16 @@ export interface SiteData {
   layer_count: number
   layers: LayerData[]
   overlay_config?: OverlayConfig
+  /** Welcome content rendered by the sidebar Home tab. Comes from
+   *  site.config.home_content, flattened to top-level by the API. */
+  home_content?: HomeContent
+}
+
+export interface HomeContent {
+  hero_image_url?: string | null
+  hero_video_url?: string | null
+  intro_html?: string | null
+  links?: { label: string; url: string }[]
 }
 
 // ─── Overlay Config (per-site) ──────────────────────────────────────────────
