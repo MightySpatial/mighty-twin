@@ -1,18 +1,31 @@
 /**
- * DownloadTab — export geometry + Submit-for-Review.
+ * DownloadTab — import / export / Submit-for-Review.
+ *
+ * Sections (top → bottom):
+ *   1. Summary banner.
+ *   2. Export Geometry — format + CRS + split + download button.
+ *   3. Import Geometry — file picker (geojson/shp/gpkg/kml/kmz/dxf/csv);
+ *      POST /api/design/import → preview FeatureCollection + detected
+ *      CRS → confirm to add features as new sketch nodes.
+ *   4. Import Objects — 3D model library from GET /api/design/models;
+ *      click a thumbnail to place a model node at the globe centre;
+ *      Upload button → POST /api/design/models/upload (GLB/glTF/STL ≤ 50 MB).
+ *   5. Submit for Review — sends current sketch to the redline pipeline.
  *
  * The Export panel re-uses the existing format catalogue + useDownload
  * helper; we adapt the engine's nodes into the GeoJSON FeatureCollection
  * that the helper expects.
- *
- * Submit-for-Review is the user-side of the redline submission pipeline.
- * Posts the engine's current sketch features to /api/design/submissions,
- * then lists "My Submissions" pulled from /api/design/submissions/mine/list.
  */
-import { useEffect, useMemo, useState } from 'react'
-import { Download, Loader, AlertCircle } from 'lucide-react'
-import type { Viewer } from 'cesium'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { Download, Upload, Loader, AlertCircle, Box, Image as ImageIcon } from 'lucide-react'
+import {
+  Cartesian2,
+  Cartographic,
+  Math as CesiumMath,
+  type Viewer,
+} from 'cesium'
 import { useCadEngine } from '../../sketch/useCadEngine'
+import { generateNodeId } from '../../sketch/dagOps'
 import {
   EXPORT_FORMATS,
   type ExportFormat,
@@ -21,9 +34,18 @@ import type { SplitMode } from '../download/split'
 import { geojsonToCsv } from '../download/csv'
 import { splitFeatures, slugifySplitKey } from '../download/split'
 import type { GeoJSONFeature } from '../../serializeFeatures'
+import type {
+  GeometryKind,
+  NodeType,
+  Position,
+  SketchNode,
+} from '../../sketch/types'
 
 const API_URL = ((import.meta as unknown as { env?: { VITE_API_URL?: string } })
   .env?.VITE_API_URL) || ''
+
+const IMPORT_ACCEPT = '.geojson,.json,.shp,.zip,.gpkg,.kml,.kmz,.dxf,.csv,.tsv'
+const MODEL_ACCEPT  = '.glb,.gltf,.stl'
 
 interface Props {
   viewer: Viewer | null
@@ -31,6 +53,7 @@ interface Props {
 }
 
 interface CrsOption { epsg: number; name: string }
+
 interface Submission {
   id: string
   status: string
@@ -40,10 +63,43 @@ interface Submission {
   schema_changes_approved: boolean
 }
 
-export default function DownloadTab({ viewer: _viewer, siteSlug = null }: Props) {
+interface ImportedGeometry {
+  type: 'Point' | 'LineString' | 'Polygon' | string
+  coordinates: unknown
+}
+interface ImportedFeature {
+  type: 'Feature'
+  geometry: ImportedGeometry | null
+  properties?: Record<string, unknown>
+}
+interface ImportPreview {
+  filename: string
+  extension: string
+  crs_detected: string
+  crs_epsg: number
+  feature_count: number
+  geometry_counts: Record<string, number>
+  field_schema: string[]
+  features: ImportedFeature[]
+}
+
+interface DesignModel {
+  id: string
+  name: string
+  description?: string | null
+  category?: string | null
+  format?: string | null
+  url: string
+  thumbnail_key?: string | null
+  storage_size_bytes?: number | null
+}
+
+export default function DownloadTab({ viewer, siteSlug = null }: Props) {
   const sketches = useCadEngine(s => s.sketches)
   const nodes = useCadEngine(s => s.nodes)
   const activeSketchId = useCadEngine(s => s.activeSketchId)
+  const activeLayerId = useCadEngine(s => s.activeLayerId)
+  const addNode = useCadEngine(s => s.addNode)
 
   const [format, setFormat] = useState<ExportFormat>('geojson')
   const [crs, setCrs] = useState<number>(4326)
@@ -58,6 +114,19 @@ export default function DownloadTab({ viewer: _viewer, siteSlug = null }: Props)
   const [submitNotes, setSubmitNotes] = useState('')
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [mySubmissions, setMySubmissions] = useState<Submission[]>([])
+
+  // Import-geometry state
+  const importInputRef = useRef<HTMLInputElement>(null)
+  const [importing, setImporting] = useState(false)
+  const [importPreview, setImportPreview] = useState<ImportPreview | null>(null)
+  const [importError, setImportError] = useState<string | null>(null)
+
+  // Import-objects (3D model library) state
+  const modelInputRef = useRef<HTMLInputElement>(null)
+  const [models, setModels] = useState<DesignModel[]>([])
+  const [modelsLoading, setModelsLoading] = useState(false)
+  const [uploadingModel, setUploadingModel] = useState(false)
+  const [modelError, setModelError] = useState<string | null>(null)
 
   const sketch = activeSketchId ? sketches[activeSketchId] : null
   const sketchNodes = useMemo(
@@ -88,7 +157,22 @@ export default function DownloadTab({ viewer: _viewer, siteSlug = null }: Props)
       .catch(() => undefined)
   }, [siteSlug, submitting])
 
-  // Convert engine nodes → GeoJSON features.
+  // ── Model library ──────────────────────────────────────────────────
+  useEffect(() => {
+    let cancelled = false
+    setModelsLoading(true)
+    const token = localStorage.getItem('accessToken')
+    fetch(`${API_URL}/api/design/models`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    })
+      .then(r => r.ok ? r.json() : Promise.reject(new Error(`${r.status}`)))
+      .then((rows: DesignModel[]) => { if (!cancelled) setModels(rows ?? []) })
+      .catch(() => { if (!cancelled) setModels([]) })
+      .finally(() => { if (!cancelled) setModelsLoading(false) })
+    return () => { cancelled = true }
+  }, [uploadingModel])
+
+  // ── Helpers ─────────────────────────────────────────────────────────
   function buildFeatureCollection(): GeoJSONFeature[] {
     const out: GeoJSONFeature[] = []
     for (const n of sketchNodes) {
@@ -190,6 +274,95 @@ export default function DownloadTab({ viewer: _viewer, siteSlug = null }: Props)
     }
   }
 
+  // ── Import: parse + preview ────────────────────────────────────────
+  async function onImportFileChosen(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+    setImporting(true)
+    setImportError(null)
+    setImportPreview(null)
+    try {
+      const fd = new FormData()
+      fd.append('file', file)
+      const token = localStorage.getItem('accessToken')
+      const r = await fetch(`${API_URL}/api/design/import`, {
+        method: 'POST',
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        body: fd,
+      })
+      if (!r.ok) {
+        const detail = await r.json().catch(() => ({})) as { detail?: string }
+        throw new Error(detail.detail || `Import failed (${r.status})`)
+      }
+      const data = await r.json() as ImportPreview
+      setImportPreview(data)
+    } catch (err) {
+      setImportError((err as Error).message)
+    } finally {
+      setImporting(false)
+    }
+  }
+
+  function importedFeaturesToNodes(preview: ImportPreview): SketchNode[] {
+    if (!activeSketchId || !activeLayerId) return []
+    const result: SketchNode[] = []
+    for (const f of preview.features) {
+      const geom = f.geometry
+      if (!geom) continue
+      let geometry: GeometryKind
+      let positions: Position[]
+      if (geom.type === 'Point') {
+        geometry = 'point'
+        const c = geom.coordinates as number[]
+        positions = [coordToPosition(c)]
+      } else if (geom.type === 'LineString') {
+        geometry = 'line'
+        positions = (geom.coordinates as number[][]).map(coordToPosition)
+      } else if (geom.type === 'Polygon') {
+        geometry = 'polygon'
+        const ring = (geom.coordinates as number[][][])[0] ?? []
+        positions = ring.map(coordToPosition)
+      } else {
+        continue
+      }
+      // Drop the `_design` envelope on a fresh import — these are
+      // foreign features, not round-trips.
+      const props = (f.properties ?? {}) as Record<string, unknown>
+      const properties: Record<string, unknown> = {}
+      for (const [k, v] of Object.entries(props)) {
+        if (k !== '_design') properties[k] = v
+      }
+      result.push({
+        id: generateNodeId(),
+        type: 'sketch',
+        inputs: [],
+        template_id: null,
+        params: {
+          geometry,
+          positions,
+          sketchId: activeSketchId,
+          sketchLayer: activeLayerId,
+        },
+        attributes: properties,
+        style: {},
+      })
+    }
+    return result
+  }
+
+  function commitImport() {
+    if (!importPreview) return
+    if (!activeSketchId || !activeLayerId) {
+      setImportError('Activate a sketch + layer before importing.')
+      return
+    }
+    const newNodes = importedFeaturesToNodes(importPreview)
+    for (const n of newNodes) addNode(n)
+    setImportPreview(null)
+  }
+
+  // ── Submission ─────────────────────────────────────────────────────
   async function submit() {
     if (!siteSlug) {
       setSubmitError('Submission requires a site context')
@@ -227,6 +400,75 @@ export default function DownloadTab({ viewer: _viewer, siteSlug = null }: Props)
     }
   }
 
+  // ── Object library: place model + upload ───────────────────────────
+  function placeModel(model: DesignModel) {
+    if (!viewer) {
+      setModelError('Globe not ready.')
+      return
+    }
+    if (!activeSketchId || !activeLayerId) {
+      setModelError('Activate a sketch + layer first.')
+      return
+    }
+    const center = globeCentre(viewer)
+    if (!center) {
+      setModelError('Could not resolve globe centre — pan the camera over the globe and retry.')
+      return
+    }
+    const node: SketchNode = {
+      id: generateNodeId(),
+      type: 'model' as NodeType,
+      inputs: [],
+      template_id: null,
+      params: {
+        geometry: 'point',
+        positions: [center],
+        sketchId: activeSketchId,
+        sketchLayer: activeLayerId,
+        modelId: model.id,
+        modelUrl: model.url,
+        modelFormat: model.format ?? undefined,
+        heading: 0,
+        pitch: 0,
+        roll: 0,
+      },
+      attributes: { name: model.name },
+      style: {},
+    }
+    addNode(node)
+    setModelError(null)
+  }
+
+  async function onModelUploadChosen(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+    if (file.size > 50 * 1024 * 1024) {
+      setModelError('File too large (max 50 MB).')
+      return
+    }
+    setUploadingModel(true)
+    setModelError(null)
+    try {
+      const fd = new FormData()
+      fd.append('file', file)
+      const token = localStorage.getItem('accessToken')
+      const r = await fetch(`${API_URL}/api/design/models/upload`, {
+        method: 'POST',
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        body: fd,
+      })
+      if (!r.ok) {
+        const detail = await r.json().catch(() => ({})) as { detail?: string }
+        throw new Error(detail.detail || `Upload failed (${r.status})`)
+      }
+    } catch (err) {
+      setModelError((err as Error).message)
+    } finally {
+      setUploadingModel(false)
+    }
+  }
+
   return (
     <div className="dl-panel">
       <div className="dl-summary">
@@ -241,6 +483,7 @@ export default function DownloadTab({ viewer: _viewer, siteSlug = null }: Props)
         </div>
       </div>
 
+      {/* ── Export ───────────────────────────────────────────────────── */}
       <div className="dl-section-label">Export Geometry</div>
       <div className="dl-row">
         <select className="dl-select" value={format} onChange={e => setFormat(e.target.value as ExportFormat)}>
@@ -270,6 +513,107 @@ export default function DownloadTab({ viewer: _viewer, siteSlug = null }: Props)
       <button className="dl-export-btn" onClick={download} disabled={downloading || sketchNodes.length === 0}>
         {downloading ? <><Loader size={12} className="spin" /> Exporting…</> : <>↓ Export</>}
       </button>
+
+      {/* ── Import geometry ──────────────────────────────────────────── */}
+      <div className="dl-section-label" style={{ marginTop: 16 }}>Import Geometry</div>
+      <p className="dl-hint">GeoJSON, Shapefile (.zip), GeoPackage, KML/KMZ, DXF, CSV — features land in the active sketch layer.</p>
+      <input
+        ref={importInputRef}
+        type="file"
+        accept={IMPORT_ACCEPT}
+        style={{ display: 'none' }}
+        onChange={onImportFileChosen}
+      />
+      <button
+        type="button"
+        className="dl-export-btn dl-export-btn--secondary"
+        onClick={() => importInputRef.current?.click()}
+        disabled={importing}
+      >
+        {importing
+          ? <><Loader size={12} className="spin" /> Parsing…</>
+          : <><Upload size={12} /> Choose file…</>}
+      </button>
+      {importError && <div className="dl-error"><AlertCircle size={12} /><span>{importError}</span></div>}
+      {importPreview && (
+        <div className="dl-import-preview">
+          <div className="dl-import-preview__head">
+            <strong>{importPreview.filename}</strong>
+            <span className="dl-import-preview__crs">{importPreview.crs_detected}</span>
+          </div>
+          <div className="dl-import-preview__counts">
+            {importPreview.feature_count} features
+            {Object.entries(importPreview.geometry_counts).map(([k, v]) => (
+              <span key={k} className="dl-import-preview__chip">{k}: {v}</span>
+            ))}
+          </div>
+          {importPreview.field_schema.length > 0 && (
+            <div className="dl-import-preview__fields">
+              Fields: {importPreview.field_schema.slice(0, 8).join(', ')}
+              {importPreview.field_schema.length > 8 ? ` (+${importPreview.field_schema.length - 8})` : ''}
+            </div>
+          )}
+          <div className="dl-import-preview__actions">
+            <button type="button" className="ae-save-cancel" onClick={() => setImportPreview(null)}>Cancel</button>
+            <button
+              type="button"
+              className="ae-save-ok"
+              onClick={commitImport}
+              disabled={!activeSketchId || !activeLayerId || importPreview.feature_count === 0}
+            >
+              Add to sketch
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── Import objects (3D model library) ────────────────────────── */}
+      <div className="dl-section-label" style={{ marginTop: 16 }}>Import Objects</div>
+      <p className="dl-hint">3D model library — click a thumbnail to drop it at the globe centre.</p>
+      <input
+        ref={modelInputRef}
+        type="file"
+        accept={MODEL_ACCEPT}
+        style={{ display: 'none' }}
+        onChange={onModelUploadChosen}
+      />
+      <button
+        type="button"
+        className="dl-export-btn dl-export-btn--secondary"
+        onClick={() => modelInputRef.current?.click()}
+        disabled={uploadingModel}
+      >
+        {uploadingModel
+          ? <><Loader size={12} className="spin" /> Uploading…</>
+          : <><Upload size={12} /> Upload model (GLB / glTF / STL)</>}
+      </button>
+      {modelError && <div className="dl-error"><AlertCircle size={12} /><span>{modelError}</span></div>}
+      {modelsLoading ? (
+        <div className="dl-hint"><Loader size={12} className="spin" /> Loading library…</div>
+      ) : models.length === 0 ? (
+        <p className="dl-hint">No models yet. Upload a GLB/glTF/STL to start your library.</p>
+      ) : (
+        <div className="dl-model-grid">
+          {models.map(m => (
+            <button
+              key={m.id}
+              type="button"
+              className="dl-model-tile"
+              onClick={() => placeModel(m)}
+              title={`Place ${m.name} at globe centre`}
+              disabled={!activeSketchId || !activeLayerId}
+            >
+              <div className="dl-model-thumb">
+                {m.thumbnail_key
+                  ? <ImageIcon size={20} aria-hidden />
+                  : <Box size={20} aria-hidden />}
+              </div>
+              <span className="dl-model-name">{m.name}</span>
+              {m.format && <span className="dl-model-format">{m.format}</span>}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* ── Submit for review ─────────────────────────────────────────── */}
       {siteSlug && (
@@ -313,4 +657,27 @@ export default function DownloadTab({ viewer: _viewer, siteSlug = null }: Props)
       )}
     </div>
   )
+}
+
+/** Convert a GeoJSON coordinate triple to the engine's Position tuple. */
+function coordToPosition(c: number[]): Position {
+  if (c.length >= 3) return [c[0], c[1], c[2]]
+  return [c[0], c[1]]
+}
+
+/** Resolve the lon/lat/alt at the centre of the current viewport.
+ *  Returns null when the camera is pointed off the globe. */
+function globeCentre(viewer: Viewer): Position | null {
+  const canvas = viewer.scene.canvas
+  const screen = new Cartesian2(canvas.clientWidth / 2, canvas.clientHeight / 2)
+  const ray = viewer.camera.getPickRay(screen)
+  const hit = (ray ? viewer.scene.globe.pick(ray, viewer.scene) : null)
+    ?? viewer.camera.pickEllipsoid(screen, viewer.scene.globe.ellipsoid)
+  if (!hit) return null
+  const carto = Cartographic.fromCartesian(hit)
+  return [
+    CesiumMath.toDegrees(carto.longitude),
+    CesiumMath.toDegrees(carto.latitude),
+    carto.height,
+  ]
 }
