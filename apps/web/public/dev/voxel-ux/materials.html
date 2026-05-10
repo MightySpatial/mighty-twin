@@ -1,0 +1,648 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Materials — Voxel UX Spec — MightyTwin v2</title>
+<style>
+:root {
+  --dw-util: #2dd4bf;
+  --dw-util-hover: #14b8a6;
+  --dw-util-d: rgba(45, 212, 191, 0.4);
+  --dw-util-bg: rgba(45, 212, 191, 0.14);
+  --dw-util-bg-soft: rgba(45, 212, 191, 0.08);
+  --dw-util-text-on: #042f2e;
+  --dw-warning: #fbbf24;
+  --dw-bg: #0f0f14;
+  --dw-bg-2: #14141c;
+  --dw-surface-glass: rgba(20, 20, 28, 0.98);
+  --dw-fill-1: rgba(255, 255, 255, 0.04);
+  --dw-fill-2: rgba(255, 255, 255, 0.06);
+  --dw-fill-3: rgba(255, 255, 255, 0.08);
+  --dw-border: rgba(255, 255, 255, 0.10);
+  --dw-border-strong: rgba(255, 255, 255, 0.18);
+  --dw-text-strong: #ffffff;
+  --dw-text-1: rgba(255, 255, 255, 0.92);
+  --dw-text-2: rgba(255, 255, 255, 0.70);
+  --dw-text-3: #8b8fa8;
+  --dw-text-4: rgba(255, 255, 255, 0.35);
+  --dw-radius-sm: 4px;
+  --dw-radius-md: 6px;
+  --dw-radius-lg: 8px;
+  --dw-radius-xl: 10px;
+  --dw-radius-2xl: 12px;
+  --dw-radius-pill: 999px;
+  --dw-font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+body {
+  background: var(--dw-bg); color: var(--dw-text-1);
+  font-family: var(--dw-font); font-size: 13px; line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+.shell { max-width: 1080px; margin: 0 auto; padding: 32px 24px 80px; }
+.crumb {
+  font-size: 11px; color: var(--dw-text-3);
+  text-transform: uppercase; letter-spacing: 0.06em;
+  margin-bottom: 18px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+}
+.crumb a { color: var(--dw-text-3); text-decoration: none; }
+.crumb a:hover { color: var(--dw-util); }
+.crumb__sep { color: var(--dw-text-4); }
+.crumb__cur { color: var(--dw-util); }
+.hero { margin-bottom: 32px; }
+.hero h1 {
+  font-size: 28px; font-weight: 700; letter-spacing: -0.02em;
+  color: var(--dw-text-strong); margin-bottom: 6px;
+}
+.hero p { color: var(--dw-text-2); font-size: 14px; max-width: 640px; }
+
+/* ── Material grid ────────────────────────────────────────────────── */
+.section { display: flex; flex-direction: column; gap: 14px; margin-bottom: 36px; }
+.section__hd {
+  font-size: 10px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.08em;
+  color: var(--dw-text-3);
+  display: flex; align-items: center; gap: 8px;
+}
+.section__hd::after { content: ''; flex: 1; height: 1px; background: var(--dw-border); }
+
+.mat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 14px;
+}
+.mat-tile {
+  background: var(--dw-fill-1);
+  border: 1px solid var(--dw-border);
+  border-radius: var(--dw-radius-2xl);
+  padding: 14px;
+  cursor: pointer;
+  transition: all 0.14s;
+  position: relative;
+  display: flex; flex-direction: column; gap: 10px;
+  text-align: left;
+  font-family: inherit; color: inherit;
+}
+.mat-tile:hover {
+  background: var(--dw-fill-2);
+  border-color: var(--dw-border-strong);
+  transform: translateY(-1px);
+}
+.mat-tile.is-active {
+  border-color: var(--dw-util);
+  background: var(--dw-util-bg-soft);
+}
+
+/* Faux-3D tile preview: the swatch shows a proper isometric block with
+   top, left, right faces shaded so the user reads it as the material's
+   appearance, not just a flat colour chip. */
+.mat-preview {
+  height: 72px;
+  border-radius: var(--dw-radius-lg);
+  background: var(--dw-fill-1);
+  border: 1px solid var(--dw-border);
+  display: flex; align-items: center; justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+.mat-preview svg { display: block; }
+
+.mat-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--dw-text-strong);
+  letter-spacing: -0.005em;
+}
+.mat-ifc {
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 10px;
+  color: var(--dw-text-3);
+  word-break: break-all;
+}
+.mat-tile__action {
+  display: flex; gap: 4px; align-items: center;
+  font-size: 11px; color: var(--dw-text-2);
+  opacity: 0; transition: opacity 0.12s;
+}
+.mat-tile:hover .mat-tile__action,
+.mat-tile.is-active .mat-tile__action { opacity: 1; }
+.mat-tile__action svg { color: var(--dw-util); }
+
+/* ── Custom material creator ──────────────────────────────────────── */
+.mat-add {
+  background: transparent;
+  border: 1px dashed var(--dw-border-strong);
+  border-radius: var(--dw-radius-2xl);
+  padding: 14px;
+  display: flex; flex-direction: column; gap: 10px;
+  align-items: center; justify-content: center;
+  color: var(--dw-text-3);
+  cursor: pointer;
+  font-family: inherit; font-size: 13px;
+  font-weight: 600;
+  min-height: 200px;
+  transition: all 0.14s;
+}
+.mat-add:hover {
+  background: var(--dw-fill-1);
+  color: var(--dw-util);
+  border-color: var(--dw-util);
+}
+.mat-add svg { color: var(--dw-util); }
+
+/* ── Per-face texture override grid ───────────────────────────────── */
+.face-card {
+  background: var(--dw-fill-1);
+  border: 1px solid var(--dw-border);
+  border-radius: var(--dw-radius-2xl);
+  padding: 22px;
+  display: grid;
+  grid-template-columns: 360px 1fr;
+  gap: 24px;
+}
+
+.face-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(2, auto);
+  gap: 8px;
+}
+.face-slot {
+  background: var(--dw-fill-2);
+  border: 1px solid var(--dw-border);
+  border-radius: var(--dw-radius-lg);
+  aspect-ratio: 1;
+  display: flex; flex-direction: column;
+  padding: 6px;
+  cursor: pointer;
+  transition: all 0.12s;
+  position: relative;
+}
+.face-slot:hover { background: var(--dw-fill-3); border-color: var(--dw-border-strong); }
+.face-slot.has-tex { border-color: var(--dw-util-d); }
+.face-slot__lab {
+  font-size: 9px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.08em;
+  color: var(--dw-text-3);
+}
+.face-slot.has-tex .face-slot__lab { color: var(--dw-util); }
+.face-slot__img {
+  flex: 1; margin-top: 4px;
+  border-radius: var(--dw-radius-md);
+  background-image:
+    linear-gradient(45deg, rgba(255,255,255,0.04) 25%, transparent 25%),
+    linear-gradient(-45deg, rgba(255,255,255,0.04) 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, rgba(255,255,255,0.04) 75%),
+    linear-gradient(-45deg, transparent 75%, rgba(255,255,255,0.04) 75%);
+  background-size: 8px 8px;
+  background-position: 0 0, 0 4px, 4px -4px, -4px 0;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--dw-text-4);
+}
+.face-slot.has-tex .face-slot__img {
+  background-image: var(--tex);
+  background-size: cover;
+  background-position: center;
+}
+
+.face-card__head {
+  display: flex; align-items: baseline; justify-content: space-between;
+  margin-bottom: 10px;
+}
+.face-card__head h3 { font-size: 14px; font-weight: 700; color: var(--dw-text-strong); letter-spacing: -0.005em; }
+.face-card__head .meta { font-size: 11px; color: var(--dw-text-3); }
+
+.face-card__notes h3 {
+  font-size: 13px; font-weight: 700;
+  color: var(--dw-text-strong); letter-spacing: -0.005em;
+  margin-bottom: 4px;
+}
+.face-card__notes p {
+  font-size: 12px; color: var(--dw-text-3); margin-bottom: 12px; line-height: 1.55;
+}
+.face-card__hint {
+  display: flex; align-items: flex-start; gap: 8px;
+  padding: 10px 12px;
+  background: var(--dw-util-bg-soft);
+  border: 1px solid var(--dw-util-d);
+  border-radius: var(--dw-radius-lg);
+  color: var(--dw-text-1);
+  font-size: 11px; line-height: 1.55;
+}
+.face-card__hint svg { color: var(--dw-util); flex-shrink: 0; margin-top: 1px; }
+
+/* ── Modal (custom material creator) ──────────────────────────────── */
+.modal-backdrop {
+  position: fixed; inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  z-index: 100;
+  display: none; align-items: center; justify-content: center;
+  padding: 20px;
+}
+.modal-backdrop.open { display: flex; }
+.modal {
+  background: var(--dw-surface-glass);
+  border: 1px solid var(--dw-border-strong);
+  border-radius: var(--dw-radius-2xl);
+  width: 360px;
+  max-width: 100%;
+  display: flex; flex-direction: column;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.6);
+}
+.modal__hd {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--dw-border);
+}
+.modal__hd h3 { font-size: 14px; font-weight: 700; color: var(--dw-text-strong); }
+.modal__close {
+  width: 28px; height: 28px;
+  background: var(--dw-fill-2);
+  border: 1px solid var(--dw-border);
+  border-radius: var(--dw-radius-md);
+  color: var(--dw-text-2);
+  font-size: 14px; cursor: pointer; line-height: 1;
+}
+.modal__close:hover { background: var(--dw-fill-3); color: var(--dw-text-strong); }
+.modal__body {
+  padding: 18px;
+  display: flex; flex-direction: column; gap: 14px;
+}
+.modal__field {
+  display: flex; flex-direction: column; gap: 6px;
+}
+.modal__field label {
+  font-size: 10px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.06em;
+  color: var(--dw-text-3);
+}
+.modal__field input,
+.modal__field select {
+  height: 36px;
+  background: var(--dw-fill-2);
+  border: 1px solid var(--dw-border);
+  border-radius: var(--dw-radius-md);
+  padding: 0 12px;
+  color: var(--dw-text-1);
+  font: 500 13px var(--dw-font);
+  outline: none;
+}
+.modal__field input:focus,
+.modal__field select:focus { border-color: var(--dw-util); }
+.modal__field--row { flex-direction: row; gap: 8px; align-items: center; }
+.colour-pick {
+  width: 56px; height: 36px;
+  background: transparent; border: 1px solid var(--dw-border);
+  border-radius: var(--dw-radius-md);
+  cursor: pointer;
+  padding: 0;
+}
+.modal__actions {
+  padding: 14px 18px;
+  border-top: 1px solid var(--dw-border);
+  display: flex; justify-content: flex-end; gap: 8px;
+}
+.btn {
+  height: 36px; padding: 0 16px;
+  border-radius: var(--dw-radius-md);
+  font: 700 12px var(--dw-font);
+  cursor: pointer;
+  display: inline-flex; align-items: center; gap: 6px;
+}
+.btn--ghost {
+  background: transparent;
+  border: 1px solid var(--dw-border);
+  color: var(--dw-text-2);
+}
+.btn--ghost:hover { background: var(--dw-fill-2); color: var(--dw-text-1); }
+.btn--util {
+  background: var(--dw-util);
+  border: 1px solid var(--dw-util-d);
+  color: var(--dw-util-text-on);
+}
+.btn--util:hover { background: var(--dw-util-hover); }
+
+@media (max-width: 760px) {
+  .face-card { grid-template-columns: 1fr; }
+  .shell { padding: 18px 14px 60px; }
+  .hero h1 { font-size: 22px; }
+}
+</style>
+</head>
+<body>
+<main class="shell">
+  <nav class="crumb" aria-label="Breadcrumb">
+    <a href="./index.html">MightyTwin v2</a>
+    <span class="crumb__sep">/</span>
+    <span>Design Widget</span>
+    <span class="crumb__sep">/</span>
+    <a href="./index.html">Voxel UX Spec</a>
+    <span class="crumb__sep">/</span>
+    <span class="crumb__cur">Materials</span>
+  </nav>
+
+  <header class="hero">
+    <h1>Material palette</h1>
+    <p>Default materials with their IFC export class. Click a tile to
+       activate it for the next block placement; click again to open the
+       per-face texture override sheet for a selected block.</p>
+  </header>
+
+  <!-- ── Default material grid ──────────────────────────────────── -->
+  <section class="section">
+    <div class="section__hd">Default materials</div>
+    <div class="mat-grid" id="mat-grid"></div>
+  </section>
+
+  <!-- ── Per-face texture override ──────────────────────────────── -->
+  <section class="section">
+    <div class="section__hd">Per-object face texture override</div>
+    <div class="face-card">
+      <div>
+        <div class="face-card__head">
+          <h3 id="face-card-name">Concrete</h3>
+          <span class="meta" id="face-card-meta">selected block · L3 (1 m)</span>
+        </div>
+        <div class="face-grid" id="face-grid">
+          <div class="face-slot" data-face="top">
+            <div class="face-slot__lab">Top</div>
+            <div class="face-slot__img">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            </div>
+          </div>
+          <div class="face-slot" data-face="north">
+            <div class="face-slot__lab">North</div>
+            <div class="face-slot__img">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            </div>
+          </div>
+          <div class="face-slot" data-face="east">
+            <div class="face-slot__lab">East</div>
+            <div class="face-slot__img">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            </div>
+          </div>
+          <div class="face-slot" data-face="bottom">
+            <div class="face-slot__lab">Bottom</div>
+            <div class="face-slot__img">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            </div>
+          </div>
+          <div class="face-slot" data-face="south">
+            <div class="face-slot__lab">South</div>
+            <div class="face-slot__img">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            </div>
+          </div>
+          <div class="face-slot" data-face="west">
+            <div class="face-slot__lab">West</div>
+            <div class="face-slot__img">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="face-card__notes">
+        <h3>Per-face overrides</h3>
+        <p>Clicking a face tile opens the system file picker (or library
+           browser if textures live in a project asset bundle). Faces
+           with no override fall back to the material's procedural
+           shading. Click a tile in the grid to simulate an upload.</p>
+        <h3>Edge cases</h3>
+        <p>Adjacent blocks of the same material seam-blend at L3 and
+           coarser. At L2 (50 cm) and finer, every face renders as its
+           own tile so seams remain crisp.</p>
+        <div class="face-card__hint">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+          <span>Per-face overrides only apply to the
+            <em style="font-style:normal; color:var(--dw-util)">selected</em>
+            blocks. To override a whole material globally, use the
+            material entry's edit panel.</span>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- ── Custom material modal ─────────────────────────────────────── -->
+<div class="modal-backdrop" id="custom-modal">
+  <div class="modal" role="dialog" aria-labelledby="custom-modal-title">
+    <header class="modal__hd">
+      <h3 id="custom-modal-title">Custom material</h3>
+      <button class="modal__close" id="custom-close" aria-label="Close">×</button>
+    </header>
+    <div class="modal__body">
+      <div class="modal__field">
+        <label for="cm-name">Name</label>
+        <input id="cm-name" type="text" placeholder="e.g. Backfill (clay)" maxlength="32">
+      </div>
+      <div class="modal__field modal__field--row">
+        <input id="cm-colour" class="colour-pick" type="color" value="#7d8aa3">
+        <input id="cm-hex" type="text" value="#7d8aa3" maxlength="9" style="flex:1; font-family: ui-monospace, Menlo, monospace;">
+      </div>
+      <div class="modal__field">
+        <label for="cm-ifc">IFC class</label>
+        <select id="cm-ifc">
+          <option value="IfcGeographicElement">IfcGeographicElement</option>
+          <option value="IfcWall">IfcWall</option>
+          <option value="IfcMember">IfcMember</option>
+          <option value="IfcVoidingFeature">IfcVoidingFeature</option>
+          <option value="IfcCovering">IfcCovering</option>
+          <option value="IfcFooting">IfcFooting</option>
+          <option value="IfcPile">IfcPile</option>
+          <option value="IfcSlab">IfcSlab</option>
+        </select>
+      </div>
+      <div class="modal__field">
+        <label>Preview</label>
+        <div class="mat-preview" id="cm-preview"></div>
+      </div>
+    </div>
+    <div class="modal__actions">
+      <button class="btn btn--ghost" id="cm-cancel" type="button">Cancel</button>
+      <button class="btn btn--util" id="cm-save" type="button">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        Save material
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Material data ──────────────────────────────────────────────────
+const MATERIALS = [
+  { id: 'rock',       name: 'Rock',       colour: '#4a5568', ifc: 'IfcGeographicElement' },
+  { id: 'ore',        name: 'Ore',        colour: '#d69e2e', ifc: 'IfcGeographicElement' },
+  { id: 'overburden', name: 'Overburden', colour: '#8b7355', ifc: 'IfcGeographicElement' },
+  { id: 'fill',       name: 'Fill',       colour: '#a0826d', ifc: 'IfcGeographicElement' },
+  { id: 'concrete',   name: 'Concrete',   colour: '#b3b3b3', ifc: 'IfcWall' },
+  { id: 'steel',      name: 'Steel',      colour: '#6b7280', ifc: 'IfcMember' },
+  { id: 'water',      name: 'Water',      colour: '#06b6d4', ifc: 'IfcVoidingFeature' },
+  { id: 'topsoil',    name: 'Topsoil',    colour: '#654321', ifc: 'IfcGeographicElement' },
+];
+
+const NS = 'http://www.w3.org/2000/svg';
+function el(t, a = {}, p) {
+  const n = document.createElementNS(NS, t);
+  for (const k in a) n.setAttribute(k, String(a[k]));
+  if (p) p.appendChild(n);
+  return n;
+}
+function clear(n) { while (n.firstChild) n.removeChild(n.firstChild); }
+
+// ── Iso block preview ─────────────────────────────────────────────
+function isoBlockSvg(parent, hex, w = 96, h = 64) {
+  clear(parent);
+  const svg = el('svg', { viewBox: `0 0 ${w} ${h}`, width: '100%', height: '100%', preserveAspectRatio: 'xMidYMid meet' }, parent);
+  const cx = w / 2, cy = h / 2;
+  const sz = 18;
+  const ax = Math.cos(Math.PI / 6), ay = Math.sin(Math.PI / 6);
+  const pt = (x, y, z) => ({ x: cx + (x - y) * ax * sz, y: cy + (x + y) * ay * sz - z * sz });
+  // Top face
+  const top = [pt(0,0,1), pt(1,0,1), pt(1,1,1), pt(0,1,1)];
+  const left = [pt(0,0,0), pt(0,1,0), pt(0,1,1), pt(0,0,1)];
+  const right = [pt(1,0,0), pt(1,1,0), pt(1,1,1), pt(1,0,1)];
+  const t = lighten(hex, 0.18);
+  const l = darken(hex, 0.10);
+  const r = darken(hex, 0.30);
+  const stroke = darken(hex, 0.55);
+  el('polygon', { points: top.map(p => `${p.x},${p.y}`).join(' '), fill: t, stroke, 'stroke-width': 0.8 }, svg);
+  el('polygon', { points: right.map(p => `${p.x},${p.y}`).join(' '), fill: r, stroke, 'stroke-width': 0.8 }, svg);
+  el('polygon', { points: left.map(p => `${p.x},${p.y}`).join(' '), fill: l, stroke, 'stroke-width': 0.8 }, svg);
+}
+function lighten(h, a) { const c = rgb(h); return `rgb(${cl(c.r + 255*a)},${cl(c.g + 255*a)},${cl(c.b + 255*a)})`; }
+function darken(h, a) { const c = rgb(h); return `rgb(${cl(c.r*(1-a))},${cl(c.g*(1-a))},${cl(c.b*(1-a))})`; }
+function rgb(hex) {
+  const h = hex.replace('#','');
+  return { r: parseInt(h.slice(0,2),16), g: parseInt(h.slice(2,4),16), b: parseInt(h.slice(4,6),16) };
+}
+function cl(v) { return Math.max(0, Math.min(255, Math.round(v))); }
+
+// ── Render the grid ───────────────────────────────────────────────
+const grid = document.getElementById('mat-grid');
+function renderGrid(activeId = 'concrete') {
+  grid.innerHTML = '';
+  for (const m of MATERIALS) {
+    const tile = document.createElement('button');
+    tile.className = 'mat-tile' + (m.id === activeId ? ' is-active' : '');
+    tile.dataset.id = m.id;
+    tile.type = 'button';
+    tile.innerHTML = `
+      <div class="mat-preview" data-prev></div>
+      <div>
+        <div class="mat-name">${m.name}</div>
+        <div class="mat-ifc">${m.ifc}</div>
+      </div>
+      <div class="mat-tile__action">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        ${m.id === activeId ? 'Active' : 'Click to activate'}
+      </div>
+    `;
+    isoBlockSvg(tile.querySelector('[data-prev]'), m.colour);
+    tile.addEventListener('click', () => {
+      renderGrid(m.id);
+      document.getElementById('face-card-name').textContent = m.name;
+      // Clear any face overrides — material change resets local overrides
+      document.querySelectorAll('.face-slot.has-tex').forEach(s => {
+        s.classList.remove('has-tex');
+        s.style.removeProperty('--tex');
+      });
+    });
+    grid.appendChild(tile);
+  }
+  // The "+ custom" tile lives at the end of the grid.
+  const add = document.createElement('button');
+  add.className = 'mat-add';
+  add.type = 'button';
+  add.id = 'mat-add';
+  add.innerHTML = `
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+    <span>Custom material</span>
+    <span style="font-size: 11px; font-weight: 500; color: var(--dw-text-4)">name + colour + IFC class</span>
+  `;
+  add.addEventListener('click', openCustomModal);
+  grid.appendChild(add);
+}
+renderGrid();
+
+// ── Per-face slot interaction ─────────────────────────────────────
+const TEXTURE_SVGS = {
+  brick: 'data:image/svg+xml;utf8,' + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32"><defs><pattern id="b" width="16" height="8" patternUnits="userSpaceOnUse"><rect width="16" height="8" fill="#9c5e3c"/><rect y="0" width="16" height="0.5" fill="#5b3320"/><rect y="3.75" width="16" height="0.5" fill="#5b3320"/><rect y="7.5" width="16" height="0.5" fill="#5b3320"/><rect x="7.75" y="0" width="0.5" height="4" fill="#5b3320"/><rect x="-0.25" y="4" width="0.5" height="4" fill="#5b3320"/><rect x="15.75" y="4" width="0.5" height="4" fill="#5b3320"/></pattern></defs><rect width="100%" height="100%" fill="url(#b)"/></svg>`),
+  rock:  'data:image/svg+xml;utf8,' + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64"><rect width="100%" height="100%" fill="#3d4250"/><circle cx="14" cy="14" r="5" fill="#4a5160" opacity="0.6"/><circle cx="42" cy="22" r="7" fill="#525968" opacity="0.5"/><circle cx="20" cy="44" r="6" fill="#3a414f" opacity="0.7"/><circle cx="50" cy="50" r="5" fill="#48505e" opacity="0.5"/><circle cx="34" cy="34" r="3" fill="#363c4a" opacity="0.6"/></svg>`),
+  metal: 'data:image/svg+xml;utf8,' + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32"><defs><linearGradient id="m" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#8a909c"/><stop offset="0.5" stop-color="#5d6371"/><stop offset="1" stop-color="#7a808d"/></linearGradient></defs><rect width="100%" height="100%" fill="url(#m)"/><line x1="0" y1="6" x2="32" y2="6" stroke="rgba(0,0,0,0.18)"/><line x1="0" y1="14" x2="32" y2="14" stroke="rgba(0,0,0,0.18)"/><line x1="0" y1="22" x2="32" y2="22" stroke="rgba(0,0,0,0.18)"/><line x1="0" y1="30" x2="32" y2="30" stroke="rgba(0,0,0,0.18)"/></svg>`),
+  topsoil: 'data:image/svg+xml;utf8,' + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64"><rect width="100%" height="100%" fill="#5a3a1f"/><circle cx="10" cy="12" r="1.5" fill="#3a2510"/><circle cx="30" cy="20" r="1.2" fill="#704a25"/><circle cx="48" cy="14" r="1.5" fill="#3a2510"/><circle cx="20" cy="40" r="1" fill="#3a2510"/><circle cx="42" cy="48" r="1.5" fill="#704a25"/><circle cx="56" cy="34" r="1" fill="#3a2510"/><circle cx="14" cy="56" r="1.2" fill="#704a25"/></svg>`),
+};
+const TEX_KEYS = Object.keys(TEXTURE_SVGS);
+
+document.querySelectorAll('.face-slot').forEach((slot, i) => {
+  slot.addEventListener('click', () => {
+    if (slot.classList.contains('has-tex')) {
+      // Cycle to next texture
+      const cur = slot.dataset.tex || TEX_KEYS[0];
+      const next = TEX_KEYS[(TEX_KEYS.indexOf(cur) + 1) % TEX_KEYS.length];
+      slot.dataset.tex = next;
+      slot.style.setProperty('--tex', `url("${TEXTURE_SVGS[next]}")`);
+    } else {
+      slot.classList.add('has-tex');
+      const k = TEX_KEYS[i % TEX_KEYS.length];
+      slot.dataset.tex = k;
+      slot.style.setProperty('--tex', `url("${TEXTURE_SVGS[k]}")`);
+    }
+  });
+  // Right-click → clear
+  slot.addEventListener('contextmenu', e => {
+    e.preventDefault();
+    slot.classList.remove('has-tex');
+    slot.style.removeProperty('--tex');
+    delete slot.dataset.tex;
+  });
+});
+
+// ── Custom material modal ─────────────────────────────────────────
+const customModal = document.getElementById('custom-modal');
+const cmName = document.getElementById('cm-name');
+const cmColour = document.getElementById('cm-colour');
+const cmHex = document.getElementById('cm-hex');
+const cmIfc = document.getElementById('cm-ifc');
+const cmPrev = document.getElementById('cm-preview');
+
+function openCustomModal() {
+  cmName.value = '';
+  cmColour.value = '#7d8aa3';
+  cmHex.value = '#7d8aa3';
+  cmIfc.value = 'IfcGeographicElement';
+  isoBlockSvg(cmPrev, cmColour.value);
+  customModal.classList.add('open');
+  cmName.focus();
+}
+function closeCustomModal() { customModal.classList.remove('open'); }
+
+document.getElementById('custom-close').addEventListener('click', closeCustomModal);
+document.getElementById('cm-cancel').addEventListener('click', closeCustomModal);
+customModal.addEventListener('click', e => { if (e.target === customModal) closeCustomModal(); });
+cmColour.addEventListener('input', () => { cmHex.value = cmColour.value; isoBlockSvg(cmPrev, cmColour.value); });
+cmHex.addEventListener('input', () => {
+  if (/^#[0-9a-fA-F]{6}$/.test(cmHex.value)) {
+    cmColour.value = cmHex.value;
+    isoBlockSvg(cmPrev, cmHex.value);
+  }
+});
+document.getElementById('cm-save').addEventListener('click', () => {
+  const name = cmName.value.trim() || 'Custom';
+  const colour = cmColour.value;
+  const ifc = cmIfc.value;
+  const id = 'custom-' + Math.random().toString(36).slice(2, 7);
+  MATERIALS.push({ id, name, colour, ifc });
+  renderGrid(id);
+  closeCustomModal();
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && customModal.classList.contains('open')) closeCustomModal();
+});
+</script>
+</body>
+</html>

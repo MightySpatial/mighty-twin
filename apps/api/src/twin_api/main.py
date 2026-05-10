@@ -159,3 +159,18 @@ if _VIEWER_DIST.is_dir():
         # client-side routing from there. Static assets/cesium load from
         # /assets and /cesium at the host root, not from /viewer/*.
         return FileResponse(_INDEX_HTML)
+
+
+# Dev-only design reference HTML lives under apps/web/public/dev/ in source
+# (Vite copies public/ into dist/ at build time, so the same path resolves
+# both before and after a build). Mount /dev when the directory exists so
+# the voxel-ux mockups are reachable at /dev/voxel-ux/.
+_DEV_PUBLIC = Path(__file__).resolve().parents[3] / "web" / "public" / "dev"
+_DEV_DIST = _VIEWER_DIST / "dev" if _VIEWER_DIST.is_dir() else None
+_DEV_DIR = _DEV_PUBLIC if _DEV_PUBLIC.is_dir() else _DEV_DIST if _DEV_DIST and _DEV_DIST.is_dir() else None
+if _DEV_DIR is not None:
+    app.mount(
+        "/dev",
+        StaticFiles(directory=_DEV_DIR, html=True),
+        name="dev-mockups",
+    )

@@ -1,0 +1,1117 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Generators — Voxel UX Spec — MightyTwin v2</title>
+<style>
+:root {
+  --dw-util: #2dd4bf;
+  --dw-util-hover: #14b8a6;
+  --dw-util-d: rgba(45, 212, 191, 0.4);
+  --dw-util-bg: rgba(45, 212, 191, 0.14);
+  --dw-util-bg-soft: rgba(45, 212, 191, 0.08);
+  --dw-warning: #fbbf24;
+  --dw-warning-l: #fcd34d;
+  --dw-bg: #0f0f14;
+  --dw-bg-2: #14141c;
+  --dw-surface-glass: rgba(20, 20, 28, 0.98);
+  --dw-fill-1: rgba(255, 255, 255, 0.04);
+  --dw-fill-2: rgba(255, 255, 255, 0.06);
+  --dw-fill-3: rgba(255, 255, 255, 0.08);
+  --dw-border: rgba(255, 255, 255, 0.10);
+  --dw-border-strong: rgba(255, 255, 255, 0.18);
+  --dw-text-strong: #ffffff;
+  --dw-text-1: rgba(255, 255, 255, 0.92);
+  --dw-text-2: rgba(255, 255, 255, 0.70);
+  --dw-text-3: #8b8fa8;
+  --dw-text-4: rgba(255, 255, 255, 0.35);
+  --dw-radius-sm: 4px;
+  --dw-radius-md: 6px;
+  --dw-radius-lg: 8px;
+  --dw-radius-xl: 10px;
+  --dw-radius-2xl: 12px;
+  --dw-radius-pill: 999px;
+  --dw-font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+body {
+  background: var(--dw-bg);
+  color: var(--dw-text-1);
+  font-family: var(--dw-font);
+  font-size: 13px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+.shell { max-width: 1080px; margin: 0 auto; padding: 32px 24px 80px; }
+.crumb {
+  font-size: 11px; color: var(--dw-text-3);
+  text-transform: uppercase; letter-spacing: 0.06em;
+  margin-bottom: 18px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+}
+.crumb a { color: var(--dw-text-3); text-decoration: none; }
+.crumb a:hover { color: var(--dw-util); }
+.crumb__sep { color: var(--dw-text-4); }
+.crumb__cur { color: var(--dw-util); }
+
+.hero { margin-bottom: 32px; }
+.hero h1 {
+  font-size: 28px; font-weight: 700; letter-spacing: -0.02em;
+  color: var(--dw-text-strong); margin-bottom: 6px;
+}
+.hero p { color: var(--dw-text-2); font-size: 14px; max-width: 640px; }
+
+/* ── Generator card ───────────────────────────────────────────────── */
+.gen {
+  display: grid;
+  grid-template-columns: 360px 1fr;
+  gap: 20px;
+  margin-bottom: 24px;
+  background: var(--dw-fill-1);
+  border: 1px solid var(--dw-border);
+  border-radius: var(--dw-radius-2xl);
+  overflow: hidden;
+  align-items: stretch;
+}
+.gen__panel {
+  background: var(--dw-util-bg-soft);
+  border-right: 1px solid var(--dw-util-d);
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.gen__chrome {
+  display: flex; align-items: center; gap: 8px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--dw-util-d);
+}
+.gen__chrome-icon {
+  width: 28px; height: 28px;
+  background: var(--dw-util-bg);
+  border: 1px solid var(--dw-util-d);
+  border-radius: var(--dw-radius-md);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--dw-util);
+}
+.gen__title {
+  color: var(--dw-util);
+  font-weight: 700;
+  font-size: 13px;
+}
+.gen__cancel {
+  margin-left: auto;
+  width: 24px; height: 24px;
+  background: var(--dw-fill-3);
+  border: 1px solid var(--dw-border);
+  border-radius: var(--dw-radius-sm);
+  color: var(--dw-text-3);
+  font: 600 14px var(--dw-font);
+  cursor: pointer;
+  line-height: 1;
+}
+.gen__cancel:hover { background: rgba(248, 113, 113, 0.15); color: #f87171; }
+
+.field {
+  display: flex; flex-direction: column; gap: 6px;
+}
+.field__row { display: flex; gap: 8px; }
+.field__row .field { flex: 1; }
+.field__label {
+  font-size: 10px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.06em;
+  color: var(--dw-text-3);
+  display: flex; justify-content: space-between; align-items: center;
+}
+.field__label .unit { font-weight: 500; color: var(--dw-text-4); text-transform: none; letter-spacing: 0; }
+
+.input, .select {
+  height: 32px;
+  background: var(--dw-fill-2);
+  border: 1px solid var(--dw-border);
+  border-radius: var(--dw-radius-md);
+  padding: 0 10px;
+  color: var(--dw-text-1);
+  font: 500 12px var(--dw-font);
+  outline: none;
+  transition: border-color 0.12s, background 0.12s;
+}
+.input:focus, .select:focus {
+  border-color: var(--dw-util);
+  background: var(--dw-fill-3);
+}
+.select {
+  appearance: none;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238b8fa8' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'><path d='m6 9 6 6 6-6'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  padding-right: 28px;
+}
+
+.row-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  background: var(--dw-fill-2);
+  border: 1px solid var(--dw-border);
+  border-radius: var(--dw-radius-md);
+  cursor: pointer;
+  user-select: none;
+}
+.row-toggle input { display: none; }
+.row-toggle__pip {
+  width: 14px; height: 14px;
+  background: var(--dw-fill-3);
+  border: 1px solid var(--dw-border-strong);
+  border-radius: var(--dw-radius-sm);
+  flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  color: transparent;
+}
+.row-toggle.on .row-toggle__pip {
+  background: var(--dw-util);
+  border-color: var(--dw-util);
+  color: var(--dw-util-text-on, #042f2e);
+}
+.row-toggle__label { font-size: 12px; color: var(--dw-text-1); }
+
+.compass {
+  display: grid;
+  grid-template-columns: 36px 36px 36px;
+  grid-template-rows: 36px 36px 36px;
+  gap: 4px;
+  width: 116px; margin: 0 auto;
+}
+.compass__btn {
+  background: var(--dw-fill-2);
+  border: 1px solid var(--dw-border);
+  border-radius: var(--dw-radius-md);
+  color: var(--dw-text-3);
+  font: 600 11px var(--dw-font);
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+.compass__btn:hover { background: var(--dw-fill-3); color: var(--dw-text-1); }
+.compass__btn.on {
+  background: var(--dw-util-bg);
+  border-color: var(--dw-util);
+  color: var(--dw-util);
+}
+.compass__center {
+  background: var(--dw-fill-1);
+  border: 1px solid var(--dw-border);
+  border-radius: var(--dw-radius-md);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--dw-text-4);
+  font: 600 9px var(--dw-font);
+  letter-spacing: 0.1em;
+}
+
+.apply-row {
+  margin-top: auto;
+  display: flex; justify-content: flex-end;
+}
+.apply-btn {
+  height: 36px;
+  padding: 0 16px;
+  border: 1px solid var(--dw-util-d);
+  background: var(--dw-util);
+  color: var(--dw-util-text-on, #042f2e);
+  border-radius: var(--dw-radius-md);
+  font: 700 12px var(--dw-font);
+  cursor: pointer;
+  display: inline-flex; align-items: center; gap: 6px;
+  transition: background 0.12s;
+}
+.apply-btn:hover { background: var(--dw-util-hover); }
+
+/* ── Preview pane ─────────────────────────────────────────────────── */
+.gen__preview {
+  padding: 16px 18px 16px 8px;
+  display: flex; flex-direction: column; gap: 10px;
+  min-width: 0;
+}
+.gen__preview-title {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--dw-text-3);
+  font-weight: 700;
+}
+.gen__svg {
+  flex: 1;
+  background:
+    linear-gradient(rgba(255,255,255,0.02), rgba(255,255,255,0.02)),
+    radial-gradient(circle at 50% 60%, rgba(45,212,191,0.06), transparent 60%);
+  border: 1px solid var(--dw-border);
+  border-radius: var(--dw-radius-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 240px;
+  position: relative;
+}
+.gen__svg svg { display: block; max-width: 100%; }
+.gen__readout {
+  display: flex; gap: 14px;
+  font-size: 11px; color: var(--dw-text-3);
+  font-variant-numeric: tabular-nums;
+}
+.gen__readout strong { color: var(--dw-util); font-weight: 600; }
+
+/* ── Range with arc handle ────────────────────────────────────────── */
+.range {
+  position: relative;
+  height: 32px;
+  background: var(--dw-fill-2);
+  border: 1px solid var(--dw-border);
+  border-radius: var(--dw-radius-md);
+  display: flex;
+  align-items: center;
+  padding: 0 10px;
+  gap: 8px;
+}
+.range input[type=range] {
+  flex: 1;
+  -webkit-appearance: none; appearance: none;
+  background: transparent;
+  height: 4px;
+  outline: none;
+  cursor: pointer;
+}
+.range input[type=range]::-webkit-slider-runnable-track {
+  height: 4px;
+  background: linear-gradient(to right, var(--dw-util) var(--pct, 50%), rgba(255,255,255,0.10) var(--pct, 50%));
+  border-radius: var(--dw-radius-pill);
+}
+.range input[type=range]::-moz-range-track {
+  height: 4px;
+  background: rgba(255,255,255,0.10);
+  border-radius: var(--dw-radius-pill);
+}
+.range input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none;
+  width: 14px; height: 14px;
+  background: var(--dw-util);
+  border-radius: 50%;
+  margin-top: -5px;
+  box-shadow: 0 0 0 3px rgba(45,212,191,0.18);
+  cursor: pointer;
+}
+.range input[type=range]::-moz-range-thumb {
+  width: 14px; height: 14px;
+  background: var(--dw-util);
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+}
+.range__val {
+  font: 600 12px ui-monospace, Menlo, monospace;
+  color: var(--dw-util);
+  min-width: 44px; text-align: right;
+}
+
+/* ── Depth-colour ramp ────────────────────────────────────────────── */
+.ramp {
+  height: 14px;
+  border-radius: var(--dw-radius-pill);
+  background: linear-gradient(to right, #67e8f9, #06b6d4, #0e7490, #0c1f35);
+  border: 1px solid var(--dw-border);
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,0.3);
+}
+
+@media (max-width: 760px) {
+  .gen { grid-template-columns: 1fr; }
+  .gen__panel { border-right: none; border-bottom: 1px solid var(--dw-util-d); }
+  .gen__preview { padding: 12px 14px; }
+  .shell { padding: 18px 14px 60px; }
+  .hero h1 { font-size: 22px; }
+}
+</style>
+</head>
+<body>
+<main class="shell">
+  <nav class="crumb" aria-label="Breadcrumb">
+    <a href="./index.html">MightyTwin v2</a>
+    <span class="crumb__sep">/</span>
+    <span>Design Widget</span>
+    <span class="crumb__sep">/</span>
+    <a href="./index.html">Voxel UX Spec</a>
+    <span class="crumb__sep">/</span>
+    <span class="crumb__cur">Generators</span>
+  </nav>
+
+  <header class="hero">
+    <h1>Generator panels</h1>
+    <p>Each card mirrors the in-app PlaceModeBar overlay that mounts when
+       a generator tool is active. Inputs are wired to a live SVG preview
+       so the user sees the block geometry change before they click on
+       the globe.</p>
+  </header>
+
+  <!-- ════════════════════════════════════════════════════════════════
+       Box Fill
+       ════════════════════════════════════════════════════════════════ -->
+  <article class="gen" id="gen-box">
+    <div class="gen__panel">
+      <header class="gen__chrome">
+        <span class="gen__chrome-icon">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
+        </span>
+        <span class="gen__title">Box fill</span>
+        <button class="gen__cancel" aria-label="Cancel" type="button">×</button>
+      </header>
+
+      <div class="field__row">
+        <div class="field">
+          <label class="field__label" for="box-w">Width <span class="unit">blocks</span></label>
+          <input class="input" id="box-w" type="number" min="1" max="100" value="8">
+        </div>
+        <div class="field">
+          <label class="field__label" for="box-d">Depth <span class="unit">blocks</span></label>
+          <input class="input" id="box-d" type="number" min="1" max="100" value="6">
+        </div>
+        <div class="field">
+          <label class="field__label" for="box-h">Height <span class="unit">blocks</span></label>
+          <input class="input" id="box-h" type="number" min="1" max="100" value="4">
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="field__label" for="box-mat">Fill material</label>
+        <select class="select" id="box-mat">
+          <option value="rock">Rock</option>
+          <option value="ore">Ore</option>
+          <option value="overburden" selected>Overburden</option>
+          <option value="fill">Fill</option>
+          <option value="concrete">Concrete</option>
+        </select>
+      </div>
+
+      <label class="row-toggle" data-toggle id="box-terrain">
+        <input type="checkbox">
+        <span class="row-toggle__pip">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        </span>
+        <span class="row-toggle__label">Fill to terrain</span>
+      </label>
+
+      <div class="apply-row">
+        <button class="apply-btn" type="button">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          Apply
+        </button>
+      </div>
+    </div>
+
+    <div class="gen__preview">
+      <div class="gen__preview-title">Live preview</div>
+      <div class="gen__svg" id="box-svg-wrap"></div>
+      <div class="gen__readout">
+        <span><strong id="box-r-vol">192</strong> blocks</span>
+        <span>· <span id="box-r-w">8</span> × <span id="box-r-d">6</span> × <span id="box-r-h">4</span></span>
+      </div>
+    </div>
+  </article>
+
+  <!-- ════════════════════════════════════════════════════════════════
+       Pyramid
+       ════════════════════════════════════════════════════════════════ -->
+  <article class="gen" id="gen-pyr">
+    <div class="gen__panel">
+      <header class="gen__chrome">
+        <span class="gen__chrome-icon">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 16.88a1 1 0 0 1-.32-1.43l9-13.02a1 1 0 0 1 1.64 0l9 13.01a1 1 0 0 1-.32 1.44l-8.51 4.86a2 2 0 0 1-1.98 0Z"/><path d="M12 2v20"/></svg>
+        </span>
+        <span class="gen__title">Pyramid</span>
+        <button class="gen__cancel" aria-label="Cancel" type="button">×</button>
+      </header>
+
+      <div class="field__row">
+        <div class="field">
+          <label class="field__label" for="pyr-bw">Base W <span class="unit">blocks</span></label>
+          <input class="input" id="pyr-bw" type="number" min="1" max="100" value="14">
+        </div>
+        <div class="field">
+          <label class="field__label" for="pyr-bd">Base D <span class="unit">blocks</span></label>
+          <input class="input" id="pyr-bd" type="number" min="1" max="100" value="14">
+        </div>
+        <div class="field">
+          <label class="field__label" for="pyr-h">Height <span class="unit">blocks</span></label>
+          <input class="input" id="pyr-h" type="number" min="1" max="100" value="7">
+        </div>
+      </div>
+
+      <label class="row-toggle on" data-toggle id="pyr-uniform">
+        <input type="checkbox" checked>
+        <span class="row-toggle__pip">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        </span>
+        <span class="row-toggle__label">Apply same angle to all faces</span>
+      </label>
+
+      <div class="field">
+        <label class="field__label" for="pyr-angle-n">Wall angle <span class="unit"><span id="pyr-angle-readout">45°</span></span></label>
+        <div class="range">
+          <input id="pyr-angle-n" type="range" min="15" max="80" value="45" step="1">
+          <span class="range__val" id="pyr-angle-val">45°</span>
+        </div>
+      </div>
+
+      <div id="pyr-perface" style="display:none; flex-direction:column; gap:8px;">
+        <div class="field"><label class="field__label">North</label>
+          <div class="range"><input class="pyr-face-r" data-face="N" type="range" min="15" max="80" value="45"><span class="range__val">45°</span></div>
+        </div>
+        <div class="field"><label class="field__label">South</label>
+          <div class="range"><input class="pyr-face-r" data-face="S" type="range" min="15" max="80" value="45"><span class="range__val">45°</span></div>
+        </div>
+        <div class="field"><label class="field__label">East</label>
+          <div class="range"><input class="pyr-face-r" data-face="E" type="range" min="15" max="80" value="45"><span class="range__val">45°</span></div>
+        </div>
+        <div class="field"><label class="field__label">West</label>
+          <div class="range"><input class="pyr-face-r" data-face="W" type="range" min="15" max="80" value="45"><span class="range__val">45°</span></div>
+        </div>
+      </div>
+
+      <div class="apply-row">
+        <button class="apply-btn" type="button">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          Apply
+        </button>
+      </div>
+    </div>
+
+    <div class="gen__preview">
+      <div class="gen__preview-title">Live preview · stepped block staircase</div>
+      <div class="gen__svg" id="pyr-svg-wrap"></div>
+      <div class="gen__readout">
+        <span>step inset / level = <strong id="pyr-r-step">1.00</strong></span>
+        <span>· tan(α) ÷ blockSize</span>
+        <span>· <strong id="pyr-r-vol">450</strong> blocks</span>
+      </div>
+    </div>
+  </article>
+
+  <!-- ════════════════════════════════════════════════════════════════
+       Wedge / Ramp
+       ════════════════════════════════════════════════════════════════ -->
+  <article class="gen" id="gen-wedge">
+    <div class="gen__panel">
+      <header class="gen__chrome">
+        <span class="gen__chrome-icon">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 19h18"/><path d="M3 19 21 5"/><path d="M21 19V5"/></svg>
+        </span>
+        <span class="gen__title">Wedge / Ramp</span>
+        <button class="gen__cancel" aria-label="Cancel" type="button">×</button>
+      </header>
+
+      <div class="field__row">
+        <div class="field">
+          <label class="field__label" for="w-bw">Base W <span class="unit">blocks</span></label>
+          <input class="input" id="w-bw" type="number" min="1" max="100" value="10">
+        </div>
+        <div class="field">
+          <label class="field__label" for="w-bd">Base D <span class="unit">blocks</span></label>
+          <input class="input" id="w-bd" type="number" min="1" max="100" value="6">
+        </div>
+        <div class="field">
+          <label class="field__label" for="w-h">Height <span class="unit">blocks</span></label>
+          <input class="input" id="w-h" type="number" min="1" max="100" value="5">
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="field__label" for="w-slope">Slope angle <span class="unit"><span id="w-slope-val-l">30°</span></span></label>
+        <div class="range">
+          <input id="w-slope" type="range" min="5" max="60" value="30" step="1">
+          <span class="range__val" id="w-slope-val">30°</span>
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="field__label">Slope direction</label>
+        <div class="compass" id="w-compass">
+          <button class="compass__btn" data-dir="NW" type="button">↖</button>
+          <button class="compass__btn" data-dir="N" type="button">N</button>
+          <button class="compass__btn" data-dir="NE" type="button">↗</button>
+          <button class="compass__btn" data-dir="W" type="button">W</button>
+          <span class="compass__center">UP</span>
+          <button class="compass__btn on" data-dir="E" type="button">E</button>
+          <button class="compass__btn" data-dir="SW" type="button">↙</button>
+          <button class="compass__btn" data-dir="S" type="button">S</button>
+          <button class="compass__btn" data-dir="SE" type="button">↘</button>
+        </div>
+      </div>
+
+      <div class="apply-row">
+        <button class="apply-btn" type="button">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          Apply
+        </button>
+      </div>
+    </div>
+
+    <div class="gen__preview">
+      <div class="gen__preview-title">Live preview · triangular block staircase</div>
+      <div class="gen__svg" id="w-svg-wrap"></div>
+      <div class="gen__readout">
+        <span><strong id="w-r-rise">5</strong> rise</span>
+        <span>· <strong id="w-r-run">10</strong> run</span>
+        <span>· slope <strong id="w-r-slope">30°</strong></span>
+      </div>
+    </div>
+  </article>
+
+  <!-- ════════════════════════════════════════════════════════════════
+       Water fill
+       ════════════════════════════════════════════════════════════════ -->
+  <article class="gen" id="gen-water">
+    <div class="gen__panel">
+      <header class="gen__chrome">
+        <span class="gen__chrome-icon">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 6c.6.5 1.2 1 2.5 1C7 7 7 5 9.5 5c2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/><path d="M2 12c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/><path d="M2 18c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/></svg>
+        </span>
+        <span class="gen__title">Water fill</span>
+        <button class="gen__cancel" aria-label="Cancel" type="button">×</button>
+      </header>
+
+      <div class="field">
+        <label class="field__label">Click point datum</label>
+        <div style="display:flex; gap:8px; align-items:center; padding:8px 10px; background: var(--dw-fill-2); border:1px solid var(--dw-border); border-radius: var(--dw-radius-md); font-family: ui-monospace, Menlo, monospace; font-size: 11px; color: var(--dw-text-2);">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="9"/></svg>
+          <span>151.215, -33.859, 12.4 m</span>
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="field__label" for="wf-elev">Fill elevation <span class="unit">m AHD</span></label>
+        <div style="display:flex; gap:8px;">
+          <input class="input" id="wf-elev" type="number" value="42.5" step="0.1" style="flex:1;">
+          <button type="button" id="wf-from-terrain" style="height:32px; padding:0 10px; background: var(--dw-fill-2); border:1px solid var(--dw-border); border-radius: var(--dw-radius-md); color: var(--dw-text-1); font:600 11px var(--dw-font); cursor:pointer; white-space: nowrap; display:inline-flex; align-items:center; gap:6px;">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m8 3 4 8 5-5 5 15H2L8 3Z"/></svg>
+            From terrain
+          </button>
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="field__label">Depth colour ramp</label>
+        <div class="ramp" aria-hidden="true"></div>
+        <div style="display:flex; justify-content:space-between; font-size:9px; color:var(--dw-text-4); padding-top:2px;">
+          <span>shallow</span>
+          <span>deep</span>
+          <span>near-black</span>
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="field__label" for="wf-absorb">Absorption <span class="unit"><span id="wf-absorb-val-l">0.45</span></span></label>
+        <div class="range">
+          <input id="wf-absorb" type="range" min="0" max="1" step="0.01" value="0.45">
+          <span class="range__val" id="wf-absorb-val">0.45</span>
+        </div>
+      </div>
+
+      <div class="apply-row">
+        <button class="apply-btn" type="button">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          Apply
+        </button>
+      </div>
+    </div>
+
+    <div class="gen__preview">
+      <div class="gen__preview-title">Live preview · cross-section</div>
+      <div class="gen__svg" id="wf-svg-wrap"></div>
+      <div class="gen__readout">
+        <span>elevation <strong id="wf-r-elev">42.5</strong> m</span>
+        <span>· abs <strong id="wf-r-abs">0.45</strong></span>
+      </div>
+    </div>
+  </article>
+
+  <!-- ════════════════════════════════════════════════════════════════
+       Terrain mask
+       ════════════════════════════════════════════════════════════════ -->
+  <article class="gen" id="gen-tm">
+    <div class="gen__panel">
+      <header class="gen__chrome">
+        <span class="gen__chrome-icon">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m8 3 4 8 5-5 5 15H2L8 3Z"/></svg>
+        </span>
+        <span class="gen__title">Terrain mask</span>
+        <button class="gen__cancel" aria-label="Cancel" type="button">×</button>
+      </header>
+
+      <div class="field">
+        <label class="field__label">Polygon source</label>
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:6px;">
+          <button type="button" class="seg on" data-src="draw" style="height:32px; background: var(--dw-util-bg); border:1px solid var(--dw-util); border-radius: var(--dw-radius-md); color: var(--dw-util); font:600 11px var(--dw-font); cursor:pointer; display:inline-flex; align-items:center; justify-content:center; gap:6px;">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>
+            Draw new
+          </button>
+          <button type="button" class="seg" data-src="existing" style="height:32px; background: var(--dw-fill-2); border:1px solid var(--dw-border); border-radius: var(--dw-radius-md); color: var(--dw-text-2); font:600 11px var(--dw-font); cursor:pointer; display:inline-flex; align-items:center; justify-content:center; gap:6px;">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12,3 22,8.5 22,15.5 12,21 2,15.5 2,8.5"/></svg>
+            Use existing
+          </button>
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="field__label">Target scope</label>
+        <div style="display:flex; flex-direction: column; gap: 4px;">
+          <label class="row-toggle on" style="cursor:pointer;">
+            <input type="radio" name="tm-scope" value="layer" checked style="display:none;">
+            <span class="row-toggle__pip" style="border-radius:50%;">
+              <svg width="8" height="8" viewBox="0 0 24 24" fill="currentColor" stroke="none"><circle cx="12" cy="12" r="10"/></svg>
+            </span>
+            <span class="row-toggle__label">Sketch layer <span style="color: var(--dw-text-4); font-size: 10px;">(per user)</span></span>
+          </label>
+          <label class="row-toggle" style="cursor:pointer;">
+            <input type="radio" name="tm-scope" value="site" style="display:none;">
+            <span class="row-toggle__pip" style="border-radius:50%;"></span>
+            <span class="row-toggle__label">Site terrain <span style="color: var(--dw-text-4); font-size: 10px;">(shared, admin)</span></span>
+          </label>
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="field__label" for="tm-level">Block level</label>
+        <select class="select" id="tm-level">
+          <option value="0.5">50 cm (L2)</option>
+          <option value="1" selected>1 m (L3)</option>
+          <option value="2">2 m (L4)</option>
+          <option value="4">4 m (L5)</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label class="field__label" for="tm-depth">Depth below surface <span class="unit"><span id="tm-depth-l">3</span> blocks</span></label>
+        <div class="range">
+          <input id="tm-depth" type="range" min="1" max="10" value="3" step="1">
+          <span class="range__val" id="tm-depth-val">3</span>
+        </div>
+      </div>
+
+      <div class="apply-row">
+        <button class="apply-btn" type="button">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          Apply
+        </button>
+      </div>
+    </div>
+
+    <div class="gen__preview">
+      <div class="gen__preview-title">Live preview · cross-section through polygon</div>
+      <div class="gen__svg" id="tm-svg-wrap"></div>
+      <div class="gen__readout">
+        <span>level <strong id="tm-r-level">1.0 m</strong></span>
+        <span>· depth <strong id="tm-r-depth">3</strong> blocks</span>
+      </div>
+    </div>
+  </article>
+</main>
+
+<script>
+// ── Helpers ─────────────────────────────────────────────────────────
+const NS = 'http://www.w3.org/2000/svg';
+function el(tag, attrs = {}, parent) {
+  const node = document.createElementNS(NS, tag);
+  for (const k in attrs) node.setAttribute(k, String(attrs[k]));
+  if (parent) parent.appendChild(node);
+  return node;
+}
+function clear(node) { while (node.firstChild) node.removeChild(node.firstChild); }
+function makeSvg(wrap, w = 360, h = 240) {
+  clear(wrap);
+  const svg = el('svg', {
+    viewBox: `0 0 ${w} ${h}`,
+    width: '100%',
+    preserveAspectRatio: 'xMidYMid meet',
+  }, wrap);
+  return svg;
+}
+
+// Isometric helper: project (x, y, z) → (sx, sy)
+const ISO_AX = Math.cos(Math.PI / 6);
+const ISO_AY = Math.sin(Math.PI / 6);
+function iso(x, y, z, ox, oy) {
+  return {
+    x: ox + (x - y) * ISO_AX,
+    y: oy + (x + y) * ISO_AY - z,
+  };
+}
+
+// Draw an isometric block (1 unit edge size) at (gx, gy, gz) origin (ox, oy)
+function isoBlock(svg, gx, gy, gz, sz, ox, oy, fill) {
+  const x = gx * sz, y = gy * sz, z = gz * sz;
+  const top = [
+    iso(x,      y,      z + sz, ox, oy),
+    iso(x + sz, y,      z + sz, ox, oy),
+    iso(x + sz, y + sz, z + sz, ox, oy),
+    iso(x,      y + sz, z + sz, ox, oy),
+  ];
+  const left = [
+    iso(x,      y,      z,      ox, oy),
+    iso(x,      y + sz, z,      ox, oy),
+    iso(x,      y + sz, z + sz, ox, oy),
+    iso(x,      y,      z + sz, ox, oy),
+  ];
+  const right = [
+    iso(x + sz, y,      z,      ox, oy),
+    iso(x + sz, y + sz, z,      ox, oy),
+    iso(x + sz, y + sz, z + sz, ox, oy),
+    iso(x + sz, y,      z + sz, ox, oy),
+  ];
+  // Top is brightest, left mid, right darkest (consistent ambient)
+  const t = lighten(fill, 0.2);
+  const l = darken(fill, 0.10);
+  const r = darken(fill, 0.30);
+  const stroke = darken(fill, 0.55);
+  el('polygon', { points: top.map(p => `${p.x},${p.y}`).join(' '), fill: t, stroke, 'stroke-width': 0.7 }, svg);
+  el('polygon', { points: right.map(p => `${p.x},${p.y}`).join(' '), fill: r, stroke, 'stroke-width': 0.7 }, svg);
+  el('polygon', { points: left.map(p => `${p.x},${p.y}`).join(' '), fill: l, stroke, 'stroke-width': 0.7 }, svg);
+}
+function lighten(hex, amt) {
+  const c = hexToRgb(hex);
+  return `rgb(${clamp(c.r + 255 * amt)}, ${clamp(c.g + 255 * amt)}, ${clamp(c.b + 255 * amt)})`;
+}
+function darken(hex, amt) {
+  const c = hexToRgb(hex);
+  return `rgb(${clamp(c.r * (1 - amt))}, ${clamp(c.g * (1 - amt))}, ${clamp(c.b * (1 - amt))})`;
+}
+function hexToRgb(hex) {
+  const h = hex.replace('#', '');
+  return { r: parseInt(h.slice(0, 2), 16), g: parseInt(h.slice(2, 4), 16), b: parseInt(h.slice(4, 6), 16) };
+}
+function clamp(v) { return Math.max(0, Math.min(255, Math.round(v))); }
+const MATERIAL_HEX = {
+  rock: '#4a5568', ore: '#d69e2e', overburden: '#8b7355',
+  fill: '#a0826d', concrete: '#b3b3b3', steel: '#6b7280',
+  water: '#06b6d4', topsoil: '#654321',
+};
+
+// ── Range progress fill ─────────────────────────────────────────────
+function syncRange(input) {
+  const min = parseFloat(input.min || '0');
+  const max = parseFloat(input.max || '100');
+  const v = parseFloat(input.value);
+  const pct = ((v - min) / (max - min)) * 100;
+  input.style.setProperty('--pct', pct + '%');
+}
+document.querySelectorAll('input[type=range]').forEach(r => {
+  syncRange(r);
+  r.addEventListener('input', () => syncRange(r));
+});
+
+// ── Toggle helper ───────────────────────────────────────────────────
+document.querySelectorAll('[data-toggle]').forEach(t => {
+  const cb = t.querySelector('input');
+  t.addEventListener('click', e => {
+    if (e.target.tagName !== 'INPUT') cb.checked = !cb.checked;
+    t.classList.toggle('on', cb.checked);
+    if (t.id === 'pyr-uniform') updatePyramidPerFaceVisibility();
+    drawAll();
+  });
+});
+
+// ── Box ─────────────────────────────────────────────────────────────
+function drawBox() {
+  const w = parseInt(document.getElementById('box-w').value || '1', 10);
+  const d = parseInt(document.getElementById('box-d').value || '1', 10);
+  const h = parseInt(document.getElementById('box-h').value || '1', 10);
+  const mat = document.getElementById('box-mat').value;
+  const colour = MATERIAL_HEX[mat] || '#4a5568';
+  const wrap = document.getElementById('box-svg-wrap');
+  const svg = makeSvg(wrap, 360, 240);
+  // Auto-scale block size to fit
+  const maxDim = Math.max(w, d, h);
+  const sz = Math.min(220 / (maxDim * (ISO_AX + ISO_AY) + 0.001), 22);
+  const totalIsoW = (w + d) * ISO_AX * sz;
+  const ox = 180 - (w - d) * ISO_AX * sz / 2;
+  const oy = 50;
+  // Render painter's order: lower-z first, then back-to-front
+  for (let z = 0; z < h; z++) {
+    for (let y = d - 1; y >= 0; y--) {
+      for (let x = 0; x < w; x++) {
+        // Draw only the visible shell — interior blocks are hidden
+        const shell = (x === 0) || (x === w - 1) || (y === 0) || (y === d - 1) || (z === 0) || (z === h - 1);
+        if (!shell) continue;
+        isoBlock(svg, x, y, z, sz, ox, oy, colour);
+      }
+    }
+  }
+  document.getElementById('box-r-vol').textContent = (w * d * h).toLocaleString();
+  document.getElementById('box-r-w').textContent = w;
+  document.getElementById('box-r-d').textContent = d;
+  document.getElementById('box-r-h').textContent = h;
+}
+['box-w', 'box-d', 'box-h', 'box-mat'].forEach(id =>
+  document.getElementById(id).addEventListener('input', drawBox));
+
+// ── Pyramid ─────────────────────────────────────────────────────────
+function updatePyramidPerFaceVisibility() {
+  const uniform = document.getElementById('pyr-uniform').classList.contains('on');
+  document.getElementById('pyr-perface').style.display = uniform ? 'none' : 'flex';
+  document.getElementById('pyr-angle-n').parentElement.parentElement.style.display = uniform ? 'flex' : 'none';
+  // Sync per-face range display values
+  document.querySelectorAll('.pyr-face-r').forEach(r => {
+    syncRange(r);
+    r.parentElement.querySelector('.range__val').textContent = `${r.value}°`;
+  });
+}
+function drawPyramid() {
+  const baseW = parseInt(document.getElementById('pyr-bw').value || '1', 10);
+  const baseD = parseInt(document.getElementById('pyr-bd').value || '1', 10);
+  const height = parseInt(document.getElementById('pyr-h').value || '1', 10);
+  const uniform = document.getElementById('pyr-uniform').classList.contains('on');
+  const angle = parseFloat(document.getElementById('pyr-angle-n').value || '45');
+
+  document.getElementById('pyr-angle-val').textContent = `${angle}°`;
+  document.getElementById('pyr-angle-readout').textContent = `${angle}°`;
+
+  // step inset = floor(level × tan(angle) / blockSize) — blockSize = 1 in block units
+  const tanA = Math.tan(angle * Math.PI / 180);
+  const stepPerLvl = tanA;
+  document.getElementById('pyr-r-step').textContent = stepPerLvl.toFixed(2);
+
+  const wrap = document.getElementById('pyr-svg-wrap');
+  const svg = makeSvg(wrap, 360, 240);
+  const maxDim = Math.max(baseW, baseD, height + Math.ceil(height * tanA));
+  const sz = Math.min(160 / (maxDim * (ISO_AX + ISO_AY) + 0.001), 16);
+  const ox = 180 - (baseW - baseD) * ISO_AX * sz / 2;
+  const oy = 80;
+
+  let totalBlocks = 0;
+  for (let z = 0; z < height; z++) {
+    const inset = Math.floor(z * tanA);
+    const w = Math.max(1, baseW - 2 * inset);
+    const d = Math.max(1, baseD - 2 * inset);
+    const x0 = inset, y0 = inset;
+    for (let y = y0 + d - 1; y >= y0; y--) {
+      for (let x = x0; x < x0 + w; x++) {
+        // Visible shell only
+        const onTop = (z === height - 1) || (Math.floor((z + 1) * tanA) > inset);
+        const onSide = (x === x0) || (x === x0 + w - 1) || (y === y0) || (y === y0 + d - 1);
+        if (!onTop && !onSide) continue;
+        isoBlock(svg, x, y, z, sz, ox, oy, '#a0826d');
+        totalBlocks++;
+      }
+    }
+  }
+  document.getElementById('pyr-r-vol').textContent = (totalBlocks * 1.4 | 0).toLocaleString();
+}
+['pyr-bw', 'pyr-bd', 'pyr-h', 'pyr-angle-n'].forEach(id =>
+  document.getElementById(id).addEventListener('input', drawPyramid));
+document.querySelectorAll('.pyr-face-r').forEach(r => {
+  r.addEventListener('input', () => {
+    syncRange(r);
+    r.parentElement.querySelector('.range__val').textContent = `${r.value}°`;
+    drawPyramid();
+  });
+});
+
+// ── Wedge ───────────────────────────────────────────────────────────
+function drawWedge() {
+  const baseW = parseInt(document.getElementById('w-bw').value || '1', 10);
+  const baseD = parseInt(document.getElementById('w-bd').value || '1', 10);
+  const height = parseInt(document.getElementById('w-h').value || '1', 10);
+  const slope = parseFloat(document.getElementById('w-slope').value || '30');
+  document.getElementById('w-slope-val').textContent = `${slope}°`;
+  document.getElementById('w-slope-val-l').textContent = `${slope}°`;
+  document.getElementById('w-r-rise').textContent = height;
+  document.getElementById('w-r-run').textContent = baseW;
+  document.getElementById('w-r-slope').textContent = `${slope}°`;
+
+  const tanA = Math.tan(slope * Math.PI / 180);
+  // Direction governs orientation. We render as if slope rises to the +X side.
+  const wrap = document.getElementById('w-svg-wrap');
+  const svg = makeSvg(wrap, 360, 240);
+  const maxDim = Math.max(baseW, baseD, height);
+  const sz = Math.min(180 / (maxDim * (ISO_AX + ISO_AY) + 0.001), 18);
+  const ox = 180 - (baseW - baseD) * ISO_AX * sz / 2;
+  const oy = 80;
+
+  for (let x = 0; x < baseW; x++) {
+    // Block height at column x = floor((baseW - x) * tanA), clamped ≤ height
+    const h = Math.min(height, Math.max(1, Math.floor((baseW - x) * tanA)));
+    for (let z = 0; z < h; z++) {
+      for (let y = baseD - 1; y >= 0; y--) {
+        const onTop = z === h - 1;
+        const onSide = (y === 0) || (y === baseD - 1) || (z === 0) || (x === 0) || (x === baseW - 1);
+        if (!onTop && !onSide) continue;
+        isoBlock(svg, x, y, z, sz, ox, oy, '#8b7355');
+      }
+    }
+  }
+}
+['w-bw', 'w-bd', 'w-h', 'w-slope'].forEach(id =>
+  document.getElementById(id).addEventListener('input', drawWedge));
+document.getElementById('w-compass').addEventListener('click', e => {
+  const btn = e.target.closest('.compass__btn');
+  if (!btn) return;
+  document.querySelectorAll('#w-compass .compass__btn.on').forEach(a => a.classList.remove('on'));
+  btn.classList.add('on');
+});
+
+// ── Water fill ──────────────────────────────────────────────────────
+function drawWater() {
+  const elev = parseFloat(document.getElementById('wf-elev').value || '0');
+  const abs = parseFloat(document.getElementById('wf-absorb').value || '0.5');
+  document.getElementById('wf-absorb-val').textContent = abs.toFixed(2);
+  document.getElementById('wf-absorb-val-l').textContent = abs.toFixed(2);
+  document.getElementById('wf-r-elev').textContent = elev.toFixed(1);
+  document.getElementById('wf-r-abs').textContent = abs.toFixed(2);
+
+  const wrap = document.getElementById('wf-svg-wrap');
+  const svg = makeSvg(wrap, 360, 240);
+  // Cross-section: terrain profile + water surface
+  const w = 360, h = 240;
+  const surfaceY = 90;
+  // Terrain — sinuous baseline
+  const pts = [];
+  for (let x = 0; x <= w; x += 8) {
+    const t = x / w;
+    const y = 100
+      + 70 * Math.sin(t * 4.4 + 0.4)
+      + 25 * Math.sin(t * 12)
+      + 10 * Math.sin(t * 28);
+    pts.push([x, y]);
+  }
+  // Water polygon — surface flat at surfaceY, terrain along bottom
+  let waterPath = `M 0 ${surfaceY} L ${w} ${surfaceY}`;
+  for (let i = pts.length - 1; i >= 0; i--) {
+    waterPath += ` L ${pts[i][0]} ${pts[i][1]}`;
+  }
+  waterPath += ' Z';
+
+  // Depth-graded fill — clipPath into a vertical gradient driven by absorption
+  el('defs', {}, svg).innerHTML = `
+    <linearGradient id="wf-grad-${Math.random().toString(36).slice(2,6)}" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#67e8f9" stop-opacity="${0.85 - abs * 0.2}"/>
+      <stop offset="${0.4 - abs * 0.2}" stop-color="#06b6d4" stop-opacity="${0.9}"/>
+      <stop offset="${0.7 - abs * 0.1}" stop-color="#0c4a6e" stop-opacity="${0.95}"/>
+      <stop offset="1" stop-color="#03101f" stop-opacity="1"/>
+    </linearGradient>
+  `;
+  const gradId = svg.querySelector('linearGradient').id;
+
+  // Sky band (subtle)
+  el('rect', { x: 0, y: 0, width: w, height: surfaceY, fill: 'rgba(99,102,241,0.05)' }, svg);
+  // Water polygon
+  el('path', { d: waterPath, fill: `url(#${gradId})` }, svg);
+  // Surface line + ripples
+  const surf = el('path', {
+    d: `M 0 ${surfaceY} ${pts.map((_, i) => i % 4 === 0 ? `Q ${i * 8 + 4} ${surfaceY - 1.5} ${i * 8 + 8} ${surfaceY}` : '').filter(Boolean).join(' ')} L ${w} ${surfaceY}`,
+    fill: 'none', stroke: 'rgba(103, 232, 249, 0.6)', 'stroke-width': 1.2,
+  }, svg);
+  // Terrain
+  let terr = `M 0 ${pts[0][1]}`;
+  for (const p of pts) terr += ` L ${p[0]} ${p[1]}`;
+  terr += ` L ${w} 240 L 0 240 Z`;
+  el('path', { d: terr, fill: '#1f2331', stroke: 'rgba(255,255,255,0.10)' }, svg);
+  // Click point
+  el('circle', { cx: 180, cy: surfaceY, r: 5, fill: '#2dd4bf', stroke: 'rgba(2, 47, 46, 0.95)', 'stroke-width': 2 }, svg);
+  el('circle', { cx: 180, cy: surfaceY, r: 12, fill: 'none', stroke: 'rgba(45, 212, 191, 0.5)', 'stroke-width': 1 }, svg);
+  // Elevation label
+  const lab = el('g', { transform: `translate(212, ${surfaceY - 12})` }, svg);
+  el('rect', { x: 0, y: 0, width: 70, height: 22, rx: 4, fill: 'rgba(20, 20, 28, 0.92)', stroke: 'rgba(45, 212, 191, 0.6)' }, lab);
+  const txt = el('text', { x: 35, y: 14, 'text-anchor': 'middle', 'font-size': 11, 'font-family': '-apple-system', 'font-weight': 600, fill: '#2dd4bf' }, lab);
+  txt.textContent = `${elev.toFixed(1)} m AHD`;
+}
+['wf-elev', 'wf-absorb'].forEach(id =>
+  document.getElementById(id).addEventListener('input', drawWater));
+document.getElementById('wf-from-terrain').addEventListener('click', () => {
+  document.getElementById('wf-elev').value = (38 + Math.random() * 12).toFixed(1);
+  drawWater();
+});
+
+// ── Terrain mask ────────────────────────────────────────────────────
+function drawTerrainMask() {
+  const level = parseFloat(document.getElementById('tm-level').value);
+  const depth = parseInt(document.getElementById('tm-depth').value || '1', 10);
+  document.getElementById('tm-depth-val').textContent = depth;
+  document.getElementById('tm-depth-l').textContent = depth;
+  document.getElementById('tm-r-depth').textContent = depth;
+  const lvlLabel = level < 1 ? `${level * 100} cm` : `${level} m`;
+  document.getElementById('tm-r-level').textContent = lvlLabel;
+
+  const wrap = document.getElementById('tm-svg-wrap');
+  const svg = makeSvg(wrap, 360, 240);
+  const w = 360;
+
+  // Terrain surface
+  const pts = [];
+  for (let x = 0; x <= w; x += 6) {
+    const t = x / w;
+    const y = 110
+      + 38 * Math.sin(t * 3.2 + 0.7)
+      + 14 * Math.sin(t * 9)
+      + 6 * Math.sin(t * 22);
+    pts.push([x, y]);
+  }
+
+  // Polygon footprint — rectangle from x=80 → 280
+  const polyX0 = 80, polyX1 = 280;
+
+  // Filled terrain
+  let terr = `M 0 ${pts[0][1]}`;
+  for (const p of pts) terr += ` L ${p[0]} ${p[1]}`;
+  terr += ` L ${w} 240 L 0 240 Z`;
+  el('path', { d: terr, fill: '#1a1f2e', stroke: 'rgba(255,255,255,0.10)', 'stroke-width': 1 }, svg);
+
+  // Polygon-zone vertical lines (boundaries)
+  el('line', { x1: polyX0, y1: 0, x2: polyX0, y2: 240, stroke: 'rgba(45, 212, 191, 0.5)', 'stroke-dasharray': '3 4' }, svg);
+  el('line', { x1: polyX1, y1: 0, x2: polyX1, y2: 240, stroke: 'rgba(45, 212, 191, 0.5)', 'stroke-dasharray': '3 4' }, svg);
+
+  // Block grid inside polygon — depth blocks below the surface
+  // Convert level to pixel: 1m maps to ~10 SVG units arbitrary.
+  const blockPx = 8 * level;
+  for (let x = polyX0; x < polyX1; x += blockPx) {
+    // surface y at this x via interpolation
+    const idx = Math.min(pts.length - 2, Math.max(0, Math.floor(x / 6)));
+    const t = (x - pts[idx][0]) / (pts[idx + 1][0] - pts[idx][0]);
+    const surfY = pts[idx][1] + t * (pts[idx + 1][1] - pts[idx][1]);
+    for (let d = 0; d < depth; d++) {
+      const top = surfY + d * blockPx;
+      const opacity = 1 - (d / depth) * 0.45;
+      el('rect', {
+        x, y: top, width: blockPx - 0.5, height: blockPx - 0.5,
+        fill: `rgba(160, 130, 109, ${opacity})`,
+        stroke: 'rgba(45, 212, 191, 0.55)',
+        'stroke-width': 0.6,
+      }, svg);
+    }
+  }
+
+  // Polygon outline at top
+  el('path', {
+    d: `M ${polyX0} ${pts[Math.floor(polyX0 / 6)][1] - 4} L ${polyX1} ${pts[Math.floor(polyX1 / 6)][1] - 4}`,
+    fill: 'none', stroke: '#2dd4bf', 'stroke-width': 2.5,
+  }, svg);
+  el('text', { x: (polyX0 + polyX1) / 2, y: pts[Math.floor((polyX0 + polyX1) / 12)][1] - 12, 'text-anchor': 'middle', 'font-size': 10, fill: '#2dd4bf', 'font-weight': 700, 'font-family': '-apple-system' }, svg).textContent = 'POLYGON';
+
+  // Annotation — surface label
+  el('text', { x: 12, y: pts[2][1] - 4, 'font-size': 9, fill: '#8b8fa8', 'font-family': '-apple-system' }, svg).textContent = 'terrain surface';
+  el('text', { x: 12, y: 232, 'font-size': 9, fill: '#8b8fa8', 'font-family': '-apple-system' }, svg).textContent = `${depth} block${depth === 1 ? '' : 's'} × ${lvlLabel}`;
+}
+['tm-level', 'tm-depth'].forEach(id =>
+  document.getElementById(id).addEventListener('input', drawTerrainMask));
+
+// ── Initial paint ─────────────────────────────────────────────────
+function drawAll() {
+  drawBox();
+  drawPyramid();
+  drawWedge();
+  drawWater();
+  drawTerrainMask();
+}
+updatePyramidPerFaceVisibility();
+drawAll();
+</script>
+</body>
+</html>

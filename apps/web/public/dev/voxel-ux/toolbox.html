@@ -1,0 +1,772 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Toolbox — Voxel UX Spec — MightyTwin v2</title>
+<style>
+:root {
+  --dw-util: #2dd4bf;
+  --dw-util-hover: #14b8a6;
+  --dw-util-d: rgba(45, 212, 191, 0.4);
+  --dw-util-bg: rgba(45, 212, 191, 0.14);
+  --dw-util-bg-soft: rgba(45, 212, 191, 0.08);
+  --dw-warning: #fbbf24;
+  --dw-warning-l: #fcd34d;
+  --dw-bg: #0f0f14;
+  --dw-bg-2: #14141c;
+  --dw-surface-glass: rgba(20, 20, 28, 0.98);
+  --dw-fill-1: rgba(255, 255, 255, 0.04);
+  --dw-fill-2: rgba(255, 255, 255, 0.06);
+  --dw-fill-3: rgba(255, 255, 255, 0.08);
+  --dw-border: rgba(255, 255, 255, 0.10);
+  --dw-border-strong: rgba(255, 255, 255, 0.18);
+  --dw-text-strong: #ffffff;
+  --dw-text-1: rgba(255, 255, 255, 0.92);
+  --dw-text-2: rgba(255, 255, 255, 0.70);
+  --dw-text-3: #8b8fa8;
+  --dw-text-4: rgba(255, 255, 255, 0.35);
+  --dw-radius-sm: 4px;
+  --dw-radius-md: 6px;
+  --dw-radius-lg: 8px;
+  --dw-radius-xl: 10px;
+  --dw-radius-2xl: 12px;
+  --dw-radius-pill: 999px;
+  --dw-font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+body {
+  background: var(--dw-bg);
+  color: var(--dw-text-1);
+  font-family: var(--dw-font);
+  font-size: 13px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+.shell { max-width: 1080px; margin: 0 auto; padding: 32px 24px 80px; }
+.crumb {
+  font-size: 11px; color: var(--dw-text-3);
+  text-transform: uppercase; letter-spacing: 0.06em;
+  margin-bottom: 18px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+}
+.crumb a { color: var(--dw-text-3); text-decoration: none; }
+.crumb a:hover { color: var(--dw-util); }
+.crumb__sep { color: var(--dw-text-4); }
+.crumb__cur { color: var(--dw-util); }
+
+.hero { margin-bottom: 32px; }
+.hero h1 {
+  font-size: 28px; font-weight: 700; letter-spacing: -0.02em;
+  color: var(--dw-text-strong); margin-bottom: 6px;
+}
+.hero p { color: var(--dw-text-2); font-size: 14px; max-width: 620px; }
+
+/* ── Specimen layout: panel beside notes ──────────────────────────── */
+.specimen {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: 32px;
+  align-items: start;
+}
+.specimen__notes h3 {
+  font-size: 13px; font-weight: 700; letter-spacing: -0.005em;
+  color: var(--dw-text-strong); margin-bottom: 6px;
+}
+.specimen__notes p {
+  font-size: 12px; color: var(--dw-text-3); margin-bottom: 16px; line-height: 1.6;
+}
+
+/* ── Design widget panel (mock) ───────────────────────────────────── */
+.design-widget {
+  background: var(--dw-surface-glass);
+  border: 1px solid var(--dw-border-strong);
+  border-radius: var(--dw-radius-2xl);
+  width: 320px;
+  height: 720px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+  position: sticky;
+  top: 24px;
+}
+
+.dw-rail {
+  display: flex;
+  border-bottom: 1px solid var(--dw-border);
+  padding: 0 6px;
+  height: 44px;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+}
+.dw-rail-btn {
+  flex: 1;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--dw-radius-md);
+  color: var(--dw-text-3);
+  font: 600 11px var(--dw-font);
+  cursor: pointer;
+  transition: all 0.12s;
+}
+.dw-rail-btn:hover { color: var(--dw-text-1); background: var(--dw-fill-2); }
+.dw-rail-btn.active {
+  color: var(--dw-util);
+  background: var(--dw-util-bg);
+  border-color: var(--dw-util-d);
+}
+.dw-rail-btn svg { flex-shrink: 0; }
+
+.dw-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* ── Tool group ───────────────────────────────────────────────────── */
+.tool-group { display: flex; flex-direction: column; gap: 8px; }
+.tool-group__label {
+  font-size: 10px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.06em;
+  color: var(--dw-text-3);
+  display: flex; align-items: center; gap: 8px;
+}
+.tool-group__label::after {
+  content: ''; flex: 1; height: 1px;
+  background: var(--dw-border);
+}
+.tool-group__label .badge {
+  font-size: 9px; color: var(--dw-util);
+  background: var(--dw-util-bg);
+  border: 1px solid var(--dw-util-d);
+  padding: 1px 6px; border-radius: var(--dw-radius-pill);
+  letter-spacing: 0.04em; font-weight: 600;
+}
+
+.tool-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+.tool-btn {
+  height: 56px;
+  background: var(--dw-fill-1);
+  border: 1px solid var(--dw-border);
+  border-radius: var(--dw-radius-lg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  color: var(--dw-text-2);
+  cursor: pointer;
+  transition: all 0.12s;
+  font: 600 10px var(--dw-font);
+  padding: 4px 2px;
+  position: relative;
+}
+.tool-btn:hover {
+  background: var(--dw-fill-2);
+  color: var(--dw-text-1);
+  border-color: var(--dw-border-strong);
+}
+.tool-btn.active {
+  background: var(--dw-util-bg);
+  border-color: var(--dw-util);
+  color: var(--dw-util);
+}
+.tool-btn .icon { width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; }
+.tool-btn .label { line-height: 1.1; text-align: center; }
+.tool-btn .kbd {
+  position: absolute; top: 4px; right: 4px;
+  font-size: 8px; padding: 1px 3px;
+  background: var(--dw-fill-3); color: var(--dw-text-4);
+  border-radius: var(--dw-radius-sm);
+  font-family: ui-monospace, Menlo, monospace;
+}
+
+/* ── Block-level dropdown ─────────────────────────────────────────── */
+.field {
+  display: flex; flex-direction: column; gap: 6px;
+}
+.field__label {
+  font-size: 10px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.06em;
+  color: var(--dw-text-3);
+}
+.dropdown {
+  position: relative;
+  height: 36px;
+  background: var(--dw-fill-2);
+  border: 1px solid var(--dw-border);
+  border-radius: var(--dw-radius-lg);
+  display: flex; align-items: center;
+  padding: 0 12px;
+  font: 500 12px var(--dw-font);
+  color: var(--dw-text-1);
+  cursor: pointer;
+  transition: all 0.12s;
+  user-select: none;
+}
+.dropdown:hover { background: var(--dw-fill-3); border-color: var(--dw-border-strong); }
+.dropdown.open { border-color: var(--dw-util); background: var(--dw-util-bg-soft); }
+.dropdown__value { flex: 1; }
+.dropdown__chev { color: var(--dw-text-3); transition: transform 0.14s; }
+.dropdown.open .dropdown__chev { transform: rotate(180deg); color: var(--dw-util); }
+.dropdown__menu {
+  position: absolute; top: calc(100% + 4px); left: 0; right: 0;
+  background: var(--dw-surface-glass);
+  border: 1px solid var(--dw-border-strong);
+  border-radius: var(--dw-radius-lg);
+  z-index: 10;
+  padding: 4px;
+  display: none;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.55);
+  max-height: 220px; overflow-y: auto;
+}
+.dropdown.open .dropdown__menu { display: block; }
+.dropdown__opt {
+  height: 32px;
+  padding: 0 10px;
+  display: flex;
+  align-items: center;
+  border-radius: var(--dw-radius-md);
+  font-size: 12px;
+  color: var(--dw-text-1);
+  cursor: pointer;
+  gap: 8px;
+}
+.dropdown__opt:hover { background: var(--dw-fill-3); color: var(--dw-text-strong); }
+.dropdown__opt.is-on { color: var(--dw-util); background: var(--dw-util-bg); }
+.dropdown__opt .meta { margin-left: auto; font-size: 10px; color: var(--dw-text-4); font-variant-numeric: tabular-nums; }
+
+/* ── Material palette strip ───────────────────────────────────────── */
+.palette {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+.swatch {
+  background: var(--dw-fill-1);
+  border: 1px solid var(--dw-border);
+  border-radius: var(--dw-radius-lg);
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  cursor: pointer;
+  transition: all 0.12s;
+}
+.swatch:hover { background: var(--dw-fill-2); border-color: var(--dw-border-strong); }
+.swatch.active { border-color: var(--dw-util); background: var(--dw-util-bg-soft); }
+.swatch__chip {
+  height: 24px;
+  border-radius: var(--dw-radius-md);
+  position: relative;
+  overflow: hidden;
+}
+.swatch__chip::after {
+  /* "side face" shading band — a slim darker strip on the bottom edge */
+  content: ''; position: absolute; left: 0; right: 0; bottom: 0;
+  height: 8px; background: rgba(0, 0, 0, 0.35);
+}
+.swatch__name {
+  font: 600 10px var(--dw-font);
+  color: var(--dw-text-strong);
+  letter-spacing: -0.005em;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.swatch__ifc {
+  font: 500 8px ui-monospace, Menlo, monospace;
+  color: var(--dw-text-3);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+/* ── Render mode tabs ─────────────────────────────────────────────── */
+.tabs {
+  display: flex;
+  background: var(--dw-fill-1);
+  border: 1px solid var(--dw-border);
+  border-radius: var(--dw-radius-lg);
+  padding: 3px;
+  gap: 2px;
+}
+.tabs__btn {
+  flex: 1; height: 30px;
+  display: flex; align-items: center; justify-content: center;
+  gap: 6px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--dw-radius-md);
+  color: var(--dw-text-2);
+  font: 600 11px var(--dw-font);
+  cursor: pointer;
+  transition: all 0.12s;
+}
+.tabs__btn:hover { color: var(--dw-text-1); }
+.tabs__btn.active {
+  background: var(--dw-util-bg);
+  border-color: var(--dw-util-d);
+  color: var(--dw-util);
+}
+
+/* ── Status bar ───────────────────────────────────────────────────── */
+.status-bar {
+  height: 28px;
+  border-top: 1px solid var(--dw-border);
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  font-size: 10px;
+  color: var(--dw-text-3);
+  flex-shrink: 0;
+  gap: 14px;
+}
+.status-bar__pip {
+  width: 6px; height: 6px; border-radius: 50%; background: var(--dw-util);
+  box-shadow: 0 0 6px var(--dw-util);
+}
+
+@media (max-width: 760px) {
+  .specimen { grid-template-columns: 1fr; }
+  .design-widget { width: 100%; max-width: 360px; margin: 0 auto; position: static; }
+  .shell { padding: 18px 14px 60px; }
+}
+</style>
+</head>
+<body>
+<main class="shell">
+  <nav class="crumb" aria-label="Breadcrumb">
+    <a href="./index.html">MightyTwin v2</a>
+    <span class="crumb__sep">/</span>
+    <span>Design Widget</span>
+    <span class="crumb__sep">/</span>
+    <a href="./index.html">Voxel UX Spec</a>
+    <span class="crumb__sep">/</span>
+    <span class="crumb__cur">Toolbox</span>
+  </nav>
+
+  <header class="hero">
+    <h1>Toolbox panel</h1>
+    <p>The new Voxel tool group sits alongside Draw and Redline inside the
+       design-widget sidebar. Block resolution, materials, and render mode
+       move with the user across tool selections.</p>
+  </header>
+
+  <div class="specimen">
+    <!-- The mocked-up design widget -->
+    <aside class="design-widget" aria-label="Design widget panel mock">
+      <!-- Top rail: tabs -->
+      <nav class="dw-rail" role="tablist" aria-label="Design widget tabs">
+        <button class="dw-rail-btn" role="tab">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/></svg>
+          Layers
+        </button>
+        <button class="dw-rail-btn active" role="tab" aria-selected="true">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m14.5 9.5 1 1"/><path d="M13.379 5.621a1 1 0 0 1 1.414 0l3.586 3.586a1 1 0 0 1 0 1.414L13.59 16.41a1 1 0 0 1-1.414 0l-3.586-3.586a1 1 0 0 1 0-1.414Z"/><path d="M2 13.5 8.5 20"/><path d="M9 9h.01"/></svg>
+          Sketch
+        </button>
+        <button class="dw-rail-btn" role="tab">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>
+          Edit
+        </button>
+        <button class="dw-rail-btn" role="tab">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="M7 16h8"/><path d="M7 11h12"/><path d="M7 6h3"/></svg>
+          History
+        </button>
+      </nav>
+
+      <!-- Body -->
+      <div class="dw-body">
+        <!-- Draw group (collapsed view — just labels visible) -->
+        <section class="tool-group" aria-label="Draw tools">
+          <div class="tool-group__label">Draw</div>
+          <div class="tool-grid">
+            <button class="tool-btn" type="button">
+              <span class="icon">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="2.5" fill="currentColor"/></svg>
+              </span>
+              <span class="label">Point</span>
+              <span class="kbd">P</span>
+            </button>
+            <button class="tool-btn" type="button">
+              <span class="icon">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 19 19 5"/></svg>
+              </span>
+              <span class="label">Line</span>
+              <span class="kbd">L</span>
+            </button>
+            <button class="tool-btn" type="button">
+              <span class="icon">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12,3 22,8.5 22,15.5 12,21 2,15.5 2,8.5"/></svg>
+              </span>
+              <span class="label">Polygon</span>
+              <span class="kbd">G</span>
+            </button>
+          </div>
+        </section>
+
+        <!-- Redline group -->
+        <section class="tool-group" aria-label="Redline tools">
+          <div class="tool-group__label">Redline</div>
+          <div class="tool-grid">
+            <button class="tool-btn" type="button">
+              <span class="icon">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/></svg>
+              </span>
+              <span class="label">Rect</span>
+            </button>
+            <button class="tool-btn" type="button">
+              <span class="icon">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/></svg>
+              </span>
+              <span class="label">Circle</span>
+            </button>
+            <button class="tool-btn" type="button">
+              <span class="icon">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8 12 3l9 5"/><path d="m3 8 9 5"/><path d="m21 8-9 5"/><path d="M12 13v8"/></svg>
+              </span>
+              <span class="label">Box</span>
+            </button>
+          </div>
+        </section>
+
+        <!-- Voxel group — NEW -->
+        <section class="tool-group" aria-label="Voxel tools">
+          <div class="tool-group__label">
+            Voxel
+            <span class="badge">NEW</span>
+          </div>
+
+          <!-- Place -->
+          <div style="display: flex; flex-direction: column; gap: 4px;">
+            <span style="font-size: 9px; color: var(--dw-text-4); letter-spacing: 0.06em; text-transform: uppercase; padding-left: 2px;">Place</span>
+            <div class="tool-grid">
+              <button class="tool-btn active" type="button" data-tool="paint" aria-pressed="true">
+                <span class="icon">
+                  <!-- Lucide brush -->
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9.06 11.9 8.07-8.06a2.85 2.85 0 1 1 4.03 4.03l-8.06 8.08"/><path d="M7.07 14.94c-1.66 0-3 1.35-3 3.02 0 1.33-2.5 1.52-2 2.02 1.08 1.1 2.49 2.02 4 2.02 2.2 0 4-1.8 4-4.04a3.01 3.01 0 0 0-3-3.02z"/></svg>
+                </span>
+                <span class="label">Block paint</span>
+                <span class="kbd">V</span>
+              </button>
+              <button class="tool-btn" type="button" data-tool="erase">
+                <span class="icon">
+                  <!-- Lucide eraser -->
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m7 21-4.3-4.3c-1-1-1-2.5 0-3.4l9.6-9.6c1-1 2.5-1 3.4 0l5.6 5.6c1 1 1 2.5 0 3.4L13 21"/><path d="M22 21H7"/><path d="m5 11 9 9"/></svg>
+                </span>
+                <span class="label">Block erase</span>
+              </button>
+              <button class="tool-btn" type="button" data-tool="eyedrop">
+                <span class="icon">
+                  <!-- Lucide pipette -->
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m2 22 1-1h3l9-9"/><path d="M3 21v-3l9-9"/><path d="m15 6 3.4-3.4a2.1 2.1 0 1 1 3 3L18 9l.4.4a2.1 2.1 0 1 1-3 3l-3.8-3.8a2.1 2.1 0 1 1 3-3l.4.4Z"/></svg>
+                </span>
+                <span class="label">Eyedropper</span>
+                <span class="kbd">I</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Generators -->
+          <div style="display: flex; flex-direction: column; gap: 4px;">
+            <span style="font-size: 9px; color: var(--dw-text-4); letter-spacing: 0.06em; text-transform: uppercase; padding-left: 2px;">Generators</span>
+            <div class="tool-grid">
+              <button class="tool-btn" type="button">
+                <span class="icon">
+                  <!-- box -->
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
+                </span>
+                <span class="label">Box fill</span>
+              </button>
+              <button class="tool-btn" type="button">
+                <span class="icon">
+                  <!-- pyramid -->
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 16.88a1 1 0 0 1-.32-1.43l9-13.02a1 1 0 0 1 1.64 0l9 13.01a1 1 0 0 1-.32 1.44l-8.51 4.86a2 2 0 0 1-1.98 0Z"/><path d="M12 2v20"/></svg>
+                </span>
+                <span class="label">Pyramid</span>
+              </button>
+              <button class="tool-btn" type="button">
+                <span class="icon">
+                  <!-- triangle (prism / wedge profile) -->
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/></svg>
+                </span>
+                <span class="label">Prism</span>
+              </button>
+              <button class="tool-btn" type="button">
+                <span class="icon">
+                  <!-- ramp / mountain-snow simplified -->
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 19h18"/><path d="M3 19 21 5"/><path d="M21 19V5"/></svg>
+                </span>
+                <span class="label">Wedge</span>
+              </button>
+              <button class="tool-btn" type="button">
+                <span class="icon">
+                  <!-- dome -->
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 19h18"/><path d="M3 19a9 9 0 0 1 18 0"/></svg>
+                </span>
+                <span class="label">Dome</span>
+              </button>
+              <span></span>
+            </div>
+          </div>
+
+          <!-- Fill -->
+          <div style="display: flex; flex-direction: column; gap: 4px;">
+            <span style="font-size: 9px; color: var(--dw-text-4); letter-spacing: 0.06em; text-transform: uppercase; padding-left: 2px;">Fill</span>
+            <div class="tool-grid">
+              <button class="tool-btn" type="button">
+                <span class="icon">
+                  <!-- paint-bucket -->
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m19 11-8-8-8.6 8.6a2 2 0 0 0 0 2.8l5.2 5.2c.8.8 2 .8 2.8 0L19 11Z"/><path d="m5 2 5 5"/><path d="M2 13h15"/><path d="M22 20a2 2 0 1 1-4 0c0-1.6 1.7-2.4 2-4 .3 1.6 2 2.4 2 4Z"/></svg>
+                </span>
+                <span class="label">Flood fill</span>
+              </button>
+              <button class="tool-btn" type="button">
+                <span class="icon">
+                  <!-- waves -->
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 6c.6.5 1.2 1 2.5 1C7 7 7 5 9.5 5c2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/><path d="M2 12c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/><path d="M2 18c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/></svg>
+                </span>
+                <span class="label">Water fill</span>
+              </button>
+              <button class="tool-btn" type="button">
+                <span class="icon">
+                  <!-- mountain (terrain) -->
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m8 3 4 8 5-5 5 15H2L8 3Z"/></svg>
+                </span>
+                <span class="label">Terrain mask</span>
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <!-- Block-level resolution -->
+        <div class="field" data-block-level>
+          <div class="field__label">Block level (resolution)</div>
+          <div class="dropdown" tabindex="0" role="combobox" aria-haspopup="listbox" aria-expanded="false">
+            <span class="dropdown__value">
+              <span style="display:inline-flex; align-items:center; gap:6px;">
+                <span style="display:inline-block; width:10px; height:10px; background:var(--dw-util); border-radius:2px; box-shadow:0 0 0 1px rgba(0,0,0,0.4) inset;"></span>
+                1.0 m
+              </span>
+            </span>
+            <span class="dropdown__chev">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+            </span>
+            <div class="dropdown__menu" role="listbox">
+              <div class="dropdown__opt" data-level="0.125">12.5 cm <span class="meta">L0</span></div>
+              <div class="dropdown__opt" data-level="0.25">25 cm <span class="meta">L1</span></div>
+              <div class="dropdown__opt" data-level="0.5">50 cm <span class="meta">L2</span></div>
+              <div class="dropdown__opt is-on" data-level="1">1 m <span class="meta">L3</span></div>
+              <div class="dropdown__opt" data-level="2">2 m <span class="meta">L4</span></div>
+              <div class="dropdown__opt" data-level="4">4 m <span class="meta">L5</span></div>
+              <div class="dropdown__opt" data-level="8">8 m <span class="meta">L6</span></div>
+              <div class="dropdown__opt" data-level="16">16 m <span class="meta">L7</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Material palette strip -->
+        <div class="field">
+          <div class="field__label">Material</div>
+          <div class="palette" data-palette>
+            <div class="swatch active" data-mat="rock" tabindex="0">
+              <div class="swatch__chip" style="background:#4a5568"></div>
+              <div class="swatch__name">Rock</div>
+              <div class="swatch__ifc">IfcGeographicElement</div>
+            </div>
+            <div class="swatch" data-mat="ore" tabindex="0">
+              <div class="swatch__chip" style="background:#d69e2e"></div>
+              <div class="swatch__name">Ore</div>
+              <div class="swatch__ifc">IfcGeographicElement</div>
+            </div>
+            <div class="swatch" data-mat="overburden" tabindex="0">
+              <div class="swatch__chip" style="background:#8b7355"></div>
+              <div class="swatch__name">Overburden</div>
+              <div class="swatch__ifc">IfcGeographicElement</div>
+            </div>
+            <div class="swatch" data-mat="fill" tabindex="0">
+              <div class="swatch__chip" style="background:#a0826d"></div>
+              <div class="swatch__name">Fill</div>
+              <div class="swatch__ifc">IfcGeographicElement</div>
+            </div>
+            <div class="swatch" data-mat="concrete" tabindex="0">
+              <div class="swatch__chip" style="background:#b3b3b3"></div>
+              <div class="swatch__name">Concrete</div>
+              <div class="swatch__ifc">IfcWall</div>
+            </div>
+            <div class="swatch" data-mat="steel" tabindex="0">
+              <div class="swatch__chip" style="background:#6b7280"></div>
+              <div class="swatch__name">Steel</div>
+              <div class="swatch__ifc">IfcMember</div>
+            </div>
+            <div class="swatch" data-mat="water" tabindex="0">
+              <div class="swatch__chip" style="background:#06b6d4"></div>
+              <div class="swatch__name">Water</div>
+              <div class="swatch__ifc">IfcVoidingFeature</div>
+            </div>
+            <div class="swatch" data-mat="topsoil" tabindex="0">
+              <div class="swatch__chip" style="background:#654321"></div>
+              <div class="swatch__name">Topsoil</div>
+              <div class="swatch__ifc">IfcGeographicElement</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Render mode tabs -->
+        <div class="field">
+          <div class="field__label">Render mode</div>
+          <div class="tabs" role="tablist" data-render-tabs>
+            <button class="tabs__btn active" role="tab" aria-selected="true" data-mode="solid">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/></svg>
+              Solid
+            </button>
+            <button class="tabs__btn" role="tab" data-mode="textured">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><circle cx="9" cy="9" r="1.5" fill="currentColor"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
+              Textured
+            </button>
+            <button class="tabs__btn" role="tab" data-mode="raytrace">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
+              Ray trace
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Status bar -->
+      <div class="status-bar">
+        <span class="status-bar__pip" aria-hidden="true"></span>
+        <span><strong style="color:var(--dw-util);font-weight:600;">Block paint</strong> · 1.0 m · Rock</span>
+        <span style="margin-left:auto; color:var(--dw-text-4); font-variant-numeric:tabular-nums;">428 blocks</span>
+      </div>
+    </aside>
+
+    <!-- Side notes -->
+    <section class="specimen__notes">
+      <h3>Active tool</h3>
+      <p>The currently selected tool is highlighted in teal across the
+         tool grid; the status bar at the bottom mirrors the same teal
+         accent so the user always sees which tool will fire on the
+         next globe click.</p>
+
+      <h3>Block level resolution</h3>
+      <p>The dropdown list maps power-of-two physical sizes to internal
+         level indices (L0–L7). Click a row to switch resolution. The
+         engine rebuilds the active block grid at the new level — finer
+         levels increase detail but cap the addressable volume.</p>
+
+      <h3>Material palette</h3>
+      <p>Each tile renders the chip with a darker bottom band so the
+         user sees the side-face shading the engine will apply. The
+         IFC class beneath drives the export and the redline/promotion
+         pipeline (e.g. Water → IfcVoidingFeature carves the host
+         volume, never adds mass).</p>
+
+      <h3>Render mode</h3>
+      <p>Three-way segmented control. Solid is the default; Textured
+         pulls per-material atlases; Ray-trace switches the canvas to
+         the progressive sampler with sun + sky controls. See the
+         Render modes page for what each mode reveals.</p>
+
+      <h3>Group ordering</h3>
+      <p>Draw and Redline keep their existing positions. Voxel slots in
+         third with a small <span style="color:var(--dw-util);font-weight:600;">NEW</span> badge for
+         this release.</p>
+    </section>
+  </div>
+</main>
+
+<script>
+// ── Tool selection — only one active at a time ────────────────────
+const toolGroup = document.querySelector('.design-widget');
+toolGroup.querySelectorAll('.tool-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    toolGroup.querySelectorAll('.tool-btn.active').forEach(a => {
+      a.classList.remove('active');
+      a.removeAttribute('aria-pressed');
+    });
+    btn.classList.add('active');
+    btn.setAttribute('aria-pressed', 'true');
+    const label = btn.querySelector('.label')?.textContent || 'Tool';
+    setStatus(label);
+  });
+});
+
+// ── Material swatch selection ─────────────────────────────────────
+const palette = document.querySelector('[data-palette]');
+palette.querySelectorAll('.swatch').forEach(sw => {
+  sw.addEventListener('click', () => {
+    palette.querySelectorAll('.swatch.active').forEach(a => a.classList.remove('active'));
+    sw.classList.add('active');
+    setStatus(undefined, undefined, sw.querySelector('.swatch__name').textContent);
+  });
+});
+
+// ── Block-level dropdown ──────────────────────────────────────────
+const dropdown = document.querySelector('.dropdown');
+const valueSpan = dropdown.querySelector('.dropdown__value');
+dropdown.addEventListener('click', () => {
+  const open = dropdown.classList.toggle('open');
+  dropdown.setAttribute('aria-expanded', String(open));
+});
+dropdown.querySelectorAll('.dropdown__opt').forEach(opt => {
+  opt.addEventListener('click', e => {
+    e.stopPropagation();
+    dropdown.querySelectorAll('.dropdown__opt.is-on').forEach(a => a.classList.remove('is-on'));
+    opt.classList.add('is-on');
+    const text = opt.firstChild?.textContent?.trim() || '';
+    valueSpan.innerHTML =
+      '<span style="display:inline-flex; align-items:center; gap:6px;">' +
+        '<span style="display:inline-block; width:10px; height:10px; background:var(--dw-util); border-radius:2px; box-shadow:0 0 0 1px rgba(0,0,0,0.4) inset;"></span>' +
+        text +
+      '</span>';
+    setStatus(undefined, text);
+    dropdown.classList.remove('open');
+    dropdown.setAttribute('aria-expanded', 'false');
+  });
+});
+document.addEventListener('click', (e) => {
+  if (!dropdown.contains(e.target)) {
+    dropdown.classList.remove('open');
+    dropdown.setAttribute('aria-expanded', 'false');
+  }
+});
+
+// ── Render mode tabs ──────────────────────────────────────────────
+const tabsRoot = document.querySelector('[data-render-tabs]');
+tabsRoot.querySelectorAll('.tabs__btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    tabsRoot.querySelectorAll('.tabs__btn.active').forEach(a => {
+      a.classList.remove('active');
+      a.removeAttribute('aria-selected');
+    });
+    btn.classList.add('active');
+    btn.setAttribute('aria-selected', 'true');
+  });
+});
+
+// ── Status bar updater ────────────────────────────────────────────
+function setStatus(tool, level, mat) {
+  const sb = document.querySelector('.status-bar span:nth-child(2)');
+  if (!sb) return;
+  const cur = sb.textContent.split(/\s+·\s+/);
+  cur[0] = tool ?? cur[0];
+  cur[1] = level ?? cur[1];
+  cur[2] = mat ?? cur[2];
+  sb.innerHTML = `<strong style="color:var(--dw-util); font-weight:600;">${cur[0]}</strong> · ${cur[1]} · ${cur[2]}`;
+}
+</script>
+</body>
+</html>

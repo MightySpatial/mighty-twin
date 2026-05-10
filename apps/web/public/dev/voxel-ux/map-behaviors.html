@@ -1,0 +1,795 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Map behaviors — Voxel UX Spec — MightyTwin v2</title>
+<style>
+:root {
+  --dw-util: #2dd4bf;
+  --dw-util-hover: #14b8a6;
+  --dw-util-d: rgba(45, 212, 191, 0.4);
+  --dw-util-bg: rgba(45, 212, 191, 0.14);
+  --dw-util-bg-soft: rgba(45, 212, 191, 0.08);
+  --dw-util-text-on: #042f2e;
+  --dw-warning: #fbbf24;
+  --dw-indigo: #6366f1;
+  --dw-indigo-l: #a5b4fc;
+  --dw-bg: #0f0f14;
+  --dw-bg-2: #14141c;
+  --dw-surface-glass: rgba(20, 20, 28, 0.98);
+  --dw-fill-1: rgba(255, 255, 255, 0.04);
+  --dw-fill-2: rgba(255, 255, 255, 0.06);
+  --dw-fill-3: rgba(255, 255, 255, 0.08);
+  --dw-border: rgba(255, 255, 255, 0.10);
+  --dw-border-strong: rgba(255, 255, 255, 0.18);
+  --dw-text-strong: #ffffff;
+  --dw-text-1: rgba(255, 255, 255, 0.92);
+  --dw-text-2: rgba(255, 255, 255, 0.70);
+  --dw-text-3: #8b8fa8;
+  --dw-text-4: rgba(255, 255, 255, 0.35);
+  --dw-radius-sm: 4px;
+  --dw-radius-md: 6px;
+  --dw-radius-lg: 8px;
+  --dw-radius-xl: 10px;
+  --dw-radius-2xl: 12px;
+  --dw-radius-pill: 999px;
+  --dw-font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+body {
+  background: var(--dw-bg); color: var(--dw-text-1);
+  font-family: var(--dw-font); font-size: 13px; line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+.shell { max-width: 1080px; margin: 0 auto; padding: 32px 24px 80px; }
+.crumb {
+  font-size: 11px; color: var(--dw-text-3);
+  text-transform: uppercase; letter-spacing: 0.06em;
+  margin-bottom: 18px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+}
+.crumb a { color: var(--dw-text-3); text-decoration: none; }
+.crumb a:hover { color: var(--dw-util); }
+.crumb__sep { color: var(--dw-text-4); }
+.crumb__cur { color: var(--dw-util); }
+.hero { margin-bottom: 32px; }
+.hero h1 {
+  font-size: 28px; font-weight: 700; letter-spacing: -0.02em;
+  color: var(--dw-text-strong); margin-bottom: 6px;
+}
+.hero p { color: var(--dw-text-2); font-size: 14px; max-width: 660px; }
+
+/* ── Diagram cards ───────────────────────────────────────────────── */
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(440px, 1fr));
+  gap: 22px;
+}
+.card {
+  background: var(--dw-fill-1);
+  border: 1px solid var(--dw-border);
+  border-radius: var(--dw-radius-2xl);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.card__head {
+  padding: 14px 18px;
+  display: flex; align-items: center; gap: 10px;
+  border-bottom: 1px solid var(--dw-border);
+}
+.card__icon {
+  width: 30px; height: 30px;
+  background: var(--dw-util-bg);
+  border: 1px solid var(--dw-util-d);
+  border-radius: var(--dw-radius-md);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--dw-util);
+}
+.card__title { font-size: 13px; font-weight: 700; color: var(--dw-text-strong); }
+.card__sub { font-size: 11px; color: var(--dw-text-3); margin-left: auto; font-family: ui-monospace, Menlo, monospace; }
+
+.card__viewport {
+  /* Looks like a Cesium viewer canvas */
+  background: linear-gradient(180deg, #1a2436 0%, #0c1018 80%);
+  height: 280px;
+  position: relative;
+  overflow: hidden;
+}
+.card__viewport svg { width: 100%; height: 100%; display: block; }
+
+/* HUD overlay (cursor coords + tool name) */
+.hud {
+  position: absolute;
+  top: 10px; left: 10px;
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  padding: 4px 8px;
+  background: rgba(15, 15, 20, 0.85);
+  border: 1px solid var(--dw-border);
+  border-radius: var(--dw-radius-md);
+  font: 600 10px ui-monospace, Menlo, monospace;
+  color: var(--dw-text-2);
+}
+.hud .pip {
+  width: 6px; height: 6px;
+  background: var(--dw-util);
+  border-radius: 50%;
+}
+
+.card__notes {
+  padding: 14px 18px 16px;
+  display: flex; flex-direction: column; gap: 6px;
+}
+.card__notes h4 {
+  font-size: 11px; font-weight: 700;
+  color: var(--dw-text-strong);
+  letter-spacing: -0.005em;
+}
+.card__notes p {
+  font-size: 12px; color: var(--dw-text-2); line-height: 1.55;
+}
+.card__notes .meta {
+  font-size: 10px; color: var(--dw-text-3);
+  text-transform: uppercase; letter-spacing: 0.06em; font-weight: 700;
+  display: flex; gap: 12px; padding-top: 4px;
+}
+.card__notes .meta .kbd {
+  display: inline-block;
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 10px;
+  padding: 1px 5px;
+  background: var(--dw-fill-3);
+  border: 1px solid var(--dw-border);
+  border-radius: var(--dw-radius-sm);
+  color: var(--dw-text-1);
+  text-transform: none; letter-spacing: 0; font-weight: 500;
+}
+
+@media (max-width: 760px) {
+  .cards { grid-template-columns: 1fr; }
+  .shell { padding: 18px 14px 60px; }
+  .hero h1 { font-size: 22px; }
+  .card__viewport { height: 220px; }
+}
+</style>
+</head>
+<body>
+<main class="shell">
+  <nav class="crumb" aria-label="Breadcrumb">
+    <a href="./index.html">MightyTwin v2</a>
+    <span class="crumb__sep">/</span>
+    <span>Design Widget</span>
+    <span class="crumb__sep">/</span>
+    <a href="./index.html">Voxel UX Spec</a>
+    <span class="crumb__sep">/</span>
+    <span class="crumb__cur">Map behaviors</span>
+  </nav>
+
+  <header class="hero">
+    <h1>In-viewer tool behaviors</h1>
+    <p>How each voxel tool looks on the globe. Each card is a stylised
+       Cesium-canvas snapshot showing the cursor state, ghost preview,
+       gizmo handles, and selection chrome the user sees while the tool
+       is active.</p>
+  </header>
+
+  <div class="cards">
+
+    <!-- ────────────────────────────────────────────────────────────
+         1 · Block paint
+         ──────────────────────────────────────────────────────────── -->
+    <article class="card">
+      <header class="card__head">
+        <span class="card__icon">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9.06 11.9 8.07-8.06a2.85 2.85 0 1 1 4.03 4.03l-8.06 8.08"/><path d="M7.07 14.94c-1.66 0-3 1.35-3 3.02 0 1.33-2.5 1.52-2 2.02 1.08 1.1 2.49 2.02 4 2.02 2.2 0 4-1.8 4-4.04a3.01 3.01 0 0 0-3-3.02z"/></svg>
+        </span>
+        <span class="card__title">Block paint</span>
+        <span class="card__sub">cursor + grid-snapped ghost</span>
+      </header>
+      <div class="card__viewport">
+        <div class="hud">
+          <span class="pip" aria-hidden="true"></span>
+          <span>BLOCK PAINT · 1.0 m · ROCK</span>
+        </div>
+        <svg viewBox="0 0 460 280" preserveAspectRatio="xMidYMid meet">
+          <defs>
+            <pattern id="bp-grid" width="22" height="13" patternUnits="userSpaceOnUse" patternTransform="skewX(-30)">
+              <path d="M 0 0 L 22 0 M 0 0 L 0 13" fill="none" stroke="rgba(45, 212, 191, 0.12)" stroke-width="0.6"/>
+            </pattern>
+          </defs>
+          <!-- Existing block stack (overburden + rock) -->
+          <g id="bp-existing"></g>
+          <!-- Ground grid hint where ghost will land -->
+          <g id="bp-grid-hint"></g>
+          <!-- Cursor crosshair + ghost block at hover position -->
+          <g id="bp-ghost"></g>
+          <!-- HUD: lon/lat/alt readout -->
+          <g transform="translate(280, 246)">
+            <rect x="0" y="0" width="170" height="22" rx="4" fill="rgba(15, 15, 20, 0.85)" stroke="rgba(255, 255, 255, 0.14)"/>
+            <text x="8" y="14" font-family="ui-monospace, Menlo, monospace" font-size="9" fill="#8b8fa8">151.215, -33.859, 12.4 m</text>
+          </g>
+        </svg>
+      </div>
+      <div class="card__notes">
+        <h4>Cursor + ghost preview</h4>
+        <p>The cursor snaps to the hover-block's lattice. A 50%-opacity
+           teal ghost outlines where the next click will paint. The
+           material colour fills the ghost so the user reads "what will
+           appear" before clicking.</p>
+        <div class="meta">
+          <span><span class="kbd">Click</span> paint</span>
+          <span><span class="kbd">⇧</span><span class="kbd">Click</span> erase</span>
+          <span><span class="kbd">I</span> eyedrop</span>
+        </div>
+      </div>
+    </article>
+
+    <!-- ────────────────────────────────────────────────────────────
+         2 · Generator placement (gizmo handles)
+         ──────────────────────────────────────────────────────────── -->
+    <article class="card">
+      <header class="card__head">
+        <span class="card__icon">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 16.88a1 1 0 0 1-.32-1.43l9-13.02a1 1 0 0 1 1.64 0l9 13.01a1 1 0 0 1-.32 1.44l-8.51 4.86a2 2 0 0 1-1.98 0Z"/><path d="M12 2v20"/></svg>
+        </span>
+        <span class="card__title">Generator placement</span>
+        <span class="card__sub">3D gizmo handles</span>
+      </header>
+      <div class="card__viewport">
+        <div class="hud">
+          <span class="pip" aria-hidden="true"></span>
+          <span>PYRAMID · base 14 × 14 · h 7 · α 45°</span>
+        </div>
+        <svg viewBox="0 0 460 280" preserveAspectRatio="xMidYMid meet">
+          <g id="gen-pyr"></g>
+        </svg>
+      </div>
+      <div class="card__notes">
+        <h4>Per-handle direct manipulation</h4>
+        <p>An arrow gizmo controls height; corner handles drag the base
+           rectangle; an arc handle on the wall edge sets the inset
+           angle. The PlaceModeBar inputs and the gizmo are bidirectional
+           — dragging a handle updates the input value and vice versa.</p>
+        <div class="meta">
+          <span><span class="kbd">Drag</span> resize</span>
+          <span><span class="kbd">Esc</span> cancel</span>
+          <span><span class="kbd">Enter</span> commit</span>
+        </div>
+      </div>
+    </article>
+
+    <!-- ────────────────────────────────────────────────────────────
+         3 · Terrain mask
+         ──────────────────────────────────────────────────────────── -->
+    <article class="card">
+      <header class="card__head">
+        <span class="card__icon">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m8 3 4 8 5-5 5 15H2L8 3Z"/></svg>
+        </span>
+        <span class="card__title">Terrain mask</span>
+        <span class="card__sub">live block fill under polygon</span>
+      </header>
+      <div class="card__viewport">
+        <div class="hud">
+          <span class="pip" aria-hidden="true"></span>
+          <span>TERRAIN MASK · drawing polygon · 4 verts</span>
+        </div>
+        <svg viewBox="0 0 460 280" preserveAspectRatio="xMidYMid meet">
+          <g id="tm-scene"></g>
+        </svg>
+      </div>
+      <div class="card__notes">
+        <h4>Polygon draw with live block preview</h4>
+        <p>The user clicks vertices on the globe. As each vertex lands,
+           the engine tessellates the polygon, samples the terrain
+           surface at the chosen block level, and renders the block fill
+           underneath in real time. The double-click closes the polygon
+           and commits.</p>
+        <div class="meta">
+          <span><span class="kbd">Click</span> add vert</span>
+          <span><span class="kbd">⇥</span><span class="kbd">Click</span> finish</span>
+          <span><span class="kbd">Esc</span> cancel</span>
+        </div>
+      </div>
+    </article>
+
+    <!-- ────────────────────────────────────────────────────────────
+         4 · Water fill
+         ──────────────────────────────────────────────────────────── -->
+    <article class="card">
+      <header class="card__head">
+        <span class="card__icon">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 6c.6.5 1.2 1 2.5 1C7 7 7 5 9.5 5c2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/><path d="M2 12c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/><path d="M2 18c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/></svg>
+        </span>
+        <span class="card__title">Water fill</span>
+        <span class="card__sub">click point + elevation slider</span>
+      </header>
+      <div class="card__viewport">
+        <div class="hud">
+          <span class="pip" aria-hidden="true"></span>
+          <span>WATER FILL · 42.5 m AHD</span>
+        </div>
+        <svg viewBox="0 0 460 280" preserveAspectRatio="xMidYMid meet">
+          <g id="wf-scene"></g>
+        </svg>
+      </div>
+      <div class="card__notes">
+        <h4>Floating elevation slider near the cursor</h4>
+        <p>After the user clicks a datum point, a vertical slider docks
+           near the cursor. Dragging it raises or lowers the water
+           plane; the fill animates to track. A flat surface line
+           extends out to the basin's natural extent.</p>
+        <div class="meta">
+          <span><span class="kbd">Click</span> set datum</span>
+          <span><span class="kbd">Drag</span> slider</span>
+          <span><span class="kbd">Enter</span> commit</span>
+        </div>
+      </div>
+    </article>
+
+    <!-- ────────────────────────────────────────────────────────────
+         5 · Block selection
+         ──────────────────────────────────────────────────────────── -->
+    <article class="card">
+      <header class="card__head">
+        <span class="card__icon">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m13 13 6 6"/><path d="M17 8a4 4 0 1 0-4 4"/></svg>
+        </span>
+        <span class="card__title">Block selection</span>
+        <span class="card__sub">hover · selected · marquee</span>
+      </header>
+      <div class="card__viewport">
+        <div class="hud">
+          <span class="pip" aria-hidden="true"></span>
+          <span>SELECT · 14 blocks · ROCK + ORE</span>
+        </div>
+        <svg viewBox="0 0 460 280" preserveAspectRatio="xMidYMid meet">
+          <g id="sel-scene"></g>
+        </svg>
+      </div>
+      <div class="card__notes">
+        <h4>Three selection states</h4>
+        <p>
+          <span style="color:#9bb3ff;font-weight:600">Indigo</span> outline on hover,
+          <span style="color:var(--dw-util);font-weight:600">teal</span> outline + soft fill on selected, dashed teal
+          marquee while drag-selecting. Multi-select uses
+          <span class="kbd" style="display:inline-block;font-family:ui-monospace,Menlo,monospace;font-size:10px;padding:1px 5px;background:var(--dw-fill-3);border:1px solid var(--dw-border);border-radius:4px;color:var(--dw-text-1);">⇧</span>
+          + click; the marquee adds whatever it overlaps.
+        </p>
+        <div class="meta">
+          <span><span class="kbd">Click</span> single</span>
+          <span><span class="kbd">⇧</span><span class="kbd">Click</span> add</span>
+          <span><span class="kbd">Drag</span> marquee</span>
+        </div>
+      </div>
+    </article>
+
+  </div>
+</main>
+
+<script>
+const NS = 'http://www.w3.org/2000/svg';
+function el(t, a = {}, p) {
+  const n = document.createElementNS(NS, t);
+  for (const k in a) n.setAttribute(k, String(a[k]));
+  if (p) p.appendChild(n);
+  return n;
+}
+function rgb(hex) {
+  const h = hex.replace('#','');
+  return { r: parseInt(h.slice(0,2),16), g: parseInt(h.slice(2,4),16), b: parseInt(h.slice(4,6),16) };
+}
+function cl(v) { return Math.max(0, Math.min(255, Math.round(v))); }
+function lighten(h, a) { const c = rgb(h); return `rgb(${cl(c.r + 255*a)},${cl(c.g + 255*a)},${cl(c.b + 255*a)})`; }
+function darken(h, a) { const c = rgb(h); return `rgb(${cl(c.r*(1-a))},${cl(c.g*(1-a))},${cl(c.b*(1-a))})`; }
+
+// Iso projection — stable across cards. Origin (ox, oy) varies per scene.
+const ax = Math.cos(Math.PI / 6), ay = Math.sin(Math.PI / 6);
+function project(gx, gy, gz, sz, ox, oy) {
+  return { x: ox + (gx - gy) * ax * sz, y: oy + (gx + gy) * ay * sz - gz * sz };
+}
+function blockPolys(gx, gy, gz, sz, ox, oy) {
+  const p000 = project(gx,     gy,     gz,     sz, ox, oy);
+  const p100 = project(gx + 1, gy,     gz,     sz, ox, oy);
+  const p010 = project(gx,     gy + 1, gz,     sz, ox, oy);
+  const p110 = project(gx + 1, gy + 1, gz,     sz, ox, oy);
+  const p001 = project(gx,     gy,     gz + 1, sz, ox, oy);
+  const p101 = project(gx + 1, gy,     gz + 1, sz, ox, oy);
+  const p011 = project(gx,     gy + 1, gz + 1, sz, ox, oy);
+  const p111 = project(gx + 1, gy + 1, gz + 1, sz, ox, oy);
+  return {
+    top:   [p001, p101, p111, p011],
+    left:  [p000, p010, p011, p001],
+    right: [p100, p110, p111, p101],
+  };
+}
+function drawBlock(svg, gx, gy, gz, sz, ox, oy, hex, opts = {}) {
+  const { top, left, right } = blockPolys(gx, gy, gz, sz, ox, oy);
+  const t = lighten(hex, 0.18);
+  const l = darken(hex, 0.10);
+  const r = darken(hex, 0.30);
+  const stroke = opts.stroke || darken(hex, 0.55);
+  const sw = opts.strokeWidth || 0.6;
+  const op = opts.opacity ?? 1;
+  el('polygon', { points: top.map(p => `${p.x},${p.y}`).join(' '), fill: opts.topFill || t, stroke, 'stroke-width': sw, opacity: op }, svg);
+  el('polygon', { points: right.map(p => `${p.x},${p.y}`).join(' '), fill: opts.rightFill || r, stroke, 'stroke-width': sw, opacity: op }, svg);
+  el('polygon', { points: left.map(p => `${p.x},${p.y}`).join(' '), fill: opts.leftFill || l, stroke, 'stroke-width': sw, opacity: op }, svg);
+}
+
+// ════════════════════════════════════════════════════════════════════
+// Card 1 — Block paint
+// ════════════════════════════════════════════════════════════════════
+function paintScene() {
+  const root = document.getElementById('bp-existing');
+  const ox = 230, oy = 200, sz = 22;
+  // Existing 5 × 4 base of overburden, height 1
+  for (let y = 3; y >= 0; y--) {
+    for (let x = 0; x < 5; x++) {
+      drawBlock(root, x, y, 0, sz, ox, oy, '#8b7355');
+    }
+  }
+  // 3 × 2 stack of rock, height 1
+  for (let y = 2; y >= 1; y--) {
+    for (let x = 1; x < 4; x++) {
+      drawBlock(root, x, y, 1, sz, ox, oy, '#4a5568');
+    }
+  }
+  // Single peak ore block
+  drawBlock(root, 2, 2, 2, sz, ox, oy, '#d69e2e');
+
+  // Grid hint — overlay a cross-hatched grid in the empty area where the ghost lives
+  const grid = document.getElementById('bp-grid-hint');
+  for (let x = 0; x < 5; x++) {
+    for (let y = 0; y < 4; y++) {
+      // Only paint hints next to the existing structure
+      if ((x === 4 && y >= 1 && y <= 2) || (x === 0 && y === 0)) {
+        const { top } = blockPolys(x, y, 1, sz, ox, oy);
+        el('polygon', {
+          points: top.map(p => `${p.x},${p.y}`).join(' '),
+          fill: 'rgba(45, 212, 191, 0.06)',
+          stroke: 'rgba(45, 212, 191, 0.30)',
+          'stroke-dasharray': '2 3',
+          'stroke-width': 0.6,
+        }, grid);
+      }
+    }
+  }
+
+  // Ghost block at hover position (x=4, y=2, z=1) — extending the rock shelf
+  const ghost = document.getElementById('bp-ghost');
+  drawBlock(ghost, 4, 2, 1, sz, ox, oy, '#4a5568', {
+    topFill: 'rgba(74, 85, 104, 0.45)',
+    leftFill: 'rgba(74, 85, 104, 0.35)',
+    rightFill: 'rgba(74, 85, 104, 0.30)',
+    stroke: '#2dd4bf',
+    strokeWidth: 1.4,
+  });
+
+  // Crosshair at the ghost's top-centre
+  const center = project(4.5, 2.5, 2, sz, ox, oy);
+  el('circle', { cx: center.x, cy: center.y, r: 1.6, fill: '#2dd4bf' }, ghost);
+  el('line', { x1: center.x - 8, y1: center.y, x2: center.x - 3, y2: center.y, stroke: '#2dd4bf', 'stroke-width': 1 }, ghost);
+  el('line', { x1: center.x + 3, y1: center.y, x2: center.x + 8, y2: center.y, stroke: '#2dd4bf', 'stroke-width': 1 }, ghost);
+  el('line', { x1: center.x, y1: center.y - 8, x2: center.x, y2: center.y - 3, stroke: '#2dd4bf', 'stroke-width': 1 }, ghost);
+  el('line', { x1: center.x, y1: center.y + 3, x2: center.x, y2: center.y + 8, stroke: '#2dd4bf', 'stroke-width': 1 }, ghost);
+}
+paintScene();
+
+// ════════════════════════════════════════════════════════════════════
+// Card 2 — Generator placement gizmo
+// ════════════════════════════════════════════════════════════════════
+function genScene() {
+  const root = document.getElementById('gen-pyr');
+  const ox = 230, oy = 230, sz = 14;
+  const baseW = 8, baseD = 8, height = 5;
+  const tanA = Math.tan(45 * Math.PI / 180);
+
+  // Pyramid steps
+  for (let z = 0; z < height; z++) {
+    const inset = Math.floor(z * tanA);
+    for (let y = baseD - 1 - inset; y >= inset; y--) {
+      for (let x = inset; x < baseW - inset; x++) {
+        const onTop = (z === height - 1) || (Math.floor((z + 1) * tanA) > inset);
+        const onSide = (x === inset) || (x === baseW - 1 - inset) || (y === inset) || (y === baseD - 1 - inset);
+        if (!onTop && !onSide) continue;
+        drawBlock(root, x, y, z, sz, ox, oy, '#a0826d');
+      }
+    }
+  }
+
+  // Base outline — dashed teal rect at z=0
+  const baseCorners = [
+    project(0, 0, 0, sz, ox, oy),
+    project(baseW, 0, 0, sz, ox, oy),
+    project(baseW, baseD, 0, sz, ox, oy),
+    project(0, baseD, 0, sz, ox, oy),
+  ];
+  el('polygon', {
+    points: baseCorners.map(p => `${p.x},${p.y}`).join(' '),
+    fill: 'rgba(45, 212, 191, 0.06)',
+    stroke: '#2dd4bf', 'stroke-width': 1.4, 'stroke-dasharray': '4 4',
+  }, root);
+
+  // Corner handles (4 of them)
+  for (const c of baseCorners) {
+    el('rect', { x: c.x - 5, y: c.y - 5, width: 10, height: 10, fill: '#2dd4bf', stroke: '#0f0f14', 'stroke-width': 1.5, rx: 1 }, root);
+  }
+
+  // Height arrow (vertical, from peak)
+  const peak = project(baseW / 2, baseD / 2, height, sz, ox, oy);
+  el('line', { x1: peak.x, y1: peak.y, x2: peak.x, y2: peak.y - 38, stroke: '#2dd4bf', 'stroke-width': 1.6 }, root);
+  el('polygon', { points: `${peak.x},${peak.y - 44} ${peak.x - 5},${peak.y - 36} ${peak.x + 5},${peak.y - 36}`, fill: '#2dd4bf', stroke: '#0f0f14', 'stroke-width': 1 }, root);
+  // Height label badge
+  const lblBg = el('g', { transform: `translate(${peak.x + 12}, ${peak.y - 48})` }, root);
+  el('rect', { x: 0, y: 0, width: 32, height: 18, rx: 3, fill: 'rgba(15, 15, 20, 0.92)', stroke: 'rgba(45, 212, 191, 0.55)' }, lblBg);
+  const lblTxt = el('text', { x: 16, y: 12, 'text-anchor': 'middle', 'font-size': 10, 'font-family': 'ui-monospace, Menlo, monospace', 'font-weight': 600, fill: '#2dd4bf' }, lblBg);
+  lblTxt.textContent = 'h 7';
+
+  // Arc handle for wall angle (on the front-east edge)
+  const archA = project(baseW, 0, 0, sz, ox, oy);
+  const archB = project(baseW, baseD, 0, sz, ox, oy);
+  const archMid = { x: (archA.x + archB.x) / 2, y: (archA.y + archB.y) / 2 };
+  const archCtl = { x: archMid.x + 36, y: archMid.y - 30 };
+  el('path', { d: `M ${archA.x} ${archA.y} Q ${archCtl.x} ${archCtl.y} ${archB.x} ${archB.y}`, fill: 'none', stroke: '#fbbf24', 'stroke-width': 1.4, 'stroke-dasharray': '3 3' }, root);
+  el('circle', { cx: archCtl.x, cy: archCtl.y, r: 5, fill: '#fbbf24', stroke: '#0f0f14', 'stroke-width': 1.5 }, root);
+  // Angle label
+  const angBg = el('g', { transform: `translate(${archCtl.x + 8}, ${archCtl.y - 6})` }, root);
+  el('rect', { x: 0, y: 0, width: 36, height: 16, rx: 3, fill: 'rgba(15, 15, 20, 0.92)', stroke: 'rgba(251, 191, 36, 0.55)' }, angBg);
+  const angTxt = el('text', { x: 18, y: 11, 'text-anchor': 'middle', 'font-size': 10, 'font-family': 'ui-monospace, Menlo, monospace', 'font-weight': 600, fill: '#fbbf24' }, angBg);
+  angTxt.textContent = '45°';
+
+  // Footprint dimension chips (W and D)
+  const dimW = project(baseW / 2, 0, 0, sz, ox, oy);
+  const dimD = project(0, baseD / 2, 0, sz, ox, oy);
+  drawDimChip(root, dimW.x - 16, dimW.y + 18, '14 m');
+  drawDimChip(root, dimD.x - 22, dimD.y + 12, '14 m');
+}
+function drawDimChip(parent, x, y, text) {
+  const g = el('g', { transform: `translate(${x}, ${y})` }, parent);
+  el('rect', { x: 0, y: 0, width: 36, height: 14, rx: 3, fill: 'rgba(15, 15, 20, 0.85)', stroke: 'rgba(255,255,255,0.18)' }, g);
+  const t = el('text', { x: 18, y: 10, 'text-anchor': 'middle', 'font-size': 9, 'font-family': 'ui-monospace, Menlo, monospace', fill: '#8b8fa8' }, g);
+  t.textContent = text;
+}
+genScene();
+
+// ════════════════════════════════════════════════════════════════════
+// Card 3 — Terrain mask
+// ════════════════════════════════════════════════════════════════════
+function tmScene() {
+  const root = document.getElementById('tm-scene');
+  const w = 460, h = 280;
+
+  // Terrain grid (top-down/oblique view)
+  // Base — gradient ground
+  const grad = el('defs', {}, root);
+  grad.innerHTML = `
+    <linearGradient id="tm-ground" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2a3142"/>
+      <stop offset="1" stop-color="#0c1018"/>
+    </linearGradient>
+    <pattern id="tm-grid" width="22" height="13" patternUnits="userSpaceOnUse" patternTransform="skewX(-30)">
+      <path d="M 0 0 L 22 0 M 0 0 L 0 13" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="0.6"/>
+    </pattern>
+  `;
+  el('rect', { x: 0, y: 0, width: w, height: h, fill: 'url(#tm-ground)' }, root);
+
+  // Skewed grid
+  const ox = 30, oy = 50;
+  const sz = 20;
+  // Draw subtle iso lattice
+  for (let y = 0; y < 12; y++) {
+    for (let x = 0; x < 18; x++) {
+      const a = project(x, y, 0, sz, ox, oy);
+      const b = project(x + 1, y, 0, sz, ox, oy);
+      const c = project(x, y + 1, 0, sz, ox, oy);
+      el('line', { x1: a.x, y1: a.y, x2: b.x, y2: b.y, stroke: 'rgba(255,255,255,0.05)', 'stroke-width': 0.5 }, root);
+      el('line', { x1: a.x, y1: a.y, x2: c.x, y2: c.y, stroke: 'rgba(255,255,255,0.05)', 'stroke-width': 0.5 }, root);
+    }
+  }
+
+  // Polygon vertices — being drawn (4 verts, last is hovering)
+  const pts = [
+    { gx: 4, gy: 4, fixed: true },
+    { gx: 11, gy: 3.5, fixed: true },
+    { gx: 13, gy: 8, fixed: true },
+    { gx: 5, gy: 9, fixed: false },  // last vertex follows the cursor
+  ];
+
+  // Project polygon to screen
+  const proj = pts.map(p => project(p.gx, p.gy, 0, sz, ox, oy));
+
+  // Block fill underneath polygon (sample-grid intersect — show as small block tops at varying tint)
+  // Test each grid cell against polygon
+  function pointInPoly(p, poly) {
+    let inside = false;
+    for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+      const xi = poly[i].gx, yi = poly[i].gy;
+      const xj = poly[j].gx, yj = poly[j].gy;
+      const intersect = ((yi > p.gy) !== (yj > p.gy)) && (p.gx < (xj - xi) * (p.gy - yi) / (yj - yi) + xi);
+      if (intersect) inside = !inside;
+    }
+    return inside;
+  }
+  for (let y = 2; y < 11; y++) {
+    for (let x = 3; x < 14; x++) {
+      if (pointInPoly({ gx: x + 0.5, gy: y + 0.5 }, pts)) {
+        // Stack 3 layers down
+        for (let z = 0; z < 3; z++) {
+          drawBlock(root, x, y, -z - 1, sz, ox, oy, '#8b7355', { opacity: 1 - z * 0.18 });
+        }
+      }
+    }
+  }
+
+  // Polygon outline + fill
+  el('polygon', {
+    points: proj.map(p => `${p.x},${p.y}`).join(' '),
+    fill: 'rgba(45, 212, 191, 0.10)',
+    stroke: '#2dd4bf', 'stroke-width': 2, 'stroke-linejoin': 'round',
+    'stroke-dasharray': pts[3].fixed ? '0' : '5 4',
+  }, root);
+
+  // Vertex pips
+  proj.forEach((p, i) => {
+    const fixed = pts[i].fixed;
+    el('circle', { cx: p.x, cy: p.y, r: 4, fill: fixed ? '#2dd4bf' : '#fbbf24', stroke: '#0f0f14', 'stroke-width': 1.5 }, root);
+    if (i === proj.length - 1 && !fixed) {
+      // Cursor halo for the active vertex
+      el('circle', { cx: p.x, cy: p.y, r: 12, fill: 'none', stroke: 'rgba(251, 191, 36, 0.5)', 'stroke-width': 1, 'stroke-dasharray': '2 2' }, root);
+    }
+  });
+
+  // Vert count chip
+  const vertGroup = el('g', { transform: `translate(${proj[0].x - 36}, ${proj[0].y - 28})` }, root);
+  el('rect', { x: 0, y: 0, width: 90, height: 22, rx: 4, fill: 'rgba(15, 15, 20, 0.92)', stroke: 'rgba(45, 212, 191, 0.55)' }, vertGroup);
+  const vertText = el('text', { x: 8, y: 14, 'font-size': 10, 'font-family': '-apple-system', 'font-weight': 600, fill: '#2dd4bf' }, vertGroup);
+  vertText.textContent = '4 vertices';
+  el('text', { x: 65, y: 14, 'font-size': 10, 'font-family': '-apple-system', 'font-weight': 500, fill: '#8b8fa8' }, vertGroup).textContent = '⇥ end';
+}
+tmScene();
+
+// ════════════════════════════════════════════════════════════════════
+// Card 4 — Water fill
+// ════════════════════════════════════════════════════════════════════
+function wfScene() {
+  const root = document.getElementById('wf-scene');
+  const w = 460, h = 280;
+  // Cross-section view
+  // Sky
+  el('rect', { x: 0, y: 0, width: w, height: 110, fill: 'rgba(99, 102, 241, 0.05)' }, root);
+
+  // Terrain — basin shape
+  const pts = [];
+  for (let x = 0; x <= w; x += 6) {
+    const t = x / w;
+    const y = 200
+      - 50 * Math.exp(-Math.pow((t - 0.45) * 4, 2)) // basin
+      + 28 * Math.sin(t * 6.5)                       // bumps
+      + 14 * Math.sin(t * 16);
+    pts.push([x, y]);
+  }
+
+  // Surface line for water
+  const surfaceY = 156;
+  // Water polygon
+  const defs = el('defs', {}, root);
+  defs.innerHTML = `
+    <linearGradient id="wf-water" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#67e8f9" stop-opacity="0.7"/>
+      <stop offset="0.4" stop-color="#06b6d4" stop-opacity="0.85"/>
+      <stop offset="1" stop-color="#03101f" stop-opacity="0.95"/>
+    </linearGradient>
+  `;
+  let waterPath = `M 0 ${surfaceY} L ${w} ${surfaceY}`;
+  for (let i = pts.length - 1; i >= 0; i--) {
+    waterPath += ` L ${pts[i][0]} ${pts[i][1]}`;
+  }
+  waterPath += ' Z';
+  el('path', { d: waterPath, fill: 'url(#wf-water)' }, root);
+
+  // Surface ripples
+  let ripple = `M 0 ${surfaceY}`;
+  for (let i = 0; i < pts.length; i += 6) {
+    const x = pts[i][0];
+    ripple += ` Q ${x + 6} ${surfaceY - 1.5} ${x + 12} ${surfaceY}`;
+  }
+  el('path', { d: ripple, fill: 'none', stroke: 'rgba(103, 232, 249, 0.7)', 'stroke-width': 1.2 }, root);
+
+  // Terrain
+  let terr = `M 0 ${pts[0][1]}`;
+  for (const p of pts) terr += ` L ${p[0]} ${p[1]}`;
+  terr += ` L ${w} ${h} L 0 ${h} Z`;
+  el('path', { d: terr, fill: '#1f2331', stroke: 'rgba(255,255,255,0.10)' }, root);
+
+  // Click point with halo
+  const cx = 220;
+  el('circle', { cx, cy: surfaceY, r: 14, fill: 'none', stroke: 'rgba(45, 212, 191, 0.4)', 'stroke-width': 1, 'stroke-dasharray': '2 2' }, root);
+  el('circle', { cx, cy: surfaceY, r: 5, fill: '#2dd4bf', stroke: '#0f0f14', 'stroke-width': 1.5 }, root);
+
+  // Floating elevation slider near cursor
+  const sliderG = el('g', { transform: `translate(${cx + 22}, ${surfaceY - 70})` }, root);
+  el('rect', { x: 0, y: 0, width: 70, height: 130, rx: 6, fill: 'rgba(15, 15, 20, 0.92)', stroke: 'rgba(45, 212, 191, 0.55)' }, sliderG);
+  el('text', { x: 35, y: 16, 'text-anchor': 'middle', 'font-size': 9, 'font-weight': 700, 'letter-spacing': '0.06em', fill: '#8b8fa8', 'font-family': '-apple-system' }, sliderG).textContent = 'ELEV';
+  // Slider track
+  el('line', { x1: 35, y1: 28, x2: 35, y2: 100, stroke: 'rgba(255,255,255,0.10)', 'stroke-width': 4, 'stroke-linecap': 'round' }, sliderG);
+  el('line', { x1: 35, y1: 60, x2: 35, y2: 100, stroke: '#2dd4bf', 'stroke-width': 4, 'stroke-linecap': 'round' }, sliderG);
+  el('circle', { cx: 35, cy: 60, r: 7, fill: '#2dd4bf', stroke: '#0f0f14', 'stroke-width': 2 }, sliderG);
+  // Tick marks
+  [28, 46, 64, 82, 100].forEach(y => el('line', { x1: 24, y1: y, x2: 28, y2: y, stroke: 'rgba(255,255,255,0.20)', 'stroke-width': 1 }, sliderG));
+  // Value label
+  el('text', { x: 35, y: 120, 'text-anchor': 'middle', 'font-size': 10, 'font-family': 'ui-monospace, Menlo, monospace', 'font-weight': 600, fill: '#2dd4bf' }, sliderG).textContent = '42.5 m';
+
+  // Surface label arrow pointing at the surface line
+  el('line', { x1: cx + 22, y1: surfaceY - 4, x2: cx + 50, y2: surfaceY - 30, stroke: 'rgba(45, 212, 191, 0.4)', 'stroke-width': 1, 'stroke-dasharray': '2 2' }, root);
+}
+wfScene();
+
+// ════════════════════════════════════════════════════════════════════
+// Card 5 — Selection
+// ════════════════════════════════════════════════════════════════════
+function selScene() {
+  const root = document.getElementById('sel-scene');
+  const ox = 200, oy = 230, sz = 18;
+
+  // Build a 6 × 4 base of overburden at z=0
+  for (let y = 3; y >= 0; y--) {
+    for (let x = 0; x < 6; x++) {
+      drawBlock(root, x, y, 0, sz, ox, oy, '#8b7355');
+    }
+  }
+  // 4 × 3 of rock at z=1
+  for (let y = 2; y >= 0; y--) {
+    for (let x = 1; x < 5; x++) {
+      drawBlock(root, x, y, 1, sz, ox, oy, '#4a5568');
+    }
+  }
+  // Ore stripe at z=2 along x=2,3
+  drawBlock(root, 2, 0, 2, sz, ox, oy, '#d69e2e');
+  drawBlock(root, 3, 0, 2, sz, ox, oy, '#d69e2e');
+  drawBlock(root, 2, 1, 2, sz, ox, oy, '#d69e2e');
+  drawBlock(root, 3, 1, 2, sz, ox, oy, '#d69e2e');
+
+  // Selected blocks — teal outline + soft fill
+  const selected = [
+    { x: 2, y: 0, z: 2 }, { x: 3, y: 0, z: 2 },
+    { x: 2, y: 1, z: 2 }, { x: 3, y: 1, z: 2 },
+    { x: 1, y: 0, z: 1 }, { x: 4, y: 0, z: 1 },
+  ];
+  for (const b of selected) {
+    const { top, left, right } = blockPolys(b.x, b.y, b.z, sz, ox, oy);
+    const overlay = 'rgba(45, 212, 191, 0.30)';
+    el('polygon', { points: top.map(p => `${p.x},${p.y}`).join(' '), fill: overlay, stroke: '#2dd4bf', 'stroke-width': 1.6 }, root);
+    el('polygon', { points: right.map(p => `${p.x},${p.y}`).join(' '), fill: overlay, stroke: '#2dd4bf', 'stroke-width': 1.6 }, root);
+    el('polygon', { points: left.map(p => `${p.x},${p.y}`).join(' '), fill: overlay, stroke: '#2dd4bf', 'stroke-width': 1.6 }, root);
+  }
+
+  // Hover block (separate from selection, indigo outline)
+  const hover = { x: 4, y: 1, z: 1 };
+  const hp = blockPolys(hover.x, hover.y, hover.z, sz, ox, oy);
+  ['top', 'left', 'right'].forEach(face => {
+    el('polygon', { points: hp[face].map(p => `${p.x},${p.y}`).join(' '), fill: 'none', stroke: '#9bb3ff', 'stroke-width': 1.4, 'stroke-dasharray': '0' }, root);
+  });
+  // Hover halo
+  const hCenter = project(hover.x + 0.5, hover.y + 0.5, hover.z + 1, sz, ox, oy);
+  el('circle', { cx: hCenter.x, cy: hCenter.y, r: 18, fill: 'rgba(155, 179, 255, 0.10)', stroke: 'rgba(155, 179, 255, 0.5)', 'stroke-width': 1, 'stroke-dasharray': '2 2' }, root);
+
+  // Marquee (drag selection box) — partially transparent rectangle
+  el('rect', { x: 50, y: 30, width: 130, height: 90, fill: 'rgba(45, 212, 191, 0.08)', stroke: '#2dd4bf', 'stroke-width': 1.4, 'stroke-dasharray': '5 4', rx: 3 }, root);
+  // Marquee corner label
+  const marqLbl = el('g', { transform: `translate(180, 15)` }, root);
+  el('rect', { x: 0, y: 0, width: 70, height: 18, rx: 3, fill: 'rgba(15, 15, 20, 0.92)', stroke: 'rgba(45, 212, 191, 0.55)' }, marqLbl);
+  const tx = el('text', { x: 35, y: 12, 'text-anchor': 'middle', 'font-size': 10, 'font-family': '-apple-system', 'font-weight': 600, fill: '#2dd4bf' }, marqLbl);
+  tx.textContent = 'Marquee';
+
+  // Selection count chip
+  const cntG = el('g', { transform: `translate(20, 244)` }, root);
+  el('rect', { x: 0, y: 0, width: 110, height: 22, rx: 4, fill: 'rgba(15, 15, 20, 0.92)', stroke: 'rgba(45, 212, 191, 0.55)' }, cntG);
+  el('text', { x: 8, y: 14, 'font-size': 10, 'font-family': '-apple-system', 'font-weight': 600, fill: '#2dd4bf' }, cntG).textContent = '6 blocks selected';
+}
+selScene();
+</script>
+</body>
+</html>
