@@ -35,6 +35,10 @@ import SaveIndicator from './primitives/SaveIndicator'
 import StatusBar from './primitives/StatusBar'
 import MobileMinimiseHandle from './primitives/MobileMinimiseHandle'
 import { lookupTool } from './sketch/tools/registry'
+import VoxelToolbox from './voxel/VoxelToolbox'
+import VoxelLayerPanel from './voxel/VoxelLayerPanel'
+import { useSvoEngine } from './voxel/useSvoEngine'
+import { useVoxelGlobeWiring } from './voxel/useVoxelGlobeWiring'
 import './styles/index.css'
 
 interface DesignWidgetProps {
@@ -45,6 +49,15 @@ interface DesignWidgetProps {
 }
 
 export type DesignTabId = 'layers' | 'sketch' | 'features' | 'properties' | 'history' | 'download'
+
+/** Tool group toggle in the Sketch tab header — picks between the
+ *  vector/CAD tools (the existing SketchTab grid) and the voxel
+ *  toolbox. Held in component state because it's purely a UI mode and
+ *  doesn't need to round-trip via persistence or undo. The brief calls
+ *  for "alongside Draw / Redline"; this codebase doesn't currently
+ *  surface a separate redline group (redline is a sketch property),
+ *  so we expose Sketch / Voxel as the practical pair. */
+export type ToolGroup = 'sketch' | 'voxel'
 
 const TABS: { id: DesignTabId; label: string; icon: string }[] = [
   { id: 'layers',     label: 'Layers',     icon: '▤' },
@@ -64,6 +77,7 @@ const MOBILE_DRAW_TOOLS = new Set([
 
 export default function DesignWidget({ viewer, onClose, siteSlug = null }: DesignWidgetProps) {
   const [activeTab, setActiveTab] = useState<DesignTabId>('layers')
+  const [toolGroup, setToolGroup] = useState<ToolGroup>('sketch')
   const [mobileMinimised, setMobileMinimised] = useState(false)
   const { isMobile } = useBreakpoint()
   const cursor = useCursorCoords(viewer)
@@ -78,6 +92,16 @@ export default function DesignWidget({ viewer, onClose, siteSlug = null }: Desig
   const activeSketch = activeSketchId ? sketches[activeSketchId] : null
   const tool = lookupTool(activeToolId)
 
+  // Voxel globe-pick wiring — listens for voxel:apply events, samples
+  // terrain for terrain_mask, and stamps generators on the active layer.
+  useVoxelGlobeWiring({ viewer })
+
+  // Voxel ESC: clear the voxel tool when ESC pressed (parallel to the
+  // CAD ESC handler below). We read+set on the SVO engine so the
+  // polygon-borrow flow also tears down its CAD polygon assistant.
+  const voxelToolId = useSvoEngine(s => s.activeToolId)
+  const setVoxelTool = useSvoEngine(s => s.setActiveTool)
+
   // Mobile auto-minimise on draw.
   useEffect(() => {
     if (!isMobile) {
@@ -87,19 +111,26 @@ export default function DesignWidget({ viewer, onClose, siteSlug = null }: Desig
     setMobileMinimised(activeToolId != null && MOBILE_DRAW_TOOLS.has(activeToolId))
   }, [isMobile, activeToolId, mobileMinimised])
 
-  // Keyboard: ESC cancels active tool.
+  // Keyboard: ESC cancels active tool. Clears the voxel tool first
+  // when one is armed; otherwise falls through to the CAD tool.
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       const tag = (e.target as HTMLElement)?.tagName
       if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return
-      if (e.key === 'Escape' && activeToolId) {
+      if (e.key !== 'Escape') return
+      if (voxelToolId) {
+        e.stopPropagation()
+        setVoxelTool(null)
+        return
+      }
+      if (activeToolId) {
         e.stopPropagation()
         setActiveTool(null)
       }
     }
     document.addEventListener('keydown', onKey, true)
     return () => document.removeEventListener('keydown', onKey, true)
-  }, [activeToolId, setActiveTool])
+  }, [activeToolId, setActiveTool, voxelToolId, setVoxelTool])
 
   // Selecting in Properties tab → auto-cancel any active tool.
   useEffect(() => {
@@ -155,8 +186,39 @@ export default function DesignWidget({ viewer, onClose, siteSlug = null }: Desig
           {activeToolId && tool && <PlaceModeBar siteSlug={siteSlug} />}
 
           <div className="design-panel-body">
-            {activeTab === 'layers' && <LayersTab siteSlug={siteSlug} />}
-            {activeTab === 'sketch' && <SketchTab viewer={viewer} siteSlug={siteSlug} />}
+            {activeTab === 'layers' && (
+              <>
+                <LayersTab siteSlug={siteSlug} />
+                {/* When the active layer is a voxel layer, surface its
+                    inspector below the sketch gallery. The voxel layer
+                    panel is read-only-friendly when nothing's selected,
+                    so it gracefully no-ops in non-voxel contexts. */}
+                <VoxelLayerPanel />
+              </>
+            )}
+            {activeTab === 'sketch' && (
+              <>
+                <div className="dw-tool-group-toggle" role="tablist" aria-label="Tool group">
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={toolGroup === 'sketch'}
+                    className={`dw-tool-group-btn${toolGroup === 'sketch' ? ' is-on' : ''}`}
+                    onClick={() => setToolGroup('sketch')}
+                  >Draw</button>
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={toolGroup === 'voxel'}
+                    className={`dw-tool-group-btn${toolGroup === 'voxel' ? ' is-on' : ''}`}
+                    onClick={() => setToolGroup('voxel')}
+                  >Voxel</button>
+                </div>
+                {toolGroup === 'sketch'
+                  ? <SketchTab viewer={viewer} siteSlug={siteSlug} />
+                  : <VoxelToolbox />}
+              </>
+            )}
             {activeTab === 'features' && <FeaturesTab />}
             {activeTab === 'properties' && <PropertiesTab />}
             {activeTab === 'history' && <HistoryTab />}
