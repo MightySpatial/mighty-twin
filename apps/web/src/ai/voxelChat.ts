@@ -1,20 +1,22 @@
 /** Streaming client for the server-side Mai voxel chat route.
  *
- *  The backend at `POST /api/mai/chat` runs a Claude tool-use loop and
+ *  The backend at `POST /api/mai/chat` runs a provider-agnostic
+ *  tool-use loop (Anthropic, OpenAI, Ollama, Groq, Together, …) and
  *  emits SSE events (`start` / `text` / `tool_call` / `tool_result` /
  *  `done` / `error`). This module exposes an async iterator so the
  *  ChatPanel can render each event as it lands — tool-call icons,
  *  block counts, final text — without buffering the whole response.
  *
- *  The frontend's BYOK Anthropic key (from localStorage) is forwarded
- *  in the request body so the server doesn't need its own credential
- *  store. ANTHROPIC_API_KEY in the API env is the fallback for CI / the
- *  CLI test script.
+ *  The frontend's BYOK config (from localStorage `mighty-twin.ai-settings`)
+ *  is forwarded in the request body so the server doesn't need its own
+ *  credential store. For Anthropic specifically, `ANTHROPIC_API_KEY`
+ *  in the API env is the fallback used by the CLI test script.
  */
 
 import { loadSettings } from './storage'
+import type { AIProvider } from './types'
 
-export interface MaiStreamStart { event: 'start'; model: string; site_slug: string }
+export interface MaiStreamStart { event: 'start'; provider: string; model: string; site_slug: string }
 export interface MaiStreamText  { event: 'text'; content: string }
 export interface MaiStreamToolCall {
   event: 'tool_call'
@@ -61,15 +63,27 @@ export interface MaiChatOptions {
   apiBaseUrl?: string
 }
 
-/** Pull the BYOK Anthropic key from localStorage (Settings → AI). The
- *  server falls back to its env var if this is empty, so an unconfigured
- *  client still works against a server with ANTHROPIC_API_KEY set. */
-function readAnthropicKey(): string | undefined {
+/** Pull the active provider's BYOK config from localStorage (Settings →
+ *  AI). The active provider, its api_key, model id, and base_url all
+ *  live in the `mighty-twin.ai-settings` blob; the route maps them to
+ *  the right server-side provider implementation. */
+function readActiveProviderConfig(): {
+  provider: AIProvider
+  apiKey?: string
+  baseUrl?: string
+  model?: string
+} {
   try {
     const settings = loadSettings()
-    return settings.byProvider.anthropic?.apiKey
+    const cfg = settings.byProvider[settings.active] ?? {}
+    return {
+      provider: settings.active,
+      apiKey: cfg.apiKey,
+      baseUrl: cfg.baseUrl,
+      model: cfg.model,
+    }
   } catch {
-    return undefined
+    return { provider: 'anthropic' }
   }
 }
 
@@ -82,6 +96,10 @@ export async function* streamMaiChat(opts: MaiChatOptions): AsyncIterable<MaiStr
     try { return localStorage.getItem('accessToken') } catch { return null }
   })()
 
+  // Provider config from Settings → AI. The active provider's api_key,
+  // base_url, and model id all flow through to the server route, which
+  // routes through the matching `mai_providers` implementation.
+  const cfg = readActiveProviderConfig()
   const r = await fetch(url, {
     method: 'POST',
     headers: {
@@ -93,8 +111,10 @@ export async function* streamMaiChat(opts: MaiChatOptions): AsyncIterable<MaiStr
       site_slug: opts.siteSlug,
       sketch_id: opts.sketchId,
       conversation_history: opts.history ?? [],
-      api_key: readAnthropicKey(),
-      model: opts.model,
+      provider: cfg.provider,
+      api_key: cfg.apiKey,
+      base_url: cfg.baseUrl,
+      model: opts.model ?? cfg.model,
     }),
     signal: opts.signal,
   })

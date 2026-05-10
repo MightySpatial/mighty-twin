@@ -1,22 +1,23 @@
-"""Mai voxel assistant — Claude API tool-use orchestration.
+"""Mai voxel assistant — provider-agnostic tool-use orchestration.
 
 POST /api/mai/chat takes a natural-language message plus the current site
-slug, runs a Claude tool-use loop with the voxel toolset, executes each
+slug, runs an LLM tool-use loop with the voxel toolset, executes each
 tool call server-side, and streams the model's progress back as SSE
-events. The loop terminates when Claude emits a final text turn with no
+events. The loop terminates when the model emits a final turn with no
 more tool calls.
 
-This route is the server-side counterpart to the BYOK localStorage chat
-in `apps/web/src/ai/client.ts`. The frontend forwards its stored API key
-in the body; the route falls back to ``ANTHROPIC_API_KEY`` from env when
-no key is sent (used by the CLI test script).
+Provider abstraction lives in ``mai_providers`` — Mai is BYOK and
+multi-provider. The frontend forwards the active ``provider`` (matching
+the ``AGENT_PRESETS`` list in ``apps/web/src/ai/types.ts``) plus its
+``api_key`` / ``base_url`` / ``model`` from localStorage; the route
+falls back to ``ANTHROPIC_API_KEY`` from env when the provider is
+anthropic and no key is sent (used by the CLI test script).
 
 Voxel tool execution is currently stubbed — the voxel layer endpoints
 are being built in parallel. The stubs compute deterministic synthetic
 results (block counts, ranges) so the loop completes end-to-end and the
-tool-call shape is exercised. Real implementations slot in when the
-voxel layer endpoints land — see ``execute_voxel_tool`` for the swap-in
-seam.
+tool-call shape is exercised. Real implementations slot in at
+``execute_voxel_tool`` when the voxel layer endpoints land.
 """
 
 from __future__ import annotations
@@ -27,8 +28,6 @@ import os
 from typing import Any, AsyncIterator, Iterable
 
 import httpx
-from anthropic import Anthropic
-from anthropic import APIError as AnthropicAPIError
 from fastapi import APIRouter, HTTPException, Request, status
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
@@ -38,6 +37,14 @@ from mighty_models import Site
 
 from .auth import CurrentUser
 from .db import DbSession
+from .mai_providers import (
+    LLMProvider,
+    NormMsg,
+    ToolCall,
+    ToolDef,
+    ToolResult,
+    get_provider,
+)
 
 router = APIRouter(prefix="/api/mai", tags=["mai"])
 
@@ -61,13 +68,13 @@ voxel tools to create it. Always confirm what you built with a brief summary.
 Material types: rock, ore, overburden, fill, concrete, steel, water, topsoil"""
 
 
-# ── Tool schemas (Anthropic tools[] format) ─────────────────────────────
+# ── Tool catalogue (canonical, provider-agnostic) ───────────────────────
 
-VOXEL_TOOLS: list[dict[str, Any]] = [
-    {
-        "name": "search_location",
-        "description": "Search for a real-world location by name and get its coordinates",
-        "input_schema": {
+VOXEL_TOOLS: list[ToolDef] = [
+    ToolDef(
+        name="search_location",
+        description="Search for a real-world location by name and get its coordinates",
+        input_schema={
             "type": "object",
             "properties": {
                 "query": {
@@ -77,11 +84,11 @@ VOXEL_TOOLS: list[dict[str, Any]] = [
             },
             "required": ["query"],
         },
-    },
-    {
-        "name": "terrain_mask",
-        "description": "Sample terrain height within a polygon and fill voxel columns with terrain blocks",
-        "input_schema": {
+    ),
+    ToolDef(
+        name="terrain_mask",
+        description="Sample terrain height within a polygon and fill voxel columns with terrain blocks",
+        input_schema={
             "type": "object",
             "properties": {
                 "polygon": {
@@ -101,11 +108,11 @@ VOXEL_TOOLS: list[dict[str, Any]] = [
             },
             "required": ["polygon", "level"],
         },
-    },
-    {
-        "name": "pyramid_fill",
-        "description": "Create a pyramid or pit shape (negative pyramid = open pit mine)",
-        "input_schema": {
+    ),
+    ToolDef(
+        name="pyramid_fill",
+        description="Create a pyramid or pit shape (negative pyramid = open pit mine)",
+        input_schema={
             "type": "object",
             "properties": {
                 "center_lon": {"type": "number"},
@@ -140,11 +147,11 @@ VOXEL_TOOLS: list[dict[str, Any]] = [
                 "level",
             ],
         },
-    },
-    {
-        "name": "box_fill",
-        "description": "Fill a rectangular block volume",
-        "input_schema": {
+    ),
+    ToolDef(
+        name="box_fill",
+        description="Fill a rectangular block volume",
+        input_schema={
             "type": "object",
             "properties": {
                 "center_lon": {"type": "number"},
@@ -166,11 +173,11 @@ VOXEL_TOOLS: list[dict[str, Any]] = [
                 "level",
             ],
         },
-    },
-    {
-        "name": "water_fill",
-        "description": "Flood fill all air voxels below a given elevation with water blocks",
-        "input_schema": {
+    ),
+    ToolDef(
+        name="water_fill",
+        description="Flood fill all air voxels below a given elevation with water blocks",
+        input_schema={
             "type": "object",
             "properties": {
                 "fill_elevation_m": {
@@ -181,7 +188,7 @@ VOXEL_TOOLS: list[dict[str, Any]] = [
             },
             "required": ["fill_elevation_m", "level"],
         },
-    },
+    ),
 ]
 
 
@@ -319,7 +326,6 @@ def _polygon_area_deg2(polygon: Iterable[Iterable[float]]) -> float:
     pts = [tuple(p) for p in polygon if len(p) >= 2]
     if len(pts) < 3:
         return 0.0
-    # Shoelace.
     s = 0.0
     for i in range(len(pts)):
         x1, y1 = pts[i][0], pts[i][1]
@@ -382,13 +388,40 @@ class ChatBody(BaseModel):
     sketch_id: str | None = None
     conversation_history: list[ChatTurn] = Field(default_factory=list)
     api_key: str | None = None
-    """Override for the Anthropic API key. The frontend forwards its
-    BYOK localStorage key here. Falls back to ``ANTHROPIC_API_KEY`` env."""
+    """API key for the active provider. The frontend forwards its
+    BYOK localStorage key here. For Anthropic specifically, falls back
+    to ``ANTHROPIC_API_KEY`` env when absent."""
     model: str | None = None
-    """Override for the Claude model id. Defaults to claude-sonnet-4-6."""
+    """Override for the model id. Defaults derived from provider."""
+    provider: str = "anthropic"
+    """Provider id matching ``AGENT_PRESETS`` in ai/types.ts:
+    anthropic, openai, openrouter, groq, together, fireworks, perplexity,
+    mistral, deepseek, xai, ollama, lmstudio, openai-compatible.
+    Gemini lands in v2."""
+    base_url: str | None = None
+    """OpenAI-compatible base URL override (Ollama on a non-default
+    port, vLLM, custom deployments). Ignored for Anthropic."""
 
 
-DEFAULT_MODEL = "claude-sonnet-4-6"
+# Per-provider default model ids when the body doesn't specify one.
+# Mirrors `apps/web/src/ai/client.ts` DEFAULTS and the AGENT_PRESETS
+# defaultModel field.
+DEFAULT_MODELS: dict[str, str] = {
+    "anthropic":           "claude-sonnet-4-6",
+    "openai":              "gpt-4o-mini",
+    "openrouter":          "openrouter/auto",
+    "groq":                "llama-3.3-70b-versatile",
+    "together":            "meta-llama/Llama-3.3-70B-Instruct-Turbo",
+    "fireworks":           "accounts/fireworks/models/llama-v3p1-405b-instruct",
+    "perplexity":          "sonar",
+    "mistral":             "mistral-large-latest",
+    "deepseek":            "deepseek-chat",
+    "xai":                 "grok-2-latest",
+    "ollama":              "llama3.2",
+    "lmstudio":            "",
+    "openai-compatible":   "",
+}
+
 MAX_TOOL_ROUNDS = 10
 
 
@@ -409,22 +442,22 @@ async def _stream_chat(
     *,
     body: ChatBody,
     site_datum: dict[str, Any],
-    api_key: str,
+    provider: LLMProvider,
     model: str,
 ) -> AsyncIterator[bytes]:
-    """Run the Claude tool-use loop and yield SSE chunks.
+    """Run the provider-agnostic tool-use loop and yield SSE chunks.
 
     Each chunk is one of:
-      ``text``        — assistant text delta (one or more concatenated)
-      ``tool_call``   — Claude requested a tool execution
+      ``start``       — provider + model + site context
+      ``text``        — model text turn (concatenated for the round)
+      ``tool_call``   — model requested a tool execution
       ``tool_result`` — local tool finished, ready to feed back
-      ``done``        — final assistant turn, no more tool calls
+      ``done``        — final turn, no more tool calls
       ``error``       — something blew up; the stream is closing
 
     The loop is bounded by ``MAX_TOOL_ROUNDS`` so a runaway model can't
     pin the connection open forever.
     """
-    client = Anthropic(api_key=api_key)
     system_prompt = SYSTEM_PROMPT_TEMPLATE.format(
         site_slug=body.site_slug,
         datum_lon=site_datum["lon"],
@@ -432,82 +465,79 @@ async def _stream_chat(
         datum_alt=site_datum["alt"],
     )
 
-    # Convert the prior turns to Anthropic message format. System lives in
-    # the top-level `system` parameter, not in messages.
-    history: list[dict[str, Any]] = []
+    # Build the normalized message history. Prior turns from the client
+    # are plain text; the new user message is appended at the end.
+    history: list[NormMsg] = []
     for turn in body.conversation_history:
         if turn.role in ("user", "assistant"):
-            history.append({"role": turn.role, "content": turn.content})
-    history.append({"role": "user", "content": body.message})
+            history.append(NormMsg(role=turn.role, text=turn.content))
+    history.append(NormMsg(role="user", text=body.message))
 
-    yield _sse("start", {"model": model, "site_slug": body.site_slug})
+    yield _sse(
+        "start",
+        {"provider": provider.name, "model": model, "site_slug": body.site_slug},
+    )
+
+    total_input_tokens = 0
+    total_output_tokens = 0
 
     for round_idx in range(MAX_TOOL_ROUNDS):
         try:
-            response = client.messages.create(
-                model=model,
-                max_tokens=4096,
+            resp = await provider.call(
                 system=system_prompt,
                 tools=VOXEL_TOOLS,
                 messages=history,
+                model=model,
             )
-        except AnthropicAPIError as e:
-            yield _sse("error", {"message": f"Anthropic API: {e}"})
-            return
         except Exception as e:  # network errors, validation errors
             yield _sse("error", {"message": f"{type(e).__name__}: {e}"})
             return
 
-        # Surface every text block before tool execution so the user sees
-        # Claude's reasoning even when it's about to call a tool.
-        text_parts: list[str] = []
-        tool_uses: list[Any] = []
-        for block in response.content:
-            if block.type == "text":
-                text_parts.append(block.text)
-            elif block.type == "tool_use":
-                tool_uses.append(block)
+        total_input_tokens += resp.input_tokens
+        total_output_tokens += resp.output_tokens
 
-        if text_parts:
-            yield _sse("text", {"content": "".join(text_parts)})
+        if resp.stop_reason == "error":
+            yield _sse("error", {"message": resp.error_message or "Provider error"})
+            return
+
+        if resp.text:
+            yield _sse("text", {"content": resp.text})
 
         # No tool calls → final answer, we're done.
-        if response.stop_reason in ("end_turn", "stop_sequence") or not tool_uses:
+        if not resp.tool_calls:
             yield _sse(
                 "done",
                 {
-                    "stop_reason": response.stop_reason,
-                    "input_tokens": response.usage.input_tokens,
-                    "output_tokens": response.usage.output_tokens,
+                    "stop_reason": resp.stop_reason,
+                    "input_tokens": total_input_tokens,
+                    "output_tokens": total_output_tokens,
                     "rounds": round_idx + 1,
                 },
             )
             return
 
-        # Anthropic refusal stop_reason — surface and bail without tool exec.
-        if response.stop_reason == "refusal":
+        if resp.stop_reason == "refusal":
             yield _sse(
                 "error",
-                {"message": "Claude declined the request (refusal stop_reason)."},
+                {"message": "Model declined the request (refusal stop_reason)."},
             )
             return
 
-        # Persist the assistant turn including tool_use blocks; the next
-        # request must echo them back so tool_use_id resolution works.
-        history.append({"role": "assistant", "content": response.content})
+        # Persist the assistant turn (text + tool_use blocks). The
+        # provider needs to echo these back on the next call so its
+        # tool_call_id resolution works (OpenAI is strict about this).
+        history.append(
+            NormMsg(role="assistant", text=resp.text or None, tool_calls=resp.tool_calls)
+        )
 
-        tool_results: list[dict[str, Any]] = []
-        for tool in tool_uses:
+        tool_results: list[ToolResult] = []
+        for call in resp.tool_calls:
             yield _sse(
                 "tool_call",
-                {
-                    "id": tool.id,
-                    "name": tool.name,
-                    "input": tool.input,
-                },
+                {"id": call.id, "name": call.name, "input": call.input},
             )
             try:
-                result = await execute_voxel_tool(tool.name, dict(tool.input))
+                result = await execute_voxel_tool(call.name, dict(call.input))
                 is_error = False
             except Exception as e:
                 result = {"error": f"{type(e).__name__}: {e}"}
@@ -515,27 +545,54 @@ async def _stream_chat(
 
             yield _sse(
                 "tool_result",
-                {"id": tool.id, "name": tool.name, "result": result, "is_error": is_error},
+                {
+                    "id": call.id,
+                    "name": call.name,
+                    "result": result,
+                    "is_error": is_error,
+                },
             )
             tool_results.append(
-                {
-                    "type": "tool_result",
-                    "tool_use_id": tool.id,
-                    "content": json.dumps(result),
-                    "is_error": is_error,
-                }
+                ToolResult(
+                    id=call.id,
+                    name=call.name,
+                    output=json.dumps(result),
+                    is_error=is_error,
+                )
             )
 
-        history.append({"role": "user", "content": tool_results})
+        history.append(NormMsg(role="user", tool_results=tool_results))
 
-    # If we fell through, we hit the round cap.
+    # Round cap.
     yield _sse(
         "error",
-        {"message": f"Tool-use round cap reached ({MAX_TOOL_ROUNDS}). Try a simpler request."},
+        {
+            "message": (
+                f"Tool-use round cap reached ({MAX_TOOL_ROUNDS}). "
+                "Try a simpler request."
+            )
+        },
     )
 
 
 # ── Route ───────────────────────────────────────────────────────────────
+
+
+def _resolve_credentials(body: ChatBody) -> tuple[str | None, str]:
+    """Pull (api_key, model) from the body, with sensible fallbacks.
+
+    Anthropic specifically falls back to ``ANTHROPIC_API_KEY`` env so
+    the CLI test script + a server with a global key can both work
+    without the BYOK localStorage detour. Other providers don't have
+    well-known env vars (and we don't want to invent one per provider),
+    so they require the body to carry the key.
+    """
+    api_key = body.api_key
+    if not api_key and body.provider == "anthropic":
+        api_key = os.environ.get("ANTHROPIC_API_KEY")
+
+    model = body.model or DEFAULT_MODELS.get(body.provider) or ""
+    return api_key, model
 
 
 @router.post("/chat")
@@ -547,31 +604,41 @@ async def mai_chat(
 ) -> StreamingResponse:
     """Stream a Mai chat turn back as Server-Sent Events.
 
-    The frontend BYOK key arrives in ``body.api_key``. If the field is
-    absent (the CLI test script is the typical case), we fall back to
-    ``ANTHROPIC_API_KEY`` from process env. Without either, return 401
-    so the frontend can route the user to Settings → AI.
+    Provider, model, api_key, and base_url all arrive in the request
+    body (matching the BYOK localStorage shape on the frontend). The
+    route is provider-agnostic via the ``mai_providers`` abstraction —
+    every supported provider id (anthropic, openai, ollama, groq,
+    together, …) routes through the same SSE pipeline.
     """
-    api_key = body.api_key or os.environ.get("ANTHROPIC_API_KEY")
-    if not api_key:
+    api_key, model = _resolve_credentials(body)
+    if not model:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
+            status_code=status.HTTP_400_BAD_REQUEST,
             detail=(
-                "Missing Anthropic API key. Set one in Settings → AI or "
-                "ANTHROPIC_API_KEY in the API environment."
+                f"No model configured for provider {body.provider!r}. "
+                f"Pass `model` in the request body."
             ),
         )
 
-    model = body.model or DEFAULT_MODEL
+    try:
+        provider = get_provider(
+            body.provider,
+            api_key=api_key,
+            base_url=body.base_url,
+        )
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e),
+        ) from e
+
     site_datum = _resolve_site_datum(body.site_slug, db)
 
-    # SSE headers: text/event-stream + no-cache so intermediaries don't
-    # buffer chunks. X-Accel-Buffering off keeps nginx from holding them.
     return StreamingResponse(
         _stream_chat(
             body=body,
             site_datum=site_datum,
-            api_key=api_key,
+            provider=provider,
             model=model,
         ),
         media_type="text/event-stream",
@@ -585,6 +652,16 @@ async def mai_chat(
 @router.get("/voxel-tools")
 def list_voxel_tools(_: CurrentUser) -> dict[str, Any]:
     """Surface the tool catalogue. Useful for the frontend to render the
-    voxel-context indicator (which tools Claude will reach for) and for
-    debugging the schema without invoking the chat route."""
-    return {"tools": VOXEL_TOOLS, "default_model": DEFAULT_MODEL}
+    voxel-context indicator (which tools the model will reach for) and
+    for debugging the schema without invoking the chat route."""
+    return {
+        "tools": [
+            {
+                "name": t.name,
+                "description": t.description,
+                "input_schema": t.input_schema,
+            }
+            for t in VOXEL_TOOLS
+        ],
+        "default_models": DEFAULT_MODELS,
+    }
