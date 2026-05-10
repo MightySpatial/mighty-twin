@@ -26,6 +26,7 @@ import { useCesiumMount } from './hooks/useCesiumMount'
 import { useLayerSync } from './hooks/useLayerSync'
 import { useSiteFocalPin } from './hooks/useSiteFocalPin'
 import WalkWidget from '../../widgets/walk/WalkWidget'
+import { useSplatRenderer } from './hooks/useSplatRenderer'
 import {
   useWalkMode,
   type WalkSpeed,
@@ -130,6 +131,12 @@ export default function CesiumViewerComponent({
     },
   )
   const { imgMapRef } = useLayerSync(viewerRef, layers, siteId, siteConfigState, setSiteConfigState)
+  // Real Gaussian-splat rendering on top of Cesium. Hook is no-op when
+  // there are no splat layers — adds an overlay canvas + per-frame
+  // camera sync only when needed. Falls back silently to the
+  // volumetric-box marker drawn by useLayerSync if WebGL2 is
+  // unavailable or a splat fails to load.
+  useSplatRenderer(viewerRef, layers)
   useSiteFocalPin(viewerRef, site)
 
   // Widget hooks

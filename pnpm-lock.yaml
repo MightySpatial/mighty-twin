@@ -41,6 +41,9 @@ importers:
       cesium:
         specifier: ^1.126.0
         version: 1.140.0
+      gsplat:
+        specifier: ^1.2.9
+        version: 1.2.9
       lucide-react:
         specifier: ^0.469.0
         version: 0.469.0(react@18.3.1)
@@ -1250,6 +1253,9 @@ packages:
 
   grapheme-splitter@1.0.4:
     resolution: {integrity: sha512-bzh50DW9kTPM00T8y4o8vQg89Di9oLJVLW/KaOGIXJWP/iqCN6WKYkbNOF04vFLJhwcpYUh9ydh/+5vpOqV4YQ==}
+
+  gsplat@1.2.9:
+    resolution: {integrity: sha512-zfpaL9TEQD4oHNesL77KYeRgWvIy2+7P3jRsOA0d8So4Cv/OELRoMXo687ZEXqUMCekiXJgpFw9dz12021NFlw==}
 
   has-symbols@1.1.0:
     resolution: {integrity: sha512-1cDNdwJ2Jaohmb3sg4OmKaMBwuC48sYni5HUw2DvsC8LjGTLK9h+eb1X6RyuOHe4hT0ULCW68iomhjUoKUqlPQ==}
@@ -2712,6 +2718,8 @@ snapshots:
   graceful-fs@4.2.11: {}
 
   grapheme-splitter@1.0.4: {}
+
+  gsplat@1.2.9: {}
 
   has-symbols@1.1.0: {}
 
