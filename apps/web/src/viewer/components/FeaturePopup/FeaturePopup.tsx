@@ -12,7 +12,7 @@
  *  hovering the anchor (touch targets, screen real estate).
  */
 
-import { Maximize2, X } from 'lucide-react'
+import { ExternalLink, Maximize2, X } from 'lucide-react'
 import type { PickedFeature, ScreenAnchor } from './useFeatureClick'
 
 interface Props {
@@ -220,6 +220,41 @@ function PopupBody({
           No attributes
         </div>
       )}
+
+      {/* Splat placeholder — show a "View full quality" button when the
+          picked entity is a splat-bbox placeholder with a URL. Until
+          the full GS renderer lands, this is the user's path to the
+          actual point cloud (PlayCanvas SuperSplat hosted viewer
+          handles .ply / .splat / .compressed.ply uniformly). */}
+      {picked.attributes.isSplatPlaceholder &&
+        typeof picked.attributes.splatUrl === 'string' && (
+          <a
+            href={`https://playcanvas.com/supersplat/viewer?load=${encodeURIComponent(
+              picked.attributes.splatUrl as string,
+            )}`}
+            target="_blank"
+            rel="noreferrer"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: '100%',
+              gap: 6,
+              padding: '7px 10px',
+              background: 'rgba(236,72,153,0.18)',
+              border: '1px solid rgba(236,72,153,0.4)',
+              borderRadius: 6,
+              color: '#f9a8d4',
+              fontSize: 12,
+              fontWeight: 500,
+              textDecoration: 'none',
+              marginBottom: 6,
+            }}
+            title="Open the splat in PlayCanvas SuperSplat (external)"
+          >
+            <ExternalLink size={12} /> View full quality
+          </a>
+        )}
 
       <button
         onClick={onOpenDrawer}

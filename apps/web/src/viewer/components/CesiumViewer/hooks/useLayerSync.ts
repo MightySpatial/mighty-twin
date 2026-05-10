@@ -235,39 +235,66 @@ export function useLayerSync(
       }
 
       if (layer.type === 'splat') {
-        // Gaussian splat layers — anchor pin pending full splat rendering
-        // (which lands as a separate primitive on top of Cesium's
-        // depth buffer in a follow-up). For now we drop a labelled
-        // marker at layer.style.anchor so the splat shows up in the
-        // legend, can be flown to, and gets picked correctly.
+        // Gaussian splat layers — placeholder volumetric representation
+        // pending the full GS renderer (which mounts a sibling canvas
+        // and copies Cesium's view + projection matrices each frame —
+        // landing in a separate change). For now we draw a wireframe
+        // box at layer.style.anchor sized by layer.style.bbox, plus a
+        // labelled pin at the centre, so the splat:
+        //   - appears in the legend / can be flown to
+        //   - shows the user where the scan actually sits in space
+        //   - exposes a click-to-open external viewer affordance via
+        //     the popup (see useFeatureClick) which reads the
+        //     ``splatUrl`` + ``splatFormat`` properties below.
         const anchor = layer.style?.anchor as
           | { lon: number; lat: number; height?: number }
           | undefined
         if (!anchor) return // no anchor → no marker; user must set one in Atlas
+        const bbox = (layer.style?.bbox as
+          | { width?: number; depth?: number; height?: number }
+          | undefined) ?? {}
+        // Sensible defaults for a "house-sized" scan when admin hasn't
+        // set the bbox yet — 12m × 12m × 6m. Width/depth are along
+        // east/north; height is up.
+        const W = bbox.width ?? 12
+        const D = bbox.depth ?? 12
+        const H = bbox.height ?? 6
+        const splatColor = Color.fromCssColorString('#ec4899')
         if (!splatMapRef.current.has(layer.id)) {
+          // Box centre — anchor.height is the ground; we lift the box
+          // by H/2 so the bottom rests on the ground.
+          const center = Cartesian3.fromDegrees(
+            anchor.lon,
+            anchor.lat,
+            (anchor.height ?? 0) + H / 2,
+          )
           const entity = viewer.entities.add({
             id: `splat-${layer.id}`,
-            position: Cartesian3.fromDegrees(
-              anchor.lon,
-              anchor.lat,
-              anchor.height ?? 0,
-            ),
-            point: {
-              pixelSize: 14,
-              color: Color.fromCssColorString('#ec4899'),
-              outlineColor: Color.WHITE,
+            position: center,
+            // Wireframe box — Cesium fills with translucent material +
+            // outline. We lean on a faint translucent fill so the user
+            // sees the volume without it occluding the scene.
+            box: {
+              dimensions: new Cartesian3(W, D, H) as unknown as Cartesian3,
+              material: splatColor.withAlpha(0.06),
+              outline: true,
+              outlineColor: splatColor.withAlpha(0.85),
               outlineWidth: 2,
-              heightReference: HeightReference.CLAMP_TO_GROUND,
+              fill: true,
             },
             label: {
-              text: `${layer.name}\n(splat)`,
-              font: '12px sans-serif',
+              text: `${layer.name}\n${
+                W.toFixed(0)
+              }×${
+                D.toFixed(0)
+              }×${H.toFixed(0)}m splat`,
+              font: '11px sans-serif',
               fillColor: Color.WHITE,
               outlineColor: Color.BLACK,
               outlineWidth: 2,
               style: 2, // FILL_AND_OUTLINE
               verticalOrigin: VerticalOrigin.BOTTOM,
-              pixelOffset: new Cartesian3(0, -18, 0) as unknown as Cartesian3,
+              pixelOffset: new Cartesian3(0, -8, 0) as unknown as Cartesian3,
             },
             properties: {
               splatUrl: layer.url,
@@ -277,9 +304,32 @@ export function useLayerSync(
               splatOrigin:
                 (layer.layer_metadata as Record<string, unknown> | undefined)
                   ?.origin_hint ?? null,
+              splatBbox: { width: W, depth: D, height: H },
+              splatAnchor: anchor,
+              isSplatPlaceholder: true,
             },
           })
           splatMapRef.current.set(layer.id, entity)
+        } else {
+          // Live update — admin tweaked anchor / bbox in Atlas. Refresh
+          // the box dimensions + position without recreating the entity
+          // so the camera doesn't jump.
+          const entity = splatMapRef.current.get(layer.id)
+          if (entity) {
+            // Cesium accepts a Cartesian3 (auto-wrapped to a
+            // ConstantPositionProperty) for entity.position; using the
+            // Cartesian directly keeps TS happy without the cast dance.
+            entity.position = Cartesian3.fromDegrees(
+              anchor.lon,
+              anchor.lat,
+              (anchor.height ?? 0) + H / 2,
+            ) as unknown as Entity['position']
+            if (entity.box) {
+              entity.box.dimensions = new ConstantProperty(
+                new Cartesian3(W, D, H),
+              )
+            }
+          }
         }
       }
     })
