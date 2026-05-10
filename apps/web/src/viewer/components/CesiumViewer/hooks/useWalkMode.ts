@@ -245,5 +245,10 @@ export function flyToWalkPose(
 
 export const WALK_SPEEDS: WalkSpeed[] = ['walk', 'run', 'sprint']
 export function walkSpeedLabel(s: WalkSpeed): string {
-  return s === 'walk' ? 'Walk · 1.4 m/s' : s === 'run' ? 'Run · 3.5 m/s' : 'Sprint · 7 m/s'
+  // Short label for compact UI — full "Walk · 1.4 m/s" version is
+  // composed in the WalkWidget when there's room.
+  return s === 'walk' ? 'Walk' : s === 'run' ? 'Run' : 'Sprint'
+}
+export function walkSpeedMps(s: WalkSpeed): number {
+  return SPEED_MPS[s]
 }

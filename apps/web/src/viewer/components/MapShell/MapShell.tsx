@@ -33,6 +33,7 @@ import {
   BookOpen,
   Slash,
   Mountain,
+  Footprints,
   ZoomIn,
   ZoomOut,
   Home as HomeIcon,
@@ -64,6 +65,7 @@ const ICON_MAP: Record<string, IconComponent> = {
   BookOpen: BookOpen as IconComponent,
   Slash: Slash as IconComponent,
   Mountain: Mountain as IconComponent,
+  Footprints: Footprints as IconComponent,
 }
 
 export interface MapShellProps {

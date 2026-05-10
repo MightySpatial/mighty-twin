@@ -30,6 +30,7 @@ import {
   BookOpen,
   Slash,
   Mountain,
+  Footprints,
   Palette,
   Pipette,
   Tag,
@@ -760,6 +761,7 @@ const WIDGETS: { id: string; label: string; icon: IconCmp; defaultController: Co
   { id: 'table',    label: 'Table',    icon: TableIcon,     defaultController: 'secondary' },
   { id: 'strike',   label: 'Strike',   icon: Slash,         defaultController: 'secondary' },
   { id: 'terrain',  label: 'Terrain',  icon: Mountain,      defaultController: 'secondary' },
+  { id: 'walk',     label: 'Walk',     icon: Footprints,    defaultController: 'secondary' },
 ]
 
 export function WidgetLayoutPanel() {
