@@ -25,6 +25,7 @@ import { useTokenFetch } from './hooks/useTokenFetch'
 import { useCesiumMount } from './hooks/useCesiumMount'
 import { useLayerSync } from './hooks/useLayerSync'
 import { useSiteFocalPin } from './hooks/useSiteFocalPin'
+import { useOsmBuildings } from './hooks/useOsmBuildings'
 import FlyWidget from '../../widgets/fly/FlyWidget'
 import { useSplatRenderer } from './hooks/useSplatRenderer'
 import {
@@ -139,6 +140,9 @@ export default function CesiumViewerComponent({
   // unavailable or a splat fails to load.
   useSplatRenderer(viewerRef, layers)
   useSiteFocalPin(viewerRef, site)
+  // OSM 3D buildings — on by default, hot-toggled via the per-site
+  // ``buildings_enabled`` flag (Site editor → "Globe overlays").
+  useOsmBuildings(viewerRef, site?.buildings_enabled)
 
   // Widget hooks
   const {

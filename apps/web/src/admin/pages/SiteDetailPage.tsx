@@ -72,6 +72,10 @@ interface SiteDetail {
   description: string | null
   storage_srid: number
   is_public_pre_login: boolean
+  /** Cesium OSM 3D buildings on this site (ion asset 96188). Defaults
+   *  to true server-side; falsy in local state until the site GET
+   *  comes back. */
+  buildings_enabled?: boolean
   layers?: Layer[]
   // Spread from config:
   primary_color?: string
@@ -665,6 +669,16 @@ export default function SiteDetailPage() {
               />
             </Row>
           </Card>
+
+          <Card title="Globe overlays">
+            <SettingToggle
+              label="3D Buildings"
+              sublabel="Show OpenStreetMap buildings on the globe"
+              checked={site.buildings_enabled ?? true}
+              saving={savingField === 'buildings_enabled'}
+              onChange={(v) => patch({ buildings_enabled: v }, 'buildings_enabled')}
+            />
+          </Card>
         </div>
 
         {/* Right col — layers + snapshots + story maps */}
@@ -1028,6 +1042,52 @@ function ToggleSwitch({
         }}
       />
     </button>
+  )
+}
+
+/** Card-body toggle row — label + sublabel on the left, switch on the
+ *  right. Used in the "Globe overlays" card (and reusable for any
+ *  future on/off site setting that doesn't need its own tile). */
+function SettingToggle({
+  label,
+  sublabel,
+  checked,
+  saving,
+  onChange,
+}: {
+  label: string
+  sublabel?: string
+  checked: boolean
+  saving?: boolean
+  onChange: (v: boolean) => void
+}) {
+  return (
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 12,
+        padding: '4px 0',
+      }}
+    >
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div
+          style={{
+            fontSize: 13,
+            fontWeight: 600,
+            color: checked ? '#f0f2f8' : 'rgba(240,242,248,0.7)',
+          }}
+        >
+          {label}
+        </div>
+        {sublabel && (
+          <div style={{ fontSize: 11, color: 'rgba(240,242,248,0.45)', marginTop: 2 }}>
+            {sublabel}
+          </div>
+        )}
+      </div>
+      <ToggleSwitch checked={checked} onChange={onChange} disabled={saving} />
+    </div>
   )
 }
 

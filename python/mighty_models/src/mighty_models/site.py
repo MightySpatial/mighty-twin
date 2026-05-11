@@ -52,6 +52,13 @@ class Site(Base):
         Boolean, nullable=False, default=False
     )
 
+    #: When true (the default), the viewer mounts Cesium's OSM 3D
+    #: buildings tileset (ion asset 96188) on top of the globe. Admins
+    #: can flip it off per-site from the site editor.
+    buildings_enabled: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=True
+    )
+
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc),

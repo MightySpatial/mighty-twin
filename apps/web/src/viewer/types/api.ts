@@ -114,6 +114,10 @@ export interface SiteData {
   marker_color?: string
   marker_symbol?: string
   is_public: boolean
+  /** When true (the default), the viewer mounts Cesium's OSM 3D
+   *  buildings tileset (ion asset 96188) over the globe. Admins toggle
+   *  this per-site from the site editor. */
+  buildings_enabled?: boolean
   layer_count: number
   layers: LayerData[]
   overlay_config?: OverlayConfig

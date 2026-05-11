@@ -47,6 +47,7 @@ def _serialize_site(s: Site, layers: list[Layer] | None = None) -> dict[str, Any
         "description": s.description,
         "storage_srid": s.storage_srid,
         "is_public_pre_login": bool(s.is_public_pre_login),
+        "buildings_enabled": bool(s.buildings_enabled),
         "created_at": s.created_at.isoformat() if s.created_at else None,
         "updated_at": s.updated_at.isoformat() if s.updated_at else None,
         **(s.config or {}),
@@ -63,6 +64,7 @@ class SiteCreate(BaseModel):
     storage_srid: int = 4326
     config: dict[str, Any] = Field(default_factory=dict)
     is_public_pre_login: bool = False
+    buildings_enabled: bool = True
 
 
 class SiteUpdate(BaseModel):
@@ -71,6 +73,7 @@ class SiteUpdate(BaseModel):
     storage_srid: int | None = None
     config: dict[str, Any] | None = None
     is_public_pre_login: bool | None = None
+    buildings_enabled: bool | None = None
     model_config = {"extra": "allow"}
 
 
@@ -116,6 +119,7 @@ def create_site(body: SiteCreate, _: AdminUser, db: DbSession) -> dict[str, Any]
         storage_srid=body.storage_srid,
         config=body.config,
         is_public_pre_login=body.is_public_pre_login,
+        buildings_enabled=body.buildings_enabled,
     )
     db.add(site)
     db.commit()
