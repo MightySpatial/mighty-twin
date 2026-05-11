@@ -125,6 +125,7 @@ export default function FlyWidget({
                 <Icon size={16} strokeWidth={1.75} />
               </span>
               <span className="fly-shifter-pill-label">{g.label}</span>
+              <span className="fly-shifter-pill-mps">{Math.round(g.mps)} m/s</span>
             </button>
           )
         })}

@@ -90,8 +90,9 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 1px;
-  padding: 4px 2px;
+  justify-content: center;
+  gap: 2px;
+  padding: 6px 4px;
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.07);
   border-radius: 8px;
@@ -121,11 +122,21 @@
   font-size: 9px;
   font-weight: 600;
   letter-spacing: 0.02em;
-  text-transform: capitalize;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: 100%;
+}
+.fly-shifter-pill-mps {
+  font-size: 9px;
+  font-weight: 500;
+  color: rgba(240, 242, 248, 0.45);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+.fly-shifter-pill--active .fly-shifter-pill-mps {
+  color: rgba(45, 212, 191, 0.75);
 }
 
 /* ── Key hints ───────────────────────────────────────────────────────── */
