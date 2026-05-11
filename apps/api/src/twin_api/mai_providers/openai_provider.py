@@ -25,6 +25,10 @@ from .base import LLMProvider, NormMsg, ProviderResponse, ToolCall, ToolDef
 # UI documents in its picker.
 _DEFAULTS: dict[str, str] = {
     "openai":              "https://api.openai.com/v1",
+    # openai-codex shares the OpenAI Chat Completions endpoint — the
+    # only difference is the bearer credential (codex_sess_… token
+    # instead of sk-… API key). Wire format is identical.
+    "openai-codex":        "https://api.openai.com/v1",
     "openrouter":          "https://openrouter.ai/api/v1",
     "groq":                "https://api.groq.com/openai/v1",
     "together":            "https://api.together.xyz/v1",

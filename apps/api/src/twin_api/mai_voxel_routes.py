@@ -409,6 +409,9 @@ class ChatBody(BaseModel):
 DEFAULT_MODELS: dict[str, str] = {
     "anthropic":           "claude-sonnet-4-6",
     "openai":              "gpt-4o-mini",
+    # openai-codex uses the same Chat Completions endpoint as openai
+    # but with a CLI session token instead of an sk- API key.
+    "openai-codex":        "gpt-4o-mini",
     "openrouter":          "openrouter/auto",
     "groq":                "llama-3.3-70b-versatile",
     "together":            "meta-llama/Llama-3.3-70B-Instruct-Turbo",

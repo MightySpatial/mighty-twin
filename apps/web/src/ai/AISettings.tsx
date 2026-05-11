@@ -342,7 +342,10 @@ function Wizard({
           <div>
             <div className="aiset-wizard-title">{display.name}</div>
             <div className="aiset-wizard-sub">
-              Step {step} of 3 · {step === 1 ? (display.keyless ? 'Base URL' : 'API key')
+              Step {step} of 3 · {step === 1
+                ? (display.keyless ? 'Base URL'
+                  : provider === 'openai-codex' ? 'CLI session'
+                  : 'API key')
                 : step === 2 ? 'Default model'
                 : 'Verify connection'}
             </div>
@@ -440,10 +443,13 @@ function Step1({
       </div>
     )
   }
+  const isCodex = display.id === 'openai-codex'
   return (
     <>
       <div className="aiset-field">
-        <label className="aiset-field-label">API key</label>
+        <label className="aiset-field-label">
+          {isCodex ? 'Codex CLI session token' : 'API key'}
+        </label>
         <input
           className="aiset-input"
           type="password"
@@ -453,10 +459,25 @@ function Step1({
           placeholder={display.keyPlaceholder}
         />
         <div className="aiset-hint">
-          {display.keyDocsUrl && (
-            <>Get your key at <a href={display.keyDocsUrl} target="_blank" rel="noopener noreferrer">{display.keyDocsLabel}</a>.<br /></>
+          {isCodex ? (
+            <>
+              In your terminal: <code>codex login</code> (one-time), then{' '}
+              <code>codex auth print</code> to copy the session token. Paste
+              it above.<br />
+              The token is stored in your browser like any other API key.
+              Don't have the Codex CLI yet? Install from{' '}
+              {display.keyDocsUrl && (
+                <a href={display.keyDocsUrl} target="_blank" rel="noopener noreferrer">{display.keyDocsLabel}</a>
+              )}.
+            </>
+          ) : (
+            <>
+              {display.keyDocsUrl && (
+                <>Get your key at <a href={display.keyDocsUrl} target="_blank" rel="noopener noreferrer">{display.keyDocsLabel}</a>.<br /></>
+              )}
+              Keys are stored in your browser only — never sent to Mighty servers.
+            </>
           )}
-          Keys are stored in your browser only — never sent to Mighty servers.
         </div>
       </div>
       <div className="aiset-field">

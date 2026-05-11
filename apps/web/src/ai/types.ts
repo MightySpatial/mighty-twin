@@ -9,6 +9,7 @@
 export type AIProvider =
   | 'anthropic'
   | 'openai'
+  | 'openai-codex'
   | 'gemini'
   | 'openrouter'
   | 'groq'
@@ -114,6 +115,8 @@ export const AGENT_PRESETS: AgentPreset[] = [
   { id: 'claude-opus-4-7',   label: 'Claude Opus 4.7 — best quality',  provider: 'anthropic', defaultModel: 'claude-opus-4-7',           flavor: 'byok' },
   { id: 'gpt-4o-mini',       label: 'GPT-4o mini — fast, cheap',        provider: 'openai',    defaultModel: 'gpt-4o-mini',              flavor: 'byok' },
   { id: 'gpt-4o',            label: 'GPT-4o — balanced',                provider: 'openai',    defaultModel: 'gpt-4o',                   flavor: 'byok' },
+  { id: 'codex-gpt-4o-mini', label: 'Codex CLI — GPT-4o mini',          provider: 'openai-codex', defaultModel: 'gpt-4o-mini',           flavor: 'byok', hint: 'Uses your `codex login` session — no API key.' },
+  { id: 'codex-o1-mini',     label: 'Codex CLI — o1-mini reasoning',    provider: 'openai-codex', defaultModel: 'o1-mini',               flavor: 'byok', hint: 'Reasoning model via Codex CLI session.' },
   { id: 'gemini-2-flash',    label: 'Gemini 2.0 Flash — fast',          provider: 'gemini',    defaultModel: 'gemini-2.0-flash',         flavor: 'byok' },
   { id: 'gemini-2-pro',      label: 'Gemini 2.0 Pro — quality',         provider: 'gemini',    defaultModel: 'gemini-2.0-pro',           flavor: 'byok' },
   { id: 'openrouter-auto',   label: 'OpenRouter — auto-route',          provider: 'openrouter', defaultModel: 'openrouter/auto',         flavor: 'byok', hint: 'One key, hundreds of models.' },
@@ -187,6 +190,24 @@ export const PROVIDER_DISPLAY: Record<AIProvider, ProviderDisplay> = {
     models: [
       { id: 'gpt-4o-mini', label: 'gpt-4o-mini', meta: 'Fast · cheap · good default' },
       { id: 'gpt-4o',      label: 'gpt-4o',      meta: 'Balanced · multimodal' },
+    ],
+  },
+  'openai-codex': {
+    id: 'openai-codex',
+    name: 'OpenAI Codex CLI',
+    glyph: 'C',
+    logoClass: 'logo-openai',
+    description: 'Sign in with the OpenAI Codex CLI session — run `codex login` in your terminal, then paste the printed token. Same models as OpenAI, no separate API key needed.',
+    metaPills: ['CLI session', 'No API key'],
+    keyDocsLabel: 'github.com/openai/codex',
+    keyDocsUrl: 'https://github.com/openai/codex',
+    keyPlaceholder: 'codex_sess_… (paste from `codex auth print`)',
+    keyless: false,
+    models: [
+      { id: 'gpt-4o-mini', label: 'gpt-4o-mini', meta: 'Fast · cheap · good default' },
+      { id: 'gpt-4o',      label: 'gpt-4o',      meta: 'Balanced · multimodal' },
+      { id: 'o1-mini',     label: 'o1-mini',     meta: 'Reasoning · cheap' },
+      { id: 'o1',          label: 'o1',          meta: 'Reasoning · highest cost' },
     ],
   },
   gemini: {
@@ -381,8 +402,10 @@ export const PROVIDER_DISPLAY: Record<AIProvider, ProviderDisplay> = {
   },
 }
 
-/** Card display order — hosted first, then local. Mirrors the mockup. */
+/** Card display order — hosted first, then local. Mirrors the mockup.
+ *  openai-codex sits next to plain openai so users see both auth
+ *  options for the same model family side-by-side. */
 export const PROVIDER_ORDER: { group: 'hosted' | 'local'; ids: AIProvider[] }[] = [
-  { group: 'hosted', ids: ['anthropic', 'openai', 'gemini', 'openrouter', 'groq', 'together', 'fireworks', 'perplexity', 'mistral', 'deepseek', 'xai'] },
+  { group: 'hosted', ids: ['anthropic', 'openai', 'openai-codex', 'gemini', 'openrouter', 'groq', 'together', 'fireworks', 'perplexity', 'mistral', 'deepseek', 'xai'] },
   { group: 'local',  ids: ['ollama', 'lmstudio', 'openai-compatible'] },
 ]

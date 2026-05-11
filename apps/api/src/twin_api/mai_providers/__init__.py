@@ -35,6 +35,11 @@ from .openai_provider import OpenAICompatProvider
 # and is on the v2 list — return a clear error until then.
 _OPENAI_COMPAT_PROVIDERS = frozenset({
     "openai",
+    # openai-codex hits the same Chat Completions endpoint as openai
+    # but the bearer credential is a `codex_sess_…` session token
+    # captured by the user from `codex auth print` rather than an
+    # sk- API key. Wire-format is identical.
+    "openai-codex",
     "openrouter",
     "groq",
     "together",

@@ -24,6 +24,10 @@ import type { AIMessage, AIProvider } from './types'
 const DEFAULTS: Record<AIProvider, { model: string; baseUrl?: string }> = {
   anthropic:           { model: 'claude-haiku-4-5-20251001' },
   openai:              { model: 'gpt-4o-mini',  baseUrl: 'https://api.openai.com/v1' },
+  // Codex CLI shares the OpenAI Chat Completions endpoint; the only
+  // difference is the bearer credential (a `codex_sess_…` session
+  // token instead of a `sk-…` API key). Same models available.
+  'openai-codex':      { model: 'gpt-4o-mini',  baseUrl: 'https://api.openai.com/v1' },
   gemini:              { model: 'gemini-2.0-flash' },
   openrouter:          { model: 'openrouter/auto', baseUrl: 'https://openrouter.ai/api/v1' },
   groq:                { model: 'llama-3.3-70b-versatile', baseUrl: 'https://api.groq.com/openai/v1' },
@@ -42,14 +46,16 @@ const DEFAULTS: Record<AIProvider, { model: string; baseUrl?: string }> = {
  *  Anthropic + Gemini + Ollama need their own envelope; everything
  *  else can share one fetch shape. */
 const OPENAI_COMPAT: ReadonlySet<AIProvider> = new Set<AIProvider>([
-  'openai', 'openrouter', 'groq', 'together', 'fireworks',
+  'openai', 'openai-codex', 'openrouter', 'groq', 'together', 'fireworks',
   'perplexity', 'mistral', 'deepseek', 'xai', 'lmstudio', 'openai-compatible',
 ])
 
-/** Providers that require an API key in Settings → AI. Local providers
- *  (Ollama, LM Studio) and the custom OpenAI-compatible slot run keyless. */
+/** Providers that require an API key (or CLI session token) in
+ *  Settings → AI. Local providers (Ollama, LM Studio) and the custom
+ *  OpenAI-compatible slot run keyless. openai-codex requires the
+ *  session token from `codex login`. */
 const REQUIRES_KEY: ReadonlySet<AIProvider> = new Set<AIProvider>([
-  'anthropic', 'openai', 'gemini', 'openrouter', 'groq', 'together',
+  'anthropic', 'openai', 'openai-codex', 'gemini', 'openrouter', 'groq', 'together',
   'fireworks', 'perplexity', 'mistral', 'deepseek', 'xai',
 ])
 
