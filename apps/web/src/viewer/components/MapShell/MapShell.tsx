@@ -237,9 +237,13 @@ export function MapShell({
         </div>
       )}
 
-      {/* Only the secondary rail lives at the bottom.
-          Primary widgets (Search, Measure, Layers, Legend) are in the sidebar. */}
-      {!publicMode && secondary.length > 0 && (
+      {/* Secondary rail — phone-only. Desktop secondary widgets
+          (Story / Snap / Design / Strike / Terrain / Fly) live in the
+          right pane now; the rail is unreachable on phones via the
+          Tools FAB sheet anyway, so the rail+sheet duplication only
+          existed for safety on touch laptops. Phones keep the rail at
+          the bottom until the mobile slide-in pane lands. */}
+      {phoneMode && !publicMode && secondary.length > 0 && (
         <div className={styles.rails}>
           <SecondaryRail
             widgets={secondary}

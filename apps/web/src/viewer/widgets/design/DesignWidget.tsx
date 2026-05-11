@@ -46,6 +46,11 @@ interface DesignWidgetProps {
   onClose: () => void
   /** Site slug — needed for the templates registry + submissions. */
   siteSlug?: string | null
+  /** Rendering mode. `'inline'` drops the close button (no separate
+   *  affordance needed inside the RightPane — tabs handle dismissal)
+   *  and adds `.design-widget--inline` so the widget fills its
+   *  parent rather than constraining its own dimensions. */
+  mode?: 'floating' | 'inline'
 }
 
 export type DesignTabId = 'layers' | 'sketch' | 'features' | 'properties' | 'history' | 'download'
@@ -75,7 +80,8 @@ const MOBILE_DRAW_TOOLS = new Set([
   'pt_sphere', 'pt_cone', 'pt_box', 'pt_pit', 'building',
 ])
 
-export default function DesignWidget({ viewer, onClose, siteSlug = null }: DesignWidgetProps) {
+export default function DesignWidget({ viewer, onClose, siteSlug = null, mode = 'floating' }: DesignWidgetProps) {
+  const inline = mode === 'inline'
   const [activeTab, setActiveTab] = useState<DesignTabId>('layers')
   const [toolGroup, setToolGroup] = useState<ToolGroup>('sketch')
   const [mobileMinimised, setMobileMinimised] = useState(false)
@@ -141,6 +147,7 @@ export default function DesignWidget({ viewer, onClose, siteSlug = null }: Desig
     'design-widget',
     isMobile ? 'design-widget--mobile' : '',
     isMobile && mobileMinimised ? 'is-minimised' : '',
+    inline ? 'design-widget--inline' : '',
   ].filter(Boolean).join(' ')
 
   return (
@@ -180,7 +187,9 @@ export default function DesignWidget({ viewer, onClose, siteSlug = null }: Desig
                 onRetry={persistence.flushNow}
               />
             )}
-            <button className="ext-panel-close" onClick={onClose} title="Close">×</button>
+            {!inline && (
+              <button className="ext-panel-close" onClick={onClose} title="Close">×</button>
+            )}
           </div>
 
           {activeToolId && tool && <PlaceModeBar siteSlug={siteSlug} />}

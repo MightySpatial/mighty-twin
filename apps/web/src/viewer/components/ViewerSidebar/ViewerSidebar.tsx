@@ -14,6 +14,7 @@ import {
   Ruler,
   List,
   Home,
+  Table as TableIcon,
 } from 'lucide-react'
 import type { Layer } from '../CesiumViewer/types'
 import type { ViewerContext, PanelProps } from '../../extensions/types'
@@ -266,21 +267,29 @@ export default function ViewerSidebar({
               </span>
             </button>
           ))}
-          {/* Primary widget action tabs — Search, Measure, Legend */}
+          {/* Primary widget action tabs — Search, Measure, Legend,
+              Table. Table moved here from the (now-retired) secondary
+              bottom rail; the click still opens the existing
+              AttributeTableWidget drawer / modal — only the entry
+              point relocated. */}
           {onWidgetTabClick && (
             <>
               <div className="sidebar-tab-divider" />
               {[
-                { id: 'search',  label: 'Search',  Icon: Search },
-                { id: 'measure', label: 'Measure', Icon: Ruler  },
-                { id: 'legend',  label: 'Legend',  Icon: List   },
+                { id: 'search',  label: 'Search',  Icon: Search    },
+                { id: 'measure', label: 'Measure', Icon: Ruler     },
+                { id: 'legend',  label: 'Legend',  Icon: List      },
+                { id: 'table',   label: 'Table',   Icon: TableIcon },
               ].map(({ id, label, Icon }) => (
                 <button
                   key={id}
                   className={`sidebar-tab${activeWidgetId === id ? ' sidebar-tab--active' : ''}`}
                   onClick={() => {
                     onWidgetTabClick(id)
-                    if (!sidebarOpen) setSidebarOpen(true)
+                    // Open the sidebar for Search/Measure/Legend
+                    // (their UI lives in the sidebar panel). Table is
+                    // a modal, so leave the sidebar collapsed.
+                    if (!sidebarOpen && id !== 'table') setSidebarOpen(true)
                   }}
                   title={label}
                 >

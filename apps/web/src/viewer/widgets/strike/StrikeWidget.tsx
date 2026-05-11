@@ -19,6 +19,10 @@ interface Props {
   onCancel: () => void
   onClear: () => void
   onClose: () => void
+  /** `'inline'` strips the floating chrome (fixed/absolute position,
+   *  border, shadow, close button) so the widget can be embedded in
+   *  the RightPane tab content. Defaults to `'floating'`. */
+  mode?: 'floating' | 'inline'
 }
 
 export default function StrikeWidget({
@@ -30,7 +34,10 @@ export default function StrikeWidget({
   onCancel,
   onClear,
   onClose,
+  mode = 'floating',
 }: Props) {
+  const inline = mode === 'inline'
+
   useEffect(() => {
     if (!active && !measurement) onStart()
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -41,7 +48,14 @@ export default function StrikeWidget({
   return (
     <div
       style={
-        isMobile
+        inline
+          ? {
+              position: 'relative',
+              width: '100%',
+              padding: 12,
+              color: '#f0f2f8',
+            }
+          : isMobile
           ? {
               position: 'fixed',
               left: 14,
@@ -83,20 +97,22 @@ export default function StrikeWidget({
           <Slash size={14} color="#2dd4bf" />
           <span style={{ fontSize: 14, fontWeight: 600 }}>Strike & dip</span>
         </div>
-        <button
-          onClick={onClose}
-          style={{
-            padding: 4,
-            background: 'transparent',
-            border: 'none',
-            color: 'rgba(240,242,248,0.5)',
-            cursor: 'pointer',
-            lineHeight: 0,
-          }}
-          title="Close"
-        >
-          <X size={14} />
-        </button>
+        {!inline && (
+          <button
+            onClick={onClose}
+            style={{
+              padding: 4,
+              background: 'transparent',
+              border: 'none',
+              color: 'rgba(240,242,248,0.5)',
+              cursor: 'pointer',
+              lineHeight: 0,
+            }}
+            title="Close"
+          >
+            <X size={14} />
+          </button>
+        )}
       </div>
 
       {!measurement && (

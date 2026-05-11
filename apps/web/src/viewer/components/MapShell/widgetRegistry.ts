@@ -33,6 +33,10 @@ export interface WidgetDef {
    *  (Phase M). Defaults to false — only viewing-essential widgets opt
    *  in. */
   publicVisible?: boolean
+  /** Right-pane zone — widgets with `paneZone: 'bottom'` render in the
+   *  fixed-height bottom slot of the right pane (Fly today); the
+   *  default `'top'` zone hosts the tab-switched content above it. */
+  paneZone?: 'top' | 'bottom'
 }
 
 export const DEFAULT_WIDGETS: WidgetDef[] = [
@@ -46,14 +50,21 @@ export const DEFAULT_WIDGETS: WidgetDef[] = [
   { id: 'layers',   label: 'Layers',   icon: 'Layers',  controller: 'primary',   position: 2, loadMode: 'sharePane', defaultSize: 'standard', scope: 'per-site', publicVisible: true },
   { id: 'legend',   label: 'Legend',   icon: 'List',    controller: 'primary',   position: 3, loadMode: 'floating',  defaultSize: 'compact',  scope: 'per-site', publicVisible: true },
 
-  // Secondary rail
-  { id: 'story',    label: 'Story',    icon: 'BookOpen', controller: 'secondary', position: 0, loadMode: 'sharePane', defaultSize: 'standard', scope: 'per-site', publicVisible: true },
-  { id: 'snap',     label: 'Snap',     icon: 'Camera',   controller: 'secondary', position: 1, loadMode: 'floating',  defaultSize: 'compact',  scope: 'per-site' },
-  { id: 'design',   label: 'Design',   icon: 'Hexagon',  controller: 'secondary', position: 2, loadMode: 'floating',  defaultSize: 'expanded', scope: 'per-site' },
-  { id: 'table',    label: 'Table',    icon: 'Table',    controller: 'secondary', position: 3, loadMode: 'drawer',    defaultSize: 'standard', scope: 'per-site' },
-  { id: 'strike',   label: 'Strike',   icon: 'Slash',    controller: 'secondary', position: 4, loadMode: 'sharePane', defaultSize: 'standard', scope: 'per-site' },
-  { id: 'terrain',  label: 'Terrain',  icon: 'Mountain', controller: 'secondary', position: 5, loadMode: 'floating',  defaultSize: 'compact',  scope: 'per-site' },
-  { id: 'fly',      label: 'Fly',      icon: 'Plane',     controller: 'secondary', position: 6, loadMode: 'floating',  defaultSize: 'compact',  scope: 'per-site', publicVisible: true },
+  // Primary rail extras — Table now lives next to Search / Measure /
+  // Legend (still a drawer; the trigger button just moved to the left
+  // sidebar so the secondary rail can go away entirely).
+  { id: 'table',    label: 'Table',    icon: 'Table',    controller: 'primary',   position: 4, loadMode: 'drawer',    defaultSize: 'standard', scope: 'per-site' },
+
+  // Right pane — Story / Snap / Design / Strike / Terrain switch via
+  // tabs at the top of the pane; Fly is pinned in the bottom zone.
+  // `loadMode: 'sharePane'` ↔ the pane is the destination; the old
+  // floating + drawer behaviours are retired for these widgets.
+  { id: 'story',    label: 'Story',    icon: 'BookOpen', controller: 'secondary', position: 0, loadMode: 'sharePane', defaultSize: 'standard', scope: 'per-site', publicVisible: true,                       paneZone: 'top' },
+  { id: 'snap',     label: 'Snap',     icon: 'Camera',   controller: 'secondary', position: 1, loadMode: 'sharePane', defaultSize: 'compact',  scope: 'per-site',                                            paneZone: 'top' },
+  { id: 'design',   label: 'Design',   icon: 'Hexagon',  controller: 'secondary', position: 2, loadMode: 'sharePane', defaultSize: 'expanded', scope: 'per-site',                                            paneZone: 'top' },
+  { id: 'strike',   label: 'Strike',   icon: 'Slash',    controller: 'secondary', position: 3, loadMode: 'sharePane', defaultSize: 'standard', scope: 'per-site',                                            paneZone: 'top' },
+  { id: 'terrain',  label: 'Terrain',  icon: 'Mountain', controller: 'secondary', position: 4, loadMode: 'sharePane', defaultSize: 'compact',  scope: 'per-site',                                            paneZone: 'top' },
+  { id: 'fly',      label: 'Fly',      icon: 'Plane',    controller: 'secondary', position: 5, loadMode: 'sharePane', defaultSize: 'compact',  scope: 'per-site', publicVisible: true,                       paneZone: 'bottom' },
 ]
 
 export function widgetsForController(

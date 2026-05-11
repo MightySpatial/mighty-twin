@@ -35,6 +35,18 @@ export interface FlyWidgetProps {
   /** Optional touch nudge — host wires to the underlying camera so the
    *  mobile arrow pads can move forward/back/strafe without keys. */
   onTouchMove?: (axis: 'forward' | 'back' | 'left' | 'right' | 'up' | 'down', start: boolean) => void
+  /** Render path:
+   *    'floating' — original modal-style panel anchored bottom-centre
+   *    'inline'   — compact bar for the RightPane's fixed bottom zone.
+   *                 Shifter only; no key legend; no close button.
+   *  Defaults to `'floating'`. */
+  mode?: 'floating' | 'inline'
+  /** Whether fly mode is currently active. Inline mode shows an "ON/OFF"
+   *  pill in the header so users can tell if the gears are live; only
+   *  consulted when `mode === 'inline'`. */
+  active?: boolean
+  /** Toggle fly active state from the inline pill. */
+  onToggleActive?: () => void
 }
 
 const TOAST_MS = 1200
@@ -45,7 +57,11 @@ export default function FlyWidget({
   onClose,
   isMobile = false,
   onTouchMove,
+  mode = 'floating',
+  active = true,
+  onToggleActive,
 }: FlyWidgetProps) {
+  const inline = mode === 'inline'
   const idx = flySpeedIndex(speed)
 
   // Toast badge — show on every gear change, auto-dismiss after
@@ -115,6 +131,39 @@ export default function FlyWidget({
       <span className="fly-toast-label">{flySpeedLabel(toast)}</span>
     </div>
   ) : null
+
+  // ── Inline (right-pane bottom zone) ───────────────────────────────
+  // Compact header (title + active pill) + shifter row + key chip
+  // hint. No close button — the RightPane owns visibility. Falls
+  // through the toast since the inline bar is always visible.
+  if (inline) {
+    return (
+      <div className="fly-inline">
+        <div className="fly-inline__hd">
+          <span className="fly-inline__title">
+            <Plane size={12} />
+            Fly
+          </span>
+          <button
+            type="button"
+            className={`fly-inline__pill${active ? ' on' : ' off'}`}
+            onClick={onToggleActive ?? onClose}
+            aria-pressed={active}
+          >
+            {active ? 'ACTIVE' : 'OFF'}
+          </button>
+        </div>
+        {shifter}
+        <div className="fly-inline__keys">
+          <kbd className="fly-key">W A S D</kbd>
+          <kbd className="fly-key">↑↓←→</kbd>
+          <kbd className="fly-key">Q E</kbd>
+          <kbd className="fly-key">+/−</kbd>
+        </div>
+        {toastNode}
+      </div>
+    )
+  }
 
   if (isMobile) {
     return (

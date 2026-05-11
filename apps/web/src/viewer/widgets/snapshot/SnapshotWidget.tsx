@@ -25,6 +25,10 @@ interface Props {
   isMobile: boolean
   onClose: () => void
   onSaved?: (id: string) => void
+  /** Rendering mode. `'floating'` is the original modal-over-backdrop
+   *  treatment; `'inline'` strips the backdrop + fixed positioning so
+   *  the widget fills its parent (used by the RightPane tab content). */
+  mode?: 'floating' | 'inline'
 }
 
 export default function SnapshotWidget({
@@ -34,7 +38,9 @@ export default function SnapshotWidget({
   isMobile,
   onClose,
   onSaved,
+  mode = 'floating',
 }: Props) {
+  const inline = mode === 'inline'
   const { busy, setBusy, capturePayload } = useSnapshot(viewerRef)
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
@@ -97,8 +103,18 @@ export default function SnapshotWidget({
     }
   }
 
-  // Slightly different placement on mobile: bottom sheet vs centered modal.
-  const wrapperStyle: React.CSSProperties = isMobile
+  // Three placements: inline (right-pane tab content — no chrome, no
+  // backdrop, fills parent), mobile bottom sheet, or desktop centered
+  // modal. The inline path is the new home for Snap; the others are
+  // kept as fallbacks for callers that still want the modal.
+  const wrapperStyle: React.CSSProperties = inline
+    ? {
+        position: 'relative',
+        width: '100%',
+        padding: 12,
+        color: '#f0f2f8',
+      }
+    : isMobile
     ? {
         position: 'fixed',
         left: 0,
@@ -136,16 +152,18 @@ export default function SnapshotWidget({
           to   { transform: translateY(0); }
         }
       `}</style>
-      <div
-        onClick={onClose}
-        style={{
-          position: 'fixed',
-          inset: 0,
-          background: 'rgba(0,0,0,0.55)',
-          zIndex: 79,
-          backdropFilter: 'blur(6px)',
-        }}
-      />
+      {!inline && (
+        <div
+          onClick={onClose}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,0.55)',
+            zIndex: 79,
+            backdropFilter: 'blur(6px)',
+          }}
+        />
+      )}
       <div style={wrapperStyle} onClick={(e) => e.stopPropagation()}>
         <div
           style={{
@@ -168,19 +186,21 @@ export default function SnapshotWidget({
           >
             <Camera size={16} /> New snap
           </h2>
-          <button
-            onClick={onClose}
-            style={{
-              padding: 4,
-              background: 'transparent',
-              border: 'none',
-              color: 'rgba(240,242,248,0.5)',
-              cursor: 'pointer',
-              lineHeight: 0,
-            }}
-          >
-            <X size={16} />
-          </button>
+          {!inline && (
+            <button
+              onClick={onClose}
+              style={{
+                padding: 4,
+                background: 'transparent',
+                border: 'none',
+                color: 'rgba(240,242,248,0.5)',
+                cursor: 'pointer',
+                lineHeight: 0,
+              }}
+            >
+              <X size={16} />
+            </button>
+          )}
         </div>
 
         {/* Thumbnail */}

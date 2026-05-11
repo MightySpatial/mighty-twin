@@ -31,6 +31,20 @@
   position: relative;
 }
 
+/* Inline mode — embedded in the RightPane tab content. Drop the
+ * border/radius/blur (the pane already provides chrome) and let the
+ * widget fill its parent rather than constraining height itself. */
+.design-widget--inline {
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  max-height: none;
+  height: 100%;
+  width: 100%;
+}
+
 /* ── Horizontal rail navigation ────────────────────────────────────────── */
 
 .design-rail {
