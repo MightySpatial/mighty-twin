@@ -595,6 +595,19 @@ export default function CesiumViewerComponent({
     setActiveRightWidget(activeRightWidget === id ? null : id)
   }, [activeRightWidget, setActiveRightWidget])
 
+  // Mobile drawer state for the right pane. Auto-opens whenever the
+  // user activates a secondary widget on mobile, and auto-closes
+  // whenever fly mode is on (the canvas needs the touch surface).
+  const [rightDrawerOpen, setRightDrawerOpen] = useState(false)
+  useEffect(() => {
+    if (!isMobile) return
+    if (flyActive) {
+      setRightDrawerOpen(false)
+      return
+    }
+    if (activeRightWidget) setRightDrawerOpen(true)
+  }, [isMobile, activeRightWidget, flyActive])
+
   // Map MapShell action ids → existing widget state. Tools that aren't
   // implemented yet (table/story/strike) toggle a placeholder
   // state we can wire later without ripping the rail apart.
@@ -640,35 +653,21 @@ export default function CesiumViewerComponent({
       // ── Secondary widgets — route through the right pane on desktop ──
       // On mobile the pane isn't mounted, so we fall through to the
       // legacy per-widget open state and the floating wrappers below.
+      // Story / Snap / Design / Terrain — all flow through the right
+      // pane on both desktop (docked) and mobile (drawer). The drawer
+      // open state is auto-driven from activeRightWidget by an
+      // effect, so we don't need a mobile-specific branch here.
       case 'snap':
-        if (isMobile) setSnapOpen(true)
-        else setActiveRightWidget(activeRightWidget === 'snap' ? null : 'snap')
+        setActiveRightWidget(activeRightWidget === 'snap' ? null : 'snap')
         break
       case 'terrain':
-        if (isMobile) {
-          setTerrainOpen((o) => o ? false : true)
-        } else {
-          setActiveRightWidget(activeRightWidget === 'terrain' ? null : 'terrain')
-        }
+        setActiveRightWidget(activeRightWidget === 'terrain' ? null : 'terrain')
         break
       case 'story':
-        if (isMobile) {
-          if (onOpenStoryPicker) onOpenStoryPicker()
-          else setComingSoon(id)
-        } else {
-          setActiveRightWidget(activeRightWidget === 'story' ? null : 'story')
-        }
+        setActiveRightWidget(activeRightWidget === 'story' ? null : 'story')
         break
       case 'design':
-        if (isMobile) {
-          setDesignOpen(prev => {
-            const next = !prev
-            window.dispatchEvent(new CustomEvent(next ? 'design:open' : 'design:close'))
-            return next
-          })
-        } else {
-          setActiveRightWidget(activeRightWidget === 'design' ? null : 'design')
-        }
+        setActiveRightWidget(activeRightWidget === 'design' ? null : 'design')
         break
       case 'fly':
         setFlyActive((a) => !a)
@@ -1203,108 +1202,130 @@ export default function CesiumViewerComponent({
         />
       )}
 
-      {/* ── Right pane (desktop only) ─────────────────────────────────
-          Always visible at right edge. Hosts whichever secondary widget
-          (Story / Snap / Design / Terrain) is currently active —
-          activation lives in the ViewerSidebar widget-tabs row, the
+      {/* ── Right pane ─────────────────────────────────────────────
+          Hosts whichever secondary widget (Story / Snap / Design /
+          Terrain) is currently active. Desktop: docked 320px column.
+          Mobile: 85vw drawer that slides in from the right edge.
+          Activation lives in the ViewerSidebar widget-tabs row; the
           pane itself has no controller. Fly is pinned in the fixed
-          bottom zone. Mobile keeps the legacy floating overlays for
-          these widgets until the mobile slide-in pane lands later. */}
-      {!isMobile && (
-        <div
-          style={{
-            position: 'absolute',
-            top: 0,
-            right: 0,
-            bottom: 0,
-            width: rightPaneWidth,
-            zIndex: 30,
-          }}
-        >
-          <RightPane
-            bodyLabel={
-              activeRightWidget === 'story' ? 'Story'
-              : activeRightWidget === 'snap' ? 'Snap'
-              : activeRightWidget === 'design' ? 'Design'
-              : activeRightWidget === 'terrain' ? 'Terrain'
-              : null
-            }
-            body={
-              activeRightWidget === 'story' ? (
-                <div style={{ padding: 16, fontSize: 12, color: 'rgba(230,237,243,0.6)', lineHeight: 1.5 }}>
-                  <p style={{ margin: 0 }}>Pick a story to play.</p>
-                  {onOpenStoryPicker && (
-                    <button
-                      type="button"
-                      onClick={onOpenStoryPicker}
-                      style={{
-                        marginTop: 12,
-                        padding: '6px 12px',
-                        background: 'rgba(37,99,235,0.16)',
-                        border: '1px solid rgba(37,99,235,0.3)',
-                        borderRadius: 6,
-                        color: '#60a5fa',
-                        fontSize: 11,
-                        cursor: 'pointer',
-                        fontFamily: 'inherit',
-                      }}
-                    >
-                      Open story picker
-                    </button>
-                  )}
-                </div>
-              )
-              : activeRightWidget === 'snap' ? (
-                <SnapshotWidget
-                  viewerRef={viewerRef}
-                  siteSlug={siteId ?? null}
-                  layers={layers.map((l) => ({
-                    id: l.id,
-                    visible: l.visible ?? true,
-                    opacity: l.opacity ?? 1,
-                  }))}
-                  isMobile={false}
-                  onClose={() => setSnapOpen(false)}
-                  mode="inline"
-                />
-              )
-              : activeRightWidget === 'design' ? (
-                viewerRef.current ? (
-                  <DesignWidget
-                    viewer={viewerRef.current}
-                    onClose={closeDesign}
-                    siteSlug={siteId ?? null}
-                    mode="inline"
-                  />
-                ) : (
-                  <div style={{ padding: 16, fontSize: 12, color: 'rgba(230,237,243,0.4)' }}>
-                    Loading globe…
-                  </div>
-                )
-              )
-              : activeRightWidget === 'terrain' ? (
-                terrainSidebarPanel ?? (
-                  <div style={{ padding: 16, fontSize: 12, color: 'rgba(230,237,243,0.4)' }}>
-                    Terrain idle.
-                  </div>
-                )
-              )
-              : null
-            }
-            bottomZone={
-              <FlyWidget
-                speed={flySpeed}
-                setSpeed={setFlySpeed}
-                onClose={() => setFlyActive(false)}
-                isMobile={false}
-                mode="inline"
-                active={flyActive}
-                onToggleActive={() => setFlyActive((a) => !a)}
-              />
-            }
+          bottom zone. On mobile the drawer auto-hides whenever fly
+          mode is active so the touch surface stays unobstructed. */}
+      {(() => {
+        const bodyLabel = activeRightWidget === 'story' ? 'Story'
+          : activeRightWidget === 'snap' ? 'Snap'
+          : activeRightWidget === 'design' ? 'Design'
+          : activeRightWidget === 'terrain' ? 'Terrain'
+          : null
+        const body = activeRightWidget === 'story' ? (
+          <div style={{ padding: 16, fontSize: 12, color: 'rgba(230,237,243,0.6)', lineHeight: 1.5 }}>
+            <p style={{ margin: 0 }}>Pick a story to play.</p>
+            {onOpenStoryPicker && (
+              <button
+                type="button"
+                onClick={onOpenStoryPicker}
+                style={{
+                  marginTop: 12,
+                  padding: '6px 12px',
+                  background: 'rgba(37,99,235,0.16)',
+                  border: '1px solid rgba(37,99,235,0.3)',
+                  borderRadius: 6,
+                  color: '#60a5fa',
+                  fontSize: 11,
+                  cursor: 'pointer',
+                  fontFamily: 'inherit',
+                }}
+              >
+                Open story picker
+              </button>
+            )}
+          </div>
+        )
+        : activeRightWidget === 'snap' ? (
+          <SnapshotWidget
+            viewerRef={viewerRef}
+            siteSlug={siteId ?? null}
+            layers={layers.map((l) => ({
+              id: l.id,
+              visible: l.visible ?? true,
+              opacity: l.opacity ?? 1,
+            }))}
+            isMobile={isMobile}
+            onClose={() => setSnapOpen(false)}
+            mode="inline"
           />
-        </div>
-      )}
+        )
+        : activeRightWidget === 'design' ? (
+          viewerRef.current ? (
+            <DesignWidget
+              viewer={viewerRef.current}
+              onClose={closeDesign}
+              siteSlug={siteId ?? null}
+              mode="inline"
+            />
+          ) : (
+            <div style={{ padding: 16, fontSize: 12, color: 'rgba(230,237,243,0.4)' }}>
+              Loading globe…
+            </div>
+          )
+        )
+        : activeRightWidget === 'terrain' ? (
+          terrainSidebarPanel ?? (
+            <div style={{ padding: 16, fontSize: 12, color: 'rgba(230,237,243,0.4)' }}>
+              Terrain idle.
+            </div>
+          )
+        )
+        : null
+        const bottomZone = (
+          <FlyWidget
+            speed={flySpeed}
+            setSpeed={setFlySpeed}
+            onClose={() => setFlyActive(false)}
+            isMobile={isMobile}
+            mode="inline"
+            active={flyActive}
+            onToggleActive={() => setFlyActive((a) => !a)}
+          />
+        )
+
+        if (isMobile) {
+          return (
+            <RightPane
+              mode="drawer"
+              drawerOpen={rightDrawerOpen}
+              onDrawerClose={() => {
+                setRightDrawerOpen(false)
+                // Closing the drawer also clears the active widget so
+                // reopening starts from a known state (and the
+                // sidebar tab highlight goes off).
+                setActiveRightWidget(null)
+              }}
+              bodyLabel={bodyLabel}
+              body={body}
+              bottomZone={bottomZone}
+            />
+          )
+        }
+
+        return (
+          <div
+            style={{
+              position: 'absolute',
+              top: 0,
+              right: 0,
+              bottom: 0,
+              width: rightPaneWidth,
+              zIndex: 30,
+            }}
+          >
+            <RightPane
+              bodyLabel={bodyLabel}
+              body={body}
+              bottomZone={bottomZone}
+            />
+          </div>
+        )
+      })()}
     </div>
   )
 }
