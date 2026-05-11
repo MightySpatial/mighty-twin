@@ -987,3 +987,305 @@
   color: var(--dw-danger);
   background: var(--dw-danger-bg);
 }
+
+/* ── LayersTab empty-state splash ──────────────────────────────────── */
+
+.layers-empty {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dw-space-3);
+  padding: var(--dw-space-4) 0;
+}
+.layers-empty__title {
+  font-size: var(--dw-fs-15);
+  font-weight: 700;
+  color: var(--dw-text-strong);
+}
+.layers-empty__sub {
+  font-size: var(--dw-fs-11);
+  color: var(--dw-text-3);
+  line-height: 1.5;
+  margin: 0;
+}
+.layers-empty__tiles {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--dw-space-3);
+}
+.layers-empty__tile {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--dw-space-1);
+  padding: var(--dw-space-4);
+  background: var(--dw-fill-1);
+  border: 1px solid var(--dw-border);
+  border-radius: var(--dw-radius-lg);
+  color: var(--dw-text-1);
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  min-height: 96px;
+  transition: background var(--dw-dur-fast), border-color var(--dw-dur-fast);
+}
+.layers-empty__tile:hover {
+  background: var(--dw-fill-3);
+  border-color: var(--dw-border-strong);
+}
+.layers-empty__tile--blank {
+  border-color: #818cf8; /* indigo-400 */
+}
+.layers-empty__tile--blank:hover {
+  border-color: #a5b4fc;
+}
+.layers-empty__tile--redline {
+  border-color: var(--dw-warning-border);
+  color: var(--dw-warning-l);
+}
+.layers-empty__tile--redline:hover {
+  border-color: var(--dw-warning);
+}
+.layers-empty__tile-name {
+  font-size: var(--dw-fs-13);
+  font-weight: 700;
+  color: var(--dw-text-strong);
+}
+.layers-empty__tile--redline .layers-empty__tile-name {
+  color: var(--dw-warning-l);
+}
+.layers-empty__tile-sub {
+  font-size: var(--dw-fs-10);
+  color: var(--dw-text-3);
+  line-height: 1.5;
+}
+.layers-empty__import {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dw-space-1);
+  padding-top: var(--dw-space-2);
+}
+.layers-empty__import-btn {
+  align-self: flex-start;
+  background: transparent;
+  border: none;
+  color: var(--dw-text-3);
+  font-family: inherit;
+  font-size: var(--dw-fs-11);
+  padding: var(--dw-space-1) 0;
+  cursor: pointer;
+}
+.layers-empty__import-btn:hover {
+  color: var(--dw-text-strong);
+  text-decoration: underline;
+}
+.layers-empty__import-err {
+  margin: 0;
+  font-size: var(--dw-fs-10);
+  color: var(--dw-danger);
+}
+
+/* ── Sketch popover — site affinity checkbox list ──────────────────── */
+
+.sketch-popover__sites {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 160px;
+  overflow-y: auto;
+  padding: var(--dw-space-1);
+  background: var(--dw-fill-1);
+  border: 1px solid var(--dw-border);
+  border-radius: var(--dw-radius-md);
+}
+.sketch-popover__site-row {
+  display: flex;
+  align-items: center;
+  gap: var(--dw-space-2);
+  font-size: var(--dw-fs-11);
+  color: var(--dw-text-1);
+  padding: 4px;
+  border-radius: var(--dw-radius-sm);
+  cursor: pointer;
+}
+.sketch-popover__site-row:hover {
+  background: var(--dw-fill-2);
+}
+.sketch-popover__site-row input[type='checkbox'] {
+  accent-color: var(--dw-util);
+  cursor: pointer;
+}
+
+/* The popover now scrolls if the user has many sites — keeps the gear
+   menu workable on small viewports. */
+.sketch-popover {
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+/* ── Schema-preset selector row ────────────────────────────────────── */
+
+.schema-preset-row {
+  display: flex;
+  align-items: center;
+  gap: var(--dw-space-2);
+  padding: var(--dw-space-2) var(--dw-space-3);
+  background: var(--dw-fill-1);
+  border: 1px dashed var(--dw-border);
+  border-radius: var(--dw-radius-md);
+  margin-top: var(--dw-space-2);
+}
+.schema-preset-row__label {
+  font-size: var(--dw-fs-10);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--dw-text-3);
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.schema-preset-row__select {
+  flex: 1;
+  min-width: 0;
+  height: var(--dw-control-h-md);
+  padding: 0 var(--dw-space-3);
+  background: var(--dw-fill-2);
+  color: var(--dw-text-strong);
+  border: 1px solid var(--dw-border);
+  border-radius: var(--dw-radius-md);
+  font-family: inherit;
+  font-size: var(--dw-fs-11);
+  outline: none;
+}
+.schema-preset-row__select:focus {
+  border-color: var(--dw-util);
+}
+
+/* ── Voxel layer section ───────────────────────────────────────────── */
+
+.voxel-layers-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dw-space-2);
+  margin-top: var(--dw-space-5);
+  padding-top: var(--dw-space-4);
+  border-top: 1px solid var(--dw-border);
+}
+.voxel-layer-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dw-space-1);
+}
+.voxel-layer-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--dw-space-3);
+  min-height: 36px;
+  padding: 0 var(--dw-space-3);
+  background: var(--dw-fill-1);
+  border: 1px solid var(--dw-border);
+  border-radius: var(--dw-radius-md);
+  color: var(--dw-text-1);
+  font-family: inherit;
+  font-size: var(--dw-fs-11);
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--dw-dur-fast), border-color var(--dw-dur-fast);
+}
+.voxel-layer-item:hover {
+  background: var(--dw-fill-2);
+}
+.voxel-layer-item.active {
+  background: var(--dw-util-bg-soft);
+  border-color: var(--dw-util-d);
+  color: var(--dw-util);
+}
+.voxel-layer-item__name {
+  flex: 1;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.voxel-layer-item__badge {
+  flex-shrink: 0;
+  padding: 2px 8px;
+  border-radius: var(--dw-radius-pill);
+  background: var(--dw-fill-3);
+  color: var(--dw-text-2);
+  font-size: var(--dw-fs-9);
+  font-variant-numeric: tabular-nums;
+}
+.voxel-layer-item.active .voxel-layer-item__badge {
+  background: var(--dw-util-bg);
+  color: var(--dw-util);
+}
+
+.voxel-layers-new {
+  align-self: flex-start;
+}
+
+.voxel-layer-controls {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dw-space-2);
+  padding: var(--dw-space-3);
+  background: var(--dw-fill-1);
+  border: 1px solid var(--dw-border);
+  border-radius: var(--dw-radius-md);
+}
+.voxel-control-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.voxel-control-row__label {
+  font-size: var(--dw-fs-10);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--dw-text-3);
+  font-weight: 700;
+}
+.voxel-control-row__select {
+  height: var(--dw-control-h-md);
+  padding: 0 var(--dw-space-3);
+  background: var(--dw-fill-2);
+  color: var(--dw-text-strong);
+  border: 1px solid var(--dw-border);
+  border-radius: var(--dw-radius-md);
+  font-family: inherit;
+  font-size: var(--dw-fs-11);
+  outline: none;
+}
+.voxel-control-row__select:focus {
+  border-color: var(--dw-util);
+}
+.voxel-mode-toggle {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+  background: var(--dw-fill-1);
+  border: 1px solid var(--dw-border-subtle);
+  border-radius: var(--dw-radius-md);
+  padding: 2px;
+}
+.voxel-mode-toggle__btn {
+  height: 32px;
+  background: transparent;
+  border: none;
+  color: var(--dw-text-2);
+  font-family: inherit;
+  font-size: var(--dw-fs-11);
+  font-weight: 600;
+  cursor: pointer;
+  border-radius: var(--dw-radius-sm);
+  transition: background var(--dw-dur-fast), color var(--dw-dur-fast);
+}
+.voxel-mode-toggle__btn:hover:not(.is-on) {
+  background: var(--dw-fill-2);
+  color: var(--dw-text-strong);
+}
+.voxel-mode-toggle__btn.is-on {
+  background: var(--dw-util-bg);
+  color: var(--dw-util);
+  box-shadow: 0 0 0 1px var(--dw-util-d);
+}

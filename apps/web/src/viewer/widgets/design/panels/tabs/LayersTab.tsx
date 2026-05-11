@@ -1,32 +1,41 @@
 /**
- * LayersTab — sketch gallery + layer list of the active sketch.
+ * LayersTab — sketch gallery + layer list of the active sketch + voxel
+ * layer section. The entry point for every sketch session.
  *
- * v1's LayersTab is the entry point for every sketch session: pick or
- * create a sketch, configure its layers, optionally fork into a redline.
- * v2 keeps that structure: top half is the gallery (one tile per
- * sketch), bottom half is the active sketch's layer list.
+ * Layout (top → bottom):
  *
- * Wired here:
- *   • Redline creation modal      (RedlineCreationModal — `Redline` tile)
- *   • Schema editor modal         (SchemaEditorModal     — Sliders btn on
- *                                  each redline layer row, scope='layer')
- *   • Sketch settings popover     (gear icon on every sketch tile —
- *                                  rename / duplicate / set as default /
- *                                  delete with confirmation)
- *   • Preset selector             (Load preset button in the gallery
- *                                  header — fetches the site's
- *                                  /design-templates list and creates a
- *                                  new sketch seeded with the chosen
- *                                  template's fields + colour)
+ *   1. Empty-state splash               — when no sketches exist yet
+ *      (Start with a sketch · Blank | Redline · ↑ import .json)
+ *
+ *   2. Sketch gallery                   — tiles for each sketch + the
+ *      Add / Redline tiles. Each tile has a gear → settings popover
+ *      (rename · duplicate · default · CRS · datum · sites · download
+ *      JSON · delete).
+ *
+ *   3. Schema preset selector           — only on blank sketches with
+ *      no fields and no nodes; applies SCHEMA_PRESETS[key] via
+ *      patchSketch({ fields }).
+ *
+ *   4. Layer list                       — colour swatch, name, visible
+ *      / lock / delete; schema-edit on redline layers.
+ *
+ *   5. Voxel layers section             — list + level + render-mode
+ *      controls bound to useSvoEngine.
+ *
+ * Wired modals:
+ *   • RedlineCreationModal — Redline tile in the gallery
+ *   • SchemaEditorModal    — Sliders button on each redline layer row
  */
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   ChevronDown,
   Copy,
+  Download,
   Eye,
   EyeOff,
   LayoutTemplate,
   Lock,
+  Pencil,
   Plus,
   Settings,
   Sliders,
@@ -36,10 +45,20 @@ import {
   X,
 } from 'lucide-react'
 import { useCadEngine } from '../../sketch/useCadEngine'
-import { generateNodeId } from '../../sketch/dagOps'
+import { generateLayerId, generateNodeId } from '../../sketch/dagOps'
+import { buildSketchDoc } from '../../sketch/persistence'
+import { SCHEMA_PRESETS, SCHEMA_PRESET_ORDER } from '../../sketch/schemaPresets'
+import { useSvoEngine } from '../../voxel/useSvoEngine'
+import { blockEdgeMeters, type SVOLayer, type SVORenderMode } from '../../voxel/types'
 import RedlineCreationModal from '../modals/RedlineCreationModal'
 import SchemaEditorModal from '../modals/SchemaEditorModal'
-import type { SchemaField, Sketch, SketchLayerSpec } from '../../sketch/types'
+import type {
+  SchemaField,
+  Sketch,
+  SketchDoc,
+  SketchLayerSpec,
+  SketchNode,
+} from '../../sketch/types'
 
 const API_URL = ((import.meta as unknown as { env?: { VITE_API_URL?: string } })
   .env?.VITE_API_URL) || ''
@@ -53,12 +72,81 @@ interface DesignTemplate {
   values?: Record<string, unknown>
 }
 
+interface SiteListItem {
+  id: string
+  slug: string
+  name: string
+}
+
 interface Props {
   siteSlug?: string | null
 }
 
+// ── Coordinate-system + height-datum options ────────────────────────────
+//
+// v1 stored these directly on the sketch (coordCrs / heightDatum). The
+// dropdowns surface a short curated list rather than the full EPSG
+// catalogue — the long list lives in the export modal where the user
+// genuinely picks a target CRS for an export.
+
+const CRS_OPTIONS: { value: string; label: string }[] = [
+  { value: 'EPSG:4326',  label: 'WGS84 (Lon/Lat)' },
+  { value: 'EPSG:28349', label: 'GDA94 MGA Zone 49' },
+  { value: 'EPSG:28350', label: 'GDA94 MGA Zone 50' },
+  { value: 'EPSG:28351', label: 'GDA94 MGA Zone 51' },
+  { value: 'EPSG:28352', label: 'GDA94 MGA Zone 52' },
+  { value: 'EPSG:28353', label: 'GDA94 MGA Zone 53' },
+  { value: 'EPSG:28354', label: 'GDA94 MGA Zone 54' },
+  { value: 'EPSG:28355', label: 'GDA94 MGA Zone 55' },
+  { value: 'EPSG:28356', label: 'GDA94 MGA Zone 56' },
+  { value: 'EPSG:7849',  label: 'GDA2020 MGA Zone 49' },
+  { value: 'EPSG:7850',  label: 'GDA2020 MGA Zone 50' },
+  { value: 'EPSG:7851',  label: 'GDA2020 MGA Zone 51' },
+  { value: 'EPSG:7852',  label: 'GDA2020 MGA Zone 52' },
+  { value: 'EPSG:7853',  label: 'GDA2020 MGA Zone 53' },
+  { value: 'EPSG:7854',  label: 'GDA2020 MGA Zone 54' },
+  { value: 'EPSG:7855',  label: 'GDA2020 MGA Zone 55' },
+  { value: 'EPSG:7856',  label: 'GDA2020 MGA Zone 56' },
+  { value: 'local',      label: 'Local ENU' },
+]
+
+type HeightDatum = Sketch['heightDatum']
+const DATUM_OPTIONS: { value: HeightDatum; label: string }[] = [
+  // Engine accepts these four literals today (see SketchType). The
+  // visible labels surface common geodetic names — 'msl' covers
+  // Sea Level / EGM2008 in practice for our consumers.
+  { value: 'msl',          label: 'Sea Level (EGM2008)' },
+  { value: 'ahd',          label: 'AHD' },
+  { value: 'terrain',      label: 'AUSGeoid2020 (terrain)' },
+  { value: 'ellipsoidal',  label: 'Ellipsoidal (WGS84)' },
+]
+
+// ── Voxel level dropdown ────────────────────────────────────────────────
+//
+// Level 0 = 12.5 cm; each step doubles. Spec V1_SPEC.md §1 caps at
+// level 10 (= 128 m). Pretty-print each level so the user picks a real
+// block size rather than an opaque integer.
+const VOXEL_LEVELS = Array.from({ length: 11 }, (_, lvl) => lvl)
+
+function voxelLevelLabel(level: number): string {
+  const m = blockEdgeMeters(level)
+  if (m < 1) {
+    // 12.5 cm / 25 cm / 50 cm — fractional cm shown to one decimal.
+    const cm = m * 100
+    return `${cm % 1 === 0 ? cm.toFixed(0) : cm.toFixed(1)} cm`
+  }
+  return `${m % 1 === 0 ? m.toFixed(0) : m.toFixed(2)} m`
+}
+
+const RENDER_MODES: { value: SVORenderMode; label: string }[] = [
+  { value: 'solid',    label: 'Solid' },
+  { value: 'textured', label: 'Textured' },
+  { value: 'raytrace', label: 'Raytrace' },
+]
+
 export default function LayersTab({ siteSlug = null }: Props) {
   const sketches = useCadEngine(s => s.sketches)
+  const allNodes = useCadEngine(s => s.nodes)
   const activeSketchId = useCadEngine(s => s.activeSketchId)
   const activeLayerId = useCadEngine(s => s.activeLayerId)
 
@@ -78,21 +166,29 @@ export default function LayersTab({ siteSlug = null }: Props) {
 
   const addNode = useCadEngine(s => s.addNode)
 
+  // Voxel engine — only the slices the layer panel needs.
+  const voxelLayers = useSvoEngine(s => s.layers)
+  const activeVoxelLayerId = useSvoEngine(s => s.activeLayerId)
+  const activeVoxelLevel = useSvoEngine(s => s.activeLevel)
+  const voxelRenderMode = useSvoEngine(s => s.renderMode)
+  const addVoxelLayer = useSvoEngine(s => s.addLayer)
+  const setActiveVoxelLayer = useSvoEngine(s => s.setActiveLayer)
+  const setVoxelLevel = useSvoEngine(s => s.setActiveLevel)
+  const setVoxelRenderMode = useSvoEngine(s => s.setRenderMode)
+
   const [editingLayerId, setEditingLayerId] = useState<string | null>(null)
   const [editingLayerName, setEditingLayerName] = useState('')
   const [redlineModalOpen, setRedlineModalOpen] = useState(false)
 
   // Sketch settings popover — id of the sketch whose gear is open.
   const [popoverSketchId, setPopoverSketchId] = useState<string | null>(null)
-  // Inline rename state lives inside the popover (not on the tile).
   const [popoverNameDraft, setPopoverNameDraft] = useState('')
-  // Two-step delete confirm inside the popover.
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
 
   // Schema editor modal — the redline layer whose schema is being edited.
   const [schemaEditorLayerId, setSchemaEditorLayerId] = useState<string | null>(null)
 
-  // Preset selector — dropdown open + cached site templates.
+  // Preset selector (site templates) — top-of-gallery dropdown.
   const [presetMenuOpen, setPresetMenuOpen] = useState(false)
   const [templates, setTemplates] = useState<DesignTemplate[]>([])
   const [templatesLoaded, setTemplatesLoaded] = useState(false)
@@ -100,12 +196,31 @@ export default function LayersTab({ siteSlug = null }: Props) {
   const [templatesError, setTemplatesError] = useState<string | null>(null)
   const presetMenuRef = useRef<HTMLDivElement | null>(null)
 
+  // Sites for the popover's site-affinity picker. Loaded the first time
+  // any settings popover opens.
+  const [sitesList, setSitesList] = useState<SiteListItem[]>([])
+  const [sitesLoaded, setSitesLoaded] = useState(false)
+
+  // Hidden file input for .json import — driven from the empty-state.
+  const importInputRef = useRef<HTMLInputElement | null>(null)
+  const [importError, setImportError] = useState<string | null>(null)
+
   const sketchList = Object.values(sketches)
   const activeSketch = activeSketchId ? sketches[activeSketchId] : null
 
+  // Has the active sketch produced any nodes yet? Used to gate the
+  // schema-preset selector — we only show it on truly blank sketches
+  // to avoid silently rewriting a populated schema.
+  const activeSketchHasNodes = useMemo(() => {
+    if (!activeSketchId) return false
+    for (const n of Object.values(allNodes)) {
+      if (n.params.sketchId === activeSketchId) return true
+    }
+    return false
+  }, [allNodes, activeSketchId])
+
   // ── Effects ──────────────────────────────────────────────────────────
 
-  // ESC closes any popover/dropdown.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== 'Escape') return
@@ -144,6 +259,29 @@ export default function LayersTab({ siteSlug = null }: Props) {
       })
     return () => { cancelled = true }
   }, [presetMenuOpen, siteSlug, templatesLoaded, templatesLoading])
+
+  // Lazy-load the sites list the first time any settings popover opens.
+  // Hits /api/spatial/sites (the v2 endpoint — /api/sites in the brief
+  // is the v1 path; the v2 backend mounts the same list under
+  // /api/spatial/sites).
+  useEffect(() => {
+    if (!popoverSketchId || sitesLoaded) return
+    let cancelled = false
+    const token = localStorage.getItem('accessToken')
+    fetch(`${API_URL}/api/spatial/sites`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    })
+      .then(r => (r.ok ? r.json() : []))
+      .then((data: SiteListItem[]) => {
+        if (cancelled) return
+        setSitesList(Array.isArray(data) ? data : [])
+        setSitesLoaded(true)
+      })
+      .catch(() => {
+        if (!cancelled) setSitesLoaded(true)
+      })
+    return () => { cancelled = true }
+  }, [popoverSketchId, sitesLoaded])
 
   // Click-outside closes the preset dropdown.
   useEffect(() => {
@@ -188,10 +326,40 @@ export default function LayersTab({ siteSlug = null }: Props) {
     if (name) renameSketch(sketchId, name)
   }
 
+  /** Copy every node pinned to `sourceId` into `newId`, generating
+   *  fresh node ids and remapping `params.sketchLayer` through `layerMap`.
+   *  Used by both `duplicateSketch` and `importSketchFromJson`. */
+  function copyNodesInto(
+    sourceId: string,
+    newId: string,
+    layerMap: Map<string, string>,
+    fallbackLayerId: string,
+    sourceNodes?: SketchNode[],
+  ): void {
+    const nodes = sourceNodes
+      ?? Object.values(useCadEngine.getState().nodes).filter(
+        n => n.params.sketchId === sourceId,
+      )
+    for (const node of nodes) {
+      const oldLayerId = node.params.sketchLayer ?? ''
+      const newLayerId = layerMap.get(oldLayerId) ?? fallbackLayerId
+      addNode({
+        ...node,
+        id: generateNodeId(),
+        params: {
+          ...node.params,
+          sketchId: newId,
+          sketchLayer: newLayerId,
+        },
+        attributes: { ...node.attributes },
+        style: { ...node.style },
+      })
+    }
+  }
+
   /** Duplicate a sketch — copies metadata, layers (with fresh ids), and
    *  every node pinned to the source sketch (with fresh ids + remapped
-   *  layer references). Implemented inline because the engine doesn't
-   *  expose a single duplicateSketch action. */
+   *  layer references). */
   function duplicateSketch(sourceId: string) {
     const source = useCadEngine.getState().sketches[sourceId]
     if (!source) return
@@ -202,14 +370,10 @@ export default function LayersTab({ siteSlug = null }: Props) {
       siteId: targetSiteId,
     })
 
-    // createSketch produced one default layer. We rewrite the layer list
-    // wholesale — keep the auto-created layer's id as the mapping target
-    // for the source's first layer, then call addLayer for the rest.
     const firstNewLayerId = useCadEngine.getState().sketches[newId]?.layers[0]?.id
     if (!firstNewLayerId) return
 
     const layerMap = new Map<string, string>()
-
     const newLayers: SketchLayerSpec[] = source.layers.map((srcLayer, idx) => {
       const targetId = idx === 0
         ? firstNewLayerId
@@ -233,31 +397,99 @@ export default function LayersTab({ siteSlug = null }: Props) {
       localOrigin: { ...source.localOrigin },
       localRotation: source.localRotation,
       fields: source.fields.map(f => ({ ...f })),
+      siteIds: [...source.siteIds],
     })
 
-    // Copy nodes — fresh ids, sketchId rewritten, sketchLayer remapped.
-    const allNodes = useCadEngine.getState().nodes
     const fallbackLayerId = newLayers[0]?.id ?? ''
-    for (const node of Object.values(allNodes)) {
-      if (node.params.sketchId !== sourceId) continue
-      const oldLayerId = node.params.sketchLayer ?? ''
-      const newLayerId = layerMap.get(oldLayerId) ?? fallbackLayerId
-      addNode({
-        ...node,
-        id: generateNodeId(),
-        params: {
-          ...node.params,
-          sketchId: newId,
-          sketchLayer: newLayerId,
-        },
-        attributes: { ...node.attributes },
-        style: { ...node.style },
+    copyNodesInto(sourceId, newId, layerMap, fallbackLayerId)
+  }
+
+  /** Download the active sketch + its nodes as a single .json file —
+   *  mirrors the on-disk shape persistence.ts uses, so a downloaded
+   *  file round-trips cleanly through the .json importer below. */
+  function downloadSketchJson(sketchId: string) {
+    const state = useCadEngine.getState()
+    const sketch = state.sketches[sketchId]
+    if (!sketch) return
+    const siteId = sketch.siteIds[0] ?? siteSlug ?? '__local__'
+    const doc = buildSketchDoc(siteId, sketch, state.nodes)
+    const blob = new Blob([JSON.stringify(doc, null, 2)], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    const safeName = sketch.name.replace(/[^a-zA-Z0-9_-]+/g, '-').toLowerCase()
+    a.download = `sketch-${safeName || sketch.id}.json`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+  }
+
+  /** Import a SketchDoc-shaped JSON file into the engine. Reuses the
+   *  node-copy machinery so imported features land as a brand-new
+   *  sketch (fresh ids, remapped layers) and never collide with
+   *  whatever's already in the store. */
+  async function importSketchFromFile(file: File) {
+    setImportError(null)
+    try {
+      const text = await file.text()
+      const parsed = JSON.parse(text) as Partial<SketchDoc>
+      const source = parsed?.sketch
+      if (!source || !Array.isArray(parsed.nodes)) {
+        throw new Error('Not a sketch JSON (missing sketch / nodes)')
+      }
+
+      const targetSiteId = siteSlug || source.siteIds?.[0] || '__local__'
+      const newId = createSketch({
+        name: source.name || file.name.replace(/\.json$/i, ''),
+        siteId: targetSiteId,
       })
+
+      // Rebuild the layer list. createSketch produced one default
+      // layer; we reuse its id as the mapping target for the source's
+      // first layer, then addLayer for the rest.
+      const firstNewLayerId = useCadEngine.getState().sketches[newId]?.layers[0]?.id
+      if (!firstNewLayerId) throw new Error('createSketch returned no layer')
+
+      const layerMap = new Map<string, string>()
+      const srcLayers = source.layers ?? []
+      const newLayers: SketchLayerSpec[] = srcLayers.map((srcLayer, idx) => {
+        const targetId = idx === 0
+          ? firstNewLayerId
+          : addLayer(newId, {
+              name: srcLayer.name,
+              colour: srcLayer.colour,
+              visible: srcLayer.visible,
+              locked: srcLayer.locked,
+              coordMode: srcLayer.coordMode,
+            })
+        layerMap.set(srcLayer.id, targetId)
+        return { ...srcLayer, id: targetId }
+      })
+
+      // Build the patch piecewise so we never spread an `undefined` onto
+      // a non-optional field (patchSketch is a shallow merge — undefined
+      // clobbers).
+      const patch: Partial<Sketch> = {
+        activeLayerId: newLayers[0]?.id ?? firstNewLayerId,
+        fields: (source.fields ?? []).map(f => ({ ...f })),
+      }
+      if (newLayers.length) patch.layers = newLayers
+      if (source.coordMode) patch.coordMode = source.coordMode
+      if (source.coordCrs) patch.coordCrs = source.coordCrs
+      if (source.heightDatum) patch.heightDatum = source.heightDatum
+      if (source.localOrigin) patch.localOrigin = { ...source.localOrigin }
+      if (typeof source.localRotation === 'number') patch.localRotation = source.localRotation
+      if (source.siteIds?.length) patch.siteIds = [...source.siteIds]
+      patchSketch(newId, patch)
+
+      const fallbackLayerId = newLayers[0]?.id ?? firstNewLayerId
+      copyNodesInto(source.id ?? '', newId, layerMap, fallbackLayerId, parsed.nodes)
+    } catch (e) {
+      setImportError(e instanceof Error ? e.message : 'Invalid sketch JSON')
     }
   }
 
-  /** "Set as default" — at most one sketch is default per gallery.
-   *  Toggling a sketch ON clears the flag on every other. */
   function setAsDefault(sketchId: string) {
     const all = useCadEngine.getState().sketches
     for (const id of Object.keys(all)) {
@@ -270,9 +502,6 @@ export default function LayersTab({ siteSlug = null }: Props) {
     }
   }
 
-  /** Apply a template as a "preset sketch" — create a new sketch and
-   *  seed its first layer's colour + the sketch-level fields[] from the
-   *  template. The user is dropped onto the new sketch immediately. */
   function applyPreset(template: DesignTemplate) {
     const targetSiteId = siteSlug || '__local__'
     const newId = createSketch({
@@ -294,223 +523,439 @@ export default function LayersTab({ siteSlug = null }: Props) {
     setPresetMenuOpen(false)
   }
 
+  /** Apply a built-in SCHEMA_PRESETS entry to the active sketch's
+   *  `fields[]`. Only enabled when the sketch is blank (no nodes). */
+  function applySchemaPreset(presetId: string) {
+    if (!activeSketchId) return
+    const preset = SCHEMA_PRESETS[presetId as keyof typeof SCHEMA_PRESETS]
+    if (!preset) return
+    patchSketch(activeSketchId, {
+      fields: preset.fields.map(f => ({ ...f })),
+    })
+  }
+
+  /** Toggle a site in the sketch's affinity list. Empty list is allowed
+   *  (private / unassigned); the engine doesn't enforce non-emptiness. */
+  function toggleSiteAffinity(sketchId: string, slug: string) {
+    const cur = useCadEngine.getState().sketches[sketchId]
+    if (!cur) return
+    const set = new Set(cur.siteIds)
+    if (set.has(slug)) set.delete(slug)
+    else set.add(slug)
+    patchSketch(sketchId, { siteIds: Array.from(set) })
+  }
+
+  function setAllSites(sketchId: string, on: boolean) {
+    if (!on) {
+      patchSketch(sketchId, { siteIds: [] })
+      return
+    }
+    patchSketch(sketchId, { siteIds: sitesList.map(s => s.slug) })
+  }
+
+  /** Stamp a new voxel layer scoped to the active sketch. Uses the
+   *  sketch's localOrigin as the ENU datum so the grid anchors at a
+   *  sensible point (and the user can move it later from the voxel
+   *  panel). */
+  function createVoxelLayer() {
+    if (!activeSketch) return
+    const layer: SVOLayer = {
+      id: generateLayerId(),
+      name: `Voxel layer ${voxelLayers.length + 1}`,
+      siteSlug: siteSlug || activeSketch.siteIds[0] || '__local__',
+      scope: 'sketch',
+      datum: {
+        lon: activeSketch.localOrigin?.lon ?? 0,
+        lat: activeSketch.localOrigin?.lat ?? 0,
+        alt: activeSketch.localOrigin?.alt ?? 0,
+      },
+      generators: [],
+    }
+    addVoxelLayer(layer)
+    setActiveVoxelLayer(layer.id)
+  }
+
   // ── Render ───────────────────────────────────────────────────────────
 
   const popoverSketch = popoverSketchId ? sketches[popoverSketchId] : null
   const isRedlineSketch = !!activeSketch?.redline
+  const isEmptyGallery = sketchList.length === 0
+  const showSchemaPresetPicker = !!activeSketch
+    && !activeSketch.redline
+    && (activeSketch.fields?.length ?? 0) === 0
+    && !activeSketchHasNodes
 
   return (
     <div className="layers-tab">
-      {/* ── Sketch gallery ──────────────────────────────────────────── */}
-      <div className="layers-tab__hd-row">
-        <div className="layers-tab__hd">Sketches</div>
-        {siteSlug && (
-          <div className="preset-menu" ref={presetMenuRef}>
+      {/* ── 1 · Empty-state splash ───────────────────────────────────── */}
+      {isEmptyGallery ? (
+        <div className="layers-empty">
+          <div className="layers-empty__title">Start with a sketch</div>
+          <p className="layers-empty__sub">
+            A sketch is your design canvas. Drop into a redline to update
+            real site data with schema guard rails.
+          </p>
+          <div className="layers-empty__tiles">
             <button
               type="button"
-              className="preset-menu__btn"
-              onClick={() => setPresetMenuOpen(o => !o)}
-              aria-haspopup="menu"
-              aria-expanded={presetMenuOpen}
+              className="layers-empty__tile layers-empty__tile--blank"
+              onClick={startBlankSketch}
             >
-              <LayoutTemplate size={14} />
-              <span>Load preset</span>
-              <ChevronDown size={12} />
+              <Plus size={18} />
+              <span className="layers-empty__tile-name">Blank sketch</span>
+              <span className="layers-empty__tile-sub">
+                Free canvas. One or many sites.
+              </span>
             </button>
-            {presetMenuOpen && (
-              <div className="preset-menu__pop" role="menu">
-                <div className="preset-menu__hd">Site templates</div>
-                {templatesLoading && (
-                  <div className="preset-menu__msg">Loading…</div>
-                )}
-                {templatesError && (
-                  <div className="preset-menu__msg preset-menu__msg--err">
-                    {templatesError}
+            {siteSlug && (
+              <button
+                type="button"
+                className="layers-empty__tile layers-empty__tile--redline"
+                onClick={() => setRedlineModalOpen(true)}
+              >
+                <Pencil size={18} />
+                <span className="layers-empty__tile-name">Redline</span>
+                <span className="layers-empty__tile-sub">
+                  Update site data. Schema locked to target.
+                </span>
+              </button>
+            )}
+          </div>
+          <div className="layers-empty__import">
+            <input
+              ref={importInputRef}
+              type="file"
+              accept="application/json,.json"
+              style={{ display: 'none' }}
+              onChange={e => {
+                const f = e.target.files?.[0]
+                if (f) void importSketchFromFile(f)
+                if (e.target) e.target.value = ''
+              }}
+            />
+            <button
+              type="button"
+              className="layers-empty__import-btn"
+              onClick={() => importInputRef.current?.click()}
+            >
+              ↑ or import a .json
+            </button>
+            {importError && (
+              <p className="layers-empty__import-err">{importError}</p>
+            )}
+          </div>
+        </div>
+      ) : (
+        <>
+          {/* ── 2 · Gallery + preset menu header ───────────────────── */}
+          <div className="layers-tab__hd-row">
+            <div className="layers-tab__hd">Sketches</div>
+            {siteSlug && (
+              <div className="preset-menu" ref={presetMenuRef}>
+                <button
+                  type="button"
+                  className="preset-menu__btn"
+                  onClick={() => setPresetMenuOpen(o => !o)}
+                  aria-haspopup="menu"
+                  aria-expanded={presetMenuOpen}
+                >
+                  <LayoutTemplate size={14} />
+                  <span>Load preset</span>
+                  <ChevronDown size={12} />
+                </button>
+                {presetMenuOpen && (
+                  <div className="preset-menu__pop" role="menu">
+                    <div className="preset-menu__hd">Site templates</div>
+                    {templatesLoading && (
+                      <div className="preset-menu__msg">Loading…</div>
+                    )}
+                    {templatesError && (
+                      <div className="preset-menu__msg preset-menu__msg--err">
+                        {templatesError}
+                      </div>
+                    )}
+                    {!templatesLoading && !templatesError && templates.length === 0 && (
+                      <div className="preset-menu__msg">
+                        No templates yet. Save one from the Attributes editor
+                        to start a library.
+                      </div>
+                    )}
+                    {!templatesLoading && !templatesError && templates.map((t, i) => (
+                      <button
+                        key={t.id ?? `tpl-${i}`}
+                        type="button"
+                        className="preset-menu__item"
+                        onClick={() => applyPreset(t)}
+                        role="menuitem"
+                      >
+                        <span
+                          className="preset-menu__dot"
+                          style={t.colour ? { background: t.colour } : undefined}
+                        />
+                        <span className="preset-menu__name">{t.name}</span>
+                        <span className="preset-menu__meta">
+                          {t.geometry ?? 'any'} · {t.fields?.length ?? 0} fields
+                        </span>
+                      </button>
+                    ))}
                   </div>
                 )}
-                {!templatesLoading && !templatesError && templates.length === 0 && (
-                  <div className="preset-menu__msg">
-                    No templates yet. Save one from the Attributes editor
-                    to start a library.
-                  </div>
-                )}
-                {!templatesLoading && !templatesError && templates.map((t, i) => (
-                  <button
-                    key={t.id ?? `tpl-${i}`}
-                    type="button"
-                    className="preset-menu__item"
-                    onClick={() => applyPreset(t)}
-                    role="menuitem"
-                  >
-                    <span
-                      className="preset-menu__dot"
-                      style={t.colour ? { background: t.colour } : undefined}
-                    />
-                    <span className="preset-menu__name">{t.name}</span>
-                    <span className="preset-menu__meta">
-                      {t.geometry ?? 'any'} · {t.fields?.length ?? 0} fields
-                    </span>
-                  </button>
-                ))}
               </div>
             )}
           </div>
-        )}
-      </div>
 
-      <div className="sketch-gallery">
-        {sketchList.map(s => {
-          const isActive = s.id === activeSketchId
-          const isRedline = !!s.redline
-          const isDefault = !!s.isDefault
-          const popoverOpen = popoverSketchId === s.id
-          return (
-            <div
-              key={s.id}
-              className={`sketch-tile${isActive ? ' is-active' : ''}${isRedline ? ' is-redline' : ''}${isDefault ? ' is-default' : ''}`}
-              onClick={() => setActiveSketch(s.id)}
-            >
-              <div className="sketch-tile__title">
-                <span className="sketch-tile__name">{s.name}</span>
-                {isDefault && (
-                  <span className="sketch-tile__default-badge" title="Default sketch">
-                    <Star size={9} fill="currentColor" />
-                    Default
-                  </span>
-                )}
-              </div>
-              <div className="sketch-tile__meta">
-                {s.layers.length} layer{s.layers.length === 1 ? '' : 's'}
-                {isRedline && <span className="sketch-tile__redline-badge">redline</span>}
-              </div>
-
-              <button
-                className="sketch-tile__settings"
-                title="Sketch settings"
-                aria-label="Sketch settings"
-                aria-haspopup="menu"
-                aria-expanded={popoverOpen}
-                onClick={e => {
-                  e.stopPropagation()
-                  if (popoverOpen) closeSettingsPopover()
-                  else openSettingsPopover(s)
-                }}
-              >
-                <Settings size={14} />
-              </button>
-
-              {popoverOpen && popoverSketch && (
+          <div className="sketch-gallery">
+            {sketchList.map(s => {
+              const isActive = s.id === activeSketchId
+              const isRedline = !!s.redline
+              const isDefault = !!s.isDefault
+              const popoverOpen = popoverSketchId === s.id
+              return (
                 <div
-                  className="sketch-popover"
-                  role="menu"
-                  onClick={e => e.stopPropagation()}
+                  key={s.id}
+                  className={`sketch-tile${isActive ? ' is-active' : ''}${isRedline ? ' is-redline' : ''}${isDefault ? ' is-default' : ''}`}
+                  onClick={() => setActiveSketch(s.id)}
                 >
-                  <div className="sketch-popover__hd">
-                    <span>Sketch settings</span>
-                    <button
-                      type="button"
-                      className="sketch-popover__close"
-                      title="Close"
-                      aria-label="Close"
-                      onClick={closeSettingsPopover}
-                    >
-                      <X size={14} />
-                    </button>
+                  <div className="sketch-tile__title">
+                    <span className="sketch-tile__name">{s.name}</span>
+                    {isDefault && (
+                      <span className="sketch-tile__default-badge" title="Default sketch">
+                        <Star size={9} fill="currentColor" />
+                        Default
+                      </span>
+                    )}
+                  </div>
+                  <div className="sketch-tile__meta">
+                    {s.layers.length} layer{s.layers.length === 1 ? '' : 's'}
+                    {isRedline && <span className="sketch-tile__redline-badge">redline</span>}
                   </div>
 
-                  <label className="sketch-popover__field">
-                    <span className="sketch-popover__field-label">Name</span>
-                    <input
-                      autoFocus
-                      className="sketch-popover__input"
-                      value={popoverNameDraft}
-                      onChange={e => setPopoverNameDraft(e.target.value)}
-                      onBlur={() => commitPopoverRename(popoverSketch.id)}
-                      onKeyDown={e => {
-                        if (e.key === 'Enter') {
-                          commitPopoverRename(popoverSketch.id)
-                          closeSettingsPopover()
-                        }
-                      }}
-                    />
-                  </label>
-
                   <button
-                    type="button"
-                    className="sketch-popover__item"
-                    onClick={() => {
-                      duplicateSketch(popoverSketch.id)
-                      closeSettingsPopover()
+                    className="sketch-tile__settings"
+                    title="Sketch settings"
+                    aria-label="Sketch settings"
+                    aria-haspopup="menu"
+                    aria-expanded={popoverOpen}
+                    onClick={e => {
+                      e.stopPropagation()
+                      if (popoverOpen) closeSettingsPopover()
+                      else openSettingsPopover(s)
                     }}
                   >
-                    <Copy size={14} />
-                    <span>Duplicate sketch</span>
+                    <Settings size={14} />
                   </button>
 
-                  <button
-                    type="button"
-                    className={`sketch-popover__item${popoverSketch.isDefault ? ' is-on' : ''}`}
-                    onClick={() => {
-                      setAsDefault(popoverSketch.id)
-                      closeSettingsPopover()
-                    }}
-                    disabled={popoverSketch.isDefault}
-                  >
-                    <Star size={14} fill={popoverSketch.isDefault ? 'currentColor' : 'none'} />
-                    <span>{popoverSketch.isDefault ? 'Default sketch' : 'Set as default'}</span>
-                  </button>
+                  {popoverOpen && popoverSketch && (
+                    <div
+                      className="sketch-popover"
+                      role="menu"
+                      onClick={e => e.stopPropagation()}
+                    >
+                      <div className="sketch-popover__hd">
+                        <span>Sketch settings</span>
+                        <button
+                          type="button"
+                          className="sketch-popover__close"
+                          title="Close"
+                          aria-label="Close"
+                          onClick={closeSettingsPopover}
+                        >
+                          <X size={14} />
+                        </button>
+                      </div>
 
-                  <div className="sketch-popover__sep" />
+                      <label className="sketch-popover__field">
+                        <span className="sketch-popover__field-label">Name</span>
+                        <input
+                          autoFocus
+                          className="sketch-popover__input"
+                          value={popoverNameDraft}
+                          onChange={e => setPopoverNameDraft(e.target.value)}
+                          onBlur={() => commitPopoverRename(popoverSketch.id)}
+                          onKeyDown={e => {
+                            if (e.key === 'Enter') {
+                              commitPopoverRename(popoverSketch.id)
+                              closeSettingsPopover()
+                            }
+                          }}
+                        />
+                      </label>
 
-                  {confirmDeleteId === popoverSketch.id ? (
-                    <div className="sketch-popover__confirm-row">
+                      {/* CRS */}
+                      <label className="sketch-popover__field">
+                        <span className="sketch-popover__field-label">Coordinate system</span>
+                        <select
+                          className="sketch-popover__input"
+                          value={popoverSketch.coordCrs}
+                          onChange={e => patchSketch(popoverSketch.id, { coordCrs: e.target.value })}
+                        >
+                          {CRS_OPTIONS.map(o => (
+                            <option key={o.value} value={o.value}>{o.label}</option>
+                          ))}
+                        </select>
+                      </label>
+
+                      {/* Height datum */}
+                      <label className="sketch-popover__field">
+                        <span className="sketch-popover__field-label">Height datum</span>
+                        <select
+                          className="sketch-popover__input"
+                          value={popoverSketch.heightDatum}
+                          onChange={e => patchSketch(popoverSketch.id, {
+                            heightDatum: e.target.value as HeightDatum,
+                          })}
+                        >
+                          {DATUM_OPTIONS.map(o => (
+                            <option key={o.value} value={o.value}>{o.label}</option>
+                          ))}
+                        </select>
+                      </label>
+
+                      {/* Site affinity */}
+                      {sitesList.length > 0 && (
+                        <div className="sketch-popover__field">
+                          <span className="sketch-popover__field-label">Sites</span>
+                          <div className="sketch-popover__sites">
+                            <label className="sketch-popover__site-row">
+                              <input
+                                type="checkbox"
+                                checked={popoverSketch.siteIds.length === sitesList.length}
+                                onChange={e => setAllSites(popoverSketch.id, e.target.checked)}
+                              />
+                              <span>All sites</span>
+                            </label>
+                            {sitesList.map(site => (
+                              <label key={site.slug} className="sketch-popover__site-row">
+                                <input
+                                  type="checkbox"
+                                  checked={popoverSketch.siteIds.includes(site.slug)}
+                                  onChange={() => toggleSiteAffinity(popoverSketch.id, site.slug)}
+                                />
+                                <span>{site.name}</span>
+                              </label>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
                       <button
                         type="button"
-                        className="sketch-popover__confirm-yes"
+                        className="sketch-popover__item"
                         onClick={() => {
-                          deleteSketch(popoverSketch.id)
-                          setConfirmDeleteId(null)
-                          setPopoverSketchId(null)
+                          duplicateSketch(popoverSketch.id)
+                          closeSettingsPopover()
                         }}
                       >
-                        Delete permanently
+                        <Copy size={14} />
+                        <span>Duplicate sketch</span>
                       </button>
+
                       <button
                         type="button"
-                        className="sketch-popover__confirm-no"
-                        onClick={() => setConfirmDeleteId(null)}
+                        className="sketch-popover__item"
+                        onClick={() => {
+                          downloadSketchJson(popoverSketch.id)
+                        }}
                       >
-                        Cancel
+                        <Download size={14} />
+                        <span>Download JSON</span>
                       </button>
+
+                      <button
+                        type="button"
+                        className={`sketch-popover__item${popoverSketch.isDefault ? ' is-on' : ''}`}
+                        onClick={() => {
+                          setAsDefault(popoverSketch.id)
+                          closeSettingsPopover()
+                        }}
+                        disabled={popoverSketch.isDefault}
+                      >
+                        <Star size={14} fill={popoverSketch.isDefault ? 'currentColor' : 'none'} />
+                        <span>{popoverSketch.isDefault ? 'Default sketch' : 'Set as default'}</span>
+                      </button>
+
+                      <div className="sketch-popover__sep" />
+
+                      {confirmDeleteId === popoverSketch.id ? (
+                        <div className="sketch-popover__confirm-row">
+                          <button
+                            type="button"
+                            className="sketch-popover__confirm-yes"
+                            onClick={() => {
+                              deleteSketch(popoverSketch.id)
+                              setConfirmDeleteId(null)
+                              setPopoverSketchId(null)
+                            }}
+                          >
+                            Delete permanently
+                          </button>
+                          <button
+                            type="button"
+                            className="sketch-popover__confirm-no"
+                            onClick={() => setConfirmDeleteId(null)}
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          className="sketch-popover__item sketch-popover__item--danger"
+                          onClick={() => setConfirmDeleteId(popoverSketch.id)}
+                        >
+                          <Trash2 size={14} />
+                          <span>Delete sketch</span>
+                        </button>
+                      )}
                     </div>
-                  ) : (
-                    <button
-                      type="button"
-                      className="sketch-popover__item sketch-popover__item--danger"
-                      onClick={() => setConfirmDeleteId(popoverSketch.id)}
-                    >
-                      <Trash2 size={14} />
-                      <span>Delete sketch</span>
-                    </button>
                   )}
                 </div>
-              )}
-            </div>
-          )
-        })}
-        <button className="sketch-tile sketch-tile--add" onClick={startBlankSketch}>
-          <Plus size={18} /> Blank sketch
-        </button>
-        {siteSlug && (
-          <button className="sketch-tile sketch-tile--redline" onClick={() => setRedlineModalOpen(true)}>
-            Redline
-          </button>
-        )}
-      </div>
+              )
+            })}
+            <button className="sketch-tile sketch-tile--add" onClick={startBlankSketch}>
+              <Plus size={18} /> Blank sketch
+            </button>
+            {siteSlug && (
+              <button className="sketch-tile sketch-tile--redline" onClick={() => setRedlineModalOpen(true)}>
+                Redline
+              </button>
+            )}
+          </div>
+        </>
+      )}
 
-      {/* ── Active sketch's layer list ──────────────────────────────── */}
+      {/* ── 3 · Schema-preset selector + 4 · Layer list ────────────── */}
       {activeSketch && (
         <>
+          {showSchemaPresetPicker && (
+            <div className="schema-preset-row">
+              <span className="schema-preset-row__label">Apply schema preset</span>
+              <select
+                className="schema-preset-row__select"
+                defaultValue=""
+                onChange={e => {
+                  const v = e.target.value
+                  if (!v) return
+                  applySchemaPreset(v)
+                  // Reset to placeholder so re-selecting the same
+                  // preset re-applies (e.g. after the user added a
+                  // field and wants the canonical set back).
+                  e.target.value = ''
+                }}
+              >
+                <option value="">→ Choose a preset…</option>
+                {SCHEMA_PRESET_ORDER.map(id => {
+                  const p = SCHEMA_PRESETS[id]
+                  return (
+                    <option key={id} value={id}>
+                      {p.label} — {p.description}
+                    </option>
+                  )
+                })}
+              </select>
+            </div>
+          )}
+
           <div className="layers-tab__hd">Layers · {activeSketch.name}</div>
           <div className="sketch-layer-list">
             {activeSketch.layers.map(layer => {
@@ -556,9 +1001,6 @@ export default function LayersTab({ siteSlug = null }: Props) {
                   )}
 
                   <div className="sketch-layer-actions" onClick={e => e.stopPropagation()}>
-                    {/* Schema editor — only redline sketches edit a schema
-                        (freeform sketches don't promote, so the column
-                        contract doesn't apply). */}
                     {isRedlineSketch && (
                       <button
                         className="sketch-layer-action-btn"
@@ -605,6 +1047,88 @@ export default function LayersTab({ siteSlug = null }: Props) {
           >
             <Plus size={14} /> <span>Add Layer</span>
           </button>
+
+          {/* ── 5 · Voxel layers section ─────────────────────────── */}
+          <div className="voxel-layers-section">
+            <div className="layers-tab__hd">Voxel layers</div>
+            {voxelLayers.length === 0 ? (
+              <button
+                type="button"
+                className="sketch-layers-btn voxel-layers-new"
+                onClick={createVoxelLayer}
+              >
+                <Plus size={14} /> <span>New voxel layer</span>
+              </button>
+            ) : (
+              <>
+                <div className="voxel-layer-list">
+                  {voxelLayers.map(layer => {
+                    const isActive = layer.id === activeVoxelLayerId
+                    return (
+                      <button
+                        key={layer.id}
+                        type="button"
+                        className={`voxel-layer-item${isActive ? ' active' : ''}`}
+                        onClick={() => setActiveVoxelLayer(layer.id)}
+                      >
+                        <span className="voxel-layer-item__name">{layer.name}</span>
+                        <span className="voxel-layer-item__badge">
+                          {voxelLevelLabel(activeVoxelLevel)}
+                        </span>
+                      </button>
+                    )
+                  })}
+                </div>
+                <button
+                  type="button"
+                  className="sketch-layers-btn voxel-layers-new"
+                  onClick={createVoxelLayer}
+                >
+                  <Plus size={14} /> <span>New voxel layer</span>
+                </button>
+
+                {/* Per-engine editor settings — block size and render
+                    mode are global engine state in v2 (one block size
+                    is active across all loaded layers), so we expose
+                    them once at the section level rather than per-row. */}
+                {activeVoxelLayerId && (
+                  <div className="voxel-layer-controls">
+                    <label className="voxel-control-row">
+                      <span className="voxel-control-row__label">Block size</span>
+                      <select
+                        className="voxel-control-row__select"
+                        value={activeVoxelLevel}
+                        onChange={e => setVoxelLevel(Number(e.target.value))}
+                      >
+                        {VOXEL_LEVELS.map(lvl => (
+                          <option key={lvl} value={lvl}>
+                            {voxelLevelLabel(lvl)} (level {lvl})
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+
+                    <div className="voxel-control-row">
+                      <span className="voxel-control-row__label">Render mode</span>
+                      <div className="voxel-mode-toggle" role="group" aria-label="Render mode">
+                        {RENDER_MODES.map(m => (
+                          <button
+                            key={m.value}
+                            type="button"
+                            className={`voxel-mode-toggle__btn${voxelRenderMode === m.value ? ' is-on' : ''}`}
+                            onClick={() => setVoxelRenderMode(m.value)}
+                            aria-pressed={voxelRenderMode === m.value}
+                          >
+                            {m.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
         </>
       )}
 
