@@ -55,7 +55,6 @@ import {
 export interface FlySpeedDef {
   id: FlySpeedId
   label: string
-  icon: string
   /** Metres per second. Multiplied by Shift→2× when sprinting. */
   mps: number
 }
@@ -63,20 +62,17 @@ export interface FlySpeedDef {
 export type FlySpeedId = 'cycling' | 'driving' | 'gliding' | 'jet' | 'fighterJet'
 
 export const FLY_SPEEDS: readonly FlySpeedDef[] = [
-  { id: 'cycling',    label: 'Cycling',     icon: '🚲', mps: 4.2  },  // 15 km/h
-  { id: 'driving',    label: 'Driving',     icon: '🚗', mps: 16.7 },  // 60 km/h
-  { id: 'gliding',    label: 'Gliding',     icon: '🪂', mps: 41.7 },  // 150 km/h
-  { id: 'jet',        label: 'Jet',         icon: '✈️', mps: 250  },  // 900 km/h
-  { id: 'fighterJet', label: 'Fighter Jet', icon: '🚀', mps: 556  },  // 2000 km/h
+  { id: 'cycling',    label: 'Cycling',     mps: 4.2  },  // 15 km/h
+  { id: 'driving',    label: 'Driving',     mps: 16.7 },  // 60 km/h
+  { id: 'gliding',    label: 'Gliding',     mps: 41.7 },  // 150 km/h
+  { id: 'jet',        label: 'Jet',         mps: 250  },  // 900 km/h
+  { id: 'fighterJet', label: 'Fighter Jet', mps: 556  },  // 2000 km/h
 ] as const
 
 export type FlySpeed = FlySpeedId
 
 export function flySpeedLabel(s: FlySpeed): string {
   return FLY_SPEEDS.find(g => g.id === s)?.label ?? s
-}
-export function flySpeedIcon(s: FlySpeed): string {
-  return FLY_SPEEDS.find(g => g.id === s)?.icon ?? ''
 }
 export function flySpeedMps(s: FlySpeed): number {
   return FLY_SPEEDS.find(g => g.id === s)?.mps ?? FLY_SPEEDS[0].mps

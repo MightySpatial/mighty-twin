@@ -5,7 +5,7 @@
  *    - Sequential 5-gear shifter (Cycling → Driving → Gliding → Jet →
  *      Fighter Jet) with ‹ / › arrows and a click-to-select pill strip
  *    - Key hints for new users (WASD / arrows / + / -)
- *    - Brief on-change badge ("Jet ✈️") when the gear changes
+ *    - Brief on-change badge ("Jet") when the gear changes
  *    - Exit button (also bound to Esc)
  *
  *  Desktop: floating bottom-centre panel.
@@ -20,7 +20,6 @@ import type { FlySpeed } from '../../components/CesiumViewer/hooks/useFlyMode'
 import {
   FLY_SPEEDS,
   flySpeedLabel,
-  flySpeedIcon,
   flySpeedMps,
   flySpeedIndex,
   shiftGear,
@@ -90,7 +89,6 @@ export default function FlyWidget({
               title={`${g.label} · ${g.mps.toFixed(1)} m/s`}
               aria-pressed={active}
             >
-              <span className="fly-shifter-pill-icon" aria-hidden>{g.icon}</span>
               <span className="fly-shifter-pill-label">{g.label}</span>
             </button>
           )
@@ -111,7 +109,6 @@ export default function FlyWidget({
 
   const toastNode = toast ? (
     <div className="fly-toast" role="status" aria-live="polite">
-      <span className="fly-toast-icon" aria-hidden>{flySpeedIcon(toast)}</span>
       <span className="fly-toast-label">{flySpeedLabel(toast)}</span>
     </div>
   ) : null
@@ -123,7 +120,7 @@ export default function FlyWidget({
           placement="bottom"
           icon={<Plane size={14} />}
           title="Fly mode"
-          subtitle={`${flySpeedIcon(speed)} ${flySpeedLabel(speed)} · ${flySpeedMps(speed).toFixed(1)} m/s`}
+          subtitle={`${flySpeedLabel(speed)} · ${flySpeedMps(speed).toFixed(1)} m/s`}
           defaultOpen
           maxExpandedHeight={340}
           onClose={onClose}
