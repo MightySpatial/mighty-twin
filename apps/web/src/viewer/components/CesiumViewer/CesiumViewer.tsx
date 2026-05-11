@@ -635,8 +635,8 @@ export default function CesiumViewerComponent({
   }, [isMobile, activeRightWidget, flyActive])
 
   // Map MapShell action ids → existing widget state. Tools that aren't
-  // implemented yet (table/story/strike) toggle a placeholder
-  // state we can wire later without ripping the rail apart.
+  // fully implemented yet (table/story) toggle a placeholder state we
+  // can wire later without ripping the rail apart.
   const [comingSoon, setComingSoon] = useState<string | null>(null)
   useEffect(() => {
     if (!comingSoon) return

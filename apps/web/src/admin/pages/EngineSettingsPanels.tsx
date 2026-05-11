@@ -28,7 +28,6 @@ import {
   Hexagon as HexagonIcon,
   Table as TableIcon,
   BookOpen,
-  Slash,
   Mountain,
   Plane,
   Palette,
@@ -759,7 +758,6 @@ const WIDGETS: { id: string; label: string; icon: IconCmp; defaultController: Co
   { id: 'snap',     label: 'Snap',     icon: Camera,        defaultController: 'secondary' },
   { id: 'design',   label: 'Design',   icon: HexagonIcon,   defaultController: 'secondary' },
   { id: 'table',    label: 'Table',    icon: TableIcon,     defaultController: 'secondary' },
-  { id: 'strike',   label: 'Strike',   icon: Slash,         defaultController: 'secondary' },
   { id: 'terrain',  label: 'Terrain',  icon: Mountain,      defaultController: 'secondary' },
   { id: 'fly',      label: 'Fly',      icon: Plane,         defaultController: 'secondary' },
 ]

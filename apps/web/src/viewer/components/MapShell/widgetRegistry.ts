@@ -78,7 +78,7 @@ export function widgetsForController(
 
 /** Filter to only widgets visible in public/pre-login viewers (Phase M).
  *  When the site is public-pre-login, callers thread the result of this
- *  through to the rails so Design / Snap / Strike / etc. don't appear
+ *  through to the rails so Design / Snap / etc. don't appear
  *  for unauthenticated visitors. */
 export function publicWidgets(defs: WidgetDef[]): WidgetDef[] {
   return defs.filter((d) => d.publicVisible === true)
