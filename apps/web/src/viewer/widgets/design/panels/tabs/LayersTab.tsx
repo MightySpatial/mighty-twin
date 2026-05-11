@@ -49,7 +49,7 @@ import {
 import { useCadEngine } from '../../sketch/useCadEngine'
 import { generateLayerId, generateNodeId } from '../../sketch/dagOps'
 import { buildSketchDoc } from '../../sketch/persistence'
-import { SCHEMA_PRESETS, SCHEMA_PRESET_ORDER } from '../../sketch/schemaPresets'
+import { SCHEMA_PRESETS, SCHEMA_PRESET_ORDER, DEFAULT_PRESET_ID } from '../../sketch/schemaPresets'
 import { useSvoEngine } from '../../voxel/useSvoEngine'
 import { blockEdgeMeters, type SVOLayer, type SVORenderMode } from '../../voxel/types'
 import RedlineCreationModal from '../modals/RedlineCreationModal'
@@ -357,11 +357,19 @@ export default function LayersTab({ siteSlug = null }: Props) {
     const prefix = kind === 'voxel' ? 'Voxel sketch'
                  : kind === 'redline' ? 'Redline sketch'
                  : 'Sketch'
-    createSketch({
+    const newId = createSketch({
       name: `${prefix} ${sketchList.length + 1}`,
       siteId: targetSiteId,
       kind,
     })
+    // Seed the new sketch with the default materials preset's
+    // schema — matches the design widget mockup palette and stops
+    // every fresh sketch from launching with an empty fields list.
+    // Users can switch to Blank via the preset dropdown.
+    const defaultPreset = SCHEMA_PRESETS[DEFAULT_PRESET_ID]
+    if (defaultPreset.fields.length > 0) {
+      patchSketch(newId, { fields: defaultPreset.fields })
+    }
   }
 
   function commitLayerRename() {

@@ -78,7 +78,11 @@ export default function SketchTab({ viewer, siteSlug = null }: Props) {
     if (!siteSlug) return
     if (activeSketchId) return
     if (Object.keys(sketches).length > 0) return
-    createSketch({ name: 'Sketch 1', siteId: siteSlug })
+    // Bootstrap a CAD sketch (kind defaults to 'cad'); the
+    // LayersTab applies the materials preset on user-driven
+    // creation, but this is a one-shot fallback so a fresh sketch
+    // exists when the user clicks straight into the Sketch tab.
+    createSketch({ name: 'Sketch 1', siteId: siteSlug, kind: 'cad' })
   }, [activeSketchId, sketches, createSketch, siteSlug])
 
   const activeTool = lookupTool(activeToolId)

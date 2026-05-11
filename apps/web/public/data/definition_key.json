@@ -1,0 +1,80 @@
+{
+  "version": 1,
+  "description": "MightyDT / MightyTwin authoritative utility category colour standard. Ports the V1 definition key — utility code → category → colour mapping — so redline sketches and site-layer styling stay aligned across both products. The colour for an uncategorised stroke falls back to Unknown.",
+  "categories": [
+    {
+      "id": "communications",
+      "label": "Communications",
+      "colour": "#777777",
+      "codes": [
+        { "code": "T1",   "label": "Telstra major" },
+        { "code": "T2",   "label": "Telstra distribution" },
+        { "code": "T3",   "label": "Telstra customer service" },
+        { "code": "OPT",  "label": "Optus" },
+        { "code": "TPG",  "label": "TPG" },
+        { "code": "NBN",  "label": "NBN" }
+      ]
+    },
+    {
+      "id": "drainage",
+      "label": "Drainage",
+      "colour": "#007299",
+      "codes": [
+        { "code": "SD",  "label": "Stormwater drain" },
+        { "code": "SP",  "label": "Stormwater pit" },
+        { "code": "CULV", "label": "Culvert" }
+      ]
+    },
+    {
+      "id": "electricity",
+      "label": "Electricity",
+      "colour": "#7F3F00",
+      "codes": [
+        { "code": "EHV", "label": "High voltage" },
+        { "code": "ELV", "label": "Low voltage" },
+        { "code": "ELT", "label": "Street lighting" },
+        { "code": "EPT", "label": "Pit" },
+        { "code": "EPL", "label": "Pole" }
+      ]
+    },
+    {
+      "id": "gas",
+      "label": "Gas",
+      "colour": "#009900",
+      "codes": [
+        { "code": "GH", "label": "High pressure" },
+        { "code": "GM", "label": "Medium pressure" },
+        { "code": "GL", "label": "Low pressure" }
+      ]
+    },
+    {
+      "id": "sewer",
+      "label": "Sewer",
+      "colour": "#0c9c9c",
+      "codes": [
+        { "code": "SM",  "label": "Sewer main" },
+        { "code": "SH",  "label": "Sewer house connection" },
+        { "code": "SMH", "label": "Sewer manhole" }
+      ]
+    },
+    {
+      "id": "water",
+      "label": "Water",
+      "colour": "#0000ff",
+      "codes": [
+        { "code": "WM",  "label": "Water main" },
+        { "code": "WS",  "label": "Water service" },
+        { "code": "WV",  "label": "Water valve" },
+        { "code": "WH",  "label": "Hydrant" }
+      ]
+    },
+    {
+      "id": "unknown",
+      "label": "Unknown",
+      "colour": "#555555",
+      "codes": [
+        { "code": "UNK", "label": "Unknown utility" }
+      ]
+    }
+  ]
+}

@@ -21,6 +21,7 @@ export interface SchemaPreset {
 }
 
 export type SchemaPresetId =
+  | 'materials'
   | 'blank'
   | 'survey_site'
   | 'existing_utilities'
@@ -42,6 +43,30 @@ const s = (key: string, options: string[]): SchemaField => ({ key, type: 'select
 const b = (key: string): SchemaField => ({ key, type: 'select', options: ['true', 'false'] })
 
 export const SCHEMA_PRESETS: Record<SchemaPresetId, SchemaPreset> = {
+  materials: {
+    id: 'materials',
+    label: 'MightyTwin materials',
+    description: 'Default design palette — structure, terrain, services. Pulls the utility colour standard from definition_key.json so redline strokes match site layers.',
+    fields: [
+      t('id'),
+      t('name'),
+      // Structural / surface materials.
+      s('material', [
+        'structure', 'terrain', 'pavement',
+        'water', 'sewer', 'gas', 'electric', 'comms',
+        'redline',
+      ]),
+      // Sub-categorisation that downstream styling reads to colour
+      // the layer — values mirror the utility codes in
+      // public/data/definition_key.json.
+      s('utility_category', [
+        'communications', 'drainage', 'electricity', 'gas',
+        'sewer', 'water', 'unknown',
+      ]),
+      n('depth_m'),
+      t('notes'),
+    ],
+  },
   blank: {
     id: 'blank',
     label: 'Blank',
@@ -151,8 +176,10 @@ export const SCHEMA_PRESETS: Record<SchemaPresetId, SchemaPreset> = {
   },
 }
 
-/** Ordered list — controls dropdown order. */
+/** Ordered list — controls dropdown order. The materials preset sits
+ *  first since it's the new default for fresh sketches. */
 export const SCHEMA_PRESET_ORDER: SchemaPresetId[] = [
+  'materials',
   'blank',
   'survey_site',
   'existing_utilities',
@@ -162,3 +189,10 @@ export const SCHEMA_PRESET_ORDER: SchemaPresetId[] = [
   'building_design',
   'ifc_classes',
 ]
+
+/** Preset applied to newly-created sketches when no explicit preset
+ *  is requested. The materials palette gives every new sketch a
+ *  starting schema aligned with the design widget mockup; users
+ *  who want a clean slate can switch to "Blank" via the preset
+ *  dropdown. */
+export const DEFAULT_PRESET_ID: SchemaPresetId = 'materials'
