@@ -625,11 +625,11 @@ export default function CesiumViewerComponent({
     // default (already covered by sidebarOpen) and its undocked
     // floating variant anchors bottom-left, away from MAI's bottom-
     // right home position.
-    const measurePane = !isMobile && (measureActive || measureResult)
+    const measurePane = !isMobile && (measureActive || !!measureResult)
     const anyPanelOpen = sidebarOpen || designOpen || terrainOpen ||
       snapOpen || tableOpen || transparencyOpen || storyActive ||
       measurePane
-    setDocked(!isMobile && anyPanelOpen)
+    setDocked(!isMobile && !!anyPanelOpen)
   }, [sidebarOpen, designOpen, terrainOpen, snapOpen, tableOpen,
       transparencyOpen, storyActive, isMobile, setDocked,
       measureActive, measureResult])

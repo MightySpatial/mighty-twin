@@ -68,7 +68,7 @@ export default function SitesMapPage() {
 
   // ── Measure widget — wired into the sidebar's Measure tab ─────────
   const {
-    measureActive, measureRunning, measureResult,
+    measureActive, measureRunning, measureResult, measureMode, setMeasureMode,
     startMeasure, cancelMeasure, cleanupMeasure, setMeasureResult,
   } = useMeasure(viewerRef)
   const activeWidgetId = measureActive ? 'measure' : null
@@ -489,6 +489,8 @@ export default function SitesMapPage() {
         measureActive={measureActive}
         measureRunning={measureRunning}
         measureResult={measureResult}
+        measureMode={measureMode}
+        onModeChange={setMeasureMode}
         onCleanup={cleanupMeasure}
         onClearResult={() => setMeasureResult(null)}
       />
