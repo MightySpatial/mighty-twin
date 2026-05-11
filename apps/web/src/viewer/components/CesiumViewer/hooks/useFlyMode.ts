@@ -56,9 +56,11 @@ export interface FlySpeedDef {
   mps: number
 }
 
-export type FlySpeedId = 'cycling' | 'driving' | 'gliding' | 'jet' | 'fighterJet'
+export type FlySpeedId =
+  | 'walk' | 'cycling' | 'driving' | 'gliding' | 'jet' | 'fighterJet'
 
 export const FLY_SPEEDS: readonly FlySpeedDef[] = [
+  { id: 'walk',       label: 'Walk',        mps: 1.4  },  // 5 km/h
   { id: 'cycling',    label: 'Cycling',     mps: 4.2  },  // 15 km/h
   { id: 'driving',    label: 'Driving',     mps: 16.7 },  // 60 km/h
   { id: 'gliding',    label: 'Gliding',     mps: 41.7 },  // 150 km/h

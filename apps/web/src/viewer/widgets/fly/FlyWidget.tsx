@@ -16,7 +16,7 @@
 import { useEffect, useRef, useState } from 'react'
 import {
   Plane, X, ChevronLeft, ChevronRight,
-  Bike, Car, Wind, Zap,
+  Footprints, Bike, Car, Wind, Zap,
   type LucideIcon,
 } from 'lucide-react'
 import { MiniPlayer } from '../../components/MiniPlayer'
@@ -33,6 +33,7 @@ import './FlyWidget.css'
 // Per-gear Lucide icon. Kept in the widget (not the hook) because it's
 // a presentation concern — the hook only deals in speed values.
 const GEAR_ICON: Record<FlySpeedId, LucideIcon> = {
+  walk:       Footprints,
   cycling:    Bike,
   driving:    Car,
   gliding:    Wind,
