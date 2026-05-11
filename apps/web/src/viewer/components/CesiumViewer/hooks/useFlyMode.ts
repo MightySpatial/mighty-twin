@@ -139,6 +139,14 @@ export function useFlyMode({
   const keysRef = useRef<{ [key: string]: boolean }>({})
   const isMovingRef = useRef(false)
   const lastTickRef = useRef<JulianDate | null>(null)
+  // True once the user has pressed Q or E in the current activation.
+  // Gates the auto-level loop so cameras that arrive with residual
+  // roll (from flyTo / look-around / float drift) don't get
+  // "corrected" on activation — that correction was the source of
+  // the apparent spinning bug, since each correction round-tripped
+  // heading/pitch/roll through setView's HPR→orientation conversion
+  // and compounded float drift into the heading axis.
+  const hasRolledRef = useRef(false)
 
   // Capture the previous controller state so we can restore it on exit
   // — the caller might have orbit-disabled for some other reason.
@@ -180,8 +188,15 @@ export function useFlyMode({
       }
       keysRef.current = {}
       isMovingRef.current = false
+      hasRolledRef.current = false
+      lastTickRef.current = null
       return
     }
+
+    // Fresh activation — clear any stale roll-intent flag and force
+    // the first tick to skip (lastTickRef = null → dt = 0 path).
+    hasRolledRef.current = false
+    lastTickRef.current = null
 
     // Snapshot, then clamp the controller into "look only" mode.
     savedRef.current = {
@@ -218,6 +233,11 @@ export function useFlyMode({
       }
       const k = e.key.toLowerCase()
       keysRef.current[k] = true
+
+      // Record roll intent on first press so the auto-level loop can
+      // distinguish "user banked the camera" from "camera arrived
+      // with non-zero roll for unrelated reasons".
+      if (k === 'q' || k === 'e') hasRolledRef.current = true
 
       // Gear-shift shortcuts fire once per press, not every tick — the
       // host owns the gear state machine.
@@ -256,56 +276,74 @@ export function useFlyMode({
 
       // ── Rotation (arrow keys + Q/E) ────────────────────────────────
       //
-      // ↑/↓ → pitch; ←/→ → yaw; Q/E → roll. Cesium's ``setView`` is
-      // the cleanest path — read the current orientation, add the
-      // delta, write back. ``camera.lookUp/Down`` / ``twistLeft``
-      // exist but mutate the orientation triplet asymmetrically; an
-      // explicit setView keeps the axes orthogonal.
+      // ↑/↓ → pitch; ←/→ → yaw; Q/E → roll. Yaw/pitch go through
+      // setView (with a pitch clamp); roll uses ``camera.twistRight``
+      // which rotates the up vector around the direction axis. The
+      // distinction matters: twistRight leaves heading + pitch
+      // numerically identical (direction is unchanged), whereas
+      // setView round-trips heading→direction→heading and can
+      // compound float drift across many frames — that drift was the
+      // source of the spinning-on-activation bug.
       const yawSign = (k['arrowleft'] ? 1 : 0) - (k['arrowright'] ? 1 : 0)
       const pitchSign = (k['arrowup'] ? 1 : 0) - (k['arrowdown'] ? 1 : 0)
       const rollSign = (k['e'] ? 1 : 0) - (k['q'] ? 1 : 0)
 
-      isMovingRef.current = fwd !== 0 || right !== 0 || up !== 0
-        || yawSign !== 0 || pitchSign !== 0 || rollSign !== 0
-
       const cam = v.camera
+      const rate = CesiumMath.toRadians(turnRateRef.current) * dt
 
-      // Compute next orientation. We always recompute when any
-      // rotation axis is active, OR when roll is non-zero and the
-      // user is NOT actively rolling — that "drift back to wings-
-      // level" is what makes the bank feel like an aircraft stick.
       const rollActive = rollSign !== 0
-      const rollDrifting = !rollActive && Math.abs(cam.roll) > ROLL_EPSILON_RAD
-      const turning = yawSign !== 0 || pitchSign !== 0 || rollActive
+      // Auto-level only fires AFTER the user has actually rolled.
+      // Cameras that arrive with residual roll (flyTo, look-around,
+      // accumulated float drift) no longer trigger spurious
+      // corrections at activation.
+      const rollDrifting = !rollActive
+        && hasRolledRef.current
+        && Math.abs(cam.roll) > ROLL_EPSILON_RAD
 
-      if (turning || rollDrifting) {
-        const rate = CesiumMath.toRadians(turnRateRef.current) * dt
-        // Heading wraps freely; pitch clamps to ±89° to avoid gimbal
-        // flip at the poles.
+      isMovingRef.current = fwd !== 0 || right !== 0 || up !== 0
+        || yawSign !== 0 || pitchSign !== 0 || rollActive
+
+      // Yaw / pitch — only call setView when the user is actually
+      // pressing one of these axes. The clamp matters here because
+      // pitch shouldn't pass ±89° at the gimbal-lock singularity.
+      if (yawSign !== 0 || pitchSign !== 0) {
         const heading = cam.heading + yawSign * rate
         const rawPitch = cam.pitch + pitchSign * rate
         const pitch = Math.max(-PITCH_LIMIT_RAD, Math.min(PITCH_LIMIT_RAD, rawPitch))
-
-        let roll: number
-        if (rollActive) {
-          // Q/E held → bank at the same rate as pitch/yaw, clamped to
-          // ±60° so the camera doesn't fully invert.
-          roll = cam.roll + rollSign * rate
-          roll = Math.max(-ROLL_LIMIT_RAD, Math.min(ROLL_LIMIT_RAD, roll))
-        } else {
-          // No roll input → ease back toward 0 at AUTO_LEVEL rate.
-          // ``Math.min`` against the absolute roll prevents an
-          // over-shoot past zero on the final step.
-          const levelStep = CesiumMath.toRadians(AUTO_LEVEL_DEG_PER_SEC) * dt
-          const dir = cam.roll > 0 ? -1 : 1
-          roll = cam.roll + dir * Math.min(levelStep, Math.abs(cam.roll))
-          if (Math.abs(roll) < ROLL_EPSILON_RAD) roll = 0
-        }
-
         cam.setView({
           destination: cam.position,
-          orientation: { heading, pitch, roll },
+          orientation: { heading, pitch, roll: cam.roll },
         })
+      }
+
+      // Roll — active or auto-level. ``twistRight(+amount)`` banks
+      // right, ``twistRight(-amount)`` banks left. Direction is the
+      // axis of rotation, so heading and pitch are unchanged by
+      // construction (no float drift on those axes).
+      if (rollActive) {
+        // Clamp: only apply the portion of `rate` that keeps roll
+        // inside ±ROLL_LIMIT_RAD. ``twistRight(0)`` is a cheap no-op
+        // so the gate falls through naturally when already at limit.
+        const projected = cam.roll + rollSign * rate
+        let step = rollSign * rate
+        if (Math.abs(projected) > ROLL_LIMIT_RAD) {
+          const allowed = Math.max(0, ROLL_LIMIT_RAD - Math.abs(cam.roll))
+          step = rollSign * Math.min(rate, allowed)
+        }
+        if (step !== 0) cam.twistRight(step)
+      } else if (rollDrifting) {
+        // Ease back to wings-level at AUTO_LEVEL_DEG_PER_SEC. The
+        // ``Math.min`` against |cam.roll| prevents overshooting zero
+        // on the final step.
+        const levelStep = CesiumMath.toRadians(AUTO_LEVEL_DEG_PER_SEC) * dt
+        const dir = cam.roll > 0 ? -1 : 1
+        const step = dir * Math.min(levelStep, Math.abs(cam.roll))
+        cam.twistRight(step)
+        // Once we've drifted inside the epsilon, drop the flag so
+        // the loop stops firing until the user rolls again.
+        if (Math.abs(cam.roll) <= ROLL_EPSILON_RAD) {
+          hasRolledRef.current = false
+        }
       }
 
       if (fwd === 0 && right === 0 && up === 0) {
