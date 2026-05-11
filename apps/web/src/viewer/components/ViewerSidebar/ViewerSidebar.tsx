@@ -15,6 +15,7 @@ import {
   Home,
   Pin,
   PinOff,
+  Plus,
   Table as TableIcon,
 } from 'lucide-react'
 import type { Layer } from '../CesiumViewer/types'
@@ -97,6 +98,12 @@ interface ViewerSidebarProps {
    *  null = no auto-collapse (always-open behaviour). A pinned
    *  sidebar overrides this — pinning skips the timer entirely. */
   autocollapseDelayMs?: number | null
+  /** "+" Add Data tab — when this prop is provided, a Plus button
+   *  appears in the widget-tabs row. Click toggles the host's Add
+   *  Data panel (rendered by CesiumViewer). The button highlights
+   *  when `addDataOpen` is true. */
+  addDataOpen?: boolean
+  onToggleAddData?: () => void
 }
 
 function LayerSkeleton() {
@@ -141,6 +148,8 @@ export default function ViewerSidebar({
   widgetTabIds,
   onSitePickerSelect,
   autocollapseDelayMs,
+  addDataOpen = false,
+  onToggleAddData,
 }: ViewerSidebarProps) {
   const navigate = useNavigate()
   const [attrLayerId, setAttrLayerId] = useState<string | null>(null)
@@ -377,6 +386,23 @@ export default function ViewerSidebar({
                 </button>
               ))}
             </>
+          )}
+          {/* Add Data — opens the AddDataWidget floating panel. Sits
+              after the widget tabs so it reads as a separate "+ get
+              data in" affordance, not part of the primary action
+              row. */}
+          {onToggleAddData && (
+            <button
+              className={`sidebar-tab${addDataOpen ? ' sidebar-tab--active' : ''}`}
+              onClick={() => { onSidebarInteract(); onToggleAddData() }}
+              title="Add Data"
+              aria-pressed={addDataOpen}
+            >
+              <span className="sidebar-tab-icon"><Plus size={16} /></span>
+              <span className="sidebar-tab-label">
+                {sidebarOpen ? 'Add Data' : 'Add'}
+              </span>
+            </button>
           )}
           {/* Terrain now lives in the widget-tabs row above and
               routes through the right pane (drawer on mobile, docked

@@ -42,6 +42,8 @@ import { AttributeTableWidget } from '../../widgets/attribute-table'
 import { TerrainWidget, useTerrain, useTerrainMask, useUnderground } from '../../widgets/terrain'
 import { useSvoEngine } from '../../widgets/design/voxel/useSvoEngine'
 import { voxelLayerMaskRing } from '../../widgets/design/voxel/svoOps'
+import { AddDataWidget } from '../../widgets/add-data'
+import { useCadEngine } from '../../widgets/design/sketch/useCadEngine'
 import { flyToTarget } from '../../utils/flyToTarget'
 import BasemapWidget, { useBasemap } from '../../widgets/basemap'
 import TransparencyWidget, { useGlobeTransparency } from '../../widgets/transparency'
@@ -95,6 +97,15 @@ export default function CesiumViewerComponent({
   const { isMobile } = useBreakpoint()
   const widgetOverrides = useWidgetLayout()
   const [sidebarOpen, setSidebarOpen] = useState(!isMobile)
+  /** Add Data widget — toggled from the "+" tab in ViewerSidebar.
+   *  Floating panel mounted below; closes via the panel's × or by
+   *  clicking the sidebar tab again. */
+  const [addDataOpen, setAddDataOpen] = useState(false)
+  /** Active sketch id — passed to AddDataWidget so the "Add to
+   *  current sketch" destination knows which sketch to tag uploads
+   *  with. Read from useCadEngine here rather than threading through
+   *  every child. */
+  const activeSketchIdForUpload = useCadEngine(s => s.activeSketchId)
   const [searchOpen, setSearchOpen] = useState(false)
   const [activeExtPanel, setActiveExtPanel] = useState<string | null>(null)
   const [legendOpen, setLegendOpen] = useState(false)
@@ -783,6 +794,8 @@ export default function CesiumViewerComponent({
         pickerSites={!isMobile ? pickerSites : []}
         pickerLoading={pickerLoading}
         homeContent={site?.home_content ?? null}
+        addDataOpen={addDataOpen}
+        onToggleAddData={() => setAddDataOpen(o => !o)}
         autocollapseDelayMs={
           // Convert site.config.sidebar_autocollapse_delay (seconds)
           // → ms. null = never auto-collapse; otherwise default to
@@ -793,6 +806,26 @@ export default function CesiumViewerComponent({
         }
         onOpenSitePicker={() => setPickerOpen(o => !o)}
       />
+
+      {/* Add Data panel — floats next to the sidebar (or on top on
+          mobile). Mounted at the viewer-root level so it sits above
+          the canvas chrome but below the AI FAB (z-index 8000). */}
+      {addDataOpen && (
+        <div
+          style={{
+            position: 'absolute',
+            top: 12,
+            left: sidebarWidth + 12,
+            zIndex: 7000,
+          }}
+        >
+          <AddDataWidget
+            onClose={() => setAddDataOpen(false)}
+            siteSlug={siteId ?? null}
+            activeSketchId={activeSketchIdForUpload ?? null}
+          />
+        </div>
+      )}
 
       {/* Cesium canvas — offset by sidebar (left) + right pane (right) */}
       <div
