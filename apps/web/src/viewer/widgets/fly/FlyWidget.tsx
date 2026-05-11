@@ -90,6 +90,7 @@ export default function FlyWidget({
               aria-pressed={active}
             >
               <span className="fly-shifter-pill-label">{g.label}</span>
+              <span className="fly-shifter-pill-mps">{Math.round(g.mps)} m/s</span>
             </button>
           )
         })}
