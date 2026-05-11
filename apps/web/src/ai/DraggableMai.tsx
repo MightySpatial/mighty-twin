@@ -1,31 +1,20 @@
 /**
- * DraggableMai — floating, repositionable AI panel.
+ * DraggableMai — collapsible, draggable AI affordance.
  *
- * Desktop: fixed floating window, draggable anywhere by the grip handle.
- *          Position survives tab navigation (sessionStorage).
- * Phone:   draggable sparkle FAB + bottom sheet.
- *          The FAB can be long-pressed/dragged to reposition; a tap opens
- *          the chat sheet.
+ * Default state on every form factor: a small pink "Mai" FAB anchored
+ * bottom-right above the secondary rail. Clicking the FAB opens the
+ * chat panel (floating window on desktop, bottom sheet on phone).
+ * Dragging the FAB repositions it. Position survives tab navigation
+ * (sessionStorage). The chat panel anchors near the FAB on desktop so
+ * opening doesn't yank the user's attention to a new corner.
  */
 
 import { useRef, useState, useEffect, useCallback } from 'react'
 import { createPortal } from 'react-dom'
-import { Sparkles, ChevronUp, ChevronDown } from 'lucide-react'
+import { Sparkles, X } from 'lucide-react'
 import ChatPanel from './ChatPanel'
-import { useMaiDock } from './MaiContext'
 
-const POS_KEY = 'mighty:mai:pos'
 const FAB_KEY = 'mighty:mai:fab'
-
-function loadPos(): { x: number; y: number } | null {
-  try {
-    const raw = sessionStorage.getItem(POS_KEY)
-    return raw ? JSON.parse(raw) : null
-  } catch { return null }
-}
-function savePos(p: { x: number; y: number }) {
-  try { sessionStorage.setItem(POS_KEY, JSON.stringify(p)) } catch {}
-}
 
 function loadFabPos(): { x: number; y: number } | null {
   try {
@@ -37,23 +26,19 @@ function saveFabPos(p: { x: number; y: number }) {
   try { sessionStorage.setItem(FAB_KEY, JSON.stringify(p)) } catch {}
 }
 
-function defaultDesktopPos() {
-  // Default: bottom-right, above the bottom rail (~120px from bottom).
-  return {
-    x: Math.max(0, window.innerWidth - 380),
-    y: Math.max(0, window.innerHeight - 500),
-  }
-}
+/** Default FAB anchor: bottom-right of the viewport, sitting above the
+ *  secondary rail (~80 px clearance). Recomputed if sessionStorage is
+ *  empty on first mount. */
 function defaultFabPos() {
-  return { x: window.innerWidth - 70, y: window.innerHeight - 152 }
+  if (typeof window === 'undefined') return { x: 0, y: 0 }
+  return { x: window.innerWidth - 72, y: window.innerHeight - 152 }
 }
 
-/** Top-level entry point — renders the right widget for the current breakpoint.
- *  When `docked` is true (a sidebar widget is open), switches to a compact
- *  bottom bar anchored to the sidebar area instead of a floating panel. */
+/** Top-level entry point. Desktop and phone share the FAB pattern;
+ *  the only difference is how the expanded chat surfaces (anchored
+ *  floating panel on desktop, bottom sheet on phone). */
 export function DraggableMai() {
   const [isPhone, setIsPhone] = useState(() => window.innerWidth < 768)
-  const { docked } = useMaiDock()
 
   useEffect(() => {
     const mq = window.matchMedia('(max-width: 767px)')
@@ -62,236 +47,220 @@ export function DraggableMai() {
     return () => mq.removeEventListener('change', onChange)
   }, [])
 
-  if (isPhone) return <MaiFab />
-  if (docked) return <MaiDocked />
-  return <MaiDesktop />
+  return isPhone ? <MaiFab variant="phone" /> : <MaiFab variant="desktop" />
 }
 
 /* ──────────────────────────────────────────────────────────────────────────
-   DOCKED: collapsible bar pinned to the bottom of the left sidebar
-   Collapsed → single slim input-bar row (~48 px).
-   Expanded  → bottom ~1/3 of sidebar height with full ChatPanel.
+   MaiFab — pink draggable FAB + expandable surface.
+   On desktop the surface is an anchored floating chat panel.
+   On phone the surface is a bottom sheet (modal-like).
 ─────────────────────────────────────────────────────────────────────────── */
-// Sidebar is 328 px wide when open (matches CesiumViewer sidebarWidth).
-const SIDEBAR_W = 328
 
-function MaiDocked() {
-  const [expanded, setExpanded] = useState(false)
+const FAB_SIZE = 52
+const PANEL_W = 360
+const PANEL_H = 540
 
-  return createPortal(
-    <div
-      style={{
-        position: 'fixed',
-        left: 0,
-        bottom: 0,
-        width: SIDEBAR_W,
-        zIndex: 8000,
-        display: 'flex',
-        flexDirection: 'column',
-        background: 'rgba(13,14,20,0.97)',
-        backdropFilter: 'blur(16px)',
-        borderTop: '1px solid rgba(255,255,255,0.09)',
-        borderRight: '1px solid rgba(255,255,255,0.06)',
-        transition: 'height 220ms cubic-bezier(0.22,1,0.36,1)',
-        overflow: 'hidden',
-        height: expanded ? '38vh' : 48,
-        boxShadow: expanded ? '0 -8px 32px rgba(0,0,0,0.4)' : 'none',
-      }}
-    >
-      {/* Collapsed bar / header when expanded */}
-      <button
-        type="button"
-        onClick={() => setExpanded((e) => !e)}
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 8,
-          height: 48,
-          flexShrink: 0,
-          padding: '0 12px',
-          background: 'transparent',
-          border: 'none',
-          color: '#f0f2f8',
-          cursor: 'pointer',
-          textAlign: 'left',
-          width: '100%',
-        }}
-      >
-        <Sparkles size={14} color="#a78bfa" style={{ flexShrink: 0 }} />
-        {!expanded && (
-          <span style={{ flex: 1, fontSize: 13, color: 'rgba(240,242,248,0.45)' }}>
-            Ask Mai…
-          </span>
-        )}
-        {expanded && (
-          <span style={{ flex: 1, fontSize: 12, fontWeight: 600, color: '#f0f2f8' }}>
-            Mai (Mighty AI)
-          </span>
-        )}
-        {expanded
-          ? <ChevronDown size={14} color="rgba(240,242,248,0.4)" />
-          : <ChevronUp size={14} color="rgba(240,242,248,0.4)" />
-        }
-      </button>
-
-      {/* Chat content — only meaningful when expanded */}
-      {expanded && (
-        <div style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
-          <ChatPanel />
-        </div>
-      )}
-    </div>,
-    document.body,
-  )
-}
-
-/* ──────────────────────────────────────────────────────────────────────────
-   DESKTOP: floating draggable panel
-─────────────────────────────────────────────────────────────────────────── */
-function MaiDesktop() {
-  const [pos, setPos] = useState(() => loadPos() ?? defaultDesktopPos())
-  const dragging = useRef(false)
-  const origin = useRef({ mx: 0, my: 0, px: 0, py: 0 })
-
-  const clamp = useCallback((p: { x: number; y: number }) => ({
-    x: Math.max(0, Math.min(window.innerWidth - 360, p.x)),
-    y: Math.max(0, Math.min(window.innerHeight - 80, p.y)),
-  }), [])
-
-  const onHeaderMouseDown = (e: React.MouseEvent) => {
-    e.preventDefault()
-    dragging.current = true
-    origin.current = { mx: e.clientX, my: e.clientY, px: pos.x, py: pos.y }
-
-    const onMove = (ev: MouseEvent) => {
-      if (!dragging.current) return
-      const next = clamp({
-        x: origin.current.px + (ev.clientX - origin.current.mx),
-        y: origin.current.py + (ev.clientY - origin.current.my),
-      })
-      setPos(next)
-      savePos(next)
-    }
-    const onUp = () => {
-      dragging.current = false
-      document.removeEventListener('mousemove', onMove)
-      document.removeEventListener('mouseup', onUp)
-    }
-    document.addEventListener('mousemove', onMove)
-    document.addEventListener('mouseup', onUp)
-  }
-
-  return createPortal(
-    <div
-      style={{
-        position: 'fixed',
-        left: pos.x,
-        top: pos.y,
-        width: 360,
-        maxHeight: 'calc(100vh - 80px)',
-        zIndex: 8000,
-        display: 'flex',
-        flexDirection: 'column',
-        borderRadius: 12,
-        overflow: 'hidden',
-        boxShadow: '0 8px 32px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.08)',
-        background: 'rgba(15,15,20,0.97)',
-      }}
-    >
-      {/* Drag grip */}
-      <div
-        onMouseDown={onHeaderMouseDown}
-        title="Drag to reposition"
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          height: 22,
-          background: 'rgba(255,255,255,0.03)',
-          borderBottom: '1px solid rgba(255,255,255,0.06)',
-          cursor: 'grab',
-          userSelect: 'none',
-          flexShrink: 0,
-        }}
-      >
-        <span style={{ color: 'rgba(255,255,255,0.2)', fontSize: 14, letterSpacing: 4 }}>
-          ⠿ ⠿ ⠿
-        </span>
-      </div>
-      <div style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
-        <ChatPanel />
-      </div>
-    </div>,
-    document.body,
-  )
-}
-
-/* ──────────────────────────────────────────────────────────────────────────
-   PHONE: draggable FAB + bottom sheet
-─────────────────────────────────────────────────────────────────────────── */
-function MaiFab() {
+function MaiFab({ variant }: { variant: 'desktop' | 'phone' }) {
   const [fabPos, setFabPos] = useState(() => loadFabPos() ?? defaultFabPos())
-  const [sheetOpen, setSheetOpen] = useState(false)
-  const touchOrigin = useRef({ tx: 0, ty: 0, px: 0, py: 0, moved: false })
+  const [expanded, setExpanded] = useState(false)
+  // Drag bookkeeping. We use one pointer event handler that runs on
+  // both mouse and touch so the FAB feels identical on every device.
+  // `moved` discriminates a click (open/close) from a drag (reposition).
+  const drag = useRef({
+    px: 0, py: 0,        // pointerdown viewport coords
+    fx: 0, fy: 0,        // fab position when drag started
+    pointerId: -1,
+    moved: false,
+  })
 
   const clampFab = useCallback((p: { x: number; y: number }) => ({
-    x: Math.max(8, Math.min(window.innerWidth - 62, p.x)),
-    y: Math.max(8, Math.min(window.innerHeight - 62, p.y)),
+    x: Math.max(8, Math.min(window.innerWidth - FAB_SIZE - 8, p.x)),
+    y: Math.max(8, Math.min(window.innerHeight - FAB_SIZE - 8, p.y)),
   }), [])
 
-  const onTouchStart = (e: React.TouchEvent) => {
-    const t = e.touches[0]
-    touchOrigin.current = { tx: t.clientX, ty: t.clientY, px: fabPos.x, py: fabPos.y, moved: false }
-  }
-  const onTouchMove = (e: React.TouchEvent) => {
-    const t = e.touches[0]
-    const dx = t.clientX - touchOrigin.current.tx
-    const dy = t.clientY - touchOrigin.current.ty
-    if (Math.abs(dx) > 6 || Math.abs(dy) > 6) {
-      touchOrigin.current.moved = true
-      const next = clampFab({ x: touchOrigin.current.px + dx, y: touchOrigin.current.py + dy })
-      setFabPos(next)
-      saveFabPos(next)
+  const onPointerDown = (e: React.PointerEvent<HTMLButtonElement>) => {
+    // Capture so we get pointermove/up even if the pointer leaves the
+    // FAB while dragging.
+    e.currentTarget.setPointerCapture(e.pointerId)
+    drag.current = {
+      px: e.clientX,
+      py: e.clientY,
+      fx: fabPos.x,
+      fy: fabPos.y,
+      pointerId: e.pointerId,
+      moved: false,
     }
   }
-  const onTouchEnd = () => {
-    if (!touchOrigin.current.moved) setSheetOpen(true)
+  const onPointerMove = (e: React.PointerEvent<HTMLButtonElement>) => {
+    if (e.pointerId !== drag.current.pointerId) return
+    const dx = e.clientX - drag.current.px
+    const dy = e.clientY - drag.current.py
+    if (!drag.current.moved && Math.hypot(dx, dy) < 6) return
+    drag.current.moved = true
+    const next = clampFab({ x: drag.current.fx + dx, y: drag.current.fy + dy })
+    setFabPos(next)
+    saveFabPos(next)
   }
+  const onPointerUp = (e: React.PointerEvent<HTMLButtonElement>) => {
+    if (e.pointerId !== drag.current.pointerId) return
+    try { e.currentTarget.releasePointerCapture(e.pointerId) } catch { /* released */ }
+    drag.current.pointerId = -1
+  }
+  // Toggle on click. The drag.moved guard skips the synthetic click
+  // browsers fire after a mouse drag, so dragging to reposition
+  // doesn't accidentally also open/close the panel. Keyboard Enter/
+  // Space activation flows through here naturally (no pointer events
+  // fired → drag.moved stays false → toggle).
+  const onClick = () => {
+    if (drag.current.moved) {
+      drag.current.moved = false
+      return
+    }
+    setExpanded(prev => !prev)
+  }
+
+  // Re-clamp when the window resizes so the FAB never ends up off-screen.
+  useEffect(() => {
+    const onResize = () => setFabPos(prev => clampFab(prev))
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
+  }, [clampFab])
+
+  // Where the desktop panel sits relative to the FAB. The panel hangs
+  // up-and-left from the FAB so it stays on-screen no matter where
+  // the user parked the FAB; if that would push it off the top/left
+  // edge, we flip to align with the FAB's other corner.
+  const panelPos = (() => {
+    if (variant !== 'desktop') return { left: 0, top: 0 }
+    const margin = 12
+    let left = fabPos.x + FAB_SIZE - PANEL_W
+    let top = fabPos.y - PANEL_H - margin
+    if (left < margin) left = fabPos.x  // FAB near left edge → align panel left to FAB left
+    if (top < margin) top = fabPos.y + FAB_SIZE + margin  // not enough room above → drop below
+    // Final clamps so the panel itself never goes off-screen.
+    left = Math.max(margin, Math.min(window.innerWidth - PANEL_W - margin, left))
+    top = Math.max(margin, Math.min(window.innerHeight - PANEL_H - margin, top))
+    return { left, top }
+  })()
 
   return createPortal(
     <>
-      {/* FAB */}
+      {/* FAB — pink Mai badge. Always visible; click to expand, drag
+          to reposition. */}
       <button
         type="button"
         aria-label="Open Mighty AI"
-        onTouchStart={onTouchStart}
-        onTouchMove={onTouchMove}
-        onTouchEnd={onTouchEnd}
-        onClick={() => { if (!touchOrigin.current.moved) setSheetOpen(true) }}
+        aria-expanded={expanded}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
+        onPointerCancel={onPointerUp}
+        onClick={onClick}
         style={{
           position: 'fixed',
           left: fabPos.x,
           top: fabPos.y,
-          width: 52,
-          height: 52,
+          width: FAB_SIZE,
+          height: FAB_SIZE,
           borderRadius: '50%',
           border: 'none',
-          background: 'linear-gradient(135deg, #a78bfa, #ec4899)',
+          background: 'linear-gradient(135deg, #ec4899, #d946ef)',
           color: '#fff',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          cursor: 'pointer',
-          boxShadow: '0 6px 20px rgba(167,139,250,0.45)',
+          cursor: 'grab',
+          boxShadow: expanded
+            ? '0 8px 28px rgba(236, 72, 153, 0.55), 0 0 0 3px rgba(236, 72, 153, 0.18)'
+            : '0 6px 20px rgba(236, 72, 153, 0.45)',
           zIndex: 8000,
           touchAction: 'none',
+          transition: 'box-shadow 180ms ease, transform 180ms ease',
+          transform: expanded ? 'scale(0.94)' : 'scale(1)',
+          userSelect: 'none',
         }}
       >
-        <Sparkles size={22} />
+        <Sparkles size={22} strokeWidth={2.25} />
       </button>
 
-      {/* Bottom sheet */}
-      {sheetOpen && (
+      {/* Desktop: anchored floating chat panel near the FAB. */}
+      {expanded && variant === 'desktop' && (
+        <div
+          role="dialog"
+          aria-label="Mai chat"
+          style={{
+            position: 'fixed',
+            left: panelPos.left,
+            top: panelPos.top,
+            width: PANEL_W,
+            height: PANEL_H,
+            zIndex: 8000,
+            display: 'flex',
+            flexDirection: 'column',
+            borderRadius: 14,
+            overflow: 'hidden',
+            boxShadow:
+              '0 12px 40px rgba(0,0,0,0.55), 0 0 0 1px rgba(236, 72, 153, 0.22)',
+            background: 'rgba(15,15,20,0.97)',
+            backdropFilter: 'blur(16px)',
+            WebkitBackdropFilter: 'blur(16px)',
+          }}
+        >
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '8px 12px',
+              background: 'linear-gradient(135deg, rgba(236, 72, 153, 0.12), rgba(217, 70, 239, 0.06))',
+              borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
+              flexShrink: 0,
+            }}
+          >
+            <span
+              style={{
+                fontSize: 12,
+                fontWeight: 700,
+                letterSpacing: '0.08em',
+                textTransform: 'uppercase',
+                color: '#f0f2f8',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+              }}
+            >
+              <Sparkles size={12} color="#ec4899" />
+              Mai
+            </span>
+            <button
+              type="button"
+              onClick={() => setExpanded(false)}
+              aria-label="Close Mai"
+              style={{
+                width: 22,
+                height: 22,
+                background: 'transparent',
+                border: '1px solid rgba(255, 255, 255, 0.10)',
+                borderRadius: 5,
+                color: 'rgba(240, 242, 248, 0.7)',
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: 0,
+              }}
+            >
+              <X size={12} />
+            </button>
+          </div>
+          <div style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
+            <ChatPanel />
+          </div>
+        </div>
+      )}
+
+      {/* Phone: bottom sheet behind a backdrop. */}
+      {expanded && variant === 'phone' && (
         <div
           style={{
             position: 'fixed',
@@ -301,7 +270,7 @@ function MaiFab() {
             display: 'flex',
             alignItems: 'flex-end',
           }}
-          onClick={() => setSheetOpen(false)}
+          onClick={() => setExpanded(false)}
         >
           <div
             style={{
@@ -311,7 +280,7 @@ function MaiFab() {
               backdropFilter: 'blur(16px)',
               borderTopLeftRadius: 16,
               borderTopRightRadius: 16,
-              borderTop: '1px solid rgba(255,255,255,0.08)',
+              borderTop: '1px solid rgba(236, 72, 153, 0.25)',
               display: 'flex',
               flexDirection: 'column',
               overflow: 'hidden',
