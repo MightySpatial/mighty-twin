@@ -10,8 +10,32 @@ import { useState } from 'react'
 import { loadSettings, saveSettings } from './storage'
 import { AGENT_PRESETS, type AIProvider, type AISettings as AISettingsT } from './types'
 
+/** Where each provider's dashboard exposes API keys. Used to render a
+ *  "Get key" deep link next to the input so mobile users don't have to
+ *  hunt — and so paste-from-clipboard becomes the dominant path. */
+const KEY_URLS: Partial<Record<AIProvider, string>> = {
+  anthropic: 'https://console.anthropic.com/settings/keys',
+  openai: 'https://platform.openai.com/api-keys',
+  gemini: 'https://aistudio.google.com/apikey',
+  openrouter: 'https://openrouter.ai/keys',
+  groq: 'https://console.groq.com/keys',
+  together: 'https://api.together.xyz/settings/api-keys',
+  fireworks: 'https://fireworks.ai/account/api-keys',
+  perplexity: 'https://www.perplexity.ai/settings/api',
+  mistral: 'https://console.mistral.ai/api-keys/',
+  deepseek: 'https://platform.deepseek.com/api_keys',
+  xai: 'https://console.x.ai/',
+}
+
+/** Strip whitespace, stray quotes, and trailing newlines that mobile
+ *  pasteboards routinely add when copying from a dashboard. */
+function sanitizeKey(raw: string): string {
+  return raw.trim().replace(/^["']|["']$/g, '')
+}
+
 export default function AISettings() {
   const [s, setS] = useState<AISettingsT>(() => loadSettings())
+  const [showKey, setShowKey] = useState(false)
 
   const update = (patch: Partial<AISettingsT>) => {
     const next = { ...s, ...patch }
@@ -37,6 +61,8 @@ export default function AISettings() {
   }
 
   const activeCfg = s.byProvider[s.active] ?? {}
+  const isLocal = s.active === 'ollama' || s.active === 'lmstudio'
+  const keyUrl = KEY_URLS[s.active]
 
   const aiPanelVisible = s.aiPanelVisible !== false
 
@@ -75,7 +101,17 @@ export default function AISettings() {
         </span>
       </label>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginTop: 16 }}>
+      {/* Phone widths get a single column; ~520px+ goes side-by-side. The
+       *  hardcoded "1fr 1fr" we used to ship squished both columns on
+       *  phones and made the key field unusable. */}
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
+          gap: 16,
+          marginTop: 16,
+        }}
+      >
         <div>
           {Object.entries(groups).map(([label, presets]) => (
             <div key={label} style={{ marginBottom: 14 }}>
@@ -109,7 +145,7 @@ export default function AISettings() {
                       display: 'block',
                       width: '100%',
                       textAlign: 'left',
-                      padding: '8px 10px',
+                      padding: '10px 12px',
                       marginBottom: 4,
                       borderRadius: 6,
                       background: isActive ? 'rgba(99,102,241,0.16)' : 'transparent',
@@ -117,6 +153,7 @@ export default function AISettings() {
                       color: 'rgba(255,255,255,0.85)',
                       cursor: 'pointer',
                       font: 'inherit',
+                      minHeight: 44,
                     }}
                   >
                     <input
@@ -142,24 +179,89 @@ export default function AISettings() {
           <h3 style={{ fontSize: 13, marginTop: 0, color: 'rgba(255,255,255,0.85)' }}>
             Active provider · {s.active}
           </h3>
-          <Field label="API key">
-            <input
-              type="password"
-              value={activeCfg.apiKey ?? ''}
-              onChange={(e) => updProvider(s.active, { apiKey: e.target.value })}
-              placeholder={
-                s.active === 'ollama' || s.active === 'lmstudio'
-                  ? 'no key required'
-                  : 'paste key here'
-              }
-              style={inputStyle}
-            />
+          <Field
+            label="API key"
+            adornment={
+              keyUrl && !isLocal ? (
+                <a
+                  href={keyUrl}
+                  target="_blank"
+                  rel="noreferrer noopener"
+                  style={{
+                    fontSize: 11,
+                    color: 'rgba(129,140,248,0.95)',
+                    textDecoration: 'none',
+                  }}
+                >
+                  Get key ↗
+                </a>
+              ) : null
+            }
+          >
+            <div style={{ position: 'relative' }}>
+              <input
+                type={showKey || isLocal ? 'text' : 'password'}
+                value={activeCfg.apiKey ?? ''}
+                onChange={(e) =>
+                  updProvider(s.active, { apiKey: sanitizeKey(e.target.value) })
+                }
+                onPaste={(e) => {
+                  // Sanitize on paste so the displayed value matches what we
+                  // store; otherwise the iOS pasteboard's trailing newline
+                  // gets saved and silently breaks Authorization headers.
+                  const pasted = e.clipboardData.getData('text')
+                  const cleaned = sanitizeKey(pasted)
+                  if (cleaned !== pasted) {
+                    e.preventDefault()
+                    updProvider(s.active, { apiKey: cleaned })
+                  }
+                }}
+                placeholder={isLocal ? 'no key required' : 'paste key here'}
+                disabled={isLocal}
+                autoComplete="off"
+                autoCorrect="off"
+                autoCapitalize="off"
+                spellCheck={false}
+                inputMode="text"
+                aria-label="API key"
+                style={{ ...inputStyle, paddingRight: isLocal ? 10 : 60 }}
+              />
+              {!isLocal && (
+                <button
+                  type="button"
+                  onClick={() => setShowKey((v) => !v)}
+                  aria-label={showKey ? 'Hide API key' : 'Show API key'}
+                  aria-pressed={showKey}
+                  style={{
+                    position: 'absolute',
+                    right: 4,
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    height: 36,
+                    padding: '0 10px',
+                    borderRadius: 4,
+                    border: 'none',
+                    background: 'transparent',
+                    color: 'rgba(255,255,255,0.65)',
+                    cursor: 'pointer',
+                    fontSize: 11,
+                    fontWeight: 500,
+                  }}
+                >
+                  {showKey ? 'Hide' : 'Show'}
+                </button>
+              )}
+            </div>
           </Field>
           <Field label="Model">
             <input
               value={activeCfg.model ?? ''}
               onChange={(e) => updProvider(s.active, { model: e.target.value })}
               placeholder="e.g. claude-sonnet-4-6"
+              autoComplete="off"
+              autoCorrect="off"
+              autoCapitalize="off"
+              spellCheck={false}
               style={inputStyle}
             />
           </Field>
@@ -168,6 +270,11 @@ export default function AISettings() {
               value={activeCfg.baseUrl ?? ''}
               onChange={(e) => updProvider(s.active, { baseUrl: e.target.value })}
               placeholder="default"
+              autoComplete="off"
+              autoCorrect="off"
+              autoCapitalize="off"
+              spellCheck={false}
+              inputMode="url"
               style={inputStyle}
             />
           </Field>
@@ -177,10 +284,30 @@ export default function AISettings() {
   )
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({
+  label,
+  adornment,
+  children,
+}: {
+  label: string
+  adornment?: React.ReactNode
+  children: React.ReactNode
+}) {
   return (
     <label style={{ display: 'block', marginBottom: 8 }}>
-      <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)', marginBottom: 2 }}>{label}</div>
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'baseline',
+          justifyContent: 'space-between',
+          fontSize: 11,
+          color: 'rgba(255,255,255,0.6)',
+          marginBottom: 2,
+        }}
+      >
+        <span>{label}</span>
+        {adornment}
+      </div>
       {children}
     </label>
   )
@@ -188,11 +315,13 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 
 const inputStyle: React.CSSProperties = {
   width: '100%',
-  padding: '6px 10px',
+  padding: '10px 12px',
   borderRadius: 6,
   border: '1px solid rgba(255,255,255,0.08)',
   background: 'rgba(255,255,255,0.04)',
   color: 'rgba(255,255,255,0.9)',
   font: 'inherit',
-  fontSize: 13,
+  fontSize: 14,
+  minHeight: 44,
+  boxSizing: 'border-box',
 }
