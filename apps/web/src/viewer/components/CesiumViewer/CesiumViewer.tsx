@@ -36,7 +36,9 @@ import {
 import MeasureWidget, { useMeasure } from '../../widgets/measure'
 import { SnapshotWidget } from '../../widgets/snapshot'
 import { AttributeTableWidget } from '../../widgets/attribute-table'
-import { TerrainWidget, useTerrain, useUnderground } from '../../widgets/terrain'
+import { TerrainWidget, useTerrain, useTerrainMask, useUnderground } from '../../widgets/terrain'
+import { useSvoEngine } from '../../widgets/design/voxel/useSvoEngine'
+import { voxelLayerMaskRing } from '../../widgets/design/voxel/svoOps'
 import { flyToTarget } from '../../utils/flyToTarget'
 import BasemapWidget, { useBasemap } from '../../widgets/basemap'
 import TransparencyWidget, { useGlobeTransparency } from '../../widgets/transparency'
@@ -435,6 +437,83 @@ export default function CesiumViewerComponent({
   const terrain = useTerrain(viewerRef)
   const underground = useUnderground(viewerRef, globeAlpha, setGlobeAlpha)
 
+  // Terrain mask — owned at the viewer level so both the Terrain
+  // widget's Mask tab and the design widget can hand polygons to the
+  // same scene-side clipping state. Persists across tab/widget
+  // switches; cleared explicitly via mask.clear().
+  const terrainMask = useTerrainMask(viewerRef)
+  const svoChunks = useSvoEngine(s => s.chunks)
+  const svoActiveLayerId = useSvoEngine(s => s.activeLayerId)
+  const svoActiveLevel = useSvoEngine(s => s.activeLevel)
+  const svoLayers = useSvoEngine(s => s.layers)
+  const svoActiveLayer = useMemo(
+    () => svoLayers.find(l => l.id === svoActiveLayerId) ?? null,
+    [svoLayers, svoActiveLayerId],
+  )
+  const hasVoxelBounds = useMemo(() => {
+    if (!svoActiveLayer) return false
+    const ring = voxelLayerMaskRing(svoChunks, svoActiveLayer.id, svoActiveLevel, svoActiveLayer.datum)
+    return ring !== null
+  }, [svoChunks, svoActiveLayer, svoActiveLevel])
+  const onUseVoxelAsMask = useCallback(() => {
+    if (!svoActiveLayer) return
+    const ring = voxelLayerMaskRing(svoChunks, svoActiveLayer.id, svoActiveLevel, svoActiveLayer.datum)
+    if (!ring) return
+    terrainMask.setMaskFromPositions(ring, 'voxel')
+  }, [svoChunks, svoActiveLayer, svoActiveLevel, terrainMask])
+
+  /** Persist the active mask to the site's config so every future
+   *  viewer load applies it automatically. Backend already accepts
+   *  `config: dict[str, Any]` on PATCH, so no migration is needed —
+   *  the polygon lives under a new `terrain_mask_geojson` key. */
+  const onSaveMaskAsSiteDefault = useCallback(async () => {
+    if (!siteId) return
+    if (terrainMask.state.kind !== 'set') return
+    const payload = {
+      terrain_mask_geojson: {
+        type: 'Polygon' as const,
+        positions: terrainMask.state.positions,
+        source: terrainMask.state.source,
+        saved_at: new Date().toISOString(),
+      },
+    }
+    try {
+      const r = await fetch(`/api/spatial/sites/${encodeURIComponent(siteId)}`, {
+        method: 'PATCH',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${localStorage.getItem('accessToken') ?? ''}`,
+        },
+        body: JSON.stringify({ config: payload }),
+      })
+      if (!r.ok) throw new Error(`HTTP ${r.status}`)
+      // Mirror into local site config so the next viewer paint matches
+      // the persisted state — avoids the next-refresh flash.
+      setSiteConfigState(prev => ({ ...prev, terrain_mask_geojson: payload.terrain_mask_geojson }))
+    } catch (e) {
+      console.error('Save terrain mask failed', e)
+    }
+  }, [siteId, terrainMask.state])
+
+  // Apply the site-config-default terrain mask once per site load.
+  // Admins set this in the SiteDetailPage; viewers see the mask
+  // applied automatically on first render. We only set it when the
+  // mask is currently idle so we don't clobber a user-drawn mask
+  // mid-session.
+  const siteMaskApplied = useRef<string | null>(null)
+  useEffect(() => {
+    if (!siteId) return
+    if (siteMaskApplied.current === siteId) return
+    siteMaskApplied.current = siteId
+    const saved = (siteConfigState?.terrain_mask_geojson as unknown) as
+      | { positions?: Array<{ longitude: number; latitude: number }> }
+      | undefined
+    if (saved?.positions && saved.positions.length >= 3 && terrainMask.state.kind === 'idle') {
+      terrainMask.setMaskFromPositions(saved.positions, 'site')
+    }
+  }, [siteId, siteConfigState, terrainMask])
+
   // Design widget — right-side overlay (was a sidebar tab). Dispatches
   // design:open / design:close on the window so the AI ChatPanel can
   // minimise itself out of the way.
@@ -627,6 +706,10 @@ export default function CesiumViewerComponent({
       onUndergroundDisable={underground.disable}
       onUndergroundSet={underground.set}
       onUndergroundReset={underground.reset}
+      mask={terrainMask}
+      hasVoxelBounds={hasVoxelBounds}
+      onUseVoxelAsMask={onUseVoxelAsMask}
+      onSaveMaskAsSiteDefault={onSaveMaskAsSiteDefault}
       onClose={() => {
         terrain.clear()
         setTerrainOpen(false)
@@ -1110,6 +1193,9 @@ export default function CesiumViewerComponent({
           onUndergroundDisable={underground.disable}
           onUndergroundSet={underground.set}
           onUndergroundReset={underground.reset}
+          mask={terrainMask}
+          hasVoxelBounds={hasVoxelBounds}
+          onUseVoxelAsMask={onUseVoxelAsMask}
           onClose={() => {
             terrain.clear()
             setTerrainOpen(false)

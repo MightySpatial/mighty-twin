@@ -23,7 +23,7 @@ import {
   type SVODatum,
   type SVOGenerator,
 } from './types'
-import { blockAltitude, positionToChunkCoords } from './enuMath'
+import { blockAltitude, blockSizeAtLevel, enuToLonLatAlt, positionToChunkCoords } from './enuMath'
 
 // ── Keys ────────────────────────────────────────────────────────────────
 
@@ -342,9 +342,43 @@ export function floodFill(
 
 // ── Water fill ──────────────────────────────────────────────────────────
 
+/** Footprint of a voxel layer's loaded chunks at one level, projected
+ *  to WGS84 lon/lat as a four-corner ring (axis-aligned in the
+ *  layer's ENU frame). Returns null if no chunks are loaded — callers
+ *  should treat that as "no usable bounds yet".
+ *
+ *  Used by the terrain mask "Use voxel layer as mask" flow: the
+ *  voxel layer's footprint feeds straight into the globe-clipping
+ *  polygon collection. Axis-aligned ENU rectangle becomes a slightly
+ *  curved patch in lat/lon at high latitudes, which is fine for the
+ *  4-vertex ClippingPolygon Cesium constructs from it. */
+export function voxelLayerMaskRing(
+  chunks: Map<string, SVOChunk>,
+  layerId: string,
+  level: number,
+  datum: SVODatum,
+): Array<{ longitude: number; latitude: number }> | null {
+  const b = loadedBounds(chunks, layerId, level)
+  if (!b) return null
+  const s = blockSizeAtLevel(level)
+  // Four corners of the ENU rectangle covered by the loaded chunks.
+  // We use the block edges (not centres) so the mask matches the
+  // visible bounds the user sees.
+  const corners: Array<[number, number]> = [
+    [b.iMin * s,         b.jMin * s        ],
+    [(b.iMax + 1) * s,   b.jMin * s        ],
+    [(b.iMax + 1) * s,  (b.jMax + 1) * s   ],
+    [b.iMin * s,        (b.jMax + 1) * s   ],
+  ]
+  return corners.map(([east, north]) => {
+    const ll = enuToLonLatAlt(east, north, 0, datum)
+    return { longitude: ll.lon, latitude: ll.lat }
+  })
+}
+
 /** Bounding box (inclusive) of all loaded chunks for one layer at one
  *  level. Returns null if no chunks are loaded. */
-function loadedBounds(
+export function loadedBounds(
   chunks: Map<string, SVOChunk>,
   layerId: string,
   level: number,

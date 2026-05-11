@@ -14,18 +14,21 @@ import {
   ArrowDownToLine,
   Copy,
   Eye,
+  Hexagon,
   Layers,
   Loader,
   Mountain,
   MousePointer,
   RefreshCw,
   Route,
+  Scissors,
   Trash2,
   X,
 } from 'lucide-react'
 import ProfileChart from './ProfileChart'
 import type { SectionStatus, TerrainSection, LineEndpoints } from './useTerrain'
 import type { UndergroundState } from './useUnderground'
+import type { UseTerrainMaskApi } from './useTerrainMask'
 import { Cartographic, JulianDate, Math as CesiumMath } from 'cesium'
 import type { Viewer as CesiumViewerType } from 'cesium'
 
@@ -63,9 +66,24 @@ interface Props {
   onUndergroundDisable: () => void
   onUndergroundSet: (patch: Partial<UndergroundState>) => void
   onUndergroundReset: () => void
+  /** Mask tab API — when omitted, the Mask tab is hidden (mobile-only
+   *  fallback path). Wired in CesiumViewer via useTerrainMask. */
+  mask?: UseTerrainMaskApi
+  /** True when the design widget has an active voxel layer with
+   *  loaded bounds. Used to enable/disable the "Use voxel as mask"
+   *  button in the Mask tab. */
+  hasVoxelBounds?: boolean
+  /** Called when the user clicks "Use voxel layer as mask". The host
+   *  resolves the active voxel layer's footprint and feeds it back
+   *  into the mask via mask.setMaskFromPositions(). */
+  onUseVoxelAsMask?: () => void
+  /** Optional — when provided, the Mask tab surfaces a "Save as
+   *  default for this site" button that persists the current mask
+   *  to site.config.terrain_mask_geojson via the host. */
+  onSaveMaskAsSiteDefault?: () => Promise<void> | void
 }
 
-type Tab = 'section' | 'underground' | 'transparency'
+type Tab = 'section' | 'mask' | 'underground' | 'transparency'
 
 export default function TerrainWidget({
   status,
@@ -89,6 +107,10 @@ export default function TerrainWidget({
   onUndergroundDisable,
   onUndergroundSet,
   onUndergroundReset,
+  mask,
+  hasVoxelBounds = false,
+  onUseVoxelAsMask,
+  onSaveMaskAsSiteDefault,
 }: Props) {
   const [tab, setTab] = useState<Tab>('section')
   const [copied, setCopied] = useState(false)
@@ -224,6 +246,15 @@ export default function TerrainWidget({
         />
       )}
 
+      {tab === 'mask' && mask && (
+        <MaskTab
+          mask={mask}
+          hasVoxelBounds={hasVoxelBounds}
+          onUseVoxelAsMask={onUseVoxelAsMask}
+          onSaveMaskAsSiteDefault={onSaveMaskAsSiteDefault}
+        />
+      )}
+
       {tab === 'transparency' && (
         <TransparencyTab globeAlpha={globeAlpha} onSetGlobeAlpha={onSetGlobeAlpha} />
       )}
@@ -246,6 +277,9 @@ function Tabs({ tab, onChange }: { tab: Tab; onChange: (t: Tab) => void }) {
       <TabBtn active={tab === 'section'} onClick={() => onChange('section')}>
         Section
       </TabBtn>
+      <TabBtn active={tab === 'mask'} onClick={() => onChange('mask')}>
+        Mask
+      </TabBtn>
       <TabBtn active={tab === 'underground'} onClick={() => onChange('underground')}>
         Underground
       </TabBtn>
@@ -254,6 +288,186 @@ function Tabs({ tab, onChange }: { tab: Tab; onChange: (t: Tab) => void }) {
       </TabBtn>
     </div>
   )
+}
+
+/** Mask tab — polygon draw + voxel borrow + clear. The actual scene
+ *  clipping is wired by `useTerrainMask`; this is just the UI shell. */
+function MaskTab({
+  mask,
+  hasVoxelBounds,
+  onUseVoxelAsMask,
+  onSaveMaskAsSiteDefault,
+}: {
+  mask: UseTerrainMaskApi
+  hasVoxelBounds: boolean
+  onUseVoxelAsMask?: () => void
+  onSaveMaskAsSiteDefault?: () => Promise<void> | void
+}) {
+  const drawingState = mask.state.kind === 'drawing' ? mask.state : null
+  const setState_ = mask.state.kind === 'set' ? mask.state : null
+  const drawing = drawingState !== null
+  const set = setState_ !== null
+  const draftCount = drawingState ? drawingState.positions.length : 0
+  const source = setState_?.source ?? null
+  const setVertexCount = setState_?.positions.length ?? 0
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+      <p style={{
+        margin: 0,
+        fontSize: 11,
+        color: 'rgba(230,237,243,0.6)',
+        lineHeight: 1.45,
+      }}>
+        Cut a hole through the terrain (and any 3D tilesets) so you
+        can see what's underneath — for inspecting underground
+        utilities, voxel models, or subsurface layers.
+      </p>
+
+      {/* Status pill */}
+      <div style={{
+        padding: '6px 10px',
+        background: set
+          ? 'rgba(45,212,191,0.10)'
+          : drawing ? 'rgba(96,165,250,0.10)' : 'rgba(255,255,255,0.04)',
+        border: `1px solid ${set
+          ? 'rgba(45,212,191,0.3)'
+          : drawing ? 'rgba(96,165,250,0.3)' : 'rgba(255,255,255,0.08)'}`,
+        borderRadius: 6,
+        fontSize: 11,
+        color: set ? '#2dd4bf' : drawing ? '#60a5fa' : 'rgba(230,237,243,0.6)',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 6,
+      }}>
+        <Scissors size={12} />
+        {set && (
+          <>Mask active — {setVertexCount} vertices · source: {source}</>
+        )}
+        {drawing && (
+          <>Drawing — {draftCount} {draftCount === 1 ? 'vertex' : 'vertices'} · right-click or double-click to finish</>
+        )}
+        {!set && !drawing && <>No mask.</>}
+      </div>
+
+      {/* Primary action */}
+      {!drawing && (
+        <button
+          type="button"
+          onClick={mask.startDrawing}
+          style={maskBtnStyle('primary')}
+        >
+          <MousePointer size={12} />
+          {set ? 'Replace with new polygon' : 'Draw mask polygon'}
+        </button>
+      )}
+      {drawing && (
+        <div style={{ display: 'flex', gap: 6 }}>
+          <button
+            type="button"
+            onClick={mask.finishDrawing}
+            disabled={draftCount < 3}
+            style={{ ...maskBtnStyle('primary'), flex: 1, opacity: draftCount < 3 ? 0.4 : 1 }}
+          >
+            Finish ({draftCount} pts)
+          </button>
+          <button
+            type="button"
+            onClick={mask.cancelDrawing}
+            style={{ ...maskBtnStyle('ghost'), flex: 0 }}
+            aria-label="Cancel drawing"
+          >
+            <X size={12} />
+          </button>
+        </div>
+      )}
+
+      {/* Voxel-as-mask — only enabled when the design widget has an
+          active voxel layer with loaded chunks. Falls back to a
+          disabled state with a hint so users know to open the
+          design widget first. */}
+      <button
+        type="button"
+        onClick={onUseVoxelAsMask}
+        disabled={!hasVoxelBounds || drawing}
+        style={{
+          ...maskBtnStyle('secondary'),
+          opacity: (!hasVoxelBounds || drawing) ? 0.4 : 1,
+          cursor: (!hasVoxelBounds || drawing) ? 'not-allowed' : 'pointer',
+        }}
+        title={hasVoxelBounds
+          ? 'Use the active voxel layer\'s footprint as the mask'
+          : 'Open the Design widget and load a voxel layer first'}
+      >
+        <Hexagon size={12} />
+        Use voxel layer as mask
+      </button>
+
+      {set && onSaveMaskAsSiteDefault && (
+        <button
+          type="button"
+          onClick={() => { void onSaveMaskAsSiteDefault() }}
+          style={maskBtnStyle('secondary')}
+          title="Persist this mask to the site so every viewer sees it on load"
+        >
+          <ArrowDownToLine size={12} />
+          Save as default for this site
+        </button>
+      )}
+
+      {set && (
+        <button
+          type="button"
+          onClick={mask.clear}
+          style={{ ...maskBtnStyle('ghost'), width: 'auto', padding: '0 10px' }}
+        >
+          <Trash2 size={12} />
+          Clear mask
+        </button>
+      )}
+    </div>
+  )
+}
+
+function maskBtnStyle(variant: 'primary' | 'secondary' | 'ghost'): React.CSSProperties {
+  const base: React.CSSProperties = {
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    height: 30,
+    border: '1px solid transparent',
+    borderRadius: 6,
+    cursor: 'pointer',
+    fontFamily: 'inherit',
+    fontSize: 11,
+    fontWeight: 500,
+    transition: 'background 120ms',
+  }
+  switch (variant) {
+    case 'primary':
+      return {
+        ...base,
+        background: 'rgba(45,212,191,0.16)',
+        borderColor: 'rgba(45,212,191,0.3)',
+        color: '#2dd4bf',
+      }
+    case 'secondary':
+      return {
+        ...base,
+        background: 'rgba(96,165,250,0.10)',
+        borderColor: 'rgba(96,165,250,0.25)',
+        color: '#60a5fa',
+      }
+    case 'ghost':
+      return {
+        ...base,
+        background: 'transparent',
+        borderColor: 'rgba(255,255,255,0.10)',
+        color: 'rgba(230,237,243,0.7)',
+        width: 36,
+      }
+  }
 }
 
 function TabBtn({

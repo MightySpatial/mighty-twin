@@ -86,6 +86,15 @@ interface SiteDetail {
     intro_html?: string | null
     links?: { label: string; url: string }[]
   }
+  /** Site-default terrain mask — admins draw it in the viewer's
+   *  Terrain widget (Mask tab → "Save as default for this site").
+   *  Loaded automatically by every viewer on site open. */
+  terrain_mask_geojson?: {
+    type: 'Polygon'
+    positions: Array<{ longitude: number; latitude: number }>
+    source?: 'drawn' | 'voxel' | 'site'
+    saved_at?: string
+  } | null
 }
 
 export default function SiteDetailPage() {
@@ -571,6 +580,42 @@ export default function SiteDetailPage() {
                 placeholder="<p>Welcome to our project…</p>"
                 style={input(true)}
               />
+            </Row>
+          </Card>
+
+          <Card title="Terrain mask">
+            <Row label="Default mask">
+              {cfg.terrain_mask_geojson?.positions?.length ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                  <span style={{ fontSize: 12, color: 'rgba(230,237,243,0.7)' }}>
+                    {cfg.terrain_mask_geojson.positions.length} vertices · source: {cfg.terrain_mask_geojson.source ?? 'drawn'}
+                    {cfg.terrain_mask_geojson.saved_at && (
+                      <> · saved {new Date(cfg.terrain_mask_geojson.saved_at).toLocaleDateString()}</>
+                    )}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => patchConfig({ terrain_mask_geojson: null }, 'terrain_mask_geojson')}
+                    style={{
+                      padding: '4px 10px',
+                      fontSize: 11,
+                      background: 'rgba(248,113,113,0.10)',
+                      border: '1px solid rgba(248,113,113,0.3)',
+                      borderRadius: 4,
+                      color: '#f87171',
+                      cursor: 'pointer',
+                      fontFamily: 'inherit',
+                    }}
+                  >
+                    Clear default
+                  </button>
+                </div>
+              ) : (
+                <span style={{ fontSize: 12, color: 'rgba(230,237,243,0.5)' }}>
+                  None. Open the viewer, draw a mask in the Terrain widget's
+                  Mask tab, then click "Save as default for this site".
+                </span>
+              )}
             </Row>
           </Card>
 
