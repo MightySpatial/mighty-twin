@@ -13,7 +13,7 @@
  *           the expanded body for touch locomotion.
  */
 
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   Plane, X, ChevronLeft, ChevronRight,
   Footprints, Bike, Car, Wind, Zap,
@@ -77,6 +77,71 @@ export default function FlyWidget({
 }: FlyWidgetProps) {
   const inline = mode === 'inline'
   const idx = flySpeedIndex(speed)
+
+  // Floating-mode drag + dock. Pointer events on the panel header
+  // move the panel; if it ends up within DOCK_THRESHOLD of the
+  // bottom edge of the viewport the panel snaps to a compact
+  // bottom-centre bar (`docked` true). Dragging away from the
+  // bottom un-docks back to the free-floating layout.
+  const DOCK_THRESHOLD = 60
+  const [pos, setPos] = useState<{ x: number; y: number } | null>(null) // null = use CSS default
+  const [docked, setDocked] = useState(false)
+  const drag = useRef({ px: 0, py: 0, ox: 0, oy: 0, pointerId: -1, moved: false })
+
+  const onHeaderPointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    // Buttons inside the header (close, ACTIVE pill) get their own
+    // clicks — don't initiate a drag from them.
+    if ((e.target as HTMLElement).closest('button')) return
+    const panel = (e.currentTarget.parentElement as HTMLElement)
+    const rect = panel.getBoundingClientRect()
+    e.currentTarget.setPointerCapture(e.pointerId)
+    drag.current = {
+      px: e.clientX,
+      py: e.clientY,
+      ox: rect.left,
+      oy: rect.top,
+      pointerId: e.pointerId,
+      moved: false,
+    }
+  }, [])
+  const onHeaderPointerMove = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    if (e.pointerId !== drag.current.pointerId) return
+    const dx = e.clientX - drag.current.px
+    const dy = e.clientY - drag.current.py
+    if (!drag.current.moved && Math.hypot(dx, dy) < 4) return
+    drag.current.moved = true
+    const nx = Math.max(0, Math.min(window.innerWidth - 120, drag.current.ox + dx))
+    const ny = Math.max(0, Math.min(window.innerHeight - 40, drag.current.oy + dy))
+    setPos({ x: nx, y: ny })
+    // Live dock-state recompute while dragging — gives a clean
+    // visual confirmation when the user crosses the threshold.
+    setDocked((window.innerHeight - (ny + 40)) < DOCK_THRESHOLD)
+  }, [])
+  const onHeaderPointerUp = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    if (e.pointerId !== drag.current.pointerId) return
+    try { e.currentTarget.releasePointerCapture(e.pointerId) } catch { /* released */ }
+    drag.current.pointerId = -1
+  }, [])
+
+  // Clear an inline pos when docked so the CSS bottom-centre rule
+  // takes over (otherwise the inline left/top fights the centred
+  // layout). Re-position on resize so the panel can't end up off-
+  // screen when the viewport shrinks.
+  useEffect(() => {
+    if (!docked) return
+    setPos(null)
+  }, [docked])
+  useEffect(() => {
+    const onResize = () => setPos(p => {
+      if (!p) return p
+      return {
+        x: Math.max(0, Math.min(window.innerWidth - 120, p.x)),
+        y: Math.max(0, Math.min(window.innerHeight - 40, p.y)),
+      }
+    })
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
+  }, [])
 
   // Toast badge — show on every gear change, auto-dismiss after
   // ``TOAST_MS``. We seed ``prevRef`` from the initial value so the
@@ -238,10 +303,37 @@ export default function FlyWidget({
   // Desktop floating panel
   return (
     <>
-      <div className="fly-panel" role="dialog" aria-label="Fly mode">
-        <div className="fly-panel-header">
+      <div
+        className={`fly-panel${docked ? ' is-docked' : ''}`}
+        role="dialog"
+        aria-label="Fly mode"
+        style={pos && !docked ? { left: pos.x, top: pos.y, right: 'auto', bottom: 'auto' } : undefined}
+      >
+        <div
+          className="fly-panel-header"
+          onPointerDown={onHeaderPointerDown}
+          onPointerMove={onHeaderPointerMove}
+          onPointerUp={onHeaderPointerUp}
+          onPointerCancel={onHeaderPointerUp}
+          style={{ cursor: 'grab', touchAction: 'none' }}
+          title="Drag to reposition · drop near the bottom to dock"
+        >
           <Plane size={14} />
           <span className="fly-panel-title">Fly mode</span>
+          {/* ACTIVE / OFF pill — engages the camera locomotion loop
+              in useFlyMode. Without this the panel could open but
+              locomotion never fired because flyActive stayed false. */}
+          {onToggleActive && (
+            <button
+              type="button"
+              className={`fly-panel-pill${active ? ' on' : ' off'}`}
+              onClick={onToggleActive}
+              aria-pressed={active}
+              title={active ? 'Stop fly mode' : 'Engage fly mode'}
+            >
+              {active ? 'ACTIVE' : 'OFF'}
+            </button>
+          )}
           <button
             type="button"
             className="fly-panel-close"

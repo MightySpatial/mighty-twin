@@ -19,7 +19,52 @@
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
   color: #f0f2f8;
   padding: 12px;
-  transition: right 200ms ease;
+  transition: right 200ms ease, left 200ms ease, bottom 200ms ease, top 200ms ease;
+}
+
+/* Docked state — dropped near the bottom edge during a drag. The
+ * panel snaps to a compact bottom-centred bar (auto-width based on
+ * content) and hides the verbose key legend to keep the footprint
+ * small. Drag away from the bottom and it un-docks back to the
+ * original layout via the inline left/top from React state. */
+.fly-panel.is-docked {
+  bottom: 18px;
+  right: auto;
+  top: auto;
+  left: 50%;
+  transform: translateX(-50%);
+  width: auto;
+  max-width: calc(100vw - 32px);
+  padding: 8px 12px;
+  border-radius: 999px;
+}
+.fly-panel.is-docked .fly-keys { display: none; }
+.fly-panel.is-docked .fly-panel-header { margin-bottom: 0; }
+
+/* ACTIVE / OFF pill in the floating-panel header. Same colour
+ * language as the existing inline-mode pill so the toggle reads
+ * the same regardless of layout. */
+.fly-panel-pill {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  padding: 2px 9px;
+  border-radius: 20px;
+  font-family: inherit;
+  cursor: pointer;
+  margin-left: auto;
+  margin-right: 4px;
+  transition: background 120ms, color 120ms, border-color 120ms;
+}
+.fly-panel-pill.on {
+  background: rgba(45, 212, 191, 0.18);
+  color: #2dd4bf;
+  border: 1px solid rgba(45, 212, 191, 0.4);
+}
+.fly-panel-pill.off {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: rgba(240, 242, 248, 0.55);
 }
 /* When the right pane is docked open the floating Fly panel shifts
  * left so it doesn't sit under the pane. CesiumViewer adds the

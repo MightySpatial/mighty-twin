@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect, useState } from 'react'
-import { Route, Routes, useLocation } from 'react-router-dom'
+import { Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import { AppShell } from '@mightyspatial/app-shell'
 import { SettingsShell, usePersistedSettings } from '@mightyspatial/settings-panels'
 import { useAuth } from './viewer/hooks/useAuth'
@@ -65,6 +65,7 @@ export function App() {
   const { isAuthenticated, isLoading } = useAuth()
   const { settings } = usePersistedSettings()
   const location = useLocation()
+  const navigate = useNavigate()
   const [setupComplete, setSetupComplete] = useState<boolean | null>(null)
   const [aiPanelVisible, setAiPanelVisible] = useState(() => loadAiPanelVisible())
 
@@ -134,7 +135,13 @@ export function App() {
   return (
     <MaiProvider>
       <AppShell
-        brand={{ name: 'MightyTwin' }}
+        brand={{
+          name: 'MightyTwin',
+          // Wordmark click → overview. Most-natural escape hatch out
+          // of a per-site viewer; route to /viewer which renders
+          // SitesMapPage.
+          onClick: () => navigate('/viewer'),
+        }}
         viewer={<ViewerRoot />}
         adminContent={<AdminRoot />}
         settingsContent={<SettingsShell extraSections={TWIN_SETTINGS_SECTIONS} />}

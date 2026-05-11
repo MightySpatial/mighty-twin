@@ -7,6 +7,7 @@ import type { SiteConfigState } from '../../types/api'
 import { Cartesian3, CameraEventType, Math as CesiumMath } from 'cesium'
 import { useBreakpoint } from '../../hooks/useBreakpoint'
 import { useWidgetLayout } from '../../hooks/useWidgetLayout'
+import { useFloatingPanels } from '../../hooks/useFloatingPanels'
 import { HelpCircle, Search as SearchIcon, Ruler, List as LegendIcon } from 'lucide-react'
 import { getExtensionPanels } from '../../extensions'
 import type { ViewerContext } from '../../extensions/types'
@@ -97,10 +98,18 @@ export default function CesiumViewerComponent({
   const { isMobile } = useBreakpoint()
   const widgetOverrides = useWidgetLayout()
   const [sidebarOpen, setSidebarOpen] = useState(!isMobile)
-  /** Add Data widget — toggled from the "+" tab in ViewerSidebar.
-   *  Floating panel mounted below; closes via the panel's × or by
-   *  clicking the sidebar tab again. */
-  const [addDataOpen, setAddDataOpen] = useState(false)
+  /** Shared utility-panel coordinator. Table / Legend / Add Data
+   *  share a single-active slot; opening one auto-closes whichever
+   *  was previously active. MAI + Fly are exempt — they have their
+   *  own independent state. Derived booleans `addDataOpen` /
+   *  `legendOpen` / `tableOpen` keep the existing call-site reads
+   *  unchanged. */
+  const floatingPanel = useFloatingPanels(s => s.active)
+  const togglePanel = useFloatingPanels(s => s.toggle)
+  const openPanel = useFloatingPanels(s => s.open)
+  const addDataOpen = floatingPanel === 'add-data'
+  const legendOpen = floatingPanel === 'legend'
+  const tableOpen = floatingPanel === 'table'
   /** Active sketch id — passed to AddDataWidget so the "Add to
    *  current sketch" destination knows which sketch to tag uploads
    *  with. Read from useCadEngine here rather than threading through
@@ -108,7 +117,6 @@ export default function CesiumViewerComponent({
   const activeSketchIdForUpload = useCadEngine(s => s.activeSketchId)
   const [searchOpen, setSearchOpen] = useState(false)
   const [activeExtPanel, setActiveExtPanel] = useState<string | null>(null)
-  const [legendOpen, setLegendOpen] = useState(false)
   const [siteConfigState, setSiteConfigState] = useState<SiteConfigState>({})
   const extensionPanels = useMemo(() => getExtensionPanels(), [])
   const [infoWidgetOpen, setInfoWidgetOpen] = useState(false)
@@ -174,7 +182,7 @@ export default function CesiumViewerComponent({
     if (activeExtPanel) { setActiveExtPanel(null); return }
     if (basemapOpen) { setBasemapOpen(false); return }
     if (transparencyOpen) { setTransparencyOpen(false); return }
-    if (legendOpen) { setLegendOpen(false); return }
+    if (legendOpen) { openPanel(null); return }
     if (sidebarOpen) { setSidebarOpen(false); return }
   }, [measureActive, measureResult, searchOpen, activeExtPanel, basemapOpen, transparencyOpen, legendOpen, sidebarOpen, cancelMeasure, cleanupMeasure, setMeasureResult, setBasemapOpen, setTransparencyOpen])
 
@@ -459,8 +467,9 @@ export default function CesiumViewerComponent({
   // Snapshot widget — opens via Snap rail tile.
   const [snapOpen, setSnapOpen] = useState(false)
 
-  // Attribute table — opens via Table rail tile (T+1080).
-  const [tableOpen, setTableOpen] = useState(false)
+  // Attribute table — opens via Table sidebar tab. `tableOpen` is
+  // derived from useFloatingPanels above so it shares the single-
+  // active-utility-panel slot with Legend and Add Data.
 
 
   // Terrain section — opens via Terrain rail tile (T+1170). Folds the
@@ -704,10 +713,9 @@ export default function CesiumViewerComponent({
       case 'layers':
         setSidebarOpen((o) => !o); break
       case 'legend':
-        setLegendOpen((o) => !o); break
+        togglePanel('legend'); break
       case 'table':
-        // Table moved to the primary controller but still drawer-mounted.
-        setTableOpen(true); break
+        togglePanel('table'); break
       // ── Secondary widgets — route through the right pane on desktop ──
       // On mobile the pane isn't mounted, so we fall through to the
       // legacy per-widget open state and the floating wrappers below.
@@ -815,7 +823,7 @@ export default function CesiumViewerComponent({
         pickerLoading={pickerLoading}
         homeContent={site?.home_content ?? null}
         addDataOpen={addDataOpen}
-        onToggleAddData={() => setAddDataOpen(o => !o)}
+        onToggleAddData={() => togglePanel('add-data')}
         autocollapseDelayMs={
           // Convert site.config.sidebar_autocollapse_delay (seconds)
           // → ms. null = never auto-collapse; otherwise default to
@@ -840,7 +848,7 @@ export default function CesiumViewerComponent({
           }}
         >
           <AddDataWidget
-            onClose={() => setAddDataOpen(false)}
+            onClose={() => openPanel(null)}
             siteSlug={siteId ?? null}
             activeSketchId={activeSketchIdForUpload ?? null}
           />
@@ -1127,7 +1135,7 @@ export default function CesiumViewerComponent({
       />
 
       {/* Legend */}
-      {legendOpen && <LegendWidget layers={layers} onClose={() => setLegendOpen(false)} />}
+      {legendOpen && <LegendWidget layers={layers} onClose={() => openPanel(null)} />}
 
       {/* Mobile: floating layers panel (layer-toggle-btn at top: 60px) */}
       {isMobile && <MobileLayers
@@ -1160,7 +1168,7 @@ export default function CesiumViewerComponent({
           <button
             className={`mobile-tool-btn${legendOpen ? ' mobile-tool-btn--active' : ''}`}
             style={{ pointerEvents: 'auto', top: 210 }}
-            onClick={() => setLegendOpen(o => !o)}
+            onClick={() => togglePanel('legend')}
             title="Legend"
           >
             <LegendIcon size={20} />
@@ -1237,7 +1245,7 @@ export default function CesiumViewerComponent({
           siteName={site?.name}
           layers={layers}
           isMobile={isMobile}
-          onClose={() => setTableOpen(false)}
+          onClose={() => openPanel(null)}
         />
       )}
 

@@ -10,7 +10,8 @@
  *  set it up. The placeholder is also the right look for the demo.
  */
 
-import { ExternalLink, ImageIcon, Sparkles } from 'lucide-react'
+import { ArrowLeft, ExternalLink, ImageIcon, Sparkles } from 'lucide-react'
+import { Link } from 'react-router-dom'
 
 interface HomeContent {
   hero_image_url?: string | null
@@ -22,9 +23,16 @@ interface HomeContent {
 export default function HomePanel({
   siteName,
   content,
+  showAllSitesLink = true,
 }: {
   siteName: string | null
   content: HomeContent | null
+  /** Whether the "← All sites" escape hatch renders at the top of
+   *  the panel. Hidden when the host is in `overview_mode ===
+   *  'preload_site'` (single-site deployment where there's no
+   *  overview to navigate back to). Defaults to true so per-site
+   *  viewer pages get the link by default. */
+  showAllSitesLink?: boolean
 }) {
   const hasAny =
     !!content &&
@@ -35,6 +43,19 @@ export default function HomePanel({
 
   return (
     <div className="home-panel">
+      {/* "← All sites" escape hatch — small text link at the very top
+          of the home panel. Pairs with the wordmark click in the
+          topbar so users always have two ways back to the overview.
+          Gated on having a site context (no link on the overview
+          itself) AND on the caller's `showAllSitesLink` flag, which
+          hosts running in single-site mode (overview_mode ===
+          'preload_site') can flip to false. */}
+      {showAllSitesLink && siteName && (
+        <Link to="/viewer" className="home-panel-back">
+          <ArrowLeft size={11} /> All sites
+        </Link>
+      )}
+
       {/* Hero — video wins over still image when both are set. */}
       {content?.hero_video_url ? (
         <div className="home-panel-hero">
