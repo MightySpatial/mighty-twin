@@ -246,7 +246,10 @@ function ProviderCard({
   onDisconnect: () => void
 }) {
   return (
-    <div className={`aiset-card${connected ? ' is-connected' : ''}${isActive ? ' is-active' : ''}`}>
+    <div
+      className={`aiset-card${connected ? ' is-connected' : ''}${isActive ? ' is-active' : ''}`}
+      data-provider={display.id}
+    >
       {connected && <span className="aiset-connected-badge">✓ Connected</span>}
       <div className={`aiset-logo ${display.logoClass}`}>{display.glyph}</div>
       <div className="aiset-name">{display.name}</div>
@@ -446,6 +449,7 @@ function Step1({
   const isCodex = display.id === 'openai-codex'
   return (
     <>
+      {isCodex && <CodexDetect onToken={setApiKey} />}
       <div className="aiset-field">
         <label className="aiset-field-label">
           {isCodex ? 'Codex CLI session token' : 'API key'}
@@ -461,11 +465,12 @@ function Step1({
         <div className="aiset-hint">
           {isCodex ? (
             <>
-              In your terminal: <code>codex login</code> (one-time), then{' '}
-              <code>codex auth print</code> to copy the session token. Paste
-              it above.<br />
-              The token is stored in your browser like any other API key.
-              Don't have the Codex CLI yet? Install from{' '}
+              Run <code>openai login</code> (or <code>codex login</code>) in
+              your terminal once, then click <strong>Detect CLI
+              credentials</strong> above — the server reads your
+              <code>~/.openai/credentials</code> / <code>~/.config/openai/</code>{' '}
+              files and populates the token for you. Or paste it manually.
+              Don't have the CLI yet? Install from{' '}
               {display.keyDocsUrl && (
                 <a href={display.keyDocsUrl} target="_blank" rel="noopener noreferrer">{display.keyDocsLabel}</a>
               )}.
@@ -491,6 +496,95 @@ function Step1({
         />
       </div>
     </>
+  )
+}
+
+/** Codex CLI credential auto-detect — calls POST
+ *  /api/ai/detect-openai-cli on the backend. The server scans the
+ *  standard credential locations (~/.openai/credentials,
+ *  ~/.config/openai/auth.json, ~/.codex/auth.json, etc.) and returns
+ *  the bearer token if any is found. We surface the preview in-UI
+ *  and propagate the full token to the wizard's apiKey state so the
+ *  rest of the flow (model pick → Test connection → Save) is
+ *  unchanged. Errors fall through to a hint pointing at `openai
+ *  login` / `codex login`. */
+function CodexDetect({ onToken }: { onToken: (token: string) => void }) {
+  type Result =
+    | { found: true; preview: string; source: string }
+    | { found: false; paths: string[] }
+    | null
+  const [busy, setBusy] = useState(false)
+  const [result, setResult] = useState<Result>(null)
+  const [error, setError] = useState<string | null>(null)
+
+  async function detect() {
+    setBusy(true)
+    setError(null)
+    try {
+      const r = await fetch('/api/ai/detect-openai-cli', {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${localStorage.getItem('accessToken') ?? ''}`,
+        },
+      })
+      if (!r.ok) throw new Error(`HTTP ${r.status}`)
+      const data = await r.json() as {
+        found: boolean
+        token?: string
+        token_preview?: string
+        source_path?: string
+        paths_checked?: string[]
+      }
+      if (data.found && data.token) {
+        onToken(data.token)
+        setResult({ found: true, preview: data.token_preview ?? '••••', source: data.source_path ?? '' })
+      } else {
+        setResult({ found: false, paths: data.paths_checked ?? [] })
+      }
+    } catch (e) {
+      setError((e as Error).message)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <div className="aiset-codex-detect">
+      <button
+        type="button"
+        className="aiset-btn primary"
+        onClick={detect}
+        disabled={busy}
+      >
+        {busy ? 'Detecting…' : '🔑 Detect CLI credentials'}
+      </button>
+      {error && (
+        <div className="aiset-codex-detect__error">
+          Detection failed: {error}
+        </div>
+      )}
+      {result?.found && (
+        <div className="aiset-codex-detect__ok">
+          ✓ CLI credentials detected — token <code>{result.preview}</code>
+          <br />
+          <span className="aiset-codex-detect__source">
+            from <code>{result.source}</code>
+          </span>
+        </div>
+      )}
+      {result && !result.found && (
+        <div className="aiset-codex-detect__miss">
+          No CLI credentials found. Run <code>openai login</code> (or{' '}
+          <code>codex login</code>) in your terminal first.
+          <details>
+            <summary>Paths checked ({result.paths.length})</summary>
+            <ul>{result.paths.map(p => <li key={p}><code>{p}</code></li>)}</ul>
+          </details>
+        </div>
+      )}
+    </div>
   )
 }
 

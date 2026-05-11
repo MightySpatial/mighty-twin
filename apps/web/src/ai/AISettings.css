@@ -408,3 +408,71 @@
   opacity: 0.45;
   cursor: not-allowed;
 }
+
+/* ── Codex CLI card — visually distinct so users see it as a
+ *  separate auth method, not just another OpenAI-flavoured row. */
+.aiset-card[data-provider="openai-codex"] {
+  background: linear-gradient(135deg, rgba(33, 192, 122, 0.04), transparent 40%);
+  border-color: rgba(33, 192, 122, 0.18);
+}
+.aiset-card[data-provider="openai-codex"]:hover {
+  border-color: rgba(33, 192, 122, 0.34);
+}
+.aiset-card[data-provider="openai-codex"] .aiset-card-logo {
+  background: linear-gradient(135deg, #21c07a, #16996b);
+}
+
+/* ── Codex CLI detect block (Step 1 of the Codex wizard) ─────────── */
+.aiset-codex-detect {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  background: rgba(33, 192, 122, 0.05);
+  border: 1px solid rgba(33, 192, 122, 0.22);
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+.aiset-codex-detect .aiset-btn {
+  align-self: flex-start;
+}
+.aiset-codex-detect__ok {
+  font-size: 11.5px;
+  color: var(--aiset-emerald);
+  line-height: 1.5;
+}
+.aiset-codex-detect__ok code {
+  background: rgba(33, 192, 122, 0.10);
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-family: var(--aiset-font-mono);
+}
+.aiset-codex-detect__source {
+  color: var(--aiset-fg-muted);
+  font-size: 11px;
+}
+.aiset-codex-detect__miss {
+  font-size: 11.5px;
+  color: var(--aiset-fg-secondary);
+  line-height: 1.5;
+}
+.aiset-codex-detect__miss code {
+  font-family: var(--aiset-font-mono);
+  background: rgba(255, 255, 255, 0.04);
+  padding: 1px 5px;
+  border-radius: 3px;
+}
+.aiset-codex-detect__miss details {
+  margin-top: 6px;
+  font-size: 10.5px;
+  color: var(--aiset-fg-muted);
+}
+.aiset-codex-detect__miss summary { cursor: pointer; }
+.aiset-codex-detect__miss ul {
+  margin: 4px 0 0;
+  padding-left: 18px;
+}
+.aiset-codex-detect__error {
+  font-size: 11.5px;
+  color: var(--aiset-danger);
+}

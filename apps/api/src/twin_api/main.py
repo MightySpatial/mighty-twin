@@ -47,6 +47,7 @@ from .design_models_routes import router as design_models_router
 from .design_template_routes import router as design_template_router
 from .voxel_routes import router as voxel_router
 from .mai_voxel_routes import router as mai_voxel_router
+from .ai_routes import router as ai_router
 
 
 @asynccontextmanager
@@ -116,6 +117,7 @@ app.include_router(design_models_router)
 app.include_router(design_template_router)
 app.include_router(voxel_router)
 app.include_router(mai_voxel_router)
+app.include_router(ai_router)
 
 
 # All real now — dev_stubs router is empty (kept the import + include
@@ -151,6 +153,17 @@ if _VIEWER_DIST.is_dir():
             "/cesium",
             StaticFiles(directory=_CESIUM_DIR),
             name="viewer-cesium",
+        )
+
+    # Static JSON / reference data lives under /apps/web/public/data
+    # (Vite copies public/ → dist/), e.g. definition_key.json — the
+    # utility-category colour standard the redline UI consumes.
+    _DATA_DIR = _VIEWER_DIST / "data"
+    if _DATA_DIR.is_dir():
+        app.mount(
+            "/data",
+            StaticFiles(directory=_DATA_DIR),
+            name="viewer-data",
         )
 
     _INDEX_HTML = _VIEWER_DIST / "index.html"
