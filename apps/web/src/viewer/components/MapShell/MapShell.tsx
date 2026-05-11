@@ -153,8 +153,11 @@ export function MapShell({
 
   const widgets = useMemo<WidgetDef[]>(() => {
     const base = publicMode ? publicWidgets(DEFAULT_WIDGETS) : DEFAULT_WIDGETS
-    return applyWidgetOverrides(base, widgetOverrides)
-  }, [publicMode, widgetOverrides])
+    const withOverrides = applyWidgetOverrides(base, widgetOverrides)
+    // Fly locomotion needs WASD/arrows/Q/E — drop it from the rail and
+    // tools sheet on phones where there's no physical keyboard.
+    return phoneMode ? withOverrides.filter((w) => w.id !== 'fly') : withOverrides
+  }, [publicMode, widgetOverrides, phoneMode])
   const secondary = useMemo(() => widgetsForController(widgets, 'secondary'), [widgets])
 
   // Phone-only: tools sheet open/closed.
