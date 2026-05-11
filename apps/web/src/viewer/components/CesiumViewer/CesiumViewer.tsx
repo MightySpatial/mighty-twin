@@ -36,7 +36,6 @@ import {
 import MeasureWidget, { useMeasure } from '../../widgets/measure'
 import { SnapshotWidget } from '../../widgets/snapshot'
 import { AttributeTableWidget } from '../../widgets/attribute-table'
-import { StrikeWidget, useStrike } from '../../widgets/strike'
 import { TerrainWidget, useTerrain, useUnderground } from '../../widgets/terrain'
 import { flyToTarget } from '../../utils/flyToTarget'
 import BasemapWidget, { useBasemap } from '../../widgets/basemap'
@@ -48,7 +47,9 @@ import SplashOverlay from '../SplashOverlay/SplashOverlay'
 import TetraView from '../TetraView/TetraView'
 import ViewerSidebar from '../ViewerSidebar'
 import { DesignWidget } from '../../widgets/design'
-import { RightPane, type RightPaneTabId } from '../RightPane'
+import { RightPane } from '../RightPane'
+
+type ActiveRightWidget = 'story' | 'snap' | 'design' | 'terrain' | null
 
 // Mobile-only floating layer panel
 function MobileLayers({ layers, layersLoading, onLayerToggle, onLayerOpacityChange }: {
@@ -427,9 +428,6 @@ export default function CesiumViewerComponent({
   // Attribute table — opens via Table rail tile (T+1080).
   const [tableOpen, setTableOpen] = useState(false)
 
-  // Strike widget — opens via Strike rail tile (T+1110).
-  const [strikeOpen, setStrikeOpen] = useState(false)
-  const strike = useStrike(viewerRef)
 
   // Terrain section — opens via Terrain rail tile (T+1170). Folds the
   // existing globe-transparency knob into a tab inside the same panel.
@@ -475,36 +473,34 @@ export default function CesiumViewerComponent({
   // Include all widget panels that open floating overlays so Mai doesn't overlap them.
   const { setDocked } = useMaiDock()
   useEffect(() => {
-    const anyPanelOpen = sidebarOpen || designOpen || terrainOpen || strikeOpen ||
+    const anyPanelOpen = sidebarOpen || designOpen || terrainOpen ||
       snapOpen || tableOpen || legendOpen || transparencyOpen || storyActive
     setDocked(!isMobile && anyPanelOpen)
-  }, [sidebarOpen, designOpen, terrainOpen, strikeOpen, snapOpen, tableOpen,
+  }, [sidebarOpen, designOpen, terrainOpen, snapOpen, tableOpen,
       legendOpen, transparencyOpen, storyActive, isMobile, setDocked])
 
   // ── Right pane (desktop only) ─────────────────────────────────────
-  // The pane is the single home for Story / Snap / Design / Strike /
-  // Terrain. We derive the active tab from the existing per-widget
-  // open states so the rest of the file (activeToolId memo, Mai dock,
-  // ESC handlers) keeps working unchanged. Switching tabs clears
-  // every other state then sets the picked one.
+  // The pane has no controller of its own — it just shows whichever
+  // secondary widget is currently active. The trigger for setting that
+  // active widget lives in the ViewerSidebar widget-tabs row (Story /
+  // Snap / Design / Terrain) and in onMapShellAction (mobile + future
+  // deep links). Toggling clears every other secondary state.
   const [storyTabActive, setStoryTabActive] = useState(false)
-  const activeRightTab = useMemo<RightPaneTabId | null>(() => {
+  const activeRightWidget = useMemo<ActiveRightWidget>(() => {
     if (designOpen) return 'design'
     if (snapOpen) return 'snap'
-    if (strikeOpen) return 'strike'
     if (terrainOpen) return 'terrain'
     if (storyTabActive) return 'story'
     return null
-  }, [designOpen, snapOpen, strikeOpen, terrainOpen, storyTabActive])
-  const onRightTabChange = useCallback((next: RightPaneTabId) => {
+  }, [designOpen, snapOpen, terrainOpen, storyTabActive])
+  const setActiveRightWidget = useCallback((next: ActiveRightWidget) => {
     setDesignOpen(next === 'design')
     setSnapOpen(next === 'snap')
-    setStrikeOpen(next === 'strike')
     setTerrainOpen(next === 'terrain')
     setStoryTabActive(next === 'story')
     // Design widget dispatches open/close window events so the AI
     // ChatPanel docks out of the way — keep that behaviour even when
-    // the tab change comes from the pane rather than the old rail.
+    // the selection comes from the sidebar rather than the old rail.
     if (next === 'design') {
       window.dispatchEvent(new CustomEvent('design:open'))
     } else {
@@ -515,6 +511,10 @@ export default function CesiumViewerComponent({
     // until/unless we land an inline story player later.
     if (next === 'story' && onOpenStoryPicker) onOpenStoryPicker()
   }, [onOpenStoryPicker])
+  /** Sidebar widget-tab click handler: toggle if same, else set. */
+  const onSidebarWidgetTabToggle = useCallback((id: ActiveRightWidget) => {
+    setActiveRightWidget(activeRightWidget === id ? null : id)
+  }, [activeRightWidget, setActiveRightWidget])
 
   // Map MapShell action ids → existing widget state. Tools that aren't
   // implemented yet (table/story/strike) toggle a placeholder
@@ -534,14 +534,13 @@ export default function CesiumViewerComponent({
     if (terrainOpen) return 'terrain'
     if (snapOpen) return 'snap'
     if (tableOpen) return 'table'
-    if (strikeOpen) return 'strike'
     if (storyActive) return 'story'
     if (designOpen) return 'design'
     if (flyActive) return 'fly'
     if (storyTabActive) return 'story'
     if (basemapOpen) return null  // basemap lives in zoom column, not bottom rail
     return null
-  }, [searchOpen, measureActive, sidebarOpen, isMobile, legendOpen, transparencyOpen, terrainOpen, snapOpen, tableOpen, strikeOpen, storyActive, storyTabActive, basemapOpen, designOpen, flyActive])
+  }, [searchOpen, measureActive, sidebarOpen, isMobile, legendOpen, transparencyOpen, terrainOpen, snapOpen, tableOpen, storyActive, storyTabActive, basemapOpen, designOpen, flyActive])
 
   const onMapShellAction = useCallback((id: string) => {
     switch (id) {
@@ -564,17 +563,13 @@ export default function CesiumViewerComponent({
       // legacy per-widget open state and the floating wrappers below.
       case 'snap':
         if (isMobile) setSnapOpen(true)
-        else onRightTabChange(activeRightTab === 'snap' ? 'snap' : 'snap')
-        break
-      case 'strike':
-        if (isMobile) setStrikeOpen((o) => !o)
-        else onRightTabChange('strike')
+        else setActiveRightWidget(activeRightWidget === 'snap' ? null : 'snap')
         break
       case 'terrain':
         if (isMobile) {
           setTerrainOpen((o) => o ? false : true)
         } else {
-          onRightTabChange('terrain')
+          setActiveRightWidget(activeRightWidget === 'terrain' ? null : 'terrain')
         }
         break
       case 'story':
@@ -582,7 +577,7 @@ export default function CesiumViewerComponent({
           if (onOpenStoryPicker) onOpenStoryPicker()
           else setComingSoon(id)
         } else {
-          onRightTabChange('story')
+          setActiveRightWidget(activeRightWidget === 'story' ? null : 'story')
         }
         break
       case 'design':
@@ -593,7 +588,7 @@ export default function CesiumViewerComponent({
             return next
           })
         } else {
-          onRightTabChange('design')
+          setActiveRightWidget(activeRightWidget === 'design' ? null : 'design')
         }
         break
       case 'fly':
@@ -601,7 +596,7 @@ export default function CesiumViewerComponent({
         break
       default: break
     }
-  }, [measureActive, cancelMeasure, startMeasure, onOpenStoryPicker, isMobile, onRightTabChange, activeRightTab])
+  }, [measureActive, cancelMeasure, startMeasure, onOpenStoryPicker, isMobile, setActiveRightWidget, activeRightWidget])
 
   // Sidebar width: tab rail (64px) + content panel (280px) when open
   const sidebarWidth = !isMobile && sidebarOpen ? 344 : !isMobile ? 64 : 0
@@ -1046,23 +1041,6 @@ export default function CesiumViewerComponent({
         />
       )}
 
-      {/* Strike & dip — mobile only; desktop renders in the right pane. */}
-      {strikeOpen && isMobile && (
-        <StrikeWidget
-          active={strike.active}
-          pickedCount={strike.picked.length}
-          measurement={strike.measurement}
-          isMobile={isMobile}
-          onStart={strike.start}
-          onCancel={strike.cancel}
-          onClear={strike.clear}
-          onClose={() => {
-            strike.clear()
-            setStrikeOpen(false)
-          }}
-        />
-      )}
-
       {/* Design widget — mobile floating overlay only. Desktop renders
           inline inside the right pane (see RightPane render at the
           bottom of this file). ChatPanel listens for design:open /
@@ -1140,10 +1118,12 @@ export default function CesiumViewerComponent({
       )}
 
       {/* ── Right pane (desktop only) ─────────────────────────────────
-          Always visible at right edge. Hosts Story / Snap / Design /
-          Strike / Terrain as tab content + Fly in the fixed bottom
-          zone. Mobile keeps the legacy floating overlays for these
-          widgets until the mobile slide-in pane lands in a follow-up. */}
+          Always visible at right edge. Hosts whichever secondary widget
+          (Story / Snap / Design / Terrain) is currently active —
+          activation lives in the ViewerSidebar widget-tabs row, the
+          pane itself has no controller. Fly is pinned in the fixed
+          bottom zone. Mobile keeps the legacy floating overlays for
+          these widgets until the mobile slide-in pane lands later. */}
       {!isMobile && (
         <div
           style={{
@@ -1156,15 +1136,16 @@ export default function CesiumViewerComponent({
           }}
         >
           <RightPane
-            activeTab={activeRightTab}
-            onTabChange={onRightTabChange}
-            tabContent={{
-              story: (
+            bodyLabel={
+              activeRightWidget === 'story' ? 'Story'
+              : activeRightWidget === 'snap' ? 'Snap'
+              : activeRightWidget === 'design' ? 'Design'
+              : activeRightWidget === 'terrain' ? 'Terrain'
+              : null
+            }
+            body={
+              activeRightWidget === 'story' ? (
                 <div style={{ padding: 16, fontSize: 12, color: 'rgba(230,237,243,0.6)', lineHeight: 1.5 }}>
-                  {/* Story still hands off to an external picker today
-                      (no in-pane player wired). The pane tab acts as
-                      the entry point; the actual story workflow opens
-                      in its own modal via onOpenStoryPicker. */}
                   <p style={{ margin: 0 }}>Pick a story to play.</p>
                   {onOpenStoryPicker && (
                     <button
@@ -1186,8 +1167,8 @@ export default function CesiumViewerComponent({
                     </button>
                   )}
                 </div>
-              ),
-              snap: (
+              )
+              : activeRightWidget === 'snap' ? (
                 <SnapshotWidget
                   viewerRef={viewerRef}
                   siteSlug={siteId ?? null}
@@ -1200,41 +1181,30 @@ export default function CesiumViewerComponent({
                   onClose={() => setSnapOpen(false)}
                   mode="inline"
                 />
-              ),
-              design: viewerRef.current ? (
-                <DesignWidget
-                  viewer={viewerRef.current}
-                  onClose={closeDesign}
-                  siteSlug={siteId ?? null}
-                  mode="inline"
-                />
-              ) : (
-                <div style={{ padding: 16, fontSize: 12, color: 'rgba(230,237,243,0.4)' }}>
-                  Loading globe…
-                </div>
-              ),
-              strike: (
-                <StrikeWidget
-                  active={strike.active}
-                  pickedCount={strike.picked.length}
-                  measurement={strike.measurement}
-                  isMobile={false}
-                  onStart={strike.start}
-                  onCancel={strike.cancel}
-                  onClear={strike.clear}
-                  onClose={() => {
-                    strike.clear()
-                    setStrikeOpen(false)
-                  }}
-                  mode="inline"
-                />
-              ),
-              terrain: terrainSidebarPanel ?? (
-                <div style={{ padding: 16, fontSize: 12, color: 'rgba(230,237,243,0.4)' }}>
-                  Terrain idle.
-                </div>
-              ),
-            }}
+              )
+              : activeRightWidget === 'design' ? (
+                viewerRef.current ? (
+                  <DesignWidget
+                    viewer={viewerRef.current}
+                    onClose={closeDesign}
+                    siteSlug={siteId ?? null}
+                    mode="inline"
+                  />
+                ) : (
+                  <div style={{ padding: 16, fontSize: 12, color: 'rgba(230,237,243,0.4)' }}>
+                    Loading globe…
+                  </div>
+                )
+              )
+              : activeRightWidget === 'terrain' ? (
+                terrainSidebarPanel ?? (
+                  <div style={{ padding: 16, fontSize: 12, color: 'rgba(230,237,243,0.4)' }}>
+                    Terrain idle.
+                  </div>
+                )
+              )
+              : null
+            }
             bottomZone={
               <FlyWidget
                 speed={flySpeed}

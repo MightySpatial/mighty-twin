@@ -31,7 +31,6 @@ import {
   Hexagon,
   Table as TableIcon,
   BookOpen,
-  Slash,
   Mountain,
   Plane,
   ZoomIn,
@@ -63,7 +62,6 @@ const ICON_MAP: Record<string, IconComponent> = {
   Hexagon: Hexagon as IconComponent,
   Table: TableIcon as IconComponent,
   BookOpen: BookOpen as IconComponent,
-  Slash: Slash as IconComponent,
   Mountain: Mountain as IconComponent,
   Plane: Plane as IconComponent,
 }

@@ -15,6 +15,9 @@ import {
   List,
   Home,
   Table as TableIcon,
+  BookOpen,
+  Camera,
+  Hexagon,
 } from 'lucide-react'
 import type { Layer } from '../CesiumViewer/types'
 import type { ViewerContext, PanelProps } from '../../extensions/types'
@@ -279,31 +282,35 @@ export default function ViewerSidebar({
               </span>
             </button>
           ))}
-          {/* Primary widget action tabs — Search, Measure, Legend,
-              Table. Table moved here from the (now-retired) secondary
-              bottom rail; the click still opens the existing
-              AttributeTableWidget drawer / modal — only the entry
-              point relocated. */}
+          {/* Widget action tabs — Search / Measure / Legend / Table
+              (primary, sidebar-resident) and Story / Snap / Design /
+              Terrain (secondary, right-pane-resident). All flow
+              through the same onWidgetTabClick callback; the host
+              decides where each widget renders.
+              `panelHome: 'sidebar'` means clicking expands the sidebar
+              (the panel content lives here). `panelHome: 'right'`
+              keeps the sidebar at its current width because the
+              widget renders in the right pane instead. */}
           {onWidgetTabClick && (
             <>
               <div className="sidebar-tab-divider" />
-              {[
-                { id: 'search',  label: 'Search',  Icon: Search    },
-                { id: 'measure', label: 'Measure', Icon: Ruler     },
-                { id: 'legend',  label: 'Legend',  Icon: List      },
-                { id: 'table',   label: 'Table',   Icon: TableIcon },
-              ]
+              {([
+                { id: 'search',  label: 'Search',  Icon: Search    , panelHome: 'sidebar' },
+                { id: 'measure', label: 'Measure', Icon: Ruler     , panelHome: 'sidebar' },
+                { id: 'legend',  label: 'Legend',  Icon: List      , panelHome: 'sidebar' },
+                { id: 'table',   label: 'Table',   Icon: TableIcon , panelHome: 'modal'   },
+                { id: 'story',   label: 'Story',   Icon: BookOpen  , panelHome: 'right'   },
+                { id: 'snap',    label: 'Snap',    Icon: Camera    , panelHome: 'right'   },
+                { id: 'design',  label: 'Design',  Icon: Hexagon   , panelHome: 'right'   },
+              ] as const)
                 .filter(t => !widgetTabIds || widgetTabIds.includes(t.id))
-                .map(({ id, label, Icon }) => (
+                .map(({ id, label, Icon, panelHome }) => (
                 <button
                   key={id}
                   className={`sidebar-tab${activeWidgetId === id ? ' sidebar-tab--active' : ''}`}
                   onClick={() => {
                     onWidgetTabClick(id)
-                    // Open the sidebar for Search/Measure/Legend
-                    // (their UI lives in the sidebar panel). Table is
-                    // a modal, so leave the sidebar collapsed.
-                    if (!sidebarOpen && id !== 'table') setSidebarOpen(true)
+                    if (!sidebarOpen && panelHome === 'sidebar') setSidebarOpen(true)
                   }}
                   title={label}
                 >

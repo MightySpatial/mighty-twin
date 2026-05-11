@@ -16,38 +16,22 @@
   flex-shrink: 0;
 }
 
-/* ── Tab bar ─────────────────────────────────────────────────────── */
-.tabs {
+/* ── Header (slim active-widget label, no clickable controls) ─────── */
+.header {
   display: flex;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  height: 40px;
-  flex-shrink: 0;
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-.tabs::-webkit-scrollbar { display: none; }
-
-.tab {
-  flex: 0 0 auto;
-  display: inline-flex;
   align-items: center;
-  gap: 5px;
+  height: 32px;
+  flex-shrink: 0;
   padding: 0 14px;
-  font-size: 11px;
-  font-weight: 500;
-  color: rgba(230, 237, 243, 0.6);
-  background: transparent;
-  border: none;
-  border-bottom: 2px solid transparent;
-  cursor: pointer;
-  white-space: nowrap;
-  font-family: inherit;
-  transition: color 150ms;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(15, 19, 26, 0.55);
 }
-.tab:hover { color: #e6edf3; }
-.tabActive {
-  color: #2563eb;
-  border-bottom-color: #2563eb;
+.headerLabel {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(230, 237, 243, 0.7);
 }
 
 /* ── Content slot (active widget body) ───────────────────────────── */

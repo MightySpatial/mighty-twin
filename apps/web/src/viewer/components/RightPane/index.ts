@@ -1,1 +1,1 @@
-export { default as RightPane, type RightPaneProps, type RightPaneTabId } from './RightPane'
+export { default as RightPane, type RightPaneProps } from './RightPane'
