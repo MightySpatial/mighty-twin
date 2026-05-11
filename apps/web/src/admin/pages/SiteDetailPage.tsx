@@ -95,6 +95,11 @@ interface SiteDetail {
     source?: 'drawn' | 'voxel' | 'site'
     saved_at?: string
   } | null
+  /** Auto-collapse delay (seconds) for the left sidebar in the viewer.
+   *  `null` = never auto-collapse; positive number = delay in seconds;
+   *  0 = collapse immediately on load. Unset defaults to 3 in the
+   *  viewer so the affordance exists for every site. */
+  sidebar_autocollapse_delay?: number | null
 }
 
 export default function SiteDetailPage() {
@@ -581,6 +586,47 @@ export default function SiteDetailPage() {
                 style={input(true)}
               />
             </Row>
+          </Card>
+
+          <Card title="Sidebar">
+            <Row label="Auto-collapse delay">
+              <select
+                value={
+                  cfg.sidebar_autocollapse_delay === null
+                    ? 'never'
+                    : String(cfg.sidebar_autocollapse_delay ?? 3)
+                }
+                onChange={(e) => {
+                  const v = e.target.value
+                  patchConfig(
+                    {
+                      sidebar_autocollapse_delay:
+                        v === 'never' ? null : parseInt(v, 10),
+                    },
+                    'sidebar_autocollapse_delay',
+                  )
+                }}
+                style={input()}
+              >
+                <option value="0">Immediately (0s)</option>
+                <option value="3">After 3 s (default)</option>
+                <option value="5">After 5 s</option>
+                <option value="10">After 10 s</option>
+                <option value="never">Never (always open)</option>
+              </select>
+            </Row>
+            <p
+              style={{
+                margin: '4px 0 0',
+                fontSize: 11,
+                color: 'rgba(230,237,243,0.55)',
+                lineHeight: 1.45,
+              }}
+            >
+              Controls how long the left sidebar stays open before
+              auto-collapsing on viewer load. Users can pin the sidebar
+              to bypass this on a per-site basis.
+            </p>
           </Card>
 
           <Card title="Terrain mask">

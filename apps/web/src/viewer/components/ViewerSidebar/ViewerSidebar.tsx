@@ -3,7 +3,7 @@
  * Docked left-side panel: Layers tab + extension panels tab.
  * On mobile, falls back to the traditional floating layer panel.
  */
-import { useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Layers,
@@ -13,6 +13,8 @@ import {
   Ruler,
   List,
   Home,
+  Pin,
+  PinOff,
   Table as TableIcon,
 } from 'lucide-react'
 import type { Layer } from '../CesiumViewer/types'
@@ -90,6 +92,11 @@ interface ViewerSidebarProps {
    *  the standard behaviour from the viewer pages. The overview
    *  page passes a custom callback so it can fly the camera first. */
   onSitePickerSelect?: (slug: string) => void
+  /** Auto-collapse delay (ms). Sourced from `site.config
+   *  .sidebar_autocollapse_delay` × 1000 by the host. Falsy / 0 /
+   *  null = no auto-collapse (always-open behaviour). A pinned
+   *  sidebar overrides this — pinning skips the timer entirely. */
+  autocollapseDelayMs?: number | null
 }
 
 function LayerSkeleton() {
@@ -133,10 +140,64 @@ export default function ViewerSidebar({
   onWidgetTabClick,
   widgetTabIds,
   onSitePickerSelect,
+  autocollapseDelayMs,
 }: ViewerSidebarProps) {
   const navigate = useNavigate()
   const [attrLayerId, setAttrLayerId] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<string>('home')
+
+  // ── Pin / auto-collapse ────────────────────────────────────────────
+  // Pin state is per-site: a user who pinned the sidebar on Site A
+  // shouldn't see it pinned on Site B. siteId is the partition key;
+  // when none is passed (overview page) we fall back to a global
+  // 'overview' bucket. Stored in localStorage so the choice survives
+  // page reloads — autocollapse is a "first paint" affordance and
+  // sessionStorage would defeat the point.
+  const pinKey = `mighty:sidebar:pin:${siteId || 'overview'}`
+  const [pinned, setPinned] = useState<boolean>(() => {
+    try { return localStorage.getItem(pinKey) === '1' } catch { return false }
+  })
+  useEffect(() => {
+    try {
+      if (pinned) localStorage.setItem(pinKey, '1')
+      else localStorage.removeItem(pinKey)
+    } catch {
+      /* localStorage unavailable */
+    }
+  }, [pinned, pinKey])
+
+  // Auto-collapse: when not pinned + not mobile + a positive delay is
+  // configured + the sidebar is currently open, schedule a single
+  // collapse. Any user interaction with the sidebar (hover, click)
+  // cancels the timer so it doesn't slam shut mid-task. Once the
+  // user has manually dismissed the sidebar, the timer is not
+  // re-armed for the rest of the session — only an explicit
+  // expand / pin re-engages auto-behaviour on the next open.
+  const collapseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const cancelAutoCollapse = useCallback(() => {
+    if (collapseTimerRef.current) {
+      clearTimeout(collapseTimerRef.current)
+      collapseTimerRef.current = null
+    }
+  }, [])
+  useEffect(() => {
+    cancelAutoCollapse()
+    if (pinned) return
+    if (isMobile) return
+    if (!sidebarOpen) return
+    const delay = autocollapseDelayMs ?? 0
+    if (!delay || delay <= 0) return
+    collapseTimerRef.current = setTimeout(() => {
+      setSidebarOpen(false)
+    }, delay)
+    return cancelAutoCollapse
+  }, [pinned, isMobile, sidebarOpen, autocollapseDelayMs, setSidebarOpen, cancelAutoCollapse])
+
+  const onSidebarInteract = useCallback(() => {
+    // Any hover/click while the auto-collapse timer is armed cancels
+    // it — the user is engaged, so don't snatch the panel away.
+    cancelAutoCollapse()
+  }, [cancelAutoCollapse])
 
   // Sync activeTab when ext panel changes
   if (activeExtPanel && activeTab !== activeExtPanel) {
@@ -246,7 +307,11 @@ export default function ViewerSidebar({
   return (
     <>
       {/* Sidebar */}
-      <div className={`viewer-sidebar${sidebarOpen ? ' viewer-sidebar--open' : ''}`}>
+      <div
+        className={`viewer-sidebar${sidebarOpen ? ' viewer-sidebar--open' : ''}${pinned ? ' viewer-sidebar--pinned' : ''}`}
+        onMouseEnter={onSidebarInteract}
+        onPointerDown={onSidebarInteract}
+      >
         {/* Tab Bar */}
         <div className="sidebar-tabs">
           {/* Legacy fallback — when the sidebar can't host the in-tab
@@ -317,10 +382,32 @@ export default function ViewerSidebar({
               routes through the right pane (drawer on mobile, docked
               column on desktop). The old in-sidebar terrain panel
               path was retired alongside the right-pane rearchitecture. */}
+          {/* Pin toggle — only relevant when expanded. Pinning skips
+              the auto-collapse timer for this site/session. */}
+          {sidebarOpen && (
+            <button
+              className={`sidebar-collapse-btn${pinned ? ' is-pinned' : ''}`}
+              onClick={() => {
+                cancelAutoCollapse()
+                setPinned(p => !p)
+              }}
+              title={pinned ? 'Unpin — sidebar can auto-collapse' : 'Pin sidebar open'}
+              aria-pressed={pinned}
+            >
+              {pinned ? <Pin size={14} /> : <PinOff size={14} />}
+            </button>
+          )}
           {/* Collapse toggle */}
           <button
             className="sidebar-collapse-btn"
-            onClick={() => setSidebarOpen(!sidebarOpen)}
+            onClick={() => {
+              cancelAutoCollapse()
+              // Manual collapse drops the pinned flag — the user
+              // wants it closed; re-pinning is an explicit choice
+              // next time they open it.
+              if (sidebarOpen) setPinned(false)
+              setSidebarOpen(!sidebarOpen)
+            }}
             title={sidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'}
           >
             {sidebarOpen ? <ChevronLeft size={14} /> : <ChevronRight size={14} />}

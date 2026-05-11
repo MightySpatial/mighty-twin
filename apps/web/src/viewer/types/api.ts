@@ -120,6 +120,10 @@ export interface SiteData {
   /** Welcome content rendered by the sidebar Home tab. Comes from
    *  site.config.home_content, flattened to top-level by the API. */
   home_content?: HomeContent
+  /** Auto-collapse delay for the left sidebar in seconds. 0 / null =
+   *  never auto-collapse (always open). Flattened from
+   *  site.config.sidebar_autocollapse_delay by the API. */
+  sidebar_autocollapse_delay?: number | null
 }
 
 export interface HomeContent {

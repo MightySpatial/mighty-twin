@@ -783,6 +783,14 @@ export default function CesiumViewerComponent({
         pickerSites={!isMobile ? pickerSites : []}
         pickerLoading={pickerLoading}
         homeContent={site?.home_content ?? null}
+        autocollapseDelayMs={
+          // Convert site.config.sidebar_autocollapse_delay (seconds)
+          // → ms. null = never auto-collapse; otherwise default to
+          // 3s when unset so the affordance exists out of the box.
+          site?.sidebar_autocollapse_delay === null
+            ? null
+            : (site?.sidebar_autocollapse_delay ?? 3) * 1000
+        }
         onOpenSitePicker={() => setPickerOpen(o => !o)}
       />
 
