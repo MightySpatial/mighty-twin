@@ -16,8 +16,10 @@
  *    - Keys:
  *        W/S       — forward/back along camera heading
  *        A/D       — strafe left/right
- *        Q/E       — vertical up/down (real-world altitude)
- *        Space     — vertical up (alias for Q on qwerty laptops)
+ *        Q/E       — roll left/right (bank like an aircraft). Auto-
+ *                    levels back to 0° at 30°/sec when released, like
+ *                    a stick returning to centre. Clamped to ±60°.
+ *        Space     — climb (vertical up — useful when banked)
  *        Shift     — temporarily 2× the active speed (sprint hold)
  *        Esc       — exit fly mode (host clears active state)
  *        ↑ / ↓     — pitch camera up / down (look up / look down)
@@ -94,6 +96,14 @@ export function shiftGear(s: FlySpeed, delta: 1 | -1): FlySpeed {
 
 const DEFAULT_TURN_DEG_PER_SEC = 45
 const PITCH_LIMIT_RAD = CesiumMath.toRadians(89)
+const ROLL_LIMIT_RAD = CesiumMath.toRadians(60)
+/** Auto-leveling rate when Q/E aren't held — gentler than the active
+ *  bank rate so the camera "drifts" back to wings-level rather than
+ *  snapping. ~30°/sec ≈ 2 seconds from full ±60° bank to wings-level. */
+const AUTO_LEVEL_DEG_PER_SEC = 30
+/** Below this angle we snap roll to exactly 0 — avoids endless tiny
+ *  setView calls when the camera is effectively level. */
+const ROLL_EPSILON_RAD = CesiumMath.toRadians(0.1)
 
 interface UseFlyModeArgs {
   viewerRef: React.RefObject<CesiumViewerType | null>
@@ -236,35 +246,64 @@ export function useFlyMode({
 
       const k = keysRef.current
 
-      // ── Translation (WASD + QE + Space) ────────────────────────────
+      // ── Translation (WASD + Space) ─────────────────────────────────
+      // Q/E are reserved for roll. Space stays as the climb key; for
+      // descent the pilot pitches down and adds throttle.
       const fwd = (k['w'] ? 1 : 0) - (k['s'] ? 1 : 0)
       const right = (k['d'] ? 1 : 0) - (k['a'] ? 1 : 0)
-      const up = (k['e'] ? 1 : 0) + (k[' '] ? 1 : 0) - (k['q'] ? 1 : 0)
+      const up = k[' '] ? 1 : 0
 
-      // ── Rotation (arrow keys) ──────────────────────────────────────
+      // ── Rotation (arrow keys + Q/E) ────────────────────────────────
       //
-      // Up/Down → pitch; Left/Right → yaw (heading). Cesium's
-      // ``setView`` is the cleanest path — read the current orientation,
-      // add the delta, write back. ``camera.lookUp/Down`` / ``twistLeft``
-      // exist but mutate roll too, which we don't want.
+      // ↑/↓ → pitch; ←/→ → yaw; Q/E → roll. Cesium's ``setView`` is
+      // the cleanest path — read the current orientation, add the
+      // delta, write back. ``camera.lookUp/Down`` / ``twistLeft``
+      // exist but mutate the orientation triplet asymmetrically; an
+      // explicit setView keeps the axes orthogonal.
       const yawSign = (k['arrowleft'] ? 1 : 0) - (k['arrowright'] ? 1 : 0)
       const pitchSign = (k['arrowup'] ? 1 : 0) - (k['arrowdown'] ? 1 : 0)
+      const rollSign = (k['e'] ? 1 : 0) - (k['q'] ? 1 : 0)
 
       isMovingRef.current = fwd !== 0 || right !== 0 || up !== 0
-        || yawSign !== 0 || pitchSign !== 0
+        || yawSign !== 0 || pitchSign !== 0 || rollSign !== 0
 
       const cam = v.camera
 
-      if (yawSign !== 0 || pitchSign !== 0) {
+      // Compute next orientation. We always recompute when any
+      // rotation axis is active, OR when roll is non-zero and the
+      // user is NOT actively rolling — that "drift back to wings-
+      // level" is what makes the bank feel like an aircraft stick.
+      const rollActive = rollSign !== 0
+      const rollDrifting = !rollActive && Math.abs(cam.roll) > ROLL_EPSILON_RAD
+      const turning = yawSign !== 0 || pitchSign !== 0 || rollActive
+
+      if (turning || rollDrifting) {
         const rate = CesiumMath.toRadians(turnRateRef.current) * dt
-        // Heading wraps; pitch clamps to ±89° to avoid gimbal flip at
-        // the poles.
+        // Heading wraps freely; pitch clamps to ±89° to avoid gimbal
+        // flip at the poles.
         const heading = cam.heading + yawSign * rate
         const rawPitch = cam.pitch + pitchSign * rate
         const pitch = Math.max(-PITCH_LIMIT_RAD, Math.min(PITCH_LIMIT_RAD, rawPitch))
+
+        let roll: number
+        if (rollActive) {
+          // Q/E held → bank at the same rate as pitch/yaw, clamped to
+          // ±60° so the camera doesn't fully invert.
+          roll = cam.roll + rollSign * rate
+          roll = Math.max(-ROLL_LIMIT_RAD, Math.min(ROLL_LIMIT_RAD, roll))
+        } else {
+          // No roll input → ease back toward 0 at AUTO_LEVEL rate.
+          // ``Math.min`` against the absolute roll prevents an
+          // over-shoot past zero on the final step.
+          const levelStep = CesiumMath.toRadians(AUTO_LEVEL_DEG_PER_SEC) * dt
+          const dir = cam.roll > 0 ? -1 : 1
+          roll = cam.roll + dir * Math.min(levelStep, Math.abs(cam.roll))
+          if (Math.abs(roll) < ROLL_EPSILON_RAD) roll = 0
+        }
+
         cam.setView({
           destination: cam.position,
-          orientation: { heading, pitch, roll: cam.roll },
+          orientation: { heading, pitch, roll },
         })
       }
 
