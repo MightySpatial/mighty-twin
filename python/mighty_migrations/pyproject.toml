@@ -7,6 +7,7 @@ dependencies = [
     "alembic>=1.14.0",
     "sqlalchemy>=2.0.35",
     "geoalchemy2>=0.15.2",
+    "psycopg[binary]>=3.2.0",
     "mighty_models",
     "mighty_spatial",
 ]

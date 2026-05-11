@@ -867,6 +867,7 @@ dependencies = [
     { name = "geoalchemy2" },
     { name = "mighty-models" },
     { name = "mighty-spatial" },
+    { name = "psycopg", extra = ["binary"] },
     { name = "sqlalchemy" },
 ]
 
@@ -876,6 +877,7 @@ requires-dist = [
     { name = "geoalchemy2", specifier = ">=0.15.2" },
     { name = "mighty-models", editable = "python/mighty_models" },
     { name = "mighty-spatial", editable = "python/mighty_spatial" },
+    { name = "psycopg", extras = ["binary"], specifier = ">=3.2.0" },
     { name = "sqlalchemy", specifier = ">=2.0.35" },
 ]
 

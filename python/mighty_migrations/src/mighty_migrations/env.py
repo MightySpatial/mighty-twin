@@ -27,7 +27,12 @@ config = context.config
 
 # Let consumers override DATABASE_URL purely via env.
 if os.environ.get("DATABASE_URL"):
-    config.set_main_option("sqlalchemy.url", os.environ["DATABASE_URL"])
+    db_url = os.environ["DATABASE_URL"]
+    if db_url.startswith("postgresql://") or db_url.startswith("postgres://"):
+        db_url = "postgresql+psycopg" + db_url[db_url.index("://"):]
+    elif db_url.startswith("postgresql+psycopg2://"):
+        db_url = db_url.replace("postgresql+psycopg2://", "postgresql+psycopg://", 1)
+    config.set_main_option("sqlalchemy.url", db_url)
 
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
