@@ -26,7 +26,7 @@
  *   • RedlineCreationModal — Redline tile in the gallery
  *   • SchemaEditorModal    — Sliders button on each redline layer row
  */
-import { useEffect, useMemo, useRef, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import {
   Box,
   ChevronDown,
@@ -197,6 +197,10 @@ export default function LayersTab({ siteSlug = null }: Props) {
   // 280 px wide sidebar without collapsing.
   const [voxelDatumOpenId, setVoxelDatumOpenId] = useState<string | null>(null)
   const [voxelGenOpenId, setVoxelGenOpenId] = useState<string | null>(null)
+  // Collapsed groups in the gallery — keyed by groupId. Groups
+  // default to expanded; the user collapses them via the header
+  // chevron and the state lives only on the client (per-mount).
+  const [collapsedGroupIds, setCollapsedGroupIds] = useState<Set<string>>(() => new Set())
 
   // Sketch settings popover — id of the sketch whose gear is open.
   const [popoverSketchId, setPopoverSketchId] = useState<string | null>(null)
@@ -238,6 +242,38 @@ export default function LayersTab({ siteSlug = null }: Props) {
   }, [allNodes, activeSketchId])
 
   // ── Effects ──────────────────────────────────────────────────────────
+
+  // Voxel sketch ↔ engine sync. Two effects rather than one so each
+  // direction can react independently (otherwise the bidirectional
+  // update fights itself on first paint).
+  useEffect(() => {
+    if (!activeSketchId) return
+    const sk = sketches[activeSketchId]
+    if (!sk || sketchKind(sk) !== 'voxel') return
+    if (typeof sk.voxelLevel === 'number' && sk.voxelLevel !== activeVoxelLevel) {
+      setVoxelLevel(sk.voxelLevel)
+    }
+    if (sk.voxelRenderMode && sk.voxelRenderMode !== voxelRenderMode) {
+      setVoxelRenderMode(sk.voxelRenderMode)
+    }
+    // Intentionally only depends on activeSketchId — we want to
+    // hydrate engine ← sketch when the active sketch changes, not
+    // when the user mutates engine globals (that's the inverse
+    // direction handled below).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeSketchId])
+
+  useEffect(() => {
+    if (!activeSketchId) return
+    const sk = sketches[activeSketchId]
+    if (!sk || sketchKind(sk) !== 'voxel') return
+    if (sk.voxelLevel !== activeVoxelLevel || sk.voxelRenderMode !== voxelRenderMode) {
+      patchSketch(activeSketchId, {
+        voxelLevel: activeVoxelLevel,
+        voxelRenderMode,
+      })
+    }
+  }, [activeSketchId, activeVoxelLevel, voxelRenderMode, sketches, patchSketch])
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -741,7 +777,51 @@ export default function LayersTab({ siteSlug = null }: Props) {
           </div>
 
           <div className="sketch-gallery">
-            {sketchList.map(s => {
+            {/* Group-aware iteration — sketches are sorted so
+                ungrouped come first, then groups (alphabetised by
+                groupName) with their members. A group header
+                Fragment is emitted alongside the first member of
+                each group; collapsed groups still emit the header
+                but skip the per-sketch tiles. */}
+            {(() => {
+              const sorted = [...sketchList].sort((a, b) => {
+                const ag = a.groupName ?? ''
+                const bg = b.groupName ?? ''
+                if (ag !== bg) return ag.localeCompare(bg)
+                return a.name.localeCompare(b.name)
+              })
+              let prevGroupId: string | null | undefined = undefined
+              return sorted.map(s => {
+                const gid = s.groupId ?? null
+                const header = (gid !== prevGroupId && gid != null) ? gid : null
+                prevGroupId = gid
+                const collapsed = gid != null && collapsedGroupIds.has(gid)
+                const memberCount = gid != null ? sorted.filter(x => x.groupId === gid).length : 0
+              return (
+                <React.Fragment key={`row-${s.id}`}>
+                  {header && (
+                    <button
+                      type="button"
+                      key={`hdr-${header}`}
+                      className={`sketch-group-hdr${collapsed ? ' is-collapsed' : ''}`}
+                      onClick={() => setCollapsedGroupIds(prev => {
+                        const next = new Set(prev)
+                        if (next.has(header)) next.delete(header)
+                        else next.add(header)
+                        return next
+                      })}
+                      aria-expanded={!collapsed}
+                    >
+                      <span className="sketch-group-hdr__caret">
+                        {collapsed ? <ChevronRight size={11} /> : <ChevronDown size={11} />}
+                      </span>
+                      <span className="sketch-group-hdr__name">{s.groupName}</span>
+                      <span className="sketch-group-hdr__count">
+                        {memberCount} sketch{memberCount === 1 ? '' : 'es'}
+                      </span>
+                    </button>
+                  )}
+                  {!collapsed && (() => {
               const isActive = s.id === activeSketchId
               const isRedline = !!s.redline
               const isDefault = !!s.isDefault
@@ -837,6 +917,36 @@ export default function LayersTab({ siteSlug = null }: Props) {
                             <option key={o.value} value={o.value}>{o.label}</option>
                           ))}
                         </select>
+                      </label>
+
+                      {/* Group — putting sketches into a named folder.
+                          Sketches sharing the same groupName render
+                          under one header in the gallery. Clearing the
+                          field removes the sketch from its group. */}
+                      <label className="sketch-popover__field">
+                        <span className="sketch-popover__field-label">Group</span>
+                        <input
+                          className="sketch-popover__input"
+                          type="text"
+                          value={popoverSketch.groupName ?? ''}
+                          placeholder="e.g. Terminal Building"
+                          onChange={e => {
+                            const name = e.target.value
+                            if (!name.trim()) {
+                              patchSketch(popoverSketch.id, {
+                                groupId: undefined,
+                                groupName: undefined,
+                              })
+                              return
+                            }
+                            // Stable groupId from the slugified name
+                            // so re-typing the same name reuses the
+                            // group rather than creating a parallel
+                            // empty one.
+                            const groupId = name.trim().toLowerCase().replace(/\s+/g, '-')
+                            patchSketch(popoverSketch.id, { groupId, groupName: name })
+                          }}
+                        />
                       </label>
 
                       {/* Height datum */}
@@ -955,7 +1065,11 @@ export default function LayersTab({ siteSlug = null }: Props) {
                   )}
                 </div>
               )
-            })}
+            })()}
+                </React.Fragment>
+              )
+              })
+            })()}
             {/* New-sketch type picker — three tiles, one per kind.
                 Compact (no expanded popover) since each option is a
                 single named action. Redline preserves the dedicated
@@ -1015,6 +1129,47 @@ export default function LayersTab({ siteSlug = null }: Props) {
                   )
                 })}
               </select>
+            </div>
+          )}
+
+          {/* Voxel sketch preamble — block size + render mode live
+              at the SKETCH level (not per-layer) per the typed-sketch
+              spec. Renders only when the active sketch is a voxel
+              sketch; the engine's global state is kept in sync via
+              the effects above. */}
+          {sketchKind(activeSketch) === 'voxel' && (
+            <div className="voxel-sketch-prefs">
+              <div className="layers-tab__hd">Voxel settings · {activeSketch.name}</div>
+              <label className="voxel-control-row">
+                <span className="voxel-control-row__label">Block size</span>
+                <select
+                  className="voxel-control-row__select"
+                  value={activeVoxelLevel}
+                  onChange={e => setVoxelLevel(Number(e.target.value))}
+                >
+                  {VOXEL_LEVELS.map(lvl => (
+                    <option key={lvl} value={lvl}>
+                      {voxelLevelLabel(lvl)} (level {lvl})
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <div className="voxel-control-row">
+                <span className="voxel-control-row__label">Render mode</span>
+                <div className="voxel-mode-toggle" role="group" aria-label="Render mode">
+                  {RENDER_MODES.map(m => (
+                    <button
+                      key={m.value}
+                      type="button"
+                      className={`voxel-mode-toggle__btn${voxelRenderMode === m.value ? ' is-on' : ''}`}
+                      onClick={() => setVoxelRenderMode(m.value)}
+                      aria-pressed={voxelRenderMode === m.value}
+                    >
+                      {m.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
           )}
 

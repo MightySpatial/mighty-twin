@@ -1353,3 +1353,54 @@
   color: var(--dw-util);
   box-shadow: 0 0 0 1px var(--dw-util-d);
 }
+
+/* ── Sketch group header ────────────────────────────────────────── */
+/* Spans the full gallery row width so the grouped tiles below it
+ * read as members of the named folder. Click toggles collapse. */
+.sketch-group-hdr {
+  flex-basis: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  background: var(--dw-fill-2);
+  border: 1px solid var(--dw-border);
+  border-radius: var(--dw-radius-md);
+  cursor: pointer;
+  font-family: inherit;
+  color: var(--dw-text-2);
+  margin-bottom: 2px;
+  transition: background var(--dw-dur-fast);
+}
+.sketch-group-hdr:hover { background: var(--dw-fill-3); color: var(--dw-text-strong); }
+.sketch-group-hdr.is-collapsed { background: var(--dw-fill-1); }
+.sketch-group-hdr__caret {
+  display: inline-flex;
+  color: var(--dw-text-3);
+}
+.sketch-group-hdr__name {
+  flex: 1;
+  font-size: var(--dw-fs-12);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--dw-text-strong);
+  text-align: left;
+}
+.sketch-group-hdr__count {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--dw-text-3);
+}
+
+/* ── Voxel sketch preamble ───────────────────────────────────────── */
+.voxel-sketch-prefs {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dw-space-2);
+  padding: var(--dw-space-3);
+  background: rgba(192, 132, 252, 0.05);
+  border: 1px solid rgba(192, 132, 252, 0.18);
+  border-radius: var(--dw-radius-md);
+  margin-bottom: var(--dw-space-3);
+}

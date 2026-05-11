@@ -230,6 +230,13 @@ export interface Sketch {
    *  this set; persistence loads the default sketch as the active one
    *  on next session. Toggled from the LayersTab settings popover. */
   isDefault?: boolean
+  /** Voxel sketch settings — only consulted when kind === 'voxel'.
+   *  Mirror the SVO engine's global `activeLevel` + `renderMode` so
+   *  switching between voxel sketches loads the per-sketch choices
+   *  (engine globals are otherwise shared across all loaded layers).
+   *  Defaults: level 0 (1 m blocks) + solid render mode. */
+  voxelLevel?: number
+  voxelRenderMode?: 'solid' | 'textured' | 'raytrace' | 'wireframe' | 'xray'
 }
 
 /** Resolve the effective kind for a sketch — explicit field takes
