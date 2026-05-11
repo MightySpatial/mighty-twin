@@ -38,10 +38,10 @@ RUN pnpm --filter @mighty-twin/web build
 # ---- Stage 2: api ----------------------------------------------------------
 FROM python:3.12-slim AS api
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
-        git ca-certificates libpq5 \
-    && rm -rf /var/lib/apt/lists/*
-
+# psycopg[binary] bundles its own libpq so no libpq5 needed.
+# ca-certificates is already present in python:3.12-slim.
+# git is not needed at runtime — drop the apt-get step entirely to avoid
+# the memory spike that kills Railway's builder at [api 2/10].
 RUN pip install --no-cache-dir uv
 
 WORKDIR /app
