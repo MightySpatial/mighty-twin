@@ -14,18 +14,31 @@
  */
 
 import { useEffect, useRef, useState } from 'react'
-import { Plane, X, ChevronLeft, ChevronRight } from 'lucide-react'
+import {
+  Plane, X, ChevronLeft, ChevronRight,
+  Bike, Car, Wind, Zap,
+  type LucideIcon,
+} from 'lucide-react'
 import { MiniPlayer } from '../../components/MiniPlayer'
-import type { FlySpeed } from '../../components/CesiumViewer/hooks/useFlyMode'
+import type { FlySpeed, FlySpeedId } from '../../components/CesiumViewer/hooks/useFlyMode'
 import {
   FLY_SPEEDS,
   flySpeedLabel,
-  flySpeedIcon,
   flySpeedMps,
   flySpeedIndex,
   shiftGear,
 } from '../../components/CesiumViewer/hooks/useFlyMode'
 import './FlyWidget.css'
+
+// Per-gear Lucide icon. Kept in the widget (not the hook) because it's
+// a presentation concern — the hook only deals in speed values.
+const GEAR_ICON: Record<FlySpeedId, LucideIcon> = {
+  cycling:    Bike,
+  driving:    Car,
+  gliding:    Wind,
+  jet:        Plane,
+  fighterJet: Zap,
+}
 
 export interface FlyWidgetProps {
   speed: FlySpeed
@@ -97,6 +110,7 @@ export default function FlyWidget({
       <div className="fly-shifter-pills">
         {FLY_SPEEDS.map((g, i) => {
           const active = i === idx
+          const Icon = GEAR_ICON[g.id]
           return (
             <button
               key={g.id}
@@ -106,7 +120,9 @@ export default function FlyWidget({
               title={`${g.label} · ${g.mps.toFixed(1)} m/s`}
               aria-pressed={active}
             >
-              <span className="fly-shifter-pill-icon" aria-hidden>{g.icon}</span>
+              <span className="fly-shifter-pill-icon" aria-hidden>
+                <Icon size={16} strokeWidth={1.75} />
+              </span>
               <span className="fly-shifter-pill-label">{g.label}</span>
             </button>
           )
@@ -127,7 +143,6 @@ export default function FlyWidget({
 
   const toastNode = toast ? (
     <div className="fly-toast" role="status" aria-live="polite">
-      <span className="fly-toast-icon" aria-hidden>{flySpeedIcon(toast)}</span>
       <span className="fly-toast-label">{flySpeedLabel(toast)}</span>
     </div>
   ) : null
@@ -172,7 +187,7 @@ export default function FlyWidget({
           placement="bottom"
           icon={<Plane size={14} />}
           title="Fly mode"
-          subtitle={`${flySpeedIcon(speed)} ${flySpeedLabel(speed)} · ${flySpeedMps(speed).toFixed(1)} m/s`}
+          subtitle={`${flySpeedLabel(speed)} · ${flySpeedMps(speed).toFixed(1)} m/s`}
           defaultOpen
           maxExpandedHeight={340}
           onClose={onClose}

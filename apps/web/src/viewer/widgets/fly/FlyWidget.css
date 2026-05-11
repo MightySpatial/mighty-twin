@@ -111,7 +111,10 @@
   color: #2dd4bf;
 }
 .fly-shifter-pill-icon {
-  font-size: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: inherit;
   line-height: 1;
 }
 .fly-shifter-pill-label {
@@ -232,7 +235,6 @@
   animation: flyToastPop 240ms ease-out;
   pointer-events: none;
 }
-.fly-toast-icon { font-size: 16px; line-height: 1; }
 .fly-toast-label { letter-spacing: 0.02em; }
 
 @keyframes flyToastPop {
