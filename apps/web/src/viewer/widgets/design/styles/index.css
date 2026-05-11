@@ -227,6 +227,37 @@
   line-height: 1.5;
 }
 
+/* Style row — Layer colour swatches in the Sketch tab. */
+.sketch-style-row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dw-space-2);
+}
+.sketch-style-row__hint {
+  font-size: var(--dw-fs-10);
+  color: var(--dw-text-3);
+}
+.sketch-style-swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.sketch-style-swatch {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  padding: 0;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.12) inset;
+  transition: transform 120ms, border-color 120ms;
+}
+.sketch-style-swatch:hover { transform: scale(1.08); }
+.sketch-style-swatch.is-on {
+  border-color: #fff;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.4) inset, 0 0 8px rgba(255, 255, 255, 0.4);
+}
+
 /* ── PlaceModeBar overlay ─────────────────────────────────────────── */
 
 .place-mode-bar {

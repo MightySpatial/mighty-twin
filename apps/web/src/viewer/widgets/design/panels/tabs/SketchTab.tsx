@@ -14,7 +14,7 @@
  *
  * Below the grid (when no tool active): "select a tool to begin" hint.
  */
-import { useMemo } from 'react'
+import { useEffect, useMemo } from 'react'
 import { useCadEngine } from '../../sketch/useCadEngine'
 import {
   TOOL_GROUPS,
@@ -35,6 +35,14 @@ interface Props {
   siteSlug?: string | null
 }
 
+/** Stock palette for the inline layer colour picker — same palette the
+ *  engine cycles through on layer creation, plus a few extras. Keeps
+ *  the picker compact (one row in a 320px pane). */
+const LAYER_COLOURS = [
+  '#22d3ee', '#60a5fa', '#a78bfa', '#f472b6', '#f87171',
+  '#fb923c', '#facc15', '#34d399', '#94a3b8', '#ffffff',
+]
+
 /** Default tool to auto-activate per template geometry — keeps the
  *  chip click responsive without forcing the user to also pick a tool. */
 const DEFAULT_TOOL_FOR_GEOMETRY: Record<'point' | 'line' | 'polygon', string> = {
@@ -50,12 +58,26 @@ export default function SketchTab({ viewer, siteSlug = null }: Props) {
   const activeLayerId = useCadEngine(s => s.activeLayerId)
   const activeTemplateId = useCadEngine(s => s.activeTemplateId)
   const setActiveTemplate = useCadEngine(s => s.setActiveTemplate)
+  const sketches = useCadEngine(s => s.sketches)
+  const createSketch = useCadEngine(s => s.createSketch)
+  const setLayerColour = useCadEngine(s => s.setLayerColour)
 
   const { templates } = useDesignTemplates(siteSlug)
 
   // Hook that handles globe clicks while a tool is active. Streams
   // positions into the draft node + commits when clicksToFinish is met.
   useToolPicks({ viewer })
+
+  // Auto-bootstrap a sketch the first time the Sketch tab mounts with
+  // no active sketch. Without this, users land on a placeholder ("Pick
+  // or create a sketch first") and have to jump to Layers to get going
+  // — which is exactly the "missing sketches setup" complaint.
+  useEffect(() => {
+    if (!siteSlug) return
+    if (activeSketchId) return
+    if (Object.keys(sketches).length > 0) return
+    createSketch({ name: 'Sketch 1', siteId: siteSlug })
+  }, [activeSketchId, sketches, createSketch, siteSlug])
 
   const activeTool = lookupTool(activeToolId)
   const activeToolGeometry: GeometryKind | null = activeTool?.geometryType ?? null
@@ -66,15 +88,20 @@ export default function SketchTab({ viewer, siteSlug = null }: Props) {
   )
 
   if (!activeSketchId) {
+    // First mount before the bootstrap effect lands — render an
+    // empty-state spinner-stand-in rather than the old hard placeholder
+    // so the tab looks alive while the engine settles.
     return (
       <div className="sketch-tab__empty">
-        <p>Pick or create a sketch first.</p>
-        <p style={{ fontSize: 12, color: 'var(--dw-text-3)' }}>Switch to the Layers tab.</p>
+        <p>Preparing your sketch…</p>
       </div>
     )
   }
 
   const canDraw = !!activeLayerId
+
+  const activeSketch = sketches[activeSketchId]
+  const activeLayer = activeSketch?.layers.find(l => l.id === activeLayerId) ?? null
 
   function pickTool(id: string) {
     if (!canDraw) return
@@ -106,6 +133,31 @@ export default function SketchTab({ viewer, siteSlug = null }: Props) {
       {!canDraw && (
         <div className="dl-warning" style={{ marginBottom: 12 }}>
           Pick a layer in the Layers tab to start drawing.
+        </div>
+      )}
+
+      {activeSketch && activeLayer && (
+        <div className="sketch-tab__group">
+          <div className="sketch-tab__group-label">Style</div>
+          <div className="sketch-style-row">
+            <span className="sketch-style-row__hint">Layer colour</span>
+            <div className="sketch-style-swatches">
+              {LAYER_COLOURS.map(c => {
+                const on = activeLayer.colour?.toLowerCase() === c.toLowerCase()
+                return (
+                  <button
+                    key={c}
+                    type="button"
+                    aria-label={`Set layer colour ${c}`}
+                    aria-pressed={on}
+                    className={`sketch-style-swatch${on ? ' is-on' : ''}`}
+                    style={{ background: c }}
+                    onClick={() => setLayerColour(activeSketch.id, activeLayer.id, c)}
+                  />
+                )
+              })}
+            </div>
+          </div>
         </div>
       )}
 

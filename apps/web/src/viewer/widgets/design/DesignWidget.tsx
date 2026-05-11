@@ -82,7 +82,9 @@ const MOBILE_DRAW_TOOLS = new Set([
 
 export default function DesignWidget({ viewer, onClose, siteSlug = null, mode = 'floating' }: DesignWidgetProps) {
   const inline = mode === 'inline'
-  const [activeTab, setActiveTab] = useState<DesignTabId>('layers')
+  // Inline mode opens to Sketch first — the right-pane host wants the
+  // drawing tools visible immediately, not the Layers gallery.
+  const [activeTab, setActiveTab] = useState<DesignTabId>(inline ? 'sketch' : 'layers')
   const [toolGroup, setToolGroup] = useState<ToolGroup>('sketch')
   const [mobileMinimised, setMobileMinimised] = useState(false)
   const { isMobile } = useBreakpoint()
