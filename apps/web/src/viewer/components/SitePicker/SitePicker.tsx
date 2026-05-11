@@ -63,62 +63,37 @@ export default function SitePicker({
   const inputRef = useRef<HTMLInputElement | null>(null)
   const containerRef = useRef<HTMLDivElement | null>(null)
 
-  // Mobile swipe-to-close + smooth in/out animation.
-  //
-  // The sheet starts off-screen (translateY 100%), animates up to 0 on
-  // mount, follows finger drag while pointer-down on the header/handle,
-  // and either snaps back or animates out depending on travel +
-  // velocity. Threshold: 80px or 0.5px/ms triggers close.
-  const dragState = useRef<{ startY: number; startT: number; lastY: number } | null>(null)
-  const [dragOffset, setDragOffset] = useState(0)
-  const [isDragging, setIsDragging] = useState(false)
+  // Mobile mount/unmount animation. The panel drops in from under the
+  // top bar (the site chip the user tapped) instead of taking over the
+  // bottom of the screen — which previously hid most of the map and
+  // got auto-zoomed by Safari when the user focused the search input.
   const [closing, setClosing] = useState(false)
   const [mounted, setMounted] = useState(false)
   useEffect(() => {
     if (!isMobile) return
-    // One paint with translateY(100%), then animate to 0.
     const t = window.setTimeout(() => setMounted(true), 0)
     return () => window.clearTimeout(t)
   }, [isMobile])
 
-  function onSheetPointerDown(e: React.PointerEvent<HTMLDivElement>) {
-    if (!isMobile) return
-    const target = e.target as HTMLElement
-    if (!target.closest('[data-sheet-grab]')) return
-    e.currentTarget.setPointerCapture(e.pointerId)
-    dragState.current = { startY: e.clientY, startT: Date.now(), lastY: e.clientY }
-    setIsDragging(true)
-  }
-  function onSheetPointerMove(e: React.PointerEvent<HTMLDivElement>) {
-    if (!dragState.current) return
-    const dy = Math.max(0, e.clientY - dragState.current.startY)
-    dragState.current.lastY = e.clientY
-    setDragOffset(dy)
-  }
-  function onSheetPointerEnd() {
-    if (!dragState.current) return
-    const totalDy = dragState.current.lastY - dragState.current.startY
-    const elapsed = Math.max(1, Date.now() - dragState.current.startT)
-    const velocity = totalDy / elapsed
-    dragState.current = null
-    setIsDragging(false)
-    if (totalDy > 80 || velocity > 0.5) {
-      setClosing(true)
-      window.setTimeout(onClose, 220)
-    } else {
-      setDragOffset(0)
-    }
+  const beginClose = () => {
+    if (!isMobile) return onClose()
+    setClosing(true)
+    window.setTimeout(onClose, 180)
   }
 
   // Auto-focus search; close on Esc or outside click.
   useEffect(() => {
-    inputRef.current?.focus()
+    // On mobile we intentionally do NOT auto-focus — focusing brings up
+    // the soft keyboard immediately, which feels heavy when the user
+    // just wants to scan the list. They can tap the search field to
+    // open the keyboard themselves.
+    if (!isMobile) inputRef.current?.focus()
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose()
+      if (e.key === 'Escape') beginClose()
     }
     const onClick = (e: MouseEvent) => {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        onClose()
+        beginClose()
       }
     }
     window.addEventListener('keydown', onKey)
@@ -129,7 +104,8 @@ export default function SitePicker({
       window.removeEventListener('click', onClick)
       clearTimeout(timer)
     }
-  }, [onClose])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [onClose, isMobile])
 
   const recentSlugs = useMemo<string[]>(() => {
     try {
@@ -161,34 +137,28 @@ export default function SitePicker({
 
   const containerStyle: React.CSSProperties = isMobile
     ? {
-        // Phone — full-width bottom sheet, taller (90vh) than before
-        // so it feels closer to a full-screen takeover. Animated via
-        // transform so the swipe-to-close gesture maps 1:1 with the
-        // user's finger.
+        // Phone — top-anchored card that drops down from under the
+        // site chip the user tapped. Replaces the old bottom sheet,
+        // which hid most of the map and was the only spot iOS Safari
+        // could auto-zoom on the search input.
         position: 'fixed',
-        left: 0,
-        right: 0,
-        bottom: 0,
-        maxHeight: '90vh',
-        background: 'rgba(13,14,20,0.99)',
+        top: 56,
+        left: 10,
+        right: 10,
+        maxHeight: 'calc(100dvh - 76px)',
+        background: 'rgba(13,14,20,0.98)',
         backdropFilter: 'blur(20px)',
-        borderTop: '1px solid rgba(255,255,255,0.09)',
-        borderTopLeftRadius: 20,
-        borderTopRightRadius: 20,
-        boxShadow: '0 -20px 60px rgba(0,0,0,0.6)',
+        border: '1px solid rgba(255,255,255,0.09)',
+        borderRadius: 16,
+        boxShadow: '0 12px 40px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.04)',
         zIndex: 60,
         display: 'flex',
         flexDirection: 'column',
         overflow: 'hidden',
-        transform: closing
-          ? 'translateY(100%)'
-          : !mounted
-          ? 'translateY(100%)'
-          : `translateY(${dragOffset}px)`,
-        transition: isDragging
-          ? 'none'
-          : 'transform 240ms cubic-bezier(0.32,0.72,0,1)',
-        touchAction: 'none',
+        opacity: closing || !mounted ? 0 : 1,
+        transform: closing || !mounted ? 'translateY(-8px)' : 'translateY(0)',
+        transition:
+          'opacity 180ms cubic-bezier(0.22,1,0.36,1), transform 180ms cubic-bezier(0.22,1,0.36,1)',
       }
     : {
         // Desktop — dropdown under the top-left bar
@@ -222,66 +192,54 @@ export default function SitePicker({
         }
       `}</style>
 
-      {/* Backdrop (mobile only) — opacity fades with the drag so the
-          map peeks through as the sheet slides down. */}
+      {/* Backdrop (mobile only) — dims the map enough to focus the
+          dropdown card; tap to dismiss. */}
       {isMobile && (
         <div
-          onClick={() => {
-            setClosing(true)
-            window.setTimeout(onClose, 220)
-          }}
+          onClick={beginClose}
           style={{
             position: 'fixed',
             inset: 0,
-            background: 'rgba(0,0,0,0.55)',
-            backdropFilter: 'blur(2px)',
+            background: 'rgba(0,0,0,0.35)',
             zIndex: 59,
-            opacity:
-              closing || !mounted
-                ? 0
-                : Math.max(0, 1 - dragOffset / 320),
-            transition: isDragging
-              ? 'none'
-              : 'opacity 220ms cubic-bezier(0.32,0.72,0,1)',
+            opacity: closing || !mounted ? 0 : 1,
+            transition: 'opacity 180ms cubic-bezier(0.22,1,0.36,1)',
           }}
         />
       )}
 
-      <div
-        ref={containerRef}
-        style={containerStyle}
-        onPointerDown={onSheetPointerDown}
-        onPointerMove={onSheetPointerMove}
-        onPointerUp={onSheetPointerEnd}
-        onPointerCancel={onSheetPointerEnd}
-      >
-        {/* Sheet handle (mobile) — grab handle for swipe-to-close */}
+      <div ref={containerRef} style={containerStyle}>
         {isMobile && (
           <div
-            data-sheet-grab
             style={{
-              padding: '10px 0 4px',
               display: 'flex',
-              justifyContent: 'center',
-              cursor: 'grab',
-              touchAction: 'none',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '12px 14px 4px',
             }}
           >
-            <div style={{ width: 36, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.25)' }} />
-          </div>
-        )}
-        {isMobile && (
-          <div
-            data-sheet-grab
-            style={{
-              padding: '8px 16px 0',
-              fontSize: 15,
-              fontWeight: 600,
-              color: '#f0f2f8',
-              cursor: 'grab',
-            }}
-          >
-            Switch site
+            <span style={{ fontSize: 15, fontWeight: 600, color: '#f0f2f8' }}>
+              Switch site
+            </span>
+            <button
+              type="button"
+              onClick={beginClose}
+              aria-label="Close site picker"
+              style={{
+                width: 32,
+                height: 32,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                background: 'transparent',
+                border: 'none',
+                borderRadius: 8,
+                color: 'rgba(240,242,248,0.55)',
+                cursor: 'pointer',
+              }}
+            >
+              <X size={16} />
+            </button>
           </div>
         )}
 
@@ -290,7 +248,7 @@ export default function SitePicker({
           currentSlug={currentSlug}
           loading={loading}
           onSelect={onSelect}
-          autoFocusInput
+          autoFocusInput={!isMobile}
           inputRef={inputRef}
           query={query}
           setQuery={setQuery}
@@ -398,13 +356,20 @@ export function SitePickerContent({
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search sites…"
+            // 16px keeps iOS Safari from zooming the viewport on focus.
+            // The visual size feels fine because the field sits in a
+            // larger 9px-radius pill, not next to dense desktop text.
+            autoComplete="off"
+            autoCorrect="off"
+            autoCapitalize="off"
+            spellCheck={false}
             style={{
               flex: 1,
               background: 'transparent',
               border: 'none',
               outline: 'none',
               color: '#f0f2f8',
-              fontSize: 13,
+              fontSize: 16,
               minWidth: 0,
             }}
           />
