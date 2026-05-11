@@ -3,7 +3,7 @@
  * Shows all sites as pins on a Cesium globe.
  * Click a pin to select → "Zoom to" button → fly & navigate.
  */
-import { useEffect, useRef, useCallback, useState } from 'react'
+import { useEffect, useMemo, useRef, useCallback, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Viewer as CesiumViewerType,
@@ -17,13 +17,17 @@ import {
   ScreenSpaceEventHandler,
   ConstantProperty,
 } from 'cesium'
-import { ArrowLeft, Navigation, ChevronDown, MapPin } from 'lucide-react'
+import { Navigation } from 'lucide-react'
 import { useTokenFetch } from '../components/CesiumViewer/hooks/useTokenFetch'
+import { useBreakpoint } from '../hooks/useBreakpoint'
 import { pointSymbolToDataUrl } from '../shared/pointSymbology'
 import { authFetch } from '../utils/authFetch'
 import { flyToTarget } from '../utils/flyToTarget'
 import SplashOverlay from '../components/SplashOverlay/SplashOverlay'
-import type { PublicSettings, OverlayConfig } from '../types/api'
+import ViewerSidebar from '../components/ViewerSidebar'
+import MeasureWidget, { useMeasure } from '../widgets/measure'
+import type { PublicSettings, OverlayConfig, SiteListItem } from '../types/api'
+import type { SiteEntry } from '../components/SitePicker'
 import type { PointSymbolType } from '../shared/pointSymbology'
 
 import 'cesium/Build/Cesium/Widgets/widgets.css'
@@ -50,15 +54,39 @@ function resolveSymbol(raw?: string): PointSymbolType {
 export default function SitesMapPage() {
   const navigate = useNavigate()
   const tokenReady = useTokenFetch()
+  const { isMobile } = useBreakpoint()
   const containerRef = useRef<HTMLDivElement>(null)
   const viewerRef = useRef<CesiumViewerType | null>(null)
   const destroyedRef = useRef(false)
+
+  // ── Sidebar wiring ────────────────────────────────────────────────
+  // We mount the same ViewerSidebar as the per-site viewer: Home tab
+  // (now hosting what was the SplashOverlay), Site tab (the picker
+  // list across all sites), and a single Measure widget tab. No
+  // layers/extensions/terrain on the overview.
+  const [sidebarOpen, setSidebarOpen] = useState(true)
+
+  // ── Measure widget — wired into the sidebar's Measure tab ─────────
+  const {
+    measureActive, measureRunning, measureResult,
+    startMeasure, cancelMeasure, cleanupMeasure, setMeasureResult,
+  } = useMeasure(viewerRef)
+  const activeWidgetId = measureActive ? 'measure' : null
+  const onSidebarWidgetTabClick = useCallback((id: string) => {
+    if (id !== 'measure') return
+    if (measureActive) cancelMeasure()
+    else startMeasure()
+  }, [measureActive, cancelMeasure, startMeasure])
 
   const sitesWithCamera = useRef<SiteWithCamera[]>([])
   const sitesLoaded = useRef(false)
   // Mirror of sitesWithCamera for reactive rendering (dropdown list).
   const [loadedSites, setLoadedSites] = useState<SiteWithCamera[]>([])
-  const [siteListOpen, setSiteListOpen] = useState(false)
+
+  // Full /api/spatial/sites payload — feeds the sidebar's Site tab
+  // picker (which wants slug/name/description/layer_count/etc.).
+  const [pickerSites, setPickerSites] = useState<SiteEntry[]>([])
+  const [pickerLoading, setPickerLoading] = useState(true)
 
   // Selection state
   const [selectedSlug, setSelectedSlug] = useState<string | null>(null)
@@ -67,11 +95,9 @@ export default function SitesMapPage() {
     ? sitesWithCamera.current.find(s => s.slug === selectedSlug) ?? null
     : null
 
-  // Home widget state
+  // Home widget state — now rendered inside the sidebar's Home tab
+  // rather than a fullscreen SplashOverlay.
   const [homeWidget, setHomeWidget] = useState<PublicSettings | null>(null)
-  const [homeWidgetDismissed, setHomeWidgetDismissed] = useState(
-    () => sessionStorage.getItem('home_widget_dismissed') === 'true'
-  )
 
   // Zoom splash state
   const [zoomSplashSite, setZoomSplashSite] = useState<string | null>(null)
@@ -190,14 +216,27 @@ export default function SitesMapPage() {
         if (!r.ok) throw new Error('Failed to load sites')
         return r.json()
       })
-      .then((sites: Array<{
-        slug: string
-        name: string
+      .then((sites: Array<SiteListItem & {
         marker_color?: string
         marker_symbol?: string
+        description?: string | null
+        primary_color?: string | null
+        is_public_pre_login?: boolean
         default_camera?: { longitude: number; latitude: number; height: number }
       }>) => {
         if (viewer.isDestroyed()) return
+
+        // Feed the sidebar's Site tab. Mapping is direct — the
+        // SitePicker is permissive about missing optional fields.
+        setPickerSites(sites.map(s => ({
+          slug: s.slug,
+          name: s.name,
+          description: s.description ?? null,
+          is_public_pre_login: s.is_public_pre_login,
+          layer_count: s.layer_count,
+          primary_color: s.primary_color ?? s.marker_color,
+        })))
+        setPickerLoading(false)
 
         // If only 1 site, navigate directly (skip selection UX)
         if (sites.length === 1 && sites[0].default_camera) {
@@ -261,7 +300,7 @@ export default function SitesMapPage() {
         sitesLoaded.current = true
         setLoadedSites(loaded)
       })
-      .catch(() => {})
+      .catch(() => { setPickerLoading(false) })
 
     // Click handler: select pin or deselect
     const handler = new ScreenSpaceEventHandler(viewer.scene.canvas)
@@ -293,7 +332,6 @@ export default function SitesMapPage() {
 
           // First click — select
           setSelectedSlug(slug)
-          setSiteListOpen(false)
           return
         }
       }
@@ -314,6 +352,50 @@ export default function SitesMapPage() {
     return () => { cleanup?.() }
   }, [setupGlobe])
 
+  // Sidebar's Site-tab picker → fly the globe to the chosen pin and
+  // then navigate (matches the "click a pin twice" affordance below
+  // and the dropdown behaviour we just retired).
+  const onSitePickerSelect = useCallback((slug: string) => {
+    const site = sitesWithCamera.current.find(s => s.slug === slug)
+    if (!site || !viewerRef.current || viewerRef.current.isDestroyed()) {
+      navigateToSite(slug)
+      return
+    }
+    flyToTarget(viewerRef.current, {
+      longitude: site.longitude,
+      latitude: site.latitude,
+      height: 0,
+      range: site.height ?? 800,
+      duration: 1.5,
+      onComplete: () => navigateToSite(slug),
+    })
+  }, [navigateToSite])
+
+  // Map the legacy home_widget_* settings into the HomePanel's
+  // expected shape. We tuck the message into `intro_html` and append
+  // a support-email line so the panel renders as one continuous
+  // welcome block — no need for an extra prop on HomePanel itself.
+  const homePanelContent = useMemo(() => {
+    if (!homeWidget?.home_widget_enabled) return null
+    const msg = homeWidget.home_widget_message ?? ''
+    const support = homeWidget.home_widget_support_email
+      ? `<p>Support: <a href="mailto:${homeWidget.home_widget_support_email}">${homeWidget.home_widget_support_email}</a></p>`
+      : ''
+    const intro = (msg + support).trim()
+    if (!intro) return null
+    return { intro_html: intro }
+  }, [homeWidget])
+  // ViewerSidebar's Home tab renders "Welcome to {site.name}" — we
+  // synthesize a site handle whose `name` is the configured home
+  // widget title (or "All Sites" as a friendly fallback).
+  const overviewSite = useMemo(
+    () => ({
+      slug: '__overview__',
+      name: homeWidget?.home_widget_title ?? 'All Sites',
+    }),
+    [homeWidget?.home_widget_title],
+  )
+
   const handleZoomTo = useCallback(() => {
     if (!selectedSite || !viewerRef.current || viewerRef.current.isDestroyed()) return
     flyToTarget(viewerRef.current, {
@@ -326,145 +408,53 @@ export default function SitesMapPage() {
     })
   }, [selectedSite, navigateToSite])
 
+  // Mirror the viewer page's left-rail offset math so the canvas and
+  // the floating "Zoom to" button stay clear of the sidebar.
+  const sidebarWidth = !isMobile && sidebarOpen ? 344 : !isMobile ? 64 : 0
+
   return (
     <div style={{ width: '100vw', height: '100vh', position: 'relative', background: '#0f0f14' }}>
-      <div ref={containerRef} style={{ width: '100%', height: '100%' }} />
+      {/* Sidebar — Home / Site / Measure. Replaces the bare back-button
+          + title dropdown + SplashOverlay that used to live here. */}
+      <ViewerSidebar
+        site={overviewSite}
+        pickerSites={pickerSites}
+        pickerLoading={pickerLoading}
+        onSitePickerSelect={onSitePickerSelect}
+        homeContent={homePanelContent}
+        layers={[]}
+        layersLoading={false}
+        extensionPanels={[]}
+        activeExtPanel={null}
+        setActiveExtPanel={() => { /* no extensions on overview */ }}
+        viewer={viewerRef.current}
+        siteId=""
+        siteConfigState={{}}
+        setSiteConfigState={() => { /* no per-site config on overview */ }}
+        sidebarOpen={sidebarOpen}
+        setSidebarOpen={setSidebarOpen}
+        isMobile={isMobile}
+        activeWidgetId={activeWidgetId}
+        onWidgetTabClick={onSidebarWidgetTabClick}
+        widgetTabIds={['measure']}
+      />
 
-      {/* Back button */}
-      <button
-        onClick={() => navigate(-1)}
-        style={{
-          position: 'absolute',
-          top: 16,
-          left: 16,
-          zIndex: 10,
-          display: 'flex',
-          alignItems: 'center',
-          gap: 6,
-          padding: '8px 14px',
-          background: 'rgba(15,15,20,0.85)',
-          color: '#fff',
-          border: '1px solid rgba(255,255,255,0.12)',
-          borderRadius: 8,
-          cursor: 'pointer',
-          fontSize: 14,
-          backdropFilter: 'blur(8px)',
-        }}
-      >
-        <ArrowLeft size={16} />
-        Back
-      </button>
-
-      {/* Title — shows selected site name, or "All Sites" dropdown trigger */}
+      {/* Cesium canvas — offset by sidebar width to match the viewer
+          page's layout pattern. */}
       <div
+        ref={containerRef}
         style={{
           position: 'absolute',
-          top: 16,
-          left: '50%',
-          transform: 'translateX(-50%)',
-          zIndex: 10,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
+          top: 0,
+          left: sidebarWidth,
+          right: 0,
+          bottom: 0,
+          transition: 'left 0.2s ease',
         }}
-      >
-        <button
-          type="button"
-          onClick={() => {
-            if (!selectedSite) setSiteListOpen(v => !v)
-          }}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 6,
-            padding: '8px 18px',
-            background: 'rgba(15,15,20,0.85)',
-            color: '#fff',
-            border: '1px solid rgba(255,255,255,0.12)',
-            borderRadius: siteListOpen ? '8px 8px 0 0' : 8,
-            fontSize: 16,
-            fontWeight: 600,
-            backdropFilter: 'blur(8px)',
-            cursor: selectedSite ? 'default' : 'pointer',
-            whiteSpace: 'nowrap',
-          }}
-        >
-          {selectedSite ? selectedSite.name : 'All Sites'}
-          {!selectedSite && loadedSites.length > 0 && (
-            <ChevronDown
-              size={16}
-              style={{
-                transition: 'transform 180ms',
-                transform: siteListOpen ? 'rotate(180deg)' : 'rotate(0deg)',
-                opacity: 0.7,
-              }}
-            />
-          )}
-        </button>
+      />
 
-        {/* Sites dropdown */}
-        {siteListOpen && !selectedSite && loadedSites.length > 0 && (
-          <div
-            style={{
-              width: '100%',
-              minWidth: 200,
-              background: 'rgba(15,15,20,0.96)',
-              border: '1px solid rgba(255,255,255,0.12)',
-              borderTop: 'none',
-              borderRadius: '0 0 8px 8px',
-              backdropFilter: 'blur(8px)',
-              overflow: 'hidden',
-              maxHeight: 280,
-              overflowY: 'auto',
-            }}
-          >
-            {loadedSites.map(site => (
-              <button
-                key={site.slug}
-                type="button"
-                onClick={() => {
-                  setSiteListOpen(false)
-                  // Fly to site then navigate
-                  if (viewerRef.current && !viewerRef.current.isDestroyed()) {
-                    flyToTarget(viewerRef.current, {
-                      longitude: site.longitude,
-                      latitude: site.latitude,
-                      height: 0,
-                      range: site.height ?? 800,
-                      duration: 1.5,
-                      onComplete: () => navigateToSite(site.slug),
-                    })
-                  } else {
-                    navigateToSite(site.slug)
-                  }
-                }}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 8,
-                  width: '100%',
-                  padding: '10px 14px',
-                  background: 'none',
-                  border: 'none',
-                  borderBottom: '1px solid rgba(255,255,255,0.06)',
-                  color: '#fff',
-                  fontSize: 14,
-                  cursor: 'pointer',
-                  textAlign: 'left',
-                  transition: 'background 120ms',
-                }}
-                onMouseEnter={e => (e.currentTarget.style.background = 'rgba(99,102,241,0.18)')}
-                onMouseLeave={e => (e.currentTarget.style.background = 'none')}
-              >
-                <MapPin size={14} style={{ flexShrink: 0, color: site.marker_color ?? '#6366f1' }} />
-                <span>{site.name}</span>
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* "Zoom to" button — appears when a site is selected */}
+      {/* "Zoom to" button — appears when a site pin is selected on
+          the globe. Offset right so it sits inside the visible canvas. */}
       {selectedSite && (
         <button
           onClick={handleZoomTo}
@@ -492,22 +482,21 @@ export default function SitesMapPage() {
         </button>
       )}
 
-      {homeWidget && !homeWidgetDismissed && (
-        <SplashOverlay
-          title={homeWidget.home_widget_title ?? 'Welcome'}
-          message={
-            (homeWidget.home_widget_message ?? '') +
-            (homeWidget.home_widget_support_email
-              ? `<br/><br/>Support: <a href="mailto:${homeWidget.home_widget_support_email}">${homeWidget.home_widget_support_email}</a>`
-              : '')
-          }
-          onDismiss={() => {
-            setHomeWidgetDismissed(true)
-            sessionStorage.setItem('home_widget_dismissed', 'true')
-          }}
-        />
-      )}
+      {/* Measure widget — measurement readout / clear button. The
+          measure pick handler is owned by useMeasure; we just render
+          the readout when active. */}
+      <MeasureWidget
+        measureActive={measureActive}
+        measureRunning={measureRunning}
+        measureResult={measureResult}
+        onCleanup={cleanupMeasure}
+        onClearResult={() => setMeasureResult(null)}
+      />
 
+      {/* Zoom-to splash (per-site config) — still a splash overlay,
+          fires once when navigating into a site if the target site
+          has zoom_splash_enabled. Distinct from the home widget; the
+          home widget moved to the sidebar's Home tab. */}
       {zoomSplashVisible && zoomSplashConfig && zoomSplashSite && (
         <SplashOverlay
           title={zoomSplashConfig.zoom_splash_title ?? 'Site Information'}
@@ -522,3 +511,4 @@ export default function SitesMapPage() {
     </div>
   )
 }
+

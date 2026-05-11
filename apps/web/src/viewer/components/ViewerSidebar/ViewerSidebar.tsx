@@ -82,6 +82,15 @@ interface ViewerSidebarProps {
   // highlighted when the matching tool is active.
   activeWidgetId?: string | null
   onWidgetTabClick?: (id: string) => void
+  /** Subset of widget tabs to render. Defaults to all four
+   *  (search / measure / legend / table). The overview page uses
+   *  `['measure']` to surface only the measure entry. */
+  widgetTabIds?: string[]
+  /** Override the Site-tab picker's onSelect handler. When omitted,
+   *  the picker pushes-recent + navigates to /viewer/site/:slug —
+   *  the standard behaviour from the viewer pages. The overview
+   *  page passes a custom callback so it can fly the camera first. */
+  onSitePickerSelect?: (slug: string) => void
 }
 
 function LayerSkeleton() {
@@ -123,6 +132,8 @@ export default function ViewerSidebar({
   onTerrainTabClick,
   activeWidgetId,
   onWidgetTabClick,
+  widgetTabIds,
+  onSitePickerSelect,
 }: ViewerSidebarProps) {
   const navigate = useNavigate()
   const [attrLayerId, setAttrLayerId] = useState<string | null>(null)
@@ -169,7 +180,8 @@ export default function ViewerSidebar({
                   autoFocusInput={!isMobile}
                   onSelect={(slug) => {
                     pushRecentSite(slug)
-                    navigate(`/viewer/site/${encodeURIComponent(slug)}`)
+                    if (onSitePickerSelect) onSitePickerSelect(slug)
+                    else navigate(`/viewer/site/${encodeURIComponent(slug)}`)
                   }}
                 />
               </div>
@@ -280,7 +292,9 @@ export default function ViewerSidebar({
                 { id: 'measure', label: 'Measure', Icon: Ruler     },
                 { id: 'legend',  label: 'Legend',  Icon: List      },
                 { id: 'table',   label: 'Table',   Icon: TableIcon },
-              ].map(({ id, label, Icon }) => (
+              ]
+                .filter(t => !widgetTabIds || widgetTabIds.includes(t.id))
+                .map(({ id, label, Icon }) => (
                 <button
                   key={id}
                   className={`sidebar-tab${activeWidgetId === id ? ' sidebar-tab--active' : ''}`}
