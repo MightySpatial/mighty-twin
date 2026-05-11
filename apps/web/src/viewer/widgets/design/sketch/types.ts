@@ -119,6 +119,12 @@ export interface SchemaField {
   auto?: boolean
   role?: string
   uom?: string
+  /** Enumerated options for `type === 'select'`. Stamped by built-in
+   *  schema presets; the schema editor preserves the array but doesn't
+   *  currently expose an option editor — users edit defaultVal as
+   *  plain text and the AttributesEditor can drive a dropdown when
+   *  options are present. */
+  options?: string[]
 }
 
 export interface RedlineApprovalState {
