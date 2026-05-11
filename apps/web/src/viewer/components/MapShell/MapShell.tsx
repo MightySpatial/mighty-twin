@@ -163,13 +163,14 @@ export function MapShell({
   const widgets = useMemo<WidgetDef[]>(() => {
     const base = publicMode ? publicWidgets(DEFAULT_WIDGETS) : DEFAULT_WIDGETS
     const withOverrides = applyWidgetOverrides(base, widgetOverrides)
-    // Fly locomotion is keyboard-driven (WASD/arrows/Q/E); only surface it
-    // when a precise pointer is detected (mouse/trackpad), which is the
-    // best web-platform proxy for "has a physical keyboard too." Phones and
-    // bare tablets drop the entry; a tablet with an attached keyboard /
-    // trackpad keeps it.
-    return hasCursor ? withOverrides : withOverrides.filter((w) => w.id !== 'fly')
-  }, [publicMode, widgetOverrides, hasCursor])
+    // Fly locomotion is keyboard-driven (WASD/arrows/Q/E); show it only
+    // when we're on the desktop chrome AND we see a precise pointer.
+    // Both signals must agree — iOS Safari's "Request Desktop Site"
+    // can spoof (pointer: fine, hover: hover) even on a phone with no
+    // keyboard, and a narrow paneSize alone misses tablet-with-keyboard.
+    const flyOK = !phoneMode && hasCursor
+    return flyOK ? withOverrides : withOverrides.filter((w) => w.id !== 'fly')
+  }, [publicMode, widgetOverrides, hasCursor, phoneMode])
   const secondary = useMemo(() => widgetsForController(widgets, 'secondary'), [widgets])
 
   // Phone-only: tools sheet open/closed.

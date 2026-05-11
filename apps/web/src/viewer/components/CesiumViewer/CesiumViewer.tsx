@@ -335,9 +335,11 @@ export default function CesiumViewerComponent({
   const [flyActive, setFlyActive] = useState(false)
   const [flySpeed, setFlySpeed] = useState<FlySpeed>('cycling')
   const onGearShift = useGearShift(setFlySpeed, flySpeed)
-  // Gate fly locomotion on cursor+hover availability so detaching a tablet
-  // keyboard mid-session immediately stops the camera and matches the rail.
-  const flyEnabled = flyActive && hasCursor
+  // Gate locomotion on both signals: cursor MQ (handles tablet+keyboard
+  // toggle mid-session) and !isMobile (defeats iOS desktop-mode spoofing
+  // pointer:fine on a real phone). Either signal flipping back to "no
+  // keyboard" stops the camera and matches what the rail/tools sheet show.
+  const flyEnabled = flyActive && hasCursor && !isMobile
   useFlyMode({ viewerRef, active: flyEnabled, speed: flySpeed, onGearShift })
 
   // Auto-exit fly mode when the user navigates away from the viewer
