@@ -7,12 +7,18 @@ import {
   GeometryInstance,
   Matrix4,
   Primitive,
+  type Appearance,
   type Scene,
 } from 'cesium'
 import { buildChunkMesh, datumEnuToFixedFrame } from './chunkMesh'
 import { greedyMesh } from './greedyMesh'
-import { makeSolidAppearance, makeWaterAppearance } from './WaterShader'
-import type { SVOChunk, SVOLayer } from '../types'
+import {
+  makeSolidAppearance,
+  makeWaterAppearance,
+  makeWireframeAppearance,
+  makeXrayAppearance,
+} from './WaterShader'
+import type { SVOChunk, SVOLayer, RenderMode } from '../types'
 
 export interface ChunkPrimitiveOptions {
   /** Absorption coefficient for the water shader. Higher = murkier. */
@@ -20,6 +26,22 @@ export interface ChunkPrimitiveOptions {
   /** When true, primitives compile asynchronously (default). Tests /
    *  capture flows can pass `false` to force a synchronous build. */
   asynchronous?: boolean
+  /** Render mode — picks the opaque-pass appearance. Water always
+   *  uses the water shader regardless of mode (it's the same fluid
+   *  surface visualisation). Defaults to `'solid'`. */
+  mode?: RenderMode
+}
+
+/** Pick the opaque-pass appearance for the active render mode. */
+function makeOpaqueAppearance(mode: RenderMode): Appearance {
+  switch (mode) {
+    case 'wireframe': return makeWireframeAppearance()
+    case 'xray':      return makeXrayAppearance()
+    // textured + raytrace are still stubs — fall back to solid so the
+    // UI toggle doesn't crash the renderer. They render the same way
+    // as solid until real implementations land.
+    default:          return makeSolidAppearance()
+  }
 }
 
 export class ChunkPrimitive {
@@ -34,7 +56,17 @@ export class ChunkPrimitive {
     this.options = {
       absorptionCoeff: options.absorptionCoeff ?? 1.0,
       asynchronous: options.asynchronous ?? true,
+      mode: options.mode ?? 'solid',
     }
+  }
+
+  /** Swap the active render mode. Returns true if a rebuild is needed
+   *  (the appearance is baked into the Primitive at construction, so
+   *  the renderer must re-issue build() to apply mode changes). */
+  setMode(mode: RenderMode): boolean {
+    if (this.options.mode === mode) return false
+    this.options.mode = mode
+    return true
   }
 
   /** Build / rebuild this chunk's primitives from the current chunk
@@ -56,7 +88,7 @@ export class ChunkPrimitive {
       })
       this.opaque = new Primitive({
         geometryInstances: inst,
-        appearance: makeSolidAppearance(),
+        appearance: makeOpaqueAppearance(this.options.mode),
         asynchronous: this.options.asynchronous,
         compressVertices: false,
       })
@@ -88,8 +120,8 @@ export class ChunkPrimitive {
    *  custom geometries, and the typical edit footprint is small
    *  enough that the full rebuild is well under a frame on modern
    *  hardware. */
-  update(chunk: SVOChunk, layer: SVOLayer): boolean {
-    if (!chunk.meshDirty && this.opaque !== null) return false
+  update(chunk: SVOChunk, layer: SVOLayer, force = false): boolean {
+    if (!force && !chunk.meshDirty && this.opaque !== null) return false
     this.build(chunk, layer)
     return true
   }

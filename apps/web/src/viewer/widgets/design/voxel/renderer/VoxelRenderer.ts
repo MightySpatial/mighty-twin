@@ -72,20 +72,25 @@ export class VoxelRenderer {
 
     const seen = new Set<string>()
     const scene = this.viewer.scene
+    const mode = this.mode
 
     for (const chunk of chunks) {
       const key = chunkKey(layer, chunk)
       seen.add(key)
       let prim = this.prims.get(key)
       if (!prim) {
-        prim = new ChunkPrimitive(scene, this.opts)
+        prim = new ChunkPrimitive(scene, { ...this.opts, mode })
         this.prims.set(key, prim)
         prim.build(chunk, layer)
         chunk.meshDirty = false
         continue
       }
-      if (chunk.meshDirty) {
-        prim.update(chunk, layer)
+      // Mode changes invalidate the baked-in appearance — force a
+      // rebuild before the meshDirty check so the user sees the new
+      // mode immediately, not just on the next chunk edit.
+      const modeChanged = prim.setMode(mode)
+      if (modeChanged || chunk.meshDirty) {
+        prim.update(chunk, layer, /* force */ modeChanged)
         chunk.meshDirty = false
       }
     }
@@ -102,9 +107,10 @@ export class VoxelRenderer {
   setRenderMode(mode: RenderMode): void {
     if (this.mode === mode) return
     this.mode = mode
-    // Future: trigger a sync re-mount when textured/raytrace need
-    // alternate appearances. For solid (default) the existing
-    // primitives already match.
+    // The next sync() will pick up the new mode via each
+    // ChunkPrimitive.setMode + forced update path. We do not eagerly
+    // rebuild here so callers can batch (mode + chunk-list change) in
+    // a single sync without redundant work.
   }
 
   getRenderMode(): RenderMode {

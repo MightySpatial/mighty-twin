@@ -28,9 +28,11 @@ import {
 import { BLOCK_TYPE_OPTIONS } from './tools/parameters/_shared'
 
 const RENDER_MODES: { id: SVORenderMode; label: string }[] = [
-  { id: 'solid',    label: 'Solid' },
-  { id: 'textured', label: 'Textured' },
-  { id: 'raytrace', label: 'Ray Trace' },
+  { id: 'solid',     label: 'Solid' },
+  { id: 'textured',  label: 'Textured' },
+  { id: 'raytrace',  label: 'Ray Trace' },
+  { id: 'wireframe', label: 'Wireframe' },
+  { id: 'xray',      label: 'X-ray' },
 ]
 
 /** Build the level dropdown labels: 12.5cm / 25cm / 50cm / 1m / 2m / 4m

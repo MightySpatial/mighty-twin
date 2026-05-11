@@ -193,3 +193,159 @@ void main() {
 
   return appearance
 }
+
+/** Wireframe appearance — renders only the edges of greedy-meshed
+ *  quads via screen-space derivatives of the eye-space position. We
+ *  exploit the fact that voxel meshes are axis-aligned in their local
+ *  frame, so fract(position) jumps at every block boundary; fwidth
+ *  expands those jumps into a 1-pixel band we can stroke. Inside the
+ *  band → opaque colour, outside → discard. Translucent flag is true
+ *  because empty pixels still need to alpha-blend correctly with the
+ *  globe and other chunks. */
+export function makeWireframeAppearance(): Appearance {
+  const VS = /* glsl */ `
+in vec3 position3DHigh;
+in vec3 position3DLow;
+in vec3 normal;
+in vec4 color;
+
+out vec3 v_positionEC;
+out vec3 v_normalEC;
+out vec4 v_color;
+
+void main() {
+  vec4 p = czm_computePosition();
+  v_positionEC = (czm_modelViewRelativeToEye * p).xyz;
+  v_normalEC = czm_normal * normal;
+  v_color = color;
+  gl_Position = czm_modelViewProjectionRelativeToEye * p;
+}
+`
+  const FS = /* glsl */ `
+in vec3 v_positionEC;
+in vec3 v_normalEC;
+in vec4 v_color;
+
+void main() {
+  // Distance to the nearest unit-grid line, axis-aligned in eye-
+  // space. Voxel block edges land on integer steps in the local
+  // frame; in eye-space the rotation is constant per draw so the
+  // grid is still axis-aligned. One-pixel anti-aliased band via
+  // fwidth.
+  vec3 f = fract(v_positionEC);
+  vec3 d = min(f, 1.0 - f);
+  vec3 w = fwidth(v_positionEC) * 1.2;
+  float gx = smoothstep(0.0, w.x, d.x);
+  float gy = smoothstep(0.0, w.y, d.y);
+  float gz = smoothstep(0.0, w.z, d.z);
+  // Edge = at least one axis is right at a block boundary. Take the
+  // two smallest "distance-to-line" values; an edge of the cube is
+  // where two of the three axes are simultaneously on a boundary.
+  float a = min(gx, min(gy, gz));
+  float b = max(gx, min(gy, gz));
+  float edge = 1.0 - max(a, b);
+  if (edge < 0.05) discard;
+  // Edge colour: white-ish tinted by the per-vertex colour so the
+  // material atlas still tells dirt from stone at a glance.
+  vec3 rgb = mix(vec3(1.0), v_color.rgb, 0.35);
+  out_FragColor = vec4(rgb, edge);
+}
+`
+  const appearance = new Appearance({
+    translucent: true,
+    closed: false,
+    vertexShaderSource: VS,
+    fragmentShaderSource: FS,
+    renderState: {
+      cull: { enabled: false },
+      depthTest: { enabled: true },
+      depthMask: false,
+      blending: {
+        enabled: true,
+        equationRgb: 32774,
+        equationAlpha: 32774,
+        functionSourceRgb: 770,
+        functionSourceAlpha: 770,
+        functionDestinationRgb: 771,
+        functionDestinationAlpha: 771,
+      },
+    },
+  })
+  Object.defineProperty(appearance, 'vertexFormat', {
+    value: VOXEL_VERTEX_FORMAT,
+    writable: false,
+    enumerable: true,
+  })
+  return appearance
+}
+
+/** X-ray appearance — semi-transparent geometry with a Fresnel rim so
+ *  edges read clearly while the interior stays see-through enough to
+ *  expose underground / occluded structures. Fixed alpha floor of
+ *  0.18, ramped up to 0.65 at glancing angles. Lit by the same sun
+ *  direction as the solid pass so the silhouette doesn't go flat. */
+export function makeXrayAppearance(): Appearance {
+  const VS = /* glsl */ `
+in vec3 position3DHigh;
+in vec3 position3DLow;
+in vec3 normal;
+in vec4 color;
+
+out vec3 v_positionEC;
+out vec3 v_normalEC;
+out vec4 v_color;
+
+void main() {
+  vec4 p = czm_computePosition();
+  v_positionEC = (czm_modelViewRelativeToEye * p).xyz;
+  v_normalEC = czm_normal * normal;
+  v_color = color;
+  gl_Position = czm_modelViewProjectionRelativeToEye * p;
+}
+`
+  const FS = /* glsl */ `
+in vec3 v_positionEC;
+in vec3 v_normalEC;
+in vec4 v_color;
+
+void main() {
+  vec3 N = normalize(v_normalEC);
+  vec3 V = normalize(-v_positionEC);
+  float fres = pow(clamp(1.0 - dot(N, V), 0.0, 1.0), 2.0);
+  // Soft Lambert so the silhouette has shape, blended with the
+  // Fresnel rim so edges glow. Alpha = base floor + Fresnel.
+  vec3 L = normalize(vec3(0.4, 0.3, 0.85));
+  float ndotl = max(dot(N, L), 0.0);
+  float lit = 0.55 + 0.45 * ndotl;
+  vec3 rgb = v_color.rgb * lit + vec3(0.6, 0.85, 1.0) * fres * 0.4;
+  float a = 0.18 + fres * 0.47;
+  out_FragColor = vec4(rgb, a);
+}
+`
+  const appearance = new Appearance({
+    translucent: true,
+    closed: false,
+    vertexShaderSource: VS,
+    fragmentShaderSource: FS,
+    renderState: {
+      cull: { enabled: false },
+      depthTest: { enabled: true },
+      depthMask: false,
+      blending: {
+        enabled: true,
+        equationRgb: 32774,
+        equationAlpha: 32774,
+        functionSourceRgb: 770,
+        functionSourceAlpha: 770,
+        functionDestinationRgb: 771,
+        functionDestinationAlpha: 771,
+      },
+    },
+  })
+  Object.defineProperty(appearance, 'vertexFormat', {
+    value: VOXEL_VERTEX_FORMAT,
+    writable: false,
+    enumerable: true,
+  })
+  return appearance
+}

@@ -139,9 +139,11 @@ function voxelLevelLabel(level: number): string {
 }
 
 const RENDER_MODES: { value: SVORenderMode; label: string }[] = [
-  { value: 'solid',    label: 'Solid' },
-  { value: 'textured', label: 'Textured' },
-  { value: 'raytrace', label: 'Raytrace' },
+  { value: 'solid',     label: 'Solid' },
+  { value: 'textured',  label: 'Textured' },
+  { value: 'raytrace',  label: 'Raytrace' },
+  { value: 'wireframe', label: 'Wireframe' },
+  { value: 'xray',      label: 'X-ray' },
 ]
 
 export default function LayersTab({ siteSlug = null }: Props) {

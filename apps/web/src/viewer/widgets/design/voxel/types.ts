@@ -133,7 +133,7 @@ export interface SVOLayer {
   generators: SVOGenerator[]
 }
 
-export type SVORenderMode = 'solid' | 'textured' | 'raytrace'
+export type SVORenderMode = 'solid' | 'textured' | 'raytrace' | 'wireframe' | 'xray'
 
 /** Alias kept for the renderer module which was authored before the
  *  engine landed and uses the unprefixed name. */
