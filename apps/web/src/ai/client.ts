@@ -288,3 +288,52 @@ async function chatOpenAICompatible(args: OpenAIArgs): Promise<string> {
   const j = await r.json()
   return j.choices?.[0]?.message?.content ?? ''
 }
+
+// ── Wizard test connection ─────────────────────────────────────────────
+
+export interface TestConnectionResult {
+  ok: boolean
+  /** Round-trip wall-clock latency in ms (defined on ok=true). */
+  latencyMs?: number
+  /** Trimmed first ~80 chars of the model's response. */
+  sample?: string
+  /** Error message on ok=false. */
+  error?: string
+}
+
+/** Send a one-shot "Hello" prompt directly to `provider` using the
+ *  supplied `cfg` (apiKey, baseUrl, model). Bypasses `loadSettings()`
+ *  so the wizard can probe an unsaved key before committing it to
+ *  localStorage. Tools are off; max_tokens capped low; 30s timeout. */
+export async function testConnection(
+  provider: AIProvider,
+  cfg: { apiKey?: string; baseUrl?: string; model?: string },
+): Promise<TestConnectionResult> {
+  const model = cfg.model || DEFAULTS[provider].model
+  const messages: AIMessage[] = [{ role: 'user', content: 'Hello.' }]
+  const branchArgs: BranchArgs = { cfg, model, maxTokens: 32, messages, signal: AbortSignal.timeout(30_000) }
+  const t0 = performance.now()
+  try {
+    let out = ''
+    if (provider === 'anthropic') {
+      // Reuse chatAnthropic but disable the tool-use loop so the
+      // wizard doesn't accidentally fire MCP tools during a probe.
+      out = await chatAnthropic({ ...branchArgs, opts: { tools: false, maxToolRounds: 1 } })
+    } else if (provider === 'gemini') {
+      out = await chatGemini(branchArgs)
+    } else if (provider === 'ollama') {
+      out = await chatOllama(branchArgs)
+    } else if (OPENAI_COMPAT.has(provider)) {
+      out = await chatOpenAICompatible({ ...branchArgs, provider })
+    } else {
+      return { ok: false, error: `No fetch branch wired for provider "${provider}".` }
+    }
+    return {
+      ok: true,
+      latencyMs: Math.round(performance.now() - t0),
+      sample: out.trim().slice(0, 80),
+    }
+  } catch (e) {
+    return { ok: false, error: (e as Error).message || String(e) }
+  }
+}

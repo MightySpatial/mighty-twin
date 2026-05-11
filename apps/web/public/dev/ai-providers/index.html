@@ -1,0 +1,959 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MightyTwin · AI Providers — Design Mockup</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0d1117;
+    --bg-surface: #161b22;
+    --bg-raised: #1c2128;
+    --bg-sunken: #090d12;
+    --border: rgba(255,255,255,0.08);
+    --border-strong: rgba(255,255,255,0.14);
+    --fg: rgba(255,255,255,0.9);
+    --fg-secondary: rgba(255,255,255,0.6);
+    --fg-muted: rgba(255,255,255,0.38);
+    --accent: #6366f1;
+    --accent-hover: #4f52d8;
+    --accent-soft: rgba(99,102,241,0.14);
+    --emerald: #21c07a;
+    --emerald-soft: rgba(33,192,122,0.12);
+    --danger: #f87171;
+    --radius-xs: 4px;
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    --font-mono: ui-monospace, 'JetBrains Mono', SFMono-Regular, Menlo, monospace;
+  }
+
+  body {
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--fg);
+    font-size: 14px;
+    line-height: 1.5;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── Layout shell ── */
+  .shell {
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    grid-template-rows: 48px 1fr;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  /* Topbar */
+  .topbar {
+    grid-column: 1 / -1;
+    background: var(--bg-surface);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 0 16px;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+  }
+  .topbar .wordmark { color: var(--fg); font-size: 14px; font-weight: 700; }
+  .topbar .breadcrumb { color: var(--fg-muted); font-weight: 400; font-size: 13px; }
+  .topbar .breadcrumb span { color: var(--fg-secondary); }
+
+  /* Settings nav */
+  .settings-nav {
+    background: var(--bg-surface);
+    border-right: 1px solid var(--border);
+    padding: 16px 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    overflow-y: auto;
+  }
+  .nav-group-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--fg-muted);
+    padding: 12px 8px 4px;
+  }
+  .nav-group-label:first-child { padding-top: 0; }
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 7px 10px;
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    color: var(--fg-secondary);
+    cursor: pointer;
+    border: none;
+    background: transparent;
+    width: 100%;
+    text-align: left;
+    font-family: var(--font);
+  }
+  .nav-item:hover { background: var(--bg-raised); color: var(--fg); }
+  .nav-item.active { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+
+  /* Settings content */
+  .settings-content {
+    overflow-y: auto;
+    padding: 32px 40px;
+    max-width: 960px;
+  }
+  .settings-content h1 { font-size: 22px; font-weight: 700; margin-bottom: 6px; }
+  .lede { color: var(--fg-secondary); font-size: 13px; line-height: 1.65; max-width: 680px; margin-bottom: 32px; }
+
+  .settings-section { margin-bottom: 40px; }
+  .settings-section h2 {
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--fg-muted);
+    margin-bottom: 14px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  /* ── Provider grid ── */
+  .provider-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+  }
+
+  .provider-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    position: relative;
+    transition: border-color 0.15s;
+    cursor: default;
+  }
+  .provider-card:hover { border-color: var(--border-strong); }
+  .provider-card.connected { border-color: var(--emerald); }
+  .provider-card.connected:hover { border-color: var(--emerald); }
+
+  .connected-badge {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    font-size: 10px;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 20px;
+    background: var(--emerald-soft);
+    color: var(--emerald);
+    letter-spacing: 0.03em;
+  }
+
+  .provider-logo {
+    width: 44px;
+    height: 44px;
+    border-radius: var(--radius-sm);
+    display: grid;
+    place-items: center;
+    font-weight: 800;
+    color: #fff;
+    font-size: 20px;
+    flex-shrink: 0;
+  }
+  .logo-anthropic  { background: linear-gradient(135deg,#cc785c,#a3543a); }
+  .logo-openai     { background: linear-gradient(135deg,#10a37f,#065f46); }
+  .logo-gemini     { background: linear-gradient(135deg,#4285f4,#34a853); }
+  .logo-openrouter { background: linear-gradient(135deg,#9333ea,#6d28d9); }
+  .logo-groq       { background: linear-gradient(135deg,#f97316,#c2410c); }
+  .logo-together   { background: linear-gradient(135deg,#0ea5e9,#0369a1); }
+  .logo-fireworks  { background: linear-gradient(135deg,#ef4444,#b91c1c); }
+  .logo-perplexity { background: linear-gradient(135deg,#20b2aa,#0f766e); }
+  .logo-mistral    { background: linear-gradient(135deg,#ff7043,#c62828); }
+  .logo-deepseek   { background: linear-gradient(135deg,#3b82f6,#1d4ed8); }
+  .logo-xai        { background: linear-gradient(135deg,#334155,#0f172a); }
+  .logo-ollama     { background: linear-gradient(135deg,#7c3aed,#4c1d95); }
+  .logo-lmstudio   { background: linear-gradient(135deg,#059669,#064e3b); }
+  .logo-custom     { background: linear-gradient(135deg,#475569,#1e293b); }
+
+  .provider-name {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--fg);
+  }
+  .provider-desc {
+    font-size: 12px;
+    color: var(--fg-secondary);
+    line-height: 1.55;
+    flex: 1;
+  }
+
+  .meta-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 5px;
+    min-height: 22px;
+  }
+  .meta-pill {
+    font-size: 10px;
+    font-weight: 500;
+    padding: 2px 7px;
+    border-radius: 20px;
+    background: var(--bg-raised);
+    border: 1px solid var(--border);
+    color: var(--fg-secondary);
+    letter-spacing: 0.02em;
+  }
+
+  .card-btn {
+    padding: 7px 14px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-strong);
+    background: transparent;
+    color: var(--fg-secondary);
+    font: 500 12px/1 var(--font);
+    cursor: pointer;
+    transition: all 0.12s;
+    align-self: flex-start;
+  }
+  .card-btn:hover { background: var(--bg-raised); color: var(--fg); }
+  .card-btn.primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+  }
+  .card-btn.primary:hover { background: var(--accent-hover); }
+  .card-btn.manage {
+    border-color: var(--emerald);
+    color: var(--emerald);
+  }
+  .card-btn.manage:hover { background: var(--emerald-soft); }
+
+  /* ── Feature overrides table ── */
+  .overrides-table {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+  }
+  .override-row {
+    display: grid;
+    grid-template-columns: 1fr 180px 180px;
+    gap: 16px;
+    align-items: center;
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--border);
+  }
+  .override-row:last-child { border-bottom: none; }
+  .override-row .feat-name { font-size: 13px; font-weight: 600; color: var(--fg); }
+  .override-row .feat-desc { font-size: 11px; color: var(--fg-muted); margin-top: 3px; }
+
+  .override-select {
+    background: var(--bg-raised);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--fg);
+    font: 12px var(--font);
+    padding: 6px 10px;
+    width: 100%;
+    cursor: pointer;
+    outline: none;
+  }
+  .override-select:focus { border-color: var(--accent); }
+
+  /* ── Wizard overlay ── */
+  .wizard-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.6);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.18s;
+  }
+  .wizard-backdrop.open { opacity: 1; pointer-events: all; }
+
+  .wizard {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-strong);
+    border-radius: 14px;
+    padding: 28px;
+    width: 480px;
+    max-width: 94vw;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    transform: translateY(10px) scale(0.98);
+    transition: transform 0.18s;
+  }
+  .wizard-backdrop.open .wizard { transform: translateY(0) scale(1); }
+
+  .wizard-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .wizard-logo {
+    width: 48px;
+    height: 48px;
+    border-radius: var(--radius-sm);
+    display: grid;
+    place-items: center;
+    font-size: 22px;
+    font-weight: 800;
+    color: #fff;
+    flex-shrink: 0;
+  }
+  .wizard-title { font-size: 17px; font-weight: 700; }
+  .wizard-subtitle { font-size: 12px; color: var(--fg-muted); margin-top: 2px; }
+
+  .wizard-steps {
+    display: flex;
+    gap: 0;
+    margin-bottom: 4px;
+  }
+  .step-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--border-strong);
+    margin-right: 6px;
+    transition: background 0.15s;
+  }
+  .step-dot.active { background: var(--accent); }
+  .step-dot.done { background: var(--emerald); }
+
+  .wizard-field { display: flex; flex-direction: column; gap: 6px; }
+  .wizard-field label { font-size: 12px; font-weight: 600; color: var(--fg-secondary); }
+  .wizard-input {
+    background: var(--bg-raised);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-sm);
+    color: var(--fg);
+    font: 13px var(--font-mono);
+    padding: 9px 12px;
+    width: 100%;
+    outline: none;
+    transition: border-color 0.12s;
+  }
+  .wizard-input:focus { border-color: var(--accent); }
+  .wizard-hint { font-size: 11px; color: var(--fg-muted); line-height: 1.55; }
+  .wizard-hint a { color: var(--accent); text-decoration: none; }
+  .wizard-hint a:hover { text-decoration: underline; }
+
+  .wizard-model-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .model-tile {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 10px 12px;
+    cursor: pointer;
+    background: transparent;
+    text-align: left;
+    font: inherit;
+    transition: all 0.12s;
+  }
+  .model-tile:hover { border-color: var(--border-strong); background: var(--bg-raised); }
+  .model-tile.selected { border-color: var(--accent); background: var(--accent-soft); }
+  .model-tile .model-name { font-size: 12px; font-weight: 600; color: var(--fg); }
+  .model-tile .model-meta { font-size: 10px; color: var(--fg-muted); margin-top: 3px; }
+
+  .wizard-test-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 14px;
+    background: var(--bg-raised);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-size: 12px;
+  }
+  .test-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--emerald);
+    flex-shrink: 0;
+    animation: pulse 1.5s infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  .wizard-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+  }
+  .btn {
+    padding: 9px 18px;
+    border-radius: var(--radius-sm);
+    font: 600 13px var(--font);
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: all 0.12s;
+  }
+  .btn-ghost {
+    background: transparent;
+    border-color: var(--border-strong);
+    color: var(--fg-secondary);
+  }
+  .btn-ghost:hover { background: var(--bg-raised); color: var(--fg); }
+  .btn-primary {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+  }
+  .btn-primary:hover { background: var(--accent-hover); }
+  .btn-success {
+    background: var(--emerald);
+    color: #fff;
+    border-color: var(--emerald);
+  }
+
+  /* ── Approval policy ── */
+  .policy-row {
+    display: grid;
+    grid-template-columns: 1fr 180px;
+    gap: 16px;
+    align-items: center;
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--border);
+  }
+  .policy-row:last-child { border-bottom: none; }
+
+  /* ── Responsive ── */
+  @media (max-width: 860px) {
+    .provider-grid { grid-template-columns: repeat(2, 1fr); }
+    .shell { grid-template-columns: 1fr; grid-template-rows: 48px auto 1fr; }
+    .settings-nav { display: none; }
+  }
+  @media (max-width: 560px) {
+    .provider-grid { grid-template-columns: 1fr; }
+    .override-row { grid-template-columns: 1fr; }
+    .settings-content { padding: 20px 16px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="shell">
+
+  <!-- Topbar -->
+  <header class="topbar">
+    <span class="wordmark">MIGHTYTWIN</span>
+    <span class="breadcrumb">/ <span>Settings</span> / <span>AI providers</span></span>
+  </header>
+
+  <!-- Settings nav -->
+  <nav class="settings-nav">
+    <div class="nav-group-label">Account</div>
+    <button class="nav-item">Profile</button>
+    <button class="nav-item">Appearance</button>
+    <div class="nav-group-label">Platform</div>
+    <button class="nav-item">Basemap &amp; terrain</button>
+    <button class="nav-item">Units</button>
+    <button class="nav-item">Widget host</button>
+    <div class="nav-group-label">Engine</div>
+    <button class="nav-item active">AI providers</button>
+    <button class="nav-item">Map providers</button>
+    <button class="nav-item">Integrations</button>
+    <div class="nav-group-label">Admin</div>
+    <button class="nav-item">Users</button>
+    <button class="nav-item">System</button>
+    <button class="nav-item">Diagnostics</button>
+  </nav>
+
+  <!-- Main content -->
+  <main class="settings-content">
+    <h1>AI providers</h1>
+    <p class="lede">
+      Mighty doesn't mark up inference. Bring your own key — your messages go directly to the provider you connect.
+      Keys stay in your browser's local storage and are never sent to Mighty servers.
+      Per-feature overrides let you balance cost and quality across Mai, voxel design, and story maps.
+    </p>
+
+    <!-- Provider grid -->
+    <section class="settings-section">
+      <h2>Connected providers</h2>
+      <div class="provider-grid">
+
+        <!-- Anthropic (connected) -->
+        <div class="provider-card connected">
+          <span class="connected-badge">✓ Connected</span>
+          <div class="provider-logo logo-anthropic">A</div>
+          <div class="provider-name">Anthropic Claude</div>
+          <div class="provider-desc">Claude Haiku, Sonnet, and Opus. Best reasoning, tool use, and long context.</div>
+          <div class="meta-row">
+            <span class="meta-pill">API key</span>
+            <span class="meta-pill">claude-sonnet-4-6</span>
+            <span class="meta-pill">claude-haiku-4-5</span>
+          </div>
+          <button class="card-btn manage" onclick="openWizard('anthropic', true)">Manage</button>
+        </div>
+
+        <!-- OpenAI -->
+        <div class="provider-card">
+          <div class="provider-logo logo-openai">∞</div>
+          <div class="provider-name">OpenAI</div>
+          <div class="provider-desc">GPT-4o and GPT-4o-mini. Broad capability with strong code and vision.</div>
+          <div class="meta-row">
+            <span class="meta-pill">API key</span>
+          </div>
+          <button class="card-btn primary" onclick="openWizard('openai', false)">Add key</button>
+        </div>
+
+        <!-- Gemini -->
+        <div class="provider-card">
+          <div class="provider-logo logo-gemini">✦</div>
+          <div class="provider-name">Google Gemini</div>
+          <div class="provider-desc">Gemini 2.0 Flash and Pro. Fast, multimodal, good for map and spatial tasks.</div>
+          <div class="meta-row">
+            <span class="meta-pill">API key</span>
+          </div>
+          <button class="card-btn primary" onclick="openWizard('gemini', false)">Add key</button>
+        </div>
+
+        <!-- OpenRouter -->
+        <div class="provider-card">
+          <div class="provider-logo logo-openrouter">⊕</div>
+          <div class="provider-name">OpenRouter</div>
+          <div class="provider-desc">One key, hundreds of models. Route to Claude, GPT, Llama, Mistral, and more.</div>
+          <div class="meta-row">
+            <span class="meta-pill">API key</span>
+            <span class="meta-pill">200+ models</span>
+          </div>
+          <button class="card-btn primary" onclick="openWizard('openrouter', false)">Add key</button>
+        </div>
+
+        <!-- Groq -->
+        <div class="provider-card">
+          <div class="provider-logo logo-groq">⚡</div>
+          <div class="provider-name">Groq</div>
+          <div class="provider-desc">Llama 3.3 and Mixtral at inference speeds an order of magnitude faster than GPU.</div>
+          <div class="meta-row">
+            <span class="meta-pill">API key</span>
+            <span class="meta-pill">Ultra-low latency</span>
+          </div>
+          <button class="card-btn primary" onclick="openWizard('groq', false)">Add key</button>
+        </div>
+
+        <!-- Perplexity -->
+        <div class="provider-card">
+          <div class="provider-logo logo-perplexity">⊗</div>
+          <div class="provider-name">Perplexity</div>
+          <div class="provider-desc">Sonar adds live web search to every prompt. Good for real-world context and standards lookups.</div>
+          <div class="meta-row">
+            <span class="meta-pill">API key</span>
+            <span class="meta-pill">Web search</span>
+          </div>
+          <button class="card-btn primary" onclick="openWizard('perplexity', false)">Add key</button>
+        </div>
+
+        <!-- Mistral -->
+        <div class="provider-card">
+          <div class="provider-logo logo-mistral">M</div>
+          <div class="provider-name">Mistral</div>
+          <div class="provider-desc">Mistral Large and Codestral. Strong European option with on-prem deployment path.</div>
+          <div class="meta-row">
+            <span class="meta-pill">API key</span>
+          </div>
+          <button class="card-btn primary" onclick="openWizard('mistral', false)">Add key</button>
+        </div>
+
+        <!-- DeepSeek -->
+        <div class="provider-card">
+          <div class="provider-logo logo-deepseek">◇</div>
+          <div class="provider-name">DeepSeek</div>
+          <div class="provider-desc">DeepSeek V3. Strong reasoning at very low cost. Good for high-volume spatial queries.</div>
+          <div class="meta-row">
+            <span class="meta-pill">API key</span>
+            <span class="meta-pill">Low cost</span>
+          </div>
+          <button class="card-btn primary" onclick="openWizard('deepseek', false)">Add key</button>
+        </div>
+
+        <!-- xAI -->
+        <div class="provider-card">
+          <div class="provider-logo logo-xai">𝕏</div>
+          <div class="provider-name">xAI Grok</div>
+          <div class="provider-desc">Grok 3 with real-time knowledge. Long context, competitive reasoning benchmark scores.</div>
+          <div class="meta-row">
+            <span class="meta-pill">API key</span>
+          </div>
+          <button class="card-btn primary" onclick="openWizard('xai', false)">Add key</button>
+        </div>
+
+        <!-- Ollama -->
+        <div class="provider-card">
+          <div class="provider-logo logo-ollama">⌂</div>
+          <div class="provider-name">Ollama</div>
+          <div class="provider-desc">Run Llama, Mistral, Gemma and others locally. No key needed — data never leaves your machine.</div>
+          <div class="meta-row">
+            <span class="meta-pill">No key</span>
+            <span class="meta-pill">Local only</span>
+            <span class="meta-pill">localhost:11434</span>
+          </div>
+          <button class="card-btn" onclick="openWizard('ollama', false)">Configure</button>
+        </div>
+
+        <!-- LM Studio -->
+        <div class="provider-card">
+          <div class="provider-logo logo-lmstudio">◈</div>
+          <div class="provider-name">LM Studio</div>
+          <div class="provider-desc">OpenAI-compatible local server. Any GGUF model, runs entirely on your hardware.</div>
+          <div class="meta-row">
+            <span class="meta-pill">No key</span>
+            <span class="meta-pill">localhost:1234</span>
+          </div>
+          <button class="card-btn" onclick="openWizard('lmstudio', false)">Configure</button>
+        </div>
+
+        <!-- Custom -->
+        <div class="provider-card">
+          <div class="provider-logo logo-custom">⚙</div>
+          <div class="provider-name">Custom endpoint</div>
+          <div class="provider-desc">Any OpenAI-compatible API. Point at Together, Fireworks, Azure, or your own deployment.</div>
+          <div class="meta-row">
+            <span class="meta-pill">OpenAI-compatible</span>
+          </div>
+          <button class="card-btn" onclick="openWizard('custom', false)">Configure</button>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- Per-feature model overrides -->
+    <section class="settings-section">
+      <h2>Per-feature model overrides</h2>
+      <div class="overrides-table">
+        <div class="override-row">
+          <div>
+            <div class="feat-name">Mai (chat assistant)</div>
+            <div class="feat-desc">The model used in the Mai right-rail panel for general questions and commands.</div>
+          </div>
+          <select class="override-select">
+            <option>claude-sonnet-4-6</option>
+            <option>claude-haiku-4-5</option>
+            <option>claude-opus-4-7</option>
+            <option>gpt-4o</option>
+          </select>
+          <select class="override-select">
+            <option>Anthropic (connected)</option>
+          </select>
+        </div>
+        <div class="override-row">
+          <div>
+            <div class="feat-name">Voxel design assistant</div>
+            <div class="feat-desc">Used for "draw this mine layout" and natural-language block generation commands.</div>
+          </div>
+          <select class="override-select">
+            <option>claude-haiku-4-5</option>
+            <option>claude-sonnet-4-6</option>
+          </select>
+          <select class="override-select">
+            <option>Anthropic (connected)</option>
+          </select>
+        </div>
+        <div class="override-row">
+          <div>
+            <div class="feat-name">Story map narration</div>
+            <div class="feat-desc">Drafts slide text and transition descriptions from your layer data.</div>
+          </div>
+          <select class="override-select">
+            <option>claude-sonnet-4-6</option>
+            <option>claude-haiku-4-5</option>
+          </select>
+          <select class="override-select">
+            <option>Anthropic (connected)</option>
+          </select>
+        </div>
+        <div class="override-row">
+          <div>
+            <div class="feat-name">Feature edit suggestions</div>
+            <div class="feat-desc">Suggests attribute values and geometry corrections during feature editing.</div>
+          </div>
+          <select class="override-select">
+            <option>claude-haiku-4-5</option>
+            <option>claude-sonnet-4-6</option>
+          </select>
+          <select class="override-select">
+            <option>Anthropic (connected)</option>
+          </select>
+        </div>
+        <div class="override-row">
+          <div>
+            <div class="feat-name">Bulk data transformations</div>
+            <div class="feat-desc">Applied to hundreds or thousands of features. Cost-aware model recommended.</div>
+          </div>
+          <select class="override-select">
+            <option>claude-haiku-4-5</option>
+            <option>claude-sonnet-4-6</option>
+            <option>gpt-4o-mini</option>
+          </select>
+          <select class="override-select">
+            <option>Anthropic (connected)</option>
+          </select>
+        </div>
+      </div>
+    </section>
+
+    <!-- Approval policy -->
+    <section class="settings-section">
+      <h2>Approval policy</h2>
+      <div class="overrides-table">
+        <div class="policy-row">
+          <div>
+            <div class="feat-name">Read tools</div>
+            <div class="feat-desc">Layer queries, attribute lookups, site info — no writes.</div>
+          </div>
+          <select class="override-select">
+            <option>Auto-approve</option>
+            <option>Always ask</option>
+          </select>
+        </div>
+        <div class="policy-row">
+          <div>
+            <div class="feat-name">Draw and edit tools</div>
+            <div class="feat-desc">Block placement, feature geometry edits, attribute writes.</div>
+          </div>
+          <select class="override-select">
+            <option>Always ask</option>
+            <option>Auto-approve</option>
+          </select>
+        </div>
+        <div class="policy-row">
+          <div>
+            <div class="feat-name">Site and layer management</div>
+            <div class="feat-desc">Create/delete sites, upload data, change layer visibility.</div>
+          </div>
+          <select class="override-select">
+            <option>Always ask</option>
+            <option>Disabled</option>
+          </select>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- ── Wizard overlay ── -->
+<div class="wizard-backdrop" id="wizardBackdrop" onclick="closeWizardOnBackdrop(event)">
+  <div class="wizard" id="wizardEl">
+
+    <!-- Step 1: Key entry -->
+    <div id="wizardStep1">
+      <div class="wizard-header">
+        <div class="wizard-logo" id="wLogo">A</div>
+        <div>
+          <div class="wizard-title" id="wTitle">Anthropic Claude</div>
+          <div class="wizard-subtitle" id="wSubtitle">Step 1 of 3 · API key</div>
+        </div>
+      </div>
+
+      <div class="wizard-steps">
+        <div class="step-dot active" id="s1d1"></div>
+        <div class="step-dot" id="s1d2"></div>
+        <div class="step-dot" id="s1d3"></div>
+      </div>
+
+      <div class="wizard-field">
+        <label id="wKeyLabel">API key</label>
+        <input class="wizard-input" type="password" id="wKeyInput" placeholder="sk-ant-…">
+        <div class="wizard-hint" id="wKeyHint">
+          Get your key at <a href="#" onclick="return false">console.anthropic.com</a> → API Keys.
+          Keys are stored in your browser only — never sent to Mighty servers.
+        </div>
+      </div>
+
+      <div class="wizard-actions">
+        <button class="btn btn-ghost" onclick="closeWizard()">Cancel</button>
+        <button class="btn btn-primary" onclick="wizardNext(2)">Next →</button>
+      </div>
+    </div>
+
+    <!-- Step 2: Model pick -->
+    <div id="wizardStep2" style="display:none">
+      <div class="wizard-header">
+        <div class="wizard-logo" id="wLogo2">A</div>
+        <div>
+          <div class="wizard-title" id="wTitle2">Anthropic Claude</div>
+          <div class="wizard-subtitle">Step 2 of 3 · Default model</div>
+        </div>
+      </div>
+
+      <div class="wizard-steps">
+        <div class="step-dot done"></div>
+        <div class="step-dot active"></div>
+        <div class="step-dot"></div>
+      </div>
+
+      <div class="wizard-field">
+        <label>Choose your default model</label>
+        <div class="wizard-model-grid" id="wModelGrid">
+          <button class="model-tile selected" onclick="selectModel(this)">
+            <div class="model-name">claude-haiku-4-5</div>
+            <div class="model-meta">Fastest · cheapest · great for commands</div>
+          </button>
+          <button class="model-tile" onclick="selectModel(this)">
+            <div class="model-name">claude-sonnet-4-6</div>
+            <div class="model-meta">Balanced · recommended default</div>
+          </button>
+          <button class="model-tile" onclick="selectModel(this)">
+            <div class="model-name">claude-opus-4-7</div>
+            <div class="model-meta">Most capable · highest cost</div>
+          </button>
+          <button class="model-tile" onclick="selectModel(this)">
+            <div class="model-name">Custom model</div>
+            <div class="model-meta">Type any model identifier</div>
+          </button>
+        </div>
+      </div>
+
+      <div class="wizard-actions">
+        <button class="btn btn-ghost" onclick="wizardNext(1)">← Back</button>
+        <button class="btn btn-primary" onclick="wizardNext(3)">Test connection →</button>
+      </div>
+    </div>
+
+    <!-- Step 3: Connection test -->
+    <div id="wizardStep3" style="display:none">
+      <div class="wizard-header">
+        <div class="wizard-logo" id="wLogo3">A</div>
+        <div>
+          <div class="wizard-title" id="wTitle3">Anthropic Claude</div>
+          <div class="wizard-subtitle">Step 3 of 3 · Verify connection</div>
+        </div>
+      </div>
+
+      <div class="wizard-steps">
+        <div class="step-dot done"></div>
+        <div class="step-dot done"></div>
+        <div class="step-dot active"></div>
+      </div>
+
+      <div class="wizard-test-row" id="wTestRow">
+        <div class="test-dot"></div>
+        <span id="wTestMsg">Sending test prompt to claude-sonnet-4-6…</span>
+      </div>
+
+      <div class="wizard-field" id="wTestSuccess" style="display:none">
+        <div style="padding:12px 14px; background: var(--emerald-soft); border:1px solid var(--emerald); border-radius:var(--radius-sm); font-size:12px; color:var(--emerald);">
+          ✓ Connected. Mai will use <strong>claude-sonnet-4-6</strong> via Anthropic by default. You can override per-feature below.
+        </div>
+      </div>
+
+      <div class="wizard-hint">
+        This sends a single short test prompt ("Hello") to verify the key is valid. No data from your project is sent.
+      </div>
+
+      <div class="wizard-actions" id="wTestActions">
+        <button class="btn btn-ghost" onclick="wizardNext(2)">← Back</button>
+        <button class="btn btn-primary" id="wSaveBtn" onclick="simulateSave()" disabled>Save</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const PROVIDERS = {
+  anthropic:  { name:'Anthropic Claude', logo:'A', cls:'logo-anthropic', keyPlaceholder:'sk-ant-api03-…', keyHint:'Get your key at <a href="#" onclick="return false">console.anthropic.com</a> → API Keys.' },
+  openai:     { name:'OpenAI', logo:'∞', cls:'logo-openai', keyPlaceholder:'sk-proj-…', keyHint:'Get your key at <a href="#" onclick="return false">platform.openai.com</a> → API Keys.' },
+  gemini:     { name:'Google Gemini', logo:'✦', cls:'logo-gemini', keyPlaceholder:'AIza…', keyHint:'Get your key at <a href="#" onclick="return false">aistudio.google.com</a> → Get API key.' },
+  openrouter: { name:'OpenRouter', logo:'⊕', cls:'logo-openrouter', keyPlaceholder:'sk-or-v1-…', keyHint:'Get your key at <a href="#" onclick="return false">openrouter.ai</a> → Keys.' },
+  groq:       { name:'Groq', logo:'⚡', cls:'logo-groq', keyPlaceholder:'gsk_…', keyHint:'Get your key at <a href="#" onclick="return false">console.groq.com</a> → API Keys.' },
+  perplexity: { name:'Perplexity', logo:'⊗', cls:'logo-perplexity', keyPlaceholder:'pplx-…', keyHint:'Get your key at <a href="#" onclick="return false">perplexity.ai</a> → Settings → API.' },
+  mistral:    { name:'Mistral', logo:'M', cls:'logo-mistral', keyPlaceholder:'…', keyHint:'Get your key at <a href="#" onclick="return false">console.mistral.ai</a> → API Keys.' },
+  deepseek:   { name:'DeepSeek', logo:'◇', cls:'logo-deepseek', keyPlaceholder:'sk-…', keyHint:'Get your key at <a href="#" onclick="return false">platform.deepseek.com</a> → API Keys.' },
+  xai:        { name:'xAI Grok', logo:'𝕏', cls:'logo-xai', keyPlaceholder:'xai-…', keyHint:'Get your key at <a href="#" onclick="return false">console.x.ai</a> → API Keys.' },
+  ollama:     { name:'Ollama (local)', logo:'⌂', cls:'logo-ollama', keyPlaceholder:'(no key needed)', keyHint:'Make sure Ollama is running: <code>ollama serve</code>. The default endpoint is <code>localhost:11434</code>.' },
+  lmstudio:   { name:'LM Studio', logo:'◈', cls:'logo-lmstudio', keyPlaceholder:'(no key needed)', keyHint:'Start the local server in LM Studio → Developer → Start Server. Default: <code>localhost:1234</code>.' },
+  custom:     { name:'Custom endpoint', logo:'⚙', cls:'logo-custom', keyPlaceholder:'https://api.example.com/v1', keyHint:'Any OpenAI-compatible <code>/chat/completions</code> endpoint. Paste the base URL.' },
+};
+
+let currentProvider = 'anthropic';
+
+function openWizard(id, isConnected) {
+  currentProvider = id;
+  const p = PROVIDERS[id];
+  // Populate all 3 step logos/titles
+  ['', '2', '3'].forEach(n => {
+    const logo = document.getElementById('wLogo' + n);
+    const title = document.getElementById('wTitle' + n);
+    if (logo) { logo.textContent = p.logo; logo.className = 'wizard-logo ' + p.cls; }
+    if (title) title.textContent = p.name;
+  });
+  document.getElementById('wSubtitle').textContent = 'Step 1 of 3 · ' + (isConnected ? 'Manage key' : 'API key');
+  document.getElementById('wKeyInput').placeholder = p.keyPlaceholder;
+  document.getElementById('wKeyHint').innerHTML = p.keyHint + '<br><br>Keys are stored in your browser only — never sent to Mighty servers.';
+  wizardNext(1);
+  document.getElementById('wizardBackdrop').classList.add('open');
+}
+
+function closeWizard() {
+  document.getElementById('wizardBackdrop').classList.remove('open');
+}
+function closeWizardOnBackdrop(e) {
+  if (e.target === document.getElementById('wizardBackdrop')) closeWizard();
+}
+
+function wizardNext(step) {
+  [1,2,3].forEach(n => {
+    document.getElementById('wizardStep' + n).style.display = n === step ? 'flex' : 'none';
+    document.getElementById('wizardStep' + n).style.flexDirection = n === step ? 'column' : '';
+    document.getElementById('wizardStep' + n).style.gap = n === step ? '20px' : '';
+  });
+  if (step === 3) simulateTest();
+}
+
+function selectModel(btn) {
+  document.querySelectorAll('.model-tile').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+}
+
+function simulateTest() {
+  const testRow = document.getElementById('wTestRow');
+  const testMsg = document.getElementById('wTestMsg');
+  const testSuccess = document.getElementById('wTestSuccess');
+  const saveBtn = document.getElementById('wSaveBtn');
+  testRow.style.display = 'flex';
+  testSuccess.style.display = 'none';
+  saveBtn.disabled = true;
+  testMsg.textContent = 'Sending test prompt…';
+
+  setTimeout(() => {
+    testMsg.textContent = '✓ Response received in 340 ms';
+    testRow.querySelector('.test-dot').style.background = 'var(--emerald)';
+    testRow.querySelector('.test-dot').style.animation = 'none';
+    testSuccess.style.display = 'block';
+    saveBtn.disabled = false;
+  }, 1200);
+}
+
+function simulateSave() {
+  closeWizard();
+  // In real impl: save to localStorage + mark card as connected
+}
+</script>
+</body>
+</html>
