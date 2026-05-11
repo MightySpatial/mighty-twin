@@ -5,7 +5,8 @@
   /* Anchored to the viewport's bottom-right corner so the popup
    * sits above MAI (bottom: 24px) and clears the bottom rail. MAI
    * occupies ~76px of vertical space; we sit at 96px so there's a
-   * clean ~20px gap. */
+   * clean ~20px gap. Width bumped to 380px so the 6-gear shifter
+   * has comfortable column widths without label wrapping. */
   position: fixed;
   bottom: 96px;
   right: 24px;
@@ -71,6 +72,43 @@
  * `rp-open` class to <body> when activeRightWidget !== null. */
 body.rp-open .fly-panel {
   right: calc(24px + 368px);
+}
+
+/* ── Controls toggle (collapsible key-legend trigger) ────────────────── */
+.fly-controls-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  align-self: flex-start;
+  margin-top: 8px;
+  padding: 4px 10px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  color: rgba(240, 242, 248, 0.7);
+  font: inherit;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 120ms, color 120ms, border-color 120ms;
+}
+.fly-controls-toggle:hover {
+  background: rgba(45, 212, 191, 0.12);
+  color: #2dd4bf;
+  border-color: rgba(45, 212, 191, 0.35);
+}
+.fly-controls-toggle-chev {
+  transition: transform 160ms ease;
+}
+.fly-controls-toggle.is-open .fly-controls-toggle-chev {
+  transform: rotate(180deg);
+}
+/* When the legend is expanded give the shifter a smaller bottom
+ * margin so the toggle sits closer to the pills. */
+.fly-panel .fly-shifter {
+  margin-bottom: 0;
 }
 
 .fly-panel-header {

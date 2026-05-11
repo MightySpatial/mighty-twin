@@ -15,7 +15,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
-  Plane, X, ChevronLeft, ChevronRight,
+  Plane, X, ChevronLeft, ChevronRight, ChevronDown,
   Footprints, Bike, Car, Wind, Zap,
   type LucideIcon,
 } from 'lucide-react'
@@ -148,6 +148,10 @@ export default function FlyWidget({
   // first mount doesn't flash a badge for the default gear.
   const prevRef = useRef<FlySpeed>(speed)
   const [toast, setToast] = useState<FlySpeed | null>(null)
+  // Controls drawer (the WASD/arrow/Space/Esc legend). Hidden by
+  // default — the floating popup opens compact to keep the
+  // shifter the focus, and the user expands it on demand.
+  const [showControls, setShowControls] = useState(false)
   useEffect(() => {
     if (prevRef.current === speed) return
     prevRef.current = speed
@@ -300,11 +304,15 @@ export default function FlyWidget({
     )
   }
 
-  // Desktop floating panel
+  // Desktop floating panel — opens compact (gear shifter only). The
+  // popup auto-activates fly mode on open via CesiumViewer wiring, so
+  // there's no ACTIVE/OFF pill in the header — closing the popup
+  // exits fly. The key legend is hidden behind a "Controls ▾" toggle
+  // to keep the default footprint small.
   return (
     <>
       <div
-        className={`fly-panel${docked ? ' is-docked' : ''}`}
+        className={`fly-panel${docked ? ' is-docked' : ''}${showControls ? ' is-expanded' : ''}`}
         role="dialog"
         aria-label="Fly mode"
         style={pos && !docked ? { left: pos.x, top: pos.y, right: 'auto', bottom: 'auto' } : undefined}
@@ -320,20 +328,6 @@ export default function FlyWidget({
         >
           <Plane size={14} />
           <span className="fly-panel-title">Fly mode</span>
-          {/* ACTIVE / OFF pill — engages the camera locomotion loop
-              in useFlyMode. Without this the panel could open but
-              locomotion never fired because flyActive stayed false. */}
-          {onToggleActive && (
-            <button
-              type="button"
-              className={`fly-panel-pill${active ? ' on' : ' off'}`}
-              onClick={onToggleActive}
-              aria-pressed={active}
-              title={active ? 'Stop fly mode' : 'Engage fly mode'}
-            >
-              {active ? 'ACTIVE' : 'OFF'}
-            </button>
-          )}
           <button
             type="button"
             className="fly-panel-close"
@@ -345,17 +339,29 @@ export default function FlyWidget({
           </button>
         </div>
         {shifter}
-        <div className="fly-keys">
-          <KeyRow keys={['W', 'A', 'S', 'D']} label="Move" />
-          <KeyRow keys={['↑', '↓']} label="Pitch" />
-          <KeyRow keys={['←', '→']} label="Yaw" />
-          <KeyRow keys={['Q', 'E']} label="Roll · auto-levels" />
-          <KeyRow keys={['Space']} label="Climb" />
-          <KeyRow keys={['+', '−']} label="Shift gear" />
-          <KeyRow keys={['Shift']} label="2× sprint" />
-          <KeyRow keys={['Drag']} label="Look around" />
-          <KeyRow keys={['Esc']} label="Exit" />
-        </div>
+        <button
+          type="button"
+          className={`fly-controls-toggle${showControls ? ' is-open' : ''}`}
+          onClick={() => setShowControls(s => !s)}
+          aria-expanded={showControls}
+          title={showControls ? 'Hide key controls' : 'Show key controls'}
+        >
+          <span>Controls</span>
+          <ChevronDown size={12} className="fly-controls-toggle-chev" />
+        </button>
+        {showControls && (
+          <div className="fly-keys">
+            <KeyRow keys={['W', 'A', 'S', 'D']} label="Move" />
+            <KeyRow keys={['↑', '↓']} label="Pitch" />
+            <KeyRow keys={['←', '→']} label="Yaw" />
+            <KeyRow keys={['Q', 'E']} label="Roll · auto-levels" />
+            <KeyRow keys={['Space']} label="Climb" />
+            <KeyRow keys={['+', '−']} label="Shift gear" />
+            <KeyRow keys={['Shift']} label="2× sprint" />
+            <KeyRow keys={['Drag']} label="Look around" />
+            <KeyRow keys={['Esc']} label="Exit" />
+          </div>
+        )}
       </div>
       {toastNode}
     </>

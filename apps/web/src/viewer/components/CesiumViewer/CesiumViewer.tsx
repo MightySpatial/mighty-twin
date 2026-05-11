@@ -648,7 +648,35 @@ export default function CesiumViewerComponent({
   // simplified back to a plain floating panel separate from the
   // pane/rail content swap dance. Clicking the FLY tile in the
   // bottom rail toggles this state directly.
+  //
+  // The popup auto-activates fly mode on open (and deactivates on
+  // close) — there's no separate "OFF" state in the popup chrome.
+  // The starting gear is chosen from the camera's altitude so a
+  // continental overview opens in Jet, a 1:1 splat walk-through
+  // opens in Walk, etc.
   const [flyPanelOpen, setFlyPanelOpen] = useState(false)
+  useEffect(() => {
+    if (!flyPanelOpen) {
+      setFlyActive(false)
+      return
+    }
+    const viewer = viewerRef.current
+    if (viewer) {
+      let h = 0
+      try {
+        h = viewer.camera.positionCartographic?.height ?? 0
+      } catch {
+        // Viewer may not be fully initialised on the very first open.
+      }
+      let gear: FlySpeed = 'walk'
+      if (h >= 50000) gear = 'jet'
+      else if (h >= 5000) gear = 'gliding'
+      else if (h >= 500) gear = 'driving'
+      else if (h >= 50) gear = 'cycling'
+      setFlySpeed(gear)
+    }
+    setFlyActive(true)
+  }, [flyPanelOpen])
   const activeRightWidget = useMemo<ActiveRightWidget>(() => {
     if (designOpen) return 'design'
     if (snapOpen) return 'snap'
@@ -995,7 +1023,6 @@ export default function CesiumViewerComponent({
           isMobile={false}
           mode="floating"
           active={flyActive}
-          onToggleActive={() => setFlyActive(a => !a)}
         />
       )}
 

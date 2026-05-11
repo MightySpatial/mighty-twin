@@ -62,12 +62,12 @@ export type FlySpeedId =
   | 'walk' | 'cycling' | 'driving' | 'gliding' | 'jet' | 'fighterJet'
 
 export const FLY_SPEEDS: readonly FlySpeedDef[] = [
-  { id: 'walk',       label: 'Walk',        mps: 1.4  },  // 5 km/h
-  { id: 'cycling',    label: 'Cycling',     mps: 4.2  },  // 15 km/h
-  { id: 'driving',    label: 'Driving',     mps: 16.7 },  // 60 km/h
-  { id: 'gliding',    label: 'Gliding',     mps: 41.7 },  // 150 km/h
-  { id: 'jet',        label: 'Jet',         mps: 250  },  // 900 km/h
-  { id: 'fighterJet', label: 'Fighter Jet', mps: 556  },  // 2000 km/h
+  { id: 'walk',       label: 'Walk',    mps: 1.4  },  // 5 km/h
+  { id: 'cycling',    label: 'Cycle',   mps: 4.2  },  // 15 km/h
+  { id: 'driving',    label: 'Drive',   mps: 16.7 },  // 60 km/h
+  { id: 'gliding',    label: 'Glide',   mps: 41.7 },  // 150 km/h
+  { id: 'jet',        label: 'Jet',     mps: 250  },  // 900 km/h
+  { id: 'fighterJet', label: 'Fighter', mps: 556  },  // 2000 km/h
 ] as const
 
 export type FlySpeed = FlySpeedId
@@ -180,6 +180,7 @@ export function useFlyMode({
     enableTranslate: boolean
     enableZoom: boolean
     enableLook: boolean
+    inertiaSpin: number
   } | null>(null)
 
   // Track the clock's animation state before we force it on.
@@ -214,6 +215,7 @@ export function useFlyMode({
         ctrl.enableTranslate = savedRef.current.enableTranslate
         ctrl.enableZoom = savedRef.current.enableZoom
         ctrl.enableLook = savedRef.current.enableLook
+        ctrl.inertiaSpin = savedRef.current.inertiaSpin
         savedRef.current = null
       }
       // Restore the clock animation state we saved on activation.
@@ -228,24 +230,35 @@ export function useFlyMode({
       return
     }
 
-    // Fresh activation — clear any stale roll-intent flag and force
-    // the first tick to skip (lastTickRef = null → dt = 0 path).
+    // Fresh activation — clear any stale roll-intent flag and seed
+    // lastTick to *now* so the very first tick produces a meaningful
+    // dt instead of being discarded. Previously lastTickRef = null
+    // meant the first tick saw dt = 0 and was skipped — that was the
+    // perceived "activation lag" between pressing ACTIVE and W
+    // moving the camera.
     hasRolledRef.current = false
-    lastTickRef.current = null
+    lastTickRef.current = JulianDate.now()
 
     // Snapshot, then clamp the controller into "look only" mode.
+    // inertiaSpin is also killed: Cesium's built-in mouse-look spin
+    // inertia keeps decaying rotation for ~hundreds of ms after the
+    // pointer releases, which manifested as the camera continuing to
+    // "roll" after Q/E were released — even though twistRight() was
+    // no longer being called.
     savedRef.current = {
       enableRotate: ctrl.enableRotate,
       enableTilt: ctrl.enableTilt,
       enableTranslate: ctrl.enableTranslate,
       enableZoom: ctrl.enableZoom,
       enableLook: ctrl.enableLook,
+      inertiaSpin: ctrl.inertiaSpin,
     }
     ctrl.enableRotate = false
     ctrl.enableTilt = false
     ctrl.enableTranslate = false
     ctrl.enableZoom = false
     ctrl.enableLook = true
+    ctrl.inertiaSpin = 0
 
     // Keys we want to swallow from default browser behaviour (Space
     // scrolls, arrows scroll, + zooms in some browser shells).
@@ -298,7 +311,11 @@ export function useFlyMode({
       const last = lastTickRef.current ?? now
       const dt = JulianDate.secondsDifference(now, last)
       lastTickRef.current = now
-      if (dt <= 0 || dt > 0.5) return // first tick or pause — skip
+      // Skip the frame only when the clock has paused (dt > 0.5).
+      // A zero dt just means "no time elapsed this frame" — applying
+      // zero motion is fine and lets us hit the auto-level branch on
+      // the very first paint after activation.
+      if (dt > 0.5) return
 
       const k = keysRef.current
       const ti = touchIntentRef?.current
@@ -331,13 +348,22 @@ export function useFlyMode({
       const rate = CesiumMath.toRadians(turnRateRef.current) * dt
 
       const rollActive = rollSign !== 0
+      // Cesium reports ``camera.roll`` in [0, 2π) — so a roll of
+      // -1° reads as ~359° = 6.265 rad. The auto-level direction
+      // logic below assumes a signed angle in (-π, π], so we
+      // normalize here. Without this, after E auto-levels through
+      // zero, the angle wraps to ~6.28 rad, ``dir`` stays -1, and
+      // the camera keeps rotating negative forever — that was the
+      // perceived "roll runaway" symptom.
+      const rawRoll = cam.roll
+      const rollSigned = rawRoll > Math.PI ? rawRoll - 2 * Math.PI : rawRoll
       // Auto-level only fires AFTER the user has actually rolled.
       // Cameras that arrive with residual roll (flyTo, look-around,
       // accumulated float drift) no longer trigger spurious
       // corrections at activation.
       const rollDrifting = !rollActive
         && hasRolledRef.current
-        && Math.abs(cam.roll) > ROLL_EPSILON_RAD
+        && Math.abs(rollSigned) > ROLL_EPSILON_RAD
 
       isMovingRef.current = fwd !== 0 || right !== 0 || up !== 0
         || yawSign !== 0 || pitchSign !== 0 || rollActive
@@ -363,24 +389,27 @@ export function useFlyMode({
         // Clamp: only apply the portion of `rate` that keeps roll
         // inside ±ROLL_LIMIT_RAD. ``twistRight(0)`` is a cheap no-op
         // so the gate falls through naturally when already at limit.
-        const projected = cam.roll + rollSign * rate
+        const projected = rollSigned + rollSign * rate
         let step = rollSign * rate
         if (Math.abs(projected) > ROLL_LIMIT_RAD) {
-          const allowed = Math.max(0, ROLL_LIMIT_RAD - Math.abs(cam.roll))
+          const allowed = Math.max(0, ROLL_LIMIT_RAD - Math.abs(rollSigned))
           step = rollSign * Math.min(rate, allowed)
         }
         if (step !== 0) cam.twistRight(step)
       } else if (rollDrifting) {
         // Ease back to wings-level at AUTO_LEVEL_DEG_PER_SEC. The
-        // ``Math.min`` against |cam.roll| prevents overshooting zero
-        // on the final step.
+        // ``Math.min`` against |rollSigned| prevents overshooting
+        // zero on the final step.
         const levelStep = CesiumMath.toRadians(AUTO_LEVEL_DEG_PER_SEC) * dt
-        const dir = cam.roll > 0 ? -1 : 1
-        const step = dir * Math.min(levelStep, Math.abs(cam.roll))
+        const dir = rollSigned > 0 ? -1 : 1
+        const step = dir * Math.min(levelStep, Math.abs(rollSigned))
         cam.twistRight(step)
         // Once we've drifted inside the epsilon, drop the flag so
-        // the loop stops firing until the user rolls again.
-        if (Math.abs(cam.roll) <= ROLL_EPSILON_RAD) {
+        // the loop stops firing until the user rolls again. Re-read
+        // ``cam.roll`` because twistRight may have changed it.
+        const afterRaw = cam.roll
+        const afterSigned = afterRaw > Math.PI ? afterRaw - 2 * Math.PI : afterRaw
+        if (Math.abs(afterSigned) <= ROLL_EPSILON_RAD) {
           hasRolledRef.current = false
         }
       }
