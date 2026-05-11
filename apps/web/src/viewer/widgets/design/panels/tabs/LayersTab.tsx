@@ -730,7 +730,7 @@ export default function LayersTab({ siteSlug = null }: Props) {
               return (
                 <div
                   key={s.id}
-                  className={`sketch-tile${isActive ? ' is-active' : ''}${isRedline ? ' is-redline' : ''}${isDefault ? ' is-default' : ''}`}
+                  className={`sketch-tile${isActive ? ' is-active' : ''}${isRedline ? ' is-redline' : ''}${isDefault ? ' is-default' : ''}${popoverOpen ? ' has-settings-open' : ''}`}
                   onClick={() => setActiveSketch(s.id)}
                 >
                   <div className="sketch-tile__title">
