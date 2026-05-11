@@ -39,7 +39,11 @@ export class VoxelRenderer {
     this.mode = opts.mode ?? 'solid'
   }
 
-  attach(viewer: CesiumViewer): void {
+  attach(viewer: CesiumViewer | null | undefined): void {
+    // Defensive: callers may hand us a ref.current that's still null
+    // (admin pages, pre-mount, viewer mid-teardown). Bail rather than
+    // store an unusable reference that would later crash in sync().
+    if (!viewer || !viewer.scene) return
     if (this.viewer === viewer) return
     if (this.viewer) this.detach()
     this.viewer = viewer
@@ -61,7 +65,13 @@ export class VoxelRenderer {
    *  not meshDirty) and expensive only when meshDirty flips, which
    *  is also when the upstream data layer is doing real work. */
   sync(layer: SVOLayer, chunks: SVOChunk[]): void {
-    if (!this.viewer) return
+    // Guard order matters — both the viewer object AND its `scene`
+    // member must be live before we touch primitives. The latter can
+    // be undefined transiently during Cesium teardown (the host swaps
+    // viewers, the React effect's `attach` runs before the new
+    // viewer's scene has been constructed) and was the source of the
+    // "Cannot read properties of undefined (reading 'scene')" crash.
+    if (!this.viewer || !this.viewer.scene) return
 
     // The renderer currently only honours `solid`. Other modes are
     // accepted by the API but render the same way; the UI layer can
@@ -133,37 +143,33 @@ export interface VoxelRendererState {
  *  Pass a stable React ref for `viewerRef`. The hook polls .current
  *  inside an effect that also depends on the state, so a viewer that
  *  mounts asynchronously after first render is picked up on the next
- *  render of the consuming component. */
+ *  render of the consuming component.
+ *
+ *  **Viewer-absent contract:** when `viewerRef?.current` is null
+ *  (admin pages with no globe, pre-mount, mid-teardown) the hook is
+ *  a no-op — no VoxelRenderer is allocated and no Cesium primitives
+ *  are touched. The renderer is lazy-instantiated the first time a
+ *  viewer becomes available, which protects against the
+ *  "Cannot read properties of undefined (reading 'scene')" crash
+ *  that surfaced at /admin/overview. */
 export function useVoxelRenderer(
   viewerRef: React.RefObject<CesiumViewer | null>,
   state: VoxelRendererState,
 ): void {
   const rendererRef = useRef<VoxelRenderer | null>(null)
 
-  // Lazy-init the renderer once. We keep a single instance for the
-  // lifetime of the consuming component so chunk primitives survive
-  // shallow state churn (only `sync` decides what to keep).
+  // Attach / sync. We also lazy-create the renderer here — that way
+  // contexts that never see a viewer (admin pages) never allocate
+  // one. Each render checks `viewerRef.current`: when it's null we
+  // bail before touching anything Cesium-shaped.
   useEffect(() => {
+    const viewer = viewerRef.current
+    if (!viewer || !viewer.scene) return
+
     if (!rendererRef.current) {
       rendererRef.current = new VoxelRenderer({ mode: state.mode })
     }
-    return () => {
-      rendererRef.current?.detach()
-      rendererRef.current = null
-    }
-    // Intentionally empty deps — we want one renderer instance per
-    // mount. Mode and state changes are handled by the second effect.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
-
-  // Attach / sync on every state change. Re-attaches if the viewer
-  // ref changes (e.g. Cesium reset by the host).
-  useEffect(() => {
     const renderer = rendererRef.current
-    if (!renderer) return
-    const viewer = viewerRef.current
-    if (!viewer) return
-
     renderer.attach(viewer)
     if (state.mode) renderer.setRenderMode(state.mode)
 
@@ -176,4 +182,13 @@ export function useVoxelRenderer(
       renderer.attach(viewer)
     }
   }, [viewerRef, state.activeLayer, state.chunks, state.mode])
+
+  // Teardown only — separate effect so it isn't re-registered on
+  // every state change. Runs once on unmount.
+  useEffect(() => {
+    return () => {
+      rendererRef.current?.detach()
+      rendererRef.current = null
+    }
+  }, [])
 }
