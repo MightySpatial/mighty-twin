@@ -68,8 +68,12 @@ sleep 1
 
 # --- Start API ----------------------------------------------------------
 echo "${BLUE}Starting api (uvicorn)…${NC}"
+# Bind 0.0.0.0 so phones / tablets / second devices on the LAN can hit
+# the viewer. macOS firewall: the first connection from another device
+# will prompt to allow Python — accept it, or pre-allow it via
+# `bin/macos-firewall-allow-python.sh`.
 ( cd "$ROOT/apps/api" && DATABASE_URL="$DATABASE_URL" \
-    uv run uvicorn twin_api.main:app --host 127.0.0.1 --port "$API_PORT" \
+    uv run uvicorn twin_api.main:app --host 0.0.0.0 --port "$API_PORT" \
     > /tmp/twin-api.log 2>&1 ) &
 API_PID=$!
 
