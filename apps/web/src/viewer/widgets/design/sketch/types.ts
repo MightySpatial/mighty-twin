@@ -178,9 +178,36 @@ export interface ChangeSet {
   deleted: ChangeSetEntry[]
 }
 
+/** A sketch's role / category. Drives which layer types are valid
+ *  inside it, the badge shown on the sketch card, and the layer-type
+ *  picker filtering.
+ *
+ *  - 'cad'    — vector / drawing precision geometry, the default.
+ *  - 'redline' — markup / review annotations. Always also carries a
+ *    `redline` metadata block; the kind flag is what UI surfaces
+ *    actually consume (the legacy `redline` field is the
+ *    backing data).
+ *  - 'voxel'  — 3D block grid sketch. Voxel layers (SVOLayer) live in
+ *    the SVO engine but are scoped to a single voxel sketch via
+ *    layer.sketchId. Block size / render mode / generators are
+ *    properties of the sketch's layers; this category just signals
+ *    that the sketch hosts voxel content rather than drawing layers. */
+export type SketchKind = 'cad' | 'redline' | 'voxel'
+
 export interface Sketch {
   id: string
   name: string
+  /** Sketch category — see SketchKind. Defaults to 'cad' for sketches
+   *  loaded from persistence without an explicit kind (back-compat
+   *  with v1 sketches; the redline field is still consulted so old
+   *  redline sketches get kind='redline' derived at hydrate time). */
+  kind?: SketchKind
+  /** Optional group folder — sketches sharing groupId render under a
+   *  collapsible "{groupName}" header in the gallery. Group state
+   *  lives in JSON metadata (no separate Group table); group names
+   *  are loose strings free for the user to edit. */
+  groupId?: string
+  groupName?: string
   /** Site affinity — single or multi. Redlines are single-site. */
   siteIds: string[]
   layers: SketchLayerSpec[]
@@ -203,6 +230,15 @@ export interface Sketch {
    *  this set; persistence loads the default sketch as the active one
    *  on next session. Toggled from the LayersTab settings popover. */
   isDefault?: boolean
+}
+
+/** Resolve the effective kind for a sketch — explicit field takes
+ *  precedence; otherwise infer from the legacy `redline` metadata
+ *  block so v1 docs hydrate as kind='redline' without a migration. */
+export function sketchKind(s: Sketch): SketchKind {
+  if (s.kind) return s.kind
+  if (s.redline) return 'redline'
+  return 'cad'
 }
 
 /** Persisted shape on disk — what `/api/me/json-files/design-sketch-*.json`

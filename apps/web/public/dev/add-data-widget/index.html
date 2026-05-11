@@ -1,0 +1,1199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MightyTwin · Add Data Widget — Mockup</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0f0f14;
+    --card: #1a1a24;
+    --card-soft: #161620;
+    --border: #2a2a38;
+    --border-strong: #38384a;
+    --fg: rgba(255,255,255,0.92);
+    --fg-2: rgba(255,255,255,0.6);
+    --fg-3: rgba(255,255,255,0.4);
+    --accent: #4a9eff;
+    --accent-soft: rgba(74,158,255,0.14);
+    --accent-strong: #2d7fd6;
+
+    /* Data-tier swatches — consistent across tabs */
+    --tier-site:    #4a9eff;       /* solid blue */
+    --tier-upload:  #f5a524;       /* amber upload */
+    --tier-library: #d4d4dc;       /* white/grey star */
+    --tier-catalog: #a78bfa;       /* purple chain */
+
+    --green: #21c07a;
+    --amber: #f5a524;
+    --red:   #f87171;
+
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 14px;
+    --font: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', system-ui, sans-serif;
+    --font-mono: ui-monospace, 'JetBrains Mono', SFMono-Regular, Menlo, monospace;
+
+    --transition: 160ms cubic-bezier(0.22,1,0.36,1);
+  }
+
+  body {
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--fg);
+    font-size: 13px;
+    line-height: 1.45;
+    min-height: 100vh;
+    padding: 40px 20px;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+  }
+
+  /* ── Widget shell ── */
+  .widget {
+    width: 720px;
+    max-width: 100%;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 16px 48px rgba(0,0,0,0.45);
+  }
+
+  /* Header */
+  .head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 18px;
+    background: var(--card-soft);
+    border-bottom: 1px solid var(--border);
+  }
+  .head__title {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--fg);
+  }
+  .head__title svg { color: var(--accent); }
+  .head__close {
+    width: 24px;
+    height: 24px;
+    border-radius: 6px;
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--fg-2);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+  }
+  .head__close:hover { color: var(--fg); background: rgba(255,255,255,0.04); }
+
+  /* Tab bar */
+  .tabs {
+    display: flex;
+    border-bottom: 1px solid var(--border);
+    background: var(--card-soft);
+  }
+  .tab {
+    flex: 1;
+    padding: 10px 16px;
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: var(--fg-2);
+    font: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: color var(--transition), border-color var(--transition);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+  }
+  .tab:hover { color: var(--fg); }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .tab .badge {
+    font-size: 10px;
+    padding: 1px 6px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 8px;
+    color: var(--fg-3);
+  }
+  .tab.active .badge { color: var(--accent); background: var(--accent-soft); }
+
+  /* Tab panels */
+  .panels { flex: 1; min-height: 460px; }
+  .panel { display: none; padding: 18px; }
+  .panel.active { display: block; }
+
+  /* ── Tier dots / icons ── */
+  .tier-icon {
+    width: 14px;
+    height: 14px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .tier-icon--site::after,
+  .tier-icon--site::after {
+    content: '';
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--tier-site);
+    box-shadow: 0 0 0 2px rgba(74,158,255,0.18);
+  }
+  .tier-icon--site {
+    width: 14px; height: 14px;
+  }
+  .tier-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 2px 8px;
+    border-radius: 10px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid var(--border);
+    color: var(--fg-2);
+  }
+  .tier-badge--site    { color: var(--tier-site);    border-color: rgba(74,158,255,0.32);    background: rgba(74,158,255,0.08); }
+  .tier-badge--upload  { color: var(--tier-upload);  border-color: rgba(245,165,36,0.34);    background: rgba(245,165,36,0.08); }
+  .tier-badge--library { color: var(--tier-library); border-color: rgba(212,212,220,0.22);  background: rgba(255,255,255,0.04); }
+  .tier-badge--catalog { color: var(--tier-catalog); border-color: rgba(167,139,250,0.36);  background: rgba(167,139,250,0.10); }
+
+  /* ── Upload tab ── */
+
+  .dropzone {
+    border: 2px dashed var(--border-strong);
+    border-radius: var(--radius-md);
+    padding: 36px 24px;
+    text-align: center;
+    background: var(--card-soft);
+    transition: border-color var(--transition), background var(--transition);
+    cursor: pointer;
+  }
+  .dropzone.dragover {
+    border-color: var(--accent);
+    background: var(--accent-soft);
+  }
+  .dropzone__icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+    background: var(--accent-soft);
+    color: var(--accent);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 12px;
+  }
+  .dropzone__title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--fg);
+    margin-bottom: 4px;
+  }
+  .dropzone__sub {
+    font-size: 12px;
+    color: var(--fg-2);
+  }
+  .dropzone__formats {
+    margin-top: 12px;
+    font-size: 10px;
+    color: var(--fg-3);
+    font-family: var(--font-mono);
+    letter-spacing: 0.02em;
+  }
+
+  /* Splat georef row */
+  .splat-georef {
+    margin-top: 16px;
+    padding: 14px 16px;
+    background: rgba(245,165,36,0.06);
+    border: 1px solid rgba(245,165,36,0.24);
+    border-radius: var(--radius-md);
+    display: none;
+  }
+  .splat-georef.visible { display: block; }
+  .splat-georef__title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--amber);
+    margin-bottom: 10px;
+  }
+  .splat-georef__fields {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px;
+  }
+  .splat-georef__field { display: flex; flex-direction: column; gap: 4px; }
+  .splat-georef__label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--fg-3);
+  }
+  .splat-georef__input {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--fg);
+    padding: 6px 10px;
+    font: inherit;
+    font-size: 12px;
+    font-family: var(--font-mono);
+  }
+  .splat-georef__input:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+  .splat-georef__hint {
+    margin-top: 8px;
+    font-size: 11px;
+    color: var(--fg-2);
+  }
+
+  /* Destination radios */
+  .upload-dest {
+    margin-top: 16px;
+    display: flex;
+    gap: 8px;
+    background: var(--card-soft);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 4px;
+  }
+  .upload-dest__opt {
+    flex: 1;
+    padding: 8px 12px;
+    border-radius: 6px;
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--fg-2);
+    font: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: color var(--transition), background var(--transition);
+  }
+  .upload-dest__opt:hover { color: var(--fg); }
+  .upload-dest__opt.active {
+    color: var(--accent);
+    background: var(--accent-soft);
+    border-color: rgba(74,158,255,0.3);
+  }
+
+  /* Upload queue */
+  .queue {
+    margin-top: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .queue__hd {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--fg-3);
+    padding: 0 4px 4px;
+  }
+  .qrow {
+    display: grid;
+    grid-template-columns: 28px 1fr 60px auto;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    background: var(--card-soft);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+  }
+  .qrow__icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    background: rgba(255,255,255,0.04);
+    color: var(--fg-2);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .qrow__info { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+  .qrow__name {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--fg);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .qrow__sub {
+    font-size: 10px;
+    color: var(--fg-3);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .qrow__size {
+    font-size: 10px;
+    color: var(--fg-3);
+    font-family: var(--font-mono);
+    text-align: right;
+  }
+  .qrow__status {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 3px 9px;
+    border-radius: 12px;
+  }
+  .qrow__status--queued    { color: var(--fg-3); background: rgba(255,255,255,0.04); }
+  .qrow__status--uploading { color: var(--accent); background: var(--accent-soft); }
+  .qrow__status--done      { color: var(--green); background: rgba(33,192,122,0.10); }
+  .qrow__status--error     { color: var(--red);   background: rgba(248,113,113,0.10); }
+
+  .qrow__progress {
+    grid-column: 1 / -1;
+    height: 3px;
+    background: rgba(255,255,255,0.04);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .qrow__progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--accent-strong));
+    width: 0%;
+    transition: width 240ms ease-out;
+  }
+  .qrow.is-uploading {
+    animation: pulse 1.6s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(74,158,255,0.0); }
+    50%      { box-shadow: 0 0 0 2px rgba(74,158,255,0.18); }
+  }
+
+  /* ── Library tab ── */
+  .library {
+    display: grid;
+    grid-template-columns: 200px 1fr;
+    gap: 14px;
+    min-height: 400px;
+  }
+  .tree {
+    background: var(--card-soft);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 10px 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    overflow-y: auto;
+  }
+  .tree__node {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 8px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 12px;
+    color: var(--fg-2);
+    user-select: none;
+  }
+  .tree__node:hover { color: var(--fg); background: rgba(255,255,255,0.04); }
+  .tree__node.active { color: var(--accent); background: var(--accent-soft); }
+  .tree__node--child { padding-left: 26px; font-size: 11.5px; }
+  .tree__caret {
+    display: inline-flex;
+    width: 12px;
+    height: 12px;
+    transition: transform var(--transition);
+    color: var(--fg-3);
+  }
+  .tree__caret.open { transform: rotate(90deg); }
+
+  .lib-main { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+  .lib-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .lib-search {
+    flex: 1;
+    position: relative;
+  }
+  .lib-search__input {
+    width: 100%;
+    background: var(--card-soft);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    color: var(--fg);
+    padding: 8px 12px 8px 32px;
+    font: inherit;
+    font-size: 12px;
+  }
+  .lib-search__input:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+  .lib-search__icon {
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--fg-3);
+  }
+  .lib-view-toggle {
+    display: flex;
+    background: var(--card-soft);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 2px;
+    gap: 0;
+  }
+  .lib-view-toggle__btn {
+    background: transparent;
+    border: none;
+    color: var(--fg-3);
+    padding: 5px 9px;
+    border-radius: 5px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+  }
+  .lib-view-toggle__btn:hover { color: var(--fg); }
+  .lib-view-toggle__btn.active {
+    color: var(--accent);
+    background: var(--accent-soft);
+  }
+
+  .filters { display: flex; gap: 6px; flex-wrap: wrap; }
+  .chip {
+    background: var(--card-soft);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    color: var(--fg-2);
+    padding: 4px 10px;
+    font: inherit;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+    transition: color var(--transition), background var(--transition), border-color var(--transition);
+  }
+  .chip:hover { color: var(--fg); }
+  .chip.active {
+    color: var(--accent);
+    border-color: rgba(74,158,255,0.34);
+    background: var(--accent-soft);
+  }
+
+  .lib-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+  .lib-card {
+    background: var(--card-soft);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    position: relative;
+    cursor: pointer;
+    transition: border-color var(--transition), background var(--transition);
+  }
+  .lib-card:hover {
+    border-color: var(--border-strong);
+    background: var(--card);
+  }
+  .lib-card__thumb {
+    height: 80px;
+    border-radius: 6px;
+    background: linear-gradient(135deg, #232333, #141420);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--fg-3);
+    position: relative;
+  }
+  .lib-card__star {
+    position: absolute;
+    top: 6px; right: 6px;
+    color: #f0c41a;
+    filter: drop-shadow(0 0 4px rgba(240,196,26,0.5));
+  }
+  .lib-card__title { font-size: 12.5px; font-weight: 600; color: var(--fg); }
+  .lib-card__meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 10px;
+    color: var(--fg-3);
+  }
+  .lib-card__actions {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, transparent 40%, rgba(15,15,20,0.92));
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    gap: 6px;
+    padding: 12px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--transition);
+  }
+  .lib-card:hover .lib-card__actions { opacity: 1; pointer-events: auto; }
+  .lib-card__btn {
+    background: var(--accent);
+    border: none;
+    color: #0f0f14;
+    font-weight: 700;
+    font-size: 11px;
+    padding: 5px 10px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .lib-card__btn--ghost {
+    background: rgba(255,255,255,0.06);
+    color: var(--fg);
+    border: 1px solid var(--border);
+  }
+
+  /* ── Catalog tab ── */
+  .cat-list { display: flex; flex-direction: column; gap: 8px; }
+  .cat-row {
+    display: grid;
+    grid-template-columns: 28px 1fr auto auto;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    background: var(--card-soft);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    transition: border-color var(--transition);
+  }
+  .cat-row:hover { border-color: var(--border-strong); }
+  .cat-row__icon {
+    width: 28px; height: 28px;
+    border-radius: 7px;
+    background: rgba(167,139,250,0.12);
+    color: var(--tier-catalog);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .cat-row__info { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+  .cat-row__name { font-size: 13px; font-weight: 600; color: var(--fg); }
+  .cat-row__url {
+    font-size: 11px;
+    color: var(--fg-3);
+    font-family: var(--font-mono);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .cat-row__status {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .cat-row__status--live { color: var(--green); }
+  .cat-row__status--unreachable { color: var(--red); }
+  .cat-row__dot {
+    width: 6px; height: 6px; border-radius: 50%;
+  }
+  .cat-row__status--live .cat-row__dot { background: var(--green); box-shadow: 0 0 6px rgba(33,192,122,0.6); }
+  .cat-row__status--unreachable .cat-row__dot { background: var(--red); }
+
+  .browse-btn {
+    background: var(--accent);
+    border: none;
+    color: #0f0f14;
+    font: inherit;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 9px 16px;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    align-self: flex-start;
+    margin-top: 6px;
+  }
+  .browse-btn:hover { background: var(--accent-strong); }
+
+  /* ── Data-tier legend (small print, foot of each tab) ── */
+  .legend {
+    margin-top: 16px;
+    padding-top: 14px;
+    border-top: 1px dashed var(--border);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    font-size: 10.5px;
+    color: var(--fg-3);
+  }
+  .legend__item {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .legend__dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+  }
+  .legend__icon-mini {
+    width: 10px; height: 10px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Inline SVG icons */
+  .ico { width: 14px; height: 14px; stroke-width: 2; fill: none; stroke: currentColor; vertical-align: middle; }
+  .ico--12 { width: 12px; height: 12px; }
+  .ico--16 { width: 16px; height: 16px; }
+  .ico--20 { width: 20px; height: 20px; }
+  .ico--28 { width: 28px; height: 28px; }
+</style>
+</head>
+<body>
+
+<div class="widget">
+
+  <!-- Header -->
+  <div class="head">
+    <div class="head__title">
+      <svg class="ico ico--16" viewBox="0 0 24 24"><path d="M12 4v16m-8-8h16"/></svg>
+      Add Data
+    </div>
+    <button class="head__close" aria-label="Close">
+      <svg class="ico ico--12" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs" role="tablist">
+    <button class="tab active" data-tab="upload" role="tab" aria-selected="true">
+      <svg class="ico ico--12" viewBox="0 0 24 24"><path d="M12 16V4m0 0l-5 5m5-5l5 5M4 18v2h16v-2"/></svg>
+      Upload
+      <span class="badge">3</span>
+    </button>
+    <button class="tab" data-tab="library" role="tab">
+      <svg class="ico ico--12" viewBox="0 0 24 24"><path d="M4 4h6v8H4zm10 0h6v6h-6zm0 10h6v6h-6zM4 14h6v6H4z"/></svg>
+      Library
+      <span class="badge">128</span>
+    </button>
+    <button class="tab" data-tab="catalog" role="tab">
+      <svg class="ico ico--12" viewBox="0 0 24 24"><path d="M10 14a4 4 0 005.66 0l3-3a4 4 0 00-5.66-5.66l-1 1m-2 6a4 4 0 01-5.66 0 4 4 0 010-5.66l3-3a4 4 0 015.66 0"/></svg>
+      Catalog
+      <span class="badge">7</span>
+    </button>
+  </div>
+
+  <div class="panels">
+
+    <!-- ─────────────────────────────  UPLOAD  ───────────────────────────── -->
+    <section class="panel active" data-panel="upload">
+
+      <div class="dropzone" id="dropzone" tabindex="0">
+        <div class="dropzone__icon">
+          <svg class="ico ico--20" viewBox="0 0 24 24"><path d="M12 16V4m0 0l-5 5m5-5l5 5M4 18v2h16v-2"/></svg>
+        </div>
+        <div class="dropzone__title">Drop files here or click to browse</div>
+        <div class="dropzone__sub">Files added here become "design uploads" — tagged separately from site layers.</div>
+        <div class="dropzone__formats">.geojson · .json · .ifc · .ifczip · .zip · .splat · .ply · .xyz · .csv</div>
+      </div>
+
+      <!-- Splat georef — appears when a .splat/.ply lands without an offset.xyz sidecar -->
+      <div class="splat-georef visible" id="splat-georef">
+        <div class="splat-georef__title">
+          <svg class="ico ico--12" viewBox="0 0 24 24"><path d="M21 10a8 8 0 11-16 0M12 2v8m-3-3l3 3 3-3"/></svg>
+          Splat georeference — offset.xyz not detected
+        </div>
+        <div class="splat-georef__fields">
+          <label class="splat-georef__field">
+            <span class="splat-georef__label">Longitude</span>
+            <input class="splat-georef__input" type="text" placeholder="151.2093" value="">
+          </label>
+          <label class="splat-georef__field">
+            <span class="splat-georef__label">Latitude</span>
+            <input class="splat-georef__input" type="text" placeholder="-33.8688" value="">
+          </label>
+          <label class="splat-georef__field">
+            <span class="splat-georef__label">Altitude (m)</span>
+            <input class="splat-georef__input" type="text" placeholder="0" value="0">
+          </label>
+        </div>
+        <div class="splat-georef__hint">
+          Drop an <code style="color:var(--fg-2)">offset.xyz</code> alongside the splat next time to auto-populate.
+        </div>
+      </div>
+
+      <!-- Destination -->
+      <div class="upload-dest" role="radiogroup" aria-label="Destination">
+        <button class="upload-dest__opt active" data-dest="sketch">Add to current sketch</button>
+        <button class="upload-dest__opt" data-dest="atlas">Add to atlas</button>
+        <button class="upload-dest__opt" data-dest="temp">Keep as temp</button>
+      </div>
+
+      <!-- Queue -->
+      <div class="queue">
+        <div class="queue__hd">Upload queue · 3 files</div>
+
+        <div class="qrow is-uploading">
+          <div class="qrow__icon">
+            <svg class="ico ico--16" viewBox="0 0 24 24"><path d="M9 12h6m-3-3v6m9-2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          </div>
+          <div class="qrow__info">
+            <div class="qrow__name">forrest-airport-terminal.splat</div>
+            <div class="qrow__sub">
+              <span class="tier-badge tier-badge--upload">
+                <svg class="ico ico--12" viewBox="0 0 24 24" style="width:8px;height:8px;"><path d="M12 16V4m0 0l-5 5m5-5l5 5"/></svg>
+                Design upload
+              </span>
+              Splat · georef pending
+            </div>
+          </div>
+          <div class="qrow__size">2.4 GB</div>
+          <span class="qrow__status qrow__status--uploading">Uploading</span>
+          <div class="qrow__progress"><div class="qrow__progress-bar" style="width: 38%"></div></div>
+        </div>
+
+        <div class="qrow">
+          <div class="qrow__icon">
+            <svg class="ico ico--16" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M16 13H8m8 4H8M10 9H8"/></svg>
+          </div>
+          <div class="qrow__info">
+            <div class="qrow__name">utilities-survey.geojson</div>
+            <div class="qrow__sub">
+              <span class="tier-badge tier-badge--upload">
+                <svg class="ico ico--12" viewBox="0 0 24 24" style="width:8px;height:8px;"><path d="M12 16V4m0 0l-5 5m5-5l5 5"/></svg>
+                Design upload
+              </span>
+              GeoJSON · 1,284 features
+            </div>
+          </div>
+          <div class="qrow__size">8.2 MB</div>
+          <span class="qrow__status qrow__status--done">Done</span>
+          <div class="qrow__progress"><div class="qrow__progress-bar" style="width: 100%; background: var(--green);"></div></div>
+        </div>
+
+        <div class="qrow">
+          <div class="qrow__icon">
+            <svg class="ico ico--16" viewBox="0 0 24 24"><path d="M3 7l9-4 9 4v10l-9 4-9-4z"/><path d="M3 7l9 4 9-4M12 11v10"/></svg>
+          </div>
+          <div class="qrow__info">
+            <div class="qrow__name">runway-structure.ifczip</div>
+            <div class="qrow__sub">
+              <span class="tier-badge tier-badge--upload">
+                <svg class="ico ico--12" viewBox="0 0 24 24" style="width:8px;height:8px;"><path d="M12 16V4m0 0l-5 5m5-5l5 5"/></svg>
+                Design upload
+              </span>
+              IFC · failed at validation
+            </div>
+          </div>
+          <div class="qrow__size">142 MB</div>
+          <span class="qrow__status qrow__status--error">Error</span>
+          <div class="qrow__progress"><div class="qrow__progress-bar" style="width: 100%; background: var(--red);"></div></div>
+        </div>
+      </div>
+
+      <div class="legend">
+        <span class="legend__item">
+          <span class="legend__dot" style="background: var(--tier-site);"></span>
+          Site layer
+        </span>
+        <span class="legend__item">
+          <span class="legend__icon-mini" style="color: var(--tier-upload);">
+            <svg class="ico ico--12" viewBox="0 0 24 24"><path d="M12 16V4m0 0l-5 5m5-5l5 5"/></svg>
+          </span>
+          Uploaded (design)
+        </span>
+        <span class="legend__item">
+          <span class="legend__icon-mini" style="color: var(--tier-library);">
+            <svg class="ico ico--12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3 6 7 1-5 5 1 7-6-3-6 3 1-7-5-5 7-1z"/></svg>
+          </span>
+          Library
+        </span>
+        <span class="legend__item">
+          <span class="legend__icon-mini" style="color: var(--tier-catalog);">
+            <svg class="ico ico--12" viewBox="0 0 24 24"><path d="M10 14a4 4 0 005.66 0l3-3a4 4 0 00-5.66-5.66l-1 1m-2 6a4 4 0 01-5.66 0 4 4 0 010-5.66l3-3a4 4 0 015.66 0"/></svg>
+          </span>
+          External catalog
+        </span>
+      </div>
+
+    </section>
+
+    <!-- ─────────────────────────────  LIBRARY  ───────────────────────────── -->
+    <section class="panel" data-panel="library">
+
+      <div class="library">
+
+        <!-- Folder tree -->
+        <div class="tree" role="tree" aria-label="Library folders">
+          <div class="tree__node active" data-folder="all">
+            <svg class="ico ico--12 tree__caret open" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+            <svg class="ico ico--12" viewBox="0 0 24 24"><path d="M3 7v13h18V7M3 7l3-4h12l3 4M3 7h18M9 11h6"/></svg>
+            All layers
+          </div>
+          <div class="tree__node tree__node--child" data-folder="sydney">
+            Sydney Harbour
+          </div>
+          <div class="tree__node tree__node--child" data-folder="forrest">
+            Forrest Airport
+          </div>
+          <div class="tree__node tree__node--child" data-folder="basemaps">
+            Basemaps
+          </div>
+
+          <div class="tree__node" data-folder="3d" style="margin-top:8px;">
+            <svg class="ico ico--12 tree__caret" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+            <svg class="ico ico--12" viewBox="0 0 24 24"><path d="M21 16V8l-9-4-9 4v8l9 4 9-4zM3.27 6.96L12 12l8.73-5.04M12 22V12"/></svg>
+            3D assets
+          </div>
+
+          <div class="tree__node" data-folder="splats">
+            <svg class="ico ico--12 tree__caret" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+            <svg class="ico ico--12" viewBox="0 0 24 24"><circle cx="6" cy="6" r="2"/><circle cx="18" cy="6" r="2"/><circle cx="6" cy="18" r="2"/><circle cx="18" cy="18" r="2"/><circle cx="12" cy="12" r="2"/></svg>
+            Splats
+          </div>
+
+          <div class="tree__node" data-folder="ifc">
+            <svg class="ico ico--12 tree__caret" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+            <svg class="ico ico--12" viewBox="0 0 24 24"><path d="M3 21V8l9-5 9 5v13m-12 0V13h6v8"/></svg>
+            IFC models
+          </div>
+
+          <div class="tree__node" data-folder="trash" style="margin-top:auto; color: var(--fg-3); padding-top: 18px;">
+            <svg class="ico ico--12" viewBox="0 0 24 24"><path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
+            Archived
+          </div>
+        </div>
+
+        <!-- Main grid -->
+        <div class="lib-main">
+
+          <div class="lib-toolbar">
+            <div class="lib-search">
+              <span class="lib-search__icon">
+                <svg class="ico ico--16" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg>
+              </span>
+              <input class="lib-search__input" placeholder="Search the library…" value="terminal">
+            </div>
+            <div class="lib-view-toggle">
+              <button class="lib-view-toggle__btn active" title="Tile view" aria-label="Tile view">
+                <svg class="ico ico--12" viewBox="0 0 24 24"><path d="M3 3h8v8H3zm10 0h8v8h-8zM3 13h8v8H3zm10 0h8v8h-8z"/></svg>
+              </button>
+              <button class="lib-view-toggle__btn" title="List view" aria-label="List view">
+                <svg class="ico ico--12" viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <div class="filters">
+            <button class="chip active" data-chip="all">All</button>
+            <button class="chip" data-chip="2d">2D</button>
+            <button class="chip" data-chip="3d">3D</button>
+            <button class="chip" data-chip="ifc">IFC</button>
+            <button class="chip" data-chip="splat">Splat</button>
+            <button class="chip" data-chip="geojson">GeoJSON</button>
+          </div>
+
+          <div class="lib-grid">
+
+            <div class="lib-card">
+              <div class="lib-card__thumb">
+                <svg class="ico ico--28" viewBox="0 0 24 24"><circle cx="6" cy="6" r="2"/><circle cx="18" cy="6" r="2"/><circle cx="6" cy="18" r="2"/><circle cx="18" cy="18" r="2"/><circle cx="12" cy="12" r="2"/></svg>
+                <span class="lib-card__star" title="Authoritative">
+                  <svg class="ico ico--16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3 6 7 1-5 5 1 7-6-3-6 3 1-7-5-5 7-1z"/></svg>
+                </span>
+              </div>
+              <div class="lib-card__title">Terminal Building (3DGS)</div>
+              <div class="lib-card__meta">
+                <span class="tier-badge tier-badge--library">Splat · 2.1 GB</span>
+                <span>2025-04-12</span>
+              </div>
+              <div class="lib-card__actions">
+                <button class="lib-card__btn">Add to site</button>
+                <button class="lib-card__btn lib-card__btn--ghost">Add to sketch</button>
+              </div>
+            </div>
+
+            <div class="lib-card">
+              <div class="lib-card__thumb">
+                <svg class="ico ico--28" viewBox="0 0 24 24"><path d="M3 21V8l9-5 9 5v13m-12 0V13h6v8"/></svg>
+              </div>
+              <div class="lib-card__title">Terminal Roof Structure</div>
+              <div class="lib-card__meta">
+                <span class="tier-badge tier-badge--library">IFC · 84 MB</span>
+                <span>2025-03-08</span>
+              </div>
+              <div class="lib-card__actions">
+                <button class="lib-card__btn">Add to site</button>
+                <button class="lib-card__btn lib-card__btn--ghost">Add to sketch</button>
+              </div>
+            </div>
+
+            <div class="lib-card">
+              <div class="lib-card__thumb">
+                <svg class="ico ico--28" viewBox="0 0 24 24"><path d="M3 6h18M9 4l2-2h2l2 2M5 6v14a2 2 0 002 2h10a2 2 0 002-2V6"/></svg>
+                <span class="lib-card__star" title="Authoritative">
+                  <svg class="ico ico--16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3 6 7 1-5 5 1 7-6-3-6 3 1-7-5-5 7-1z"/></svg>
+                </span>
+              </div>
+              <div class="lib-card__title">Terminal Site Boundary</div>
+              <div class="lib-card__meta">
+                <span class="tier-badge tier-badge--library">GeoJSON · 12 KB</span>
+                <span>2025-02-20</span>
+              </div>
+              <div class="lib-card__actions">
+                <button class="lib-card__btn">Add to site</button>
+                <button class="lib-card__btn lib-card__btn--ghost">Add to sketch</button>
+              </div>
+            </div>
+
+            <div class="lib-card">
+              <div class="lib-card__thumb">
+                <svg class="ico ico--28" viewBox="0 0 24 24"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+              </div>
+              <div class="lib-card__title">Apron Aerial Imagery</div>
+              <div class="lib-card__meta">
+                <span class="tier-badge tier-badge--library">COG · 740 MB</span>
+                <span>2025-01-14</span>
+              </div>
+              <div class="lib-card__actions">
+                <button class="lib-card__btn">Add to site</button>
+                <button class="lib-card__btn lib-card__btn--ghost">Add to sketch</button>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+      <div class="legend">
+        <span class="legend__item">
+          <span class="legend__dot" style="background: var(--tier-site);"></span>
+          Site layer
+        </span>
+        <span class="legend__item">
+          <span class="legend__icon-mini" style="color: var(--tier-upload);">
+            <svg class="ico ico--12" viewBox="0 0 24 24"><path d="M12 16V4m0 0l-5 5m5-5l5 5"/></svg>
+          </span>
+          Uploaded (design)
+        </span>
+        <span class="legend__item">
+          <span class="legend__icon-mini" style="color: var(--tier-library);">
+            <svg class="ico ico--12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3 6 7 1-5 5 1 7-6-3-6 3 1-7-5-5 7-1z"/></svg>
+          </span>
+          Library
+        </span>
+        <span class="legend__item">
+          <span class="legend__icon-mini" style="color: var(--tier-catalog);">
+            <svg class="ico ico--12" viewBox="0 0 24 24"><path d="M10 14a4 4 0 005.66 0l3-3a4 4 0 00-5.66-5.66l-1 1m-2 6a4 4 0 01-5.66 0 4 4 0 010-5.66l3-3a4 4 0 015.66 0"/></svg>
+          </span>
+          External catalog
+        </span>
+      </div>
+
+    </section>
+
+    <!-- ─────────────────────────────  CATALOG  ───────────────────────────── -->
+    <section class="panel" data-panel="catalog">
+
+      <div class="cat-list">
+
+        <div class="cat-row">
+          <div class="cat-row__icon">
+            <svg class="ico ico--16" viewBox="0 0 24 24"><path d="M10 14a4 4 0 005.66 0l3-3a4 4 0 00-5.66-5.66l-1 1m-2 6a4 4 0 01-5.66 0 4 4 0 010-5.66l3-3a4 4 0 015.66 0"/></svg>
+          </div>
+          <div class="cat-row__info">
+            <div class="cat-row__name">NSW Aerial Imagery — Sydney</div>
+            <div class="cat-row__url">https://maps.six.nsw.gov.au/arcgis/services/public/NSW_Imagery/MapServer/WMSServer</div>
+          </div>
+          <span class="tier-badge tier-badge--catalog">WMS</span>
+          <span class="cat-row__status cat-row__status--live">
+            <span class="cat-row__dot"></span> Live
+          </span>
+        </div>
+
+        <div class="cat-row">
+          <div class="cat-row__icon">
+            <svg class="ico ico--16" viewBox="0 0 24 24"><path d="M10 14a4 4 0 005.66 0l3-3a4 4 0 00-5.66-5.66l-1 1m-2 6a4 4 0 01-5.66 0 4 4 0 010-5.66l3-3a4 4 0 015.66 0"/></svg>
+          </div>
+          <div class="cat-row__info">
+            <div class="cat-row__name">Cesium ION — World Terrain</div>
+            <div class="cat-row__url">https://assets.cesium.com/1/tileset.json</div>
+          </div>
+          <span class="tier-badge tier-badge--catalog">3D Tiles</span>
+          <span class="cat-row__status cat-row__status--live">
+            <span class="cat-row__dot"></span> Live
+          </span>
+        </div>
+
+        <div class="cat-row">
+          <div class="cat-row__icon">
+            <svg class="ico ico--16" viewBox="0 0 24 24"><path d="M10 14a4 4 0 005.66 0l3-3a4 4 0 00-5.66-5.66l-1 1m-2 6a4 4 0 01-5.66 0 4 4 0 010-5.66l3-3a4 4 0 015.66 0"/></svg>
+          </div>
+          <div class="cat-row__info">
+            <div class="cat-row__name">DCCEEW Cadastral WFS</div>
+            <div class="cat-row__url">https://services.land.vic.gov.au/catalogue/publicproxy/guest/dv_geoserver/wfs</div>
+          </div>
+          <span class="tier-badge tier-badge--catalog">WFS</span>
+          <span class="cat-row__status cat-row__status--live">
+            <span class="cat-row__dot"></span> Live
+          </span>
+        </div>
+
+        <div class="cat-row">
+          <div class="cat-row__icon">
+            <svg class="ico ico--16" viewBox="0 0 24 24"><path d="M10 14a4 4 0 005.66 0l3-3a4 4 0 00-5.66-5.66l-1 1m-2 6a4 4 0 01-5.66 0 4 4 0 010-5.66l3-3a4 4 0 015.66 0"/></svg>
+          </div>
+          <div class="cat-row__info">
+            <div class="cat-row__name">Forrest Airport — Pavement Survey COG</div>
+            <div class="cat-row__url">https://storage.cloud.example/forrest/pavement-2025.tif</div>
+          </div>
+          <span class="tier-badge tier-badge--catalog">COG</span>
+          <span class="cat-row__status cat-row__status--unreachable">
+            <span class="cat-row__dot"></span> Unreachable
+          </span>
+        </div>
+
+      </div>
+
+      <button class="browse-btn">
+        <svg class="ico ico--12" viewBox="0 0 24 24"><path d="M12 4v16m-8-8h16"/></svg>
+        Browse external sources…
+      </button>
+
+      <div class="legend">
+        <span class="legend__item">Catalog refs are <strong style="color:var(--fg-2);">live</strong> — not copied into your site. They appear with an external badge in atlas layers.</span>
+      </div>
+
+    </section>
+
+  </div>
+
+</div>
+
+<script>
+  // Tab switching
+  const tabs = document.querySelectorAll('.tab');
+  const panels = document.querySelectorAll('.panel');
+  tabs.forEach(t => t.addEventListener('click', () => {
+    tabs.forEach(x => { x.classList.remove('active'); x.setAttribute('aria-selected', 'false'); });
+    panels.forEach(p => p.classList.remove('active'));
+    t.classList.add('active');
+    t.setAttribute('aria-selected', 'true');
+    document.querySelector(`.panel[data-panel="${t.dataset.tab}"]`).classList.add('active');
+  }));
+
+  // Dropzone — dragover highlight + click-to-pick stub
+  const dz = document.getElementById('dropzone');
+  ;['dragenter', 'dragover'].forEach(ev => dz.addEventListener(ev, e => {
+    e.preventDefault();
+    dz.classList.add('dragover');
+  }));
+  ;['dragleave', 'drop'].forEach(ev => dz.addEventListener(ev, e => {
+    e.preventDefault();
+    dz.classList.remove('dragover');
+  }));
+  dz.addEventListener('click', () => {
+    // Stub — would open the OS file picker in the real impl
+    dz.querySelector('.dropzone__title').textContent = 'Click your real file picker here';
+    setTimeout(() => dz.querySelector('.dropzone__title').textContent = 'Drop files here or click to browse', 1200);
+  });
+
+  // Destination radios
+  document.querySelectorAll('.upload-dest__opt').forEach(o => o.addEventListener('click', () => {
+    document.querySelectorAll('.upload-dest__opt').forEach(x => x.classList.remove('active'));
+    o.classList.add('active');
+  }));
+
+  // Filter chips
+  document.querySelectorAll('.chip').forEach(c => c.addEventListener('click', () => {
+    document.querySelectorAll('.chip').forEach(x => x.classList.remove('active'));
+    c.classList.add('active');
+  }));
+
+  // Tree node selection + caret toggle for folders with children
+  document.querySelectorAll('.tree__node').forEach(n => n.addEventListener('click', e => {
+    // Only toggle the caret when clicking on a top-level (non-child) folder
+    document.querySelectorAll('.tree__node').forEach(x => x.classList.remove('active'));
+    n.classList.add('active');
+    const caret = n.querySelector('.tree__caret');
+    if (caret && !n.classList.contains('tree__node--child')) {
+      caret.classList.toggle('open');
+    }
+  }));
+
+  // Simulated upload progress on the first row
+  const uploadingBar = document.querySelector('.qrow.is-uploading .qrow__progress-bar');
+  if (uploadingBar) {
+    let pct = 38;
+    setInterval(() => {
+      pct = Math.min(100, pct + 0.6);
+      uploadingBar.style.width = pct + '%';
+      if (pct >= 100) {
+        const row = uploadingBar.closest('.qrow');
+        row.classList.remove('is-uploading');
+        const s = row.querySelector('.qrow__status');
+        s.classList.remove('qrow__status--uploading');
+        s.classList.add('qrow__status--done');
+        s.textContent = 'Done';
+        uploadingBar.style.background = 'var(--green)';
+      }
+    }, 60);
+  }
+
+  // View-toggle (visual only)
+  document.querySelectorAll('.lib-view-toggle__btn').forEach(b => b.addEventListener('click', () => {
+    document.querySelectorAll('.lib-view-toggle__btn').forEach(x => x.classList.remove('active'));
+    b.classList.add('active');
+  }));
+</script>
+
+</body>
+</html>

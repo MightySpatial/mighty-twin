@@ -46,7 +46,7 @@ const UNDO_LIMIT = 100
 
 export interface CadEngineActions {
   // Sketches
-  createSketch: (init: { name: string; siteId: string }) => string
+  createSketch: (init: { name: string; siteId: string; kind?: import('./types').SketchKind; groupId?: string; groupName?: string }) => string
   deleteSketch: (sketchId: string) => void
   setActiveSketch: (sketchId: string | null) => void
   renameSketch: (sketchId: string, name: string) => void
@@ -148,13 +148,29 @@ function nextLayerColour(existingCount: number): string {
   return DEFAULT_LAYER_COLOURS[existingCount % DEFAULT_LAYER_COLOURS.length]
 }
 
-function makeBlankSketch(id: string, name: string, siteId: string): Sketch {
+function makeBlankSketch(
+  id: string,
+  name: string,
+  siteId: string,
+  kind: import('./types').SketchKind = 'cad',
+  groupId?: string,
+  groupName?: string,
+): Sketch {
   const layerId = generateLayerId()
+  // Voxel sketches don't need a default drawing layer — voxel layers
+  // live in the SVO engine and are added separately. We still seed an
+  // activeLayerId pointing at an empty list-head so existing code
+  // paths that assume a non-null id don't trip; the layers array is
+  // simply empty for voxel sketches.
+  const isVoxel = kind === 'voxel'
   return {
     id,
     name,
+    kind,
+    groupId,
+    groupName,
     siteIds: [siteId],
-    layers: [{
+    layers: isVoxel ? [] : [{
       id: layerId,
       name: 'Layer 1',
       colour: nextLayerColour(0),
@@ -162,7 +178,7 @@ function makeBlankSketch(id: string, name: string, siteId: string): Sketch {
       locked: false,
       coordMode: 'world',
     }],
-    activeLayerId: layerId,
+    activeLayerId: isVoxel ? '' : layerId,
     coordMode: 'world',
     coordCrs: 'EPSG:4326',
     localOrigin: { lon: 0, lat: 0, alt: 0 },
@@ -184,9 +200,9 @@ const cadEngineCreator: StateCreator<
     ...INITIAL,
 
     // ── Sketches ──────────────────────────────────────────────────────
-    createSketch: ({ name, siteId }) => {
+    createSketch: ({ name, siteId, kind, groupId, groupName }) => {
       const id = generateSketchId()
-      const sketch = makeBlankSketch(id, name, siteId)
+      const sketch = makeBlankSketch(id, name, siteId, kind ?? 'cad', groupId, groupName)
       set(state => ({
         ...pushUndo(state),
         sketches: { ...state.sketches, [id]: sketch },

@@ -61,6 +61,7 @@ import type {
   SketchLayerSpec,
   SketchNode,
 } from '../../sketch/types'
+import { sketchKind } from '../../sketch/types'
 
 const API_URL = ((import.meta as unknown as { env?: { VITE_API_URL?: string } })
   .env?.VITE_API_URL) || ''
@@ -315,9 +316,16 @@ export default function LayersTab({ siteSlug = null }: Props) {
 
   // ── Helpers ──────────────────────────────────────────────────────────
 
-  function startBlankSketch() {
+  function startBlankSketch(kind: import('../../sketch/types').SketchKind = 'cad') {
     const targetSiteId = siteSlug || '__local__'
-    createSketch({ name: `Sketch ${sketchList.length + 1}`, siteId: targetSiteId })
+    const prefix = kind === 'voxel' ? 'Voxel sketch'
+                 : kind === 'redline' ? 'Redline sketch'
+                 : 'Sketch'
+    createSketch({
+      name: `${prefix} ${sketchList.length + 1}`,
+      siteId: targetSiteId,
+      kind,
+    })
   }
 
   function commitLayerRename() {
@@ -616,12 +624,23 @@ export default function LayersTab({ siteSlug = null }: Props) {
             <button
               type="button"
               className="layers-empty__tile layers-empty__tile--blank"
-              onClick={startBlankSketch}
+              onClick={() => startBlankSketch('cad')}
             >
               <Plus size={18} />
-              <span className="layers-empty__tile-name">Blank sketch</span>
+              <span className="layers-empty__tile-name">CAD sketch</span>
               <span className="layers-empty__tile-sub">
-                Free canvas. One or many sites.
+                Vector drawing layers — strokes, shapes, annotations.
+              </span>
+            </button>
+            <button
+              type="button"
+              className="layers-empty__tile layers-empty__tile--blank"
+              onClick={() => startBlankSketch('voxel')}
+            >
+              <Plus size={18} />
+              <span className="layers-empty__tile-name">Voxel sketch</span>
+              <span className="layers-empty__tile-sub">
+                3D block grid — terrain, water, generated volumes.
               </span>
             </button>
             {siteSlug && (
@@ -744,7 +763,15 @@ export default function LayersTab({ siteSlug = null }: Props) {
                   </div>
                   <div className="sketch-tile__meta">
                     {s.layers.length} layer{s.layers.length === 1 ? '' : 's'}
-                    {isRedline && <span className="sketch-tile__redline-badge">redline</span>}
+                    {/* Kind badge — CAD / Redline / Voxel. Always
+                        rendered so the sketch type is visible at a
+                        glance; colour-coded so users learn the type
+                        signature quickly. */}
+                    <span className={`sketch-tile__kind-badge kind-${sketchKind(s)}`}>
+                      {sketchKind(s) === 'cad' ? 'CAD'
+                        : sketchKind(s) === 'redline' ? 'Redline'
+                        : 'Voxel'}
+                    </span>
                   </div>
 
                   <button
@@ -929,8 +956,26 @@ export default function LayersTab({ siteSlug = null }: Props) {
                 </div>
               )
             })}
-            <button className="sketch-tile sketch-tile--add" onClick={startBlankSketch}>
-              <Plus size={18} /> Blank sketch
+            {/* New-sketch type picker — three tiles, one per kind.
+                Compact (no expanded popover) since each option is a
+                single named action. Redline preserves the dedicated
+                "Redline…" modal entry below (which wires the
+                target-data-source picker); creating a blank redline
+                without a target is rarely useful, so we hide the
+                "blank redline" tile when the modal exists. */}
+            <button
+              className="sketch-tile sketch-tile--add"
+              onClick={() => startBlankSketch('cad')}
+              title="CAD sketch — vector drawing layers"
+            >
+              <Plus size={18} /> <span>New CAD sketch</span>
+            </button>
+            <button
+              className="sketch-tile sketch-tile--add"
+              onClick={() => startBlankSketch('voxel')}
+              title="Voxel sketch — 3D block grid"
+            >
+              <Plus size={18} /> <span>New voxel sketch</span>
             </button>
             {siteSlug && (
               <button className="sketch-tile sketch-tile--redline" onClick={() => setRedlineModalOpen(true)}>

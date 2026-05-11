@@ -159,6 +159,34 @@
   padding: 1px 6px;
   border-radius: var(--dw-radius-pill);
 }
+
+/* Sketch kind badge — CAD / Redline / Voxel. Colour-coded so the
+ * category reads at a glance. */
+.sketch-tile__kind-badge {
+  font-size: var(--dw-fs-9);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 1px 7px;
+  border-radius: var(--dw-radius-pill);
+  border: 1px solid transparent;
+  margin-left: auto;
+}
+.sketch-tile__kind-badge.kind-cad {
+  color: var(--dw-util);
+  background: var(--dw-util-bg-soft);
+  border-color: var(--dw-util-d);
+}
+.sketch-tile__kind-badge.kind-redline {
+  color: var(--dw-warning-l);
+  background: var(--dw-warning-bg);
+  border-color: var(--dw-warning-border);
+}
+.sketch-tile__kind-badge.kind-voxel {
+  color: #c084fc;
+  background: rgba(192, 132, 252, 0.10);
+  border-color: rgba(192, 132, 252, 0.30);
+}
 .sketch-tile__del {
   position: absolute;
   top: 6px;
