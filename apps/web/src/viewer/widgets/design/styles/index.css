@@ -116,6 +116,89 @@
   flex-wrap: wrap;
   gap: var(--dw-space-2);
 }
+
+/* ── Typed gallery sections (CAD / Redline / Voxel) ──────────────────
+ * Each section has a coloured left border keyed to its type so the
+ * sections read distinctly at a glance — same colour language as the
+ * old per-tile kind badge (which is gone — type is conveyed by the
+ * section itself now). */
+.sketch-gallery-sections {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dw-space-3);
+}
+.gallery-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dw-space-2);
+  border-left: 2px solid transparent;
+  padding-left: var(--dw-space-3);
+}
+.gallery-section--cad     { border-left-color: var(--dw-util-d); }
+.gallery-section--redline { border-left-color: var(--dw-warning-border); }
+.gallery-section--voxel   { border-left-color: rgba(192, 132, 252, 0.45); }
+
+.gallery-section__hd {
+  display: flex;
+  align-items: center;
+  gap: var(--dw-space-2);
+}
+.gallery-section__label {
+  font-size: var(--dw-fs-10);
+  text-transform: uppercase;
+  letter-spacing: var(--dw-tracking-meta);
+  color: var(--dw-text-2);
+  font-weight: 700;
+}
+.gallery-section--cad     .gallery-section__label { color: var(--dw-util); }
+.gallery-section--redline .gallery-section__label { color: var(--dw-warning-l); }
+.gallery-section--voxel   .gallery-section__label { color: #c084fc; }
+
+.gallery-section__count {
+  font-size: var(--dw-fs-9);
+  color: var(--dw-text-3);
+  background: var(--dw-fill-2);
+  border-radius: var(--dw-radius-pill);
+  padding: 1px 7px;
+  font-variant-numeric: tabular-nums;
+}
+.gallery-section__add {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--dw-fs-10);
+  font-weight: 600;
+  padding: 3px 9px;
+  background: var(--dw-fill-1);
+  border: 1px dashed var(--dw-border);
+  border-radius: var(--dw-radius-sm);
+  color: var(--dw-text-2);
+  cursor: pointer;
+  font-family: inherit;
+  transition: background var(--dw-dur-fast), border-color var(--dw-dur-fast), color var(--dw-dur-fast);
+}
+.gallery-section__add:hover {
+  color: var(--dw-text-strong);
+  background: var(--dw-fill-2);
+  border-color: var(--dw-text-3);
+}
+.gallery-section--cad     .gallery-section__add:hover { border-color: var(--dw-util-d); color: var(--dw-util); }
+.gallery-section--redline .gallery-section__add:hover { border-color: var(--dw-warning-border); color: var(--dw-warning-l); }
+.gallery-section--voxel   .gallery-section__add:hover { border-color: rgba(192, 132, 252, 0.55); color: #c084fc; }
+
+.gallery-section__empty {
+  font-size: var(--dw-fs-10);
+  color: var(--dw-text-3);
+  font-style: italic;
+  padding: var(--dw-space-2) 0;
+}
+.gallery-section__tiles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--dw-space-2);
+}
+
 .sketch-tile {
   flex: 1 1 calc(50% - var(--dw-space-2));
   min-width: 110px;

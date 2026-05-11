@@ -948,6 +948,27 @@
   position: fixed;
 }
 
+/* Docked variant — Legend lives inline at the bottom of the
+ * sidebar's content panel. Strip every floating-panel affordance
+ * (absolute positioning, viewport-clamping max-height, blur+drop
+ * shadow) so it reads as a sidebar section rather than an
+ * overlay. The wrapper (.sidebar-legend-dock in ViewerSidebar.css)
+ * owns the top divider + bottom border. */
+.legend-panel.legend-panel--docked {
+  position: static;
+  width: auto;
+  max-height: 40vh;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  backdrop-filter: none;
+  z-index: auto;
+}
+.legend-panel--docked .legend-panel-body {
+  max-height: 40vh;
+}
+
 @media (max-width: 767px) {
   .legend-panel {
     left: 62px;
@@ -961,12 +982,93 @@
 .legend-panel-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 6px;
   padding: 10px 14px;
   border-bottom: 1px solid rgba(255,255,255,0.07);
   font-size: 13px;
   font-weight: 600;
   color: white;
+}
+
+/* Docked-mode header is the click target for collapse/expand —
+ * full-width button reset so it behaves like a section heading. */
+.legend-panel-header--toggle {
+  width: 100%;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+  color: white;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  cursor: pointer;
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-align: left;
+}
+.legend-panel-header--toggle:hover {
+  background: rgba(255,255,255,0.03);
+}
+.legend-panel--collapsed .legend-panel-header--toggle {
+  border-bottom: none;
+}
+.legend-panel-chevron {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255,255,255,0.55);
+  flex-shrink: 0;
+}
+.legend-panel-title {
+  flex-shrink: 0;
+}
+.legend-panel-spacer {
+  flex: 1;
+}
+/* Undock affordance inside the docked header — small square icon
+ * box. Uses role=button (not a native <button>) because it sits
+ * inside the header's own <button>, and nested buttons are
+ * invalid HTML. */
+.legend-panel-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 5px;
+  color: rgba(255,255,255,0.6);
+  cursor: pointer;
+  transition: color 120ms, background 120ms;
+  flex-shrink: 0;
+}
+.legend-panel-action:hover {
+  color: white;
+  background: rgba(255,255,255,0.08);
+}
+/* Floating-mode dock button — same shape, used on the popup
+ * header above the close ×. */
+.legend-panel-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 5px;
+  border: none;
+  background: transparent;
+  color: rgba(255,255,255,0.6);
+  cursor: pointer;
+  transition: color 120ms, background 120ms;
+  flex-shrink: 0;
+  padding: 0;
+}
+.legend-panel-icon-btn:hover {
+  color: white;
+  background: rgba(255,255,255,0.08);
 }
 
 .legend-panel-body {

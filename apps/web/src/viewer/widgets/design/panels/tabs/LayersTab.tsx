@@ -1,29 +1,33 @@
 /**
- * LayersTab — sketch gallery + layer list of the active sketch + voxel
- * layer section. The entry point for every sketch session.
+ * LayersTab — sketch gallery + layer list of the active sketch.
+ * Entry point for every sketch session.
  *
  * Layout (top → bottom):
  *
  *   1. Empty-state splash               — when no sketches exist yet
- *      (Start with a sketch · Blank | Redline · ↑ import .json)
+ *      (Start with a sketch · CAD | Voxel | Redline · ↑ import .json)
  *
- *   2. Sketch gallery                   — tiles for each sketch + the
- *      Add / Redline tiles. Each tile has a gear → settings popover
- *      (rename · duplicate · default · CRS · datum · sites · download
- *      JSON · delete).
+ *   2. Three type-grouped gallery sections — one each for
+ *      CAD / Redline / Voxel sketches, each with its own + Add button.
+ *      User-defined groupName subheaders still nest within each section.
+ *      Tiles surface settings via a gear popover.
  *
- *   3. Schema preset selector           — only on blank sketches with
- *      no fields and no nodes; applies SCHEMA_PRESETS[key] via
+ *   3. Schema preset selector           — only on blank CAD sketches
+ *      with no fields and no nodes; applies SCHEMA_PRESETS[key] via
  *      patchSketch({ fields }).
  *
- *   4. Layer list                       — colour swatch, name, visible
- *      / lock / delete; schema-edit on redline layers.
+ *   4. Voxel-sketch preamble            — block size + render mode at
+ *      the SKETCH level when the active sketch is a voxel sketch.
  *
- *   5. Voxel layers section             — list + level + render-mode
- *      controls bound to useSvoEngine.
+ *   5. Type-aware layer list            — Voxel sketches show voxel
+ *      layers only; CAD / Redline sketches show drawing layers only.
+ *      No mixed list, no per-row type icon needed.
+ *
+ *   6. Add layer button                 — single button. The active
+ *      sketch's kind decides what gets added (no picker).
  *
  * Wired modals:
- *   • RedlineCreationModal — Redline tile in the gallery
+ *   • RedlineCreationModal — Add button in the Redline section
  *   • SchemaEditorModal    — Sliders button on each redline layer row
  */
 import React, { useEffect, useMemo, useRef, useState } from 'react'
@@ -188,11 +192,8 @@ export default function LayersTab({ siteSlug = null }: Props) {
 
   // Unified layer list state — which row (drawing or voxel) is
   // currently inline-expanded. Only one row open at a time so the
-  // list stays scannable. Storing the id alone (not a discriminator)
-  // is OK because drawing and voxel layer ids are uuid-disjoint.
+  // list stays scannable.
   const [expandedLayerId, setExpandedLayerId] = useState<string | null>(null)
-  // "Add layer" inline picker — Drawing | Voxel.
-  const [addPickerOpen, setAddPickerOpen] = useState(false)
   // Per-voxel-layer accordions for the heavier secondary sections
   // (Datum coords, Generators). Datum + generators don't fit on the
   // 280 px wide sidebar without collapsing.
@@ -237,6 +238,8 @@ export default function LayersTab({ siteSlug = null }: Props) {
 
   const sketchList = Object.values(sketches)
   const activeSketch = activeSketchId ? sketches[activeSketchId] : null
+  const activeKind = activeSketch ? sketchKind(activeSketch) : null
+  const isVoxelSketch = activeKind === 'voxel'
 
   // Has the active sketch produced any nodes yet? Used to gate the
   // schema-preset selector — we only show it on truly blank sketches
@@ -652,15 +655,361 @@ export default function LayersTab({ siteSlug = null }: Props) {
     setActiveVoxelLayer(layer.id)
   }
 
+  /** Click handler for the unified "Add layer" button. Active sketch
+   *  kind decides what gets added — no picker. Voxel sketches add
+   *  voxel layers; CAD / Redline sketches add drawing layers. */
+  function handleAddLayer() {
+    if (!activeSketch) return
+    if (isVoxelSketch) {
+      createVoxelLayer()
+    } else {
+      addLayer(activeSketch.id)
+    }
+  }
+
   // ── Render ───────────────────────────────────────────────────────────
 
   const popoverSketch = popoverSketchId ? sketches[popoverSketchId] : null
   const isRedlineSketch = !!activeSketch?.redline
   const isEmptyGallery = sketchList.length === 0
+  // Schema-preset picker is only useful on blank CAD sketches — voxel
+  // sketches have their own block-size + render-mode controls below,
+  // and redline sketches have a schema locked to the target layer.
   const showSchemaPresetPicker = !!activeSketch
-    && !activeSketch.redline
+    && activeKind === 'cad'
     && (activeSketch.fields?.length ?? 0) === 0
     && !activeSketchHasNodes
+
+  // ── Sketch-tile renderer (shared across all three sections) ─────────
+  // Defined inline so it closures over the full state/setter set
+  // without needing to thread ~20 callbacks through props. Re-created
+  // on each render but it's a closure, not a memoised callback —
+  // negligible cost compared to the gallery sub-tree it produces.
+  const renderSketchTile = (s: Sketch) => {
+    const isActive = s.id === activeSketchId
+    const isRedline = !!s.redline
+    const isDefault = !!s.isDefault
+    const popoverOpen = popoverSketchId === s.id
+    return (
+      <div
+        key={s.id}
+        className={`sketch-tile${isActive ? ' is-active' : ''}${isRedline ? ' is-redline' : ''}${isDefault ? ' is-default' : ''}${popoverOpen ? ' has-settings-open' : ''}`}
+        onClick={() => setActiveSketch(s.id)}
+      >
+        <div className="sketch-tile__title">
+          <span className="sketch-tile__name">{s.name}</span>
+          {isDefault && (
+            <span className="sketch-tile__default-badge" title="Default sketch">
+              <Star size={9} fill="currentColor" />
+              Default
+            </span>
+          )}
+        </div>
+        <div className="sketch-tile__meta">
+          {s.layers.length} layer{s.layers.length === 1 ? '' : 's'}
+        </div>
+
+        <button
+          className="sketch-tile__settings"
+          title="Sketch settings"
+          aria-label="Sketch settings"
+          aria-haspopup="menu"
+          aria-expanded={popoverOpen}
+          onClick={e => {
+            e.stopPropagation()
+            if (popoverOpen) closeSettingsPopover()
+            else openSettingsPopover(s)
+          }}
+        >
+          <Settings size={14} />
+        </button>
+
+        {popoverOpen && popoverSketch && (
+          <div
+            className="sketch-popover"
+            role="menu"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="sketch-popover__hd">
+              <span>Sketch settings</span>
+              <button
+                type="button"
+                className="sketch-popover__close"
+                title="Close"
+                aria-label="Close"
+                onClick={closeSettingsPopover}
+              >
+                <X size={14} />
+              </button>
+            </div>
+
+            <label className="sketch-popover__field">
+              <span className="sketch-popover__field-label">Name</span>
+              <input
+                autoFocus
+                className="sketch-popover__input"
+                value={popoverNameDraft}
+                onChange={e => setPopoverNameDraft(e.target.value)}
+                onBlur={() => commitPopoverRename(popoverSketch.id)}
+                onKeyDown={e => {
+                  if (e.key === 'Enter') {
+                    commitPopoverRename(popoverSketch.id)
+                    closeSettingsPopover()
+                  }
+                }}
+              />
+            </label>
+
+            {/* CRS */}
+            <label className="sketch-popover__field">
+              <span className="sketch-popover__field-label">Coordinate system</span>
+              <select
+                className="sketch-popover__input"
+                value={popoverSketch.coordCrs}
+                onChange={e => patchSketch(popoverSketch.id, { coordCrs: e.target.value })}
+              >
+                {CRS_OPTIONS.map(o => (
+                  <option key={o.value} value={o.value}>{o.label}</option>
+                ))}
+              </select>
+            </label>
+
+            {/* Group — putting sketches into a named folder.
+                Sketches sharing the same groupName render under one
+                header in the gallery. Clearing the field removes the
+                sketch from its group. */}
+            <label className="sketch-popover__field">
+              <span className="sketch-popover__field-label">Group</span>
+              <input
+                className="sketch-popover__input"
+                type="text"
+                value={popoverSketch.groupName ?? ''}
+                placeholder="e.g. Terminal Building"
+                onChange={e => {
+                  const name = e.target.value
+                  if (!name.trim()) {
+                    patchSketch(popoverSketch.id, {
+                      groupId: undefined,
+                      groupName: undefined,
+                    })
+                    return
+                  }
+                  const groupId = name.trim().toLowerCase().replace(/\s+/g, '-')
+                  patchSketch(popoverSketch.id, { groupId, groupName: name })
+                }}
+              />
+            </label>
+
+            {/* Height datum */}
+            <label className="sketch-popover__field">
+              <span className="sketch-popover__field-label">Height datum</span>
+              <select
+                className="sketch-popover__input"
+                value={popoverSketch.heightDatum}
+                onChange={e => patchSketch(popoverSketch.id, {
+                  heightDatum: e.target.value as HeightDatum,
+                })}
+              >
+                {DATUM_OPTIONS.map(o => (
+                  <option key={o.value} value={o.value}>{o.label}</option>
+                ))}
+              </select>
+            </label>
+
+            {/* Site affinity */}
+            {sitesList.length > 0 && (
+              <div className="sketch-popover__field">
+                <span className="sketch-popover__field-label">Sites</span>
+                <div className="sketch-popover__sites">
+                  <label className="sketch-popover__site-row">
+                    <input
+                      type="checkbox"
+                      checked={popoverSketch.siteIds.length === sitesList.length}
+                      onChange={e => setAllSites(popoverSketch.id, e.target.checked)}
+                    />
+                    <span>All sites</span>
+                  </label>
+                  {sitesList.map(site => (
+                    <label key={site.slug} className="sketch-popover__site-row">
+                      <input
+                        type="checkbox"
+                        checked={popoverSketch.siteIds.includes(site.slug)}
+                        onChange={() => toggleSiteAffinity(popoverSketch.id, site.slug)}
+                      />
+                      <span>{site.name}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <button
+              type="button"
+              className="sketch-popover__item"
+              onClick={() => {
+                duplicateSketch(popoverSketch.id)
+                closeSettingsPopover()
+              }}
+            >
+              <Copy size={14} />
+              <span>Duplicate sketch</span>
+            </button>
+
+            <button
+              type="button"
+              className="sketch-popover__item"
+              onClick={() => {
+                downloadSketchJson(popoverSketch.id)
+              }}
+            >
+              <Download size={14} />
+              <span>Download JSON</span>
+            </button>
+
+            <button
+              type="button"
+              className={`sketch-popover__item${popoverSketch.isDefault ? ' is-on' : ''}`}
+              onClick={() => {
+                setAsDefault(popoverSketch.id)
+                closeSettingsPopover()
+              }}
+              disabled={popoverSketch.isDefault}
+            >
+              <Star size={14} fill={popoverSketch.isDefault ? 'currentColor' : 'none'} />
+              <span>{popoverSketch.isDefault ? 'Default sketch' : 'Set as default'}</span>
+            </button>
+
+            <div className="sketch-popover__sep" />
+
+            {confirmDeleteId === popoverSketch.id ? (
+              <div className="sketch-popover__confirm-row">
+                <button
+                  type="button"
+                  className="sketch-popover__confirm-yes"
+                  onClick={() => {
+                    deleteSketch(popoverSketch.id)
+                    setConfirmDeleteId(null)
+                    setPopoverSketchId(null)
+                  }}
+                >
+                  Delete permanently
+                </button>
+                <button
+                  type="button"
+                  className="sketch-popover__confirm-no"
+                  onClick={() => setConfirmDeleteId(null)}
+                >
+                  Cancel
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                className="sketch-popover__item sketch-popover__item--danger"
+                onClick={() => setConfirmDeleteId(popoverSketch.id)}
+              >
+                <Trash2 size={14} />
+                <span>Delete sketch</span>
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  // ── Gallery section renderer ──
+  // Renders one of the three type sections (CAD / Redline / Voxel).
+  // Header + per-section + Add button. Preserves groupName subheaders
+  // within each section so a user-defined group still nests inside
+  // its type.
+  const renderGallerySection = (
+    sectionKey: 'cad' | 'redline' | 'voxel',
+    label: string,
+    blurb: string,
+    items: Sketch[],
+    addLabel: string,
+    onAdd: () => void,
+  ) => {
+    const sorted = [...items].sort((a, b) => {
+      const ag = a.groupName ?? ''
+      const bg = b.groupName ?? ''
+      if (ag !== bg) return ag.localeCompare(bg)
+      return a.name.localeCompare(b.name)
+    })
+    let prevGroupId: string | null | undefined = undefined
+    return (
+      <section
+        key={sectionKey}
+        className={`gallery-section gallery-section--${sectionKey}`}
+        aria-label={label}
+      >
+        <header className="gallery-section__hd">
+          <span className="gallery-section__label">{label}</span>
+          <span className="gallery-section__count">{items.length}</span>
+          <button
+            type="button"
+            className="gallery-section__add"
+            onClick={onAdd}
+            title={`${addLabel} — ${blurb}`}
+            aria-label={addLabel}
+          >
+            <Plus size={12} />
+            <span>{addLabel}</span>
+          </button>
+        </header>
+        {items.length === 0 ? (
+          <div className="gallery-section__empty">{blurb}</div>
+        ) : (
+          <div className="gallery-section__tiles">
+            {sorted.map(s => {
+              const gid = s.groupId ?? null
+              const groupBoundary = (gid !== prevGroupId && gid != null) ? gid : null
+              prevGroupId = gid
+              const collapsed = gid != null && collapsedGroupIds.has(gid)
+              const memberCount = gid != null
+                ? sorted.filter(x => x.groupId === gid).length
+                : 0
+              return (
+                <React.Fragment key={`row-${s.id}`}>
+                  {groupBoundary && (
+                    <button
+                      type="button"
+                      key={`hdr-${groupBoundary}`}
+                      className={`sketch-group-hdr${collapsed ? ' is-collapsed' : ''}`}
+                      onClick={() => setCollapsedGroupIds(prev => {
+                        const next = new Set(prev)
+                        if (next.has(groupBoundary)) next.delete(groupBoundary)
+                        else next.add(groupBoundary)
+                        return next
+                      })}
+                      aria-expanded={!collapsed}
+                    >
+                      <span className="sketch-group-hdr__caret">
+                        {collapsed ? <ChevronRight size={11} /> : <ChevronDown size={11} />}
+                      </span>
+                      <span className="sketch-group-hdr__name">{s.groupName}</span>
+                      <span className="sketch-group-hdr__count">
+                        {memberCount} sketch{memberCount === 1 ? '' : 'es'}
+                      </span>
+                    </button>
+                  )}
+                  {!collapsed && renderSketchTile(s)}
+                </React.Fragment>
+              )
+            })}
+          </div>
+        )}
+      </section>
+    )
+  }
+
+  // Partition sketches by kind. Redline section is gated on siteSlug —
+  // redline sketches need a target site so creation goes through the
+  // dedicated modal; outside a site context it's not useful.
+  const cadSketches = sketchList.filter(s => sketchKind(s) === 'cad')
+  const redlineSketches = sketchList.filter(s => sketchKind(s) === 'redline')
+  const voxelSketches = sketchList.filter(s => sketchKind(s) === 'voxel')
 
   return (
     <div className="layers-tab">
@@ -669,8 +1018,8 @@ export default function LayersTab({ siteSlug = null }: Props) {
         <div className="layers-empty">
           <div className="layers-empty__title">Start with a sketch</div>
           <p className="layers-empty__sub">
-            A sketch is your design canvas. Drop into a redline to update
-            real site data with schema guard rails.
+            Pick the kind of sketch that fits your workflow. You can
+            always add another kind later from its section.
           </p>
           <div className="layers-empty__tiles">
             <button
@@ -735,7 +1084,7 @@ export default function LayersTab({ siteSlug = null }: Props) {
         </div>
       ) : (
         <>
-          {/* ── 2 · Gallery + preset menu header ───────────────────── */}
+          {/* ── 2 · Preset menu header ───────────────────────────── */}
           <div className="layers-tab__hd-row">
             <div className="layers-tab__hd">Sketches</div>
             {siteSlug && (
@@ -792,331 +1141,37 @@ export default function LayersTab({ siteSlug = null }: Props) {
             )}
           </div>
 
-          <div className="sketch-gallery">
-            {/* Group-aware iteration — sketches are sorted so
-                ungrouped come first, then groups (alphabetised by
-                groupName) with their members. A group header
-                Fragment is emitted alongside the first member of
-                each group; collapsed groups still emit the header
-                but skip the per-sketch tiles. */}
-            {(() => {
-              const sorted = [...sketchList].sort((a, b) => {
-                const ag = a.groupName ?? ''
-                const bg = b.groupName ?? ''
-                if (ag !== bg) return ag.localeCompare(bg)
-                return a.name.localeCompare(b.name)
-              })
-              let prevGroupId: string | null | undefined = undefined
-              return sorted.map(s => {
-                const gid = s.groupId ?? null
-                const header = (gid !== prevGroupId && gid != null) ? gid : null
-                prevGroupId = gid
-                const collapsed = gid != null && collapsedGroupIds.has(gid)
-                const memberCount = gid != null ? sorted.filter(x => x.groupId === gid).length : 0
-              return (
-                <React.Fragment key={`row-${s.id}`}>
-                  {header && (
-                    <button
-                      type="button"
-                      key={`hdr-${header}`}
-                      className={`sketch-group-hdr${collapsed ? ' is-collapsed' : ''}`}
-                      onClick={() => setCollapsedGroupIds(prev => {
-                        const next = new Set(prev)
-                        if (next.has(header)) next.delete(header)
-                        else next.add(header)
-                        return next
-                      })}
-                      aria-expanded={!collapsed}
-                    >
-                      <span className="sketch-group-hdr__caret">
-                        {collapsed ? <ChevronRight size={11} /> : <ChevronDown size={11} />}
-                      </span>
-                      <span className="sketch-group-hdr__name">{s.groupName}</span>
-                      <span className="sketch-group-hdr__count">
-                        {memberCount} sketch{memberCount === 1 ? '' : 'es'}
-                      </span>
-                    </button>
-                  )}
-                  {!collapsed && (() => {
-              const isActive = s.id === activeSketchId
-              const isRedline = !!s.redline
-              const isDefault = !!s.isDefault
-              const popoverOpen = popoverSketchId === s.id
-              return (
-                <div
-                  key={s.id}
-                  className={`sketch-tile${isActive ? ' is-active' : ''}${isRedline ? ' is-redline' : ''}${isDefault ? ' is-default' : ''}${popoverOpen ? ' has-settings-open' : ''}`}
-                  onClick={() => setActiveSketch(s.id)}
-                >
-                  <div className="sketch-tile__title">
-                    <span className="sketch-tile__name">{s.name}</span>
-                    {isDefault && (
-                      <span className="sketch-tile__default-badge" title="Default sketch">
-                        <Star size={9} fill="currentColor" />
-                        Default
-                      </span>
-                    )}
-                  </div>
-                  <div className="sketch-tile__meta">
-                    {s.layers.length} layer{s.layers.length === 1 ? '' : 's'}
-                    {/* Kind badge — CAD / Redline / Voxel. Always
-                        rendered so the sketch type is visible at a
-                        glance; colour-coded so users learn the type
-                        signature quickly. */}
-                    <span className={`sketch-tile__kind-badge kind-${sketchKind(s)}`}>
-                      {sketchKind(s) === 'cad' ? 'CAD'
-                        : sketchKind(s) === 'redline' ? 'Redline'
-                        : 'Voxel'}
-                    </span>
-                  </div>
-
-                  <button
-                    className="sketch-tile__settings"
-                    title="Sketch settings"
-                    aria-label="Sketch settings"
-                    aria-haspopup="menu"
-                    aria-expanded={popoverOpen}
-                    onClick={e => {
-                      e.stopPropagation()
-                      if (popoverOpen) closeSettingsPopover()
-                      else openSettingsPopover(s)
-                    }}
-                  >
-                    <Settings size={14} />
-                  </button>
-
-                  {popoverOpen && popoverSketch && (
-                    <div
-                      className="sketch-popover"
-                      role="menu"
-                      onClick={e => e.stopPropagation()}
-                    >
-                      <div className="sketch-popover__hd">
-                        <span>Sketch settings</span>
-                        <button
-                          type="button"
-                          className="sketch-popover__close"
-                          title="Close"
-                          aria-label="Close"
-                          onClick={closeSettingsPopover}
-                        >
-                          <X size={14} />
-                        </button>
-                      </div>
-
-                      <label className="sketch-popover__field">
-                        <span className="sketch-popover__field-label">Name</span>
-                        <input
-                          autoFocus
-                          className="sketch-popover__input"
-                          value={popoverNameDraft}
-                          onChange={e => setPopoverNameDraft(e.target.value)}
-                          onBlur={() => commitPopoverRename(popoverSketch.id)}
-                          onKeyDown={e => {
-                            if (e.key === 'Enter') {
-                              commitPopoverRename(popoverSketch.id)
-                              closeSettingsPopover()
-                            }
-                          }}
-                        />
-                      </label>
-
-                      {/* CRS */}
-                      <label className="sketch-popover__field">
-                        <span className="sketch-popover__field-label">Coordinate system</span>
-                        <select
-                          className="sketch-popover__input"
-                          value={popoverSketch.coordCrs}
-                          onChange={e => patchSketch(popoverSketch.id, { coordCrs: e.target.value })}
-                        >
-                          {CRS_OPTIONS.map(o => (
-                            <option key={o.value} value={o.value}>{o.label}</option>
-                          ))}
-                        </select>
-                      </label>
-
-                      {/* Group — putting sketches into a named folder.
-                          Sketches sharing the same groupName render
-                          under one header in the gallery. Clearing the
-                          field removes the sketch from its group. */}
-                      <label className="sketch-popover__field">
-                        <span className="sketch-popover__field-label">Group</span>
-                        <input
-                          className="sketch-popover__input"
-                          type="text"
-                          value={popoverSketch.groupName ?? ''}
-                          placeholder="e.g. Terminal Building"
-                          onChange={e => {
-                            const name = e.target.value
-                            if (!name.trim()) {
-                              patchSketch(popoverSketch.id, {
-                                groupId: undefined,
-                                groupName: undefined,
-                              })
-                              return
-                            }
-                            // Stable groupId from the slugified name
-                            // so re-typing the same name reuses the
-                            // group rather than creating a parallel
-                            // empty one.
-                            const groupId = name.trim().toLowerCase().replace(/\s+/g, '-')
-                            patchSketch(popoverSketch.id, { groupId, groupName: name })
-                          }}
-                        />
-                      </label>
-
-                      {/* Height datum */}
-                      <label className="sketch-popover__field">
-                        <span className="sketch-popover__field-label">Height datum</span>
-                        <select
-                          className="sketch-popover__input"
-                          value={popoverSketch.heightDatum}
-                          onChange={e => patchSketch(popoverSketch.id, {
-                            heightDatum: e.target.value as HeightDatum,
-                          })}
-                        >
-                          {DATUM_OPTIONS.map(o => (
-                            <option key={o.value} value={o.value}>{o.label}</option>
-                          ))}
-                        </select>
-                      </label>
-
-                      {/* Site affinity */}
-                      {sitesList.length > 0 && (
-                        <div className="sketch-popover__field">
-                          <span className="sketch-popover__field-label">Sites</span>
-                          <div className="sketch-popover__sites">
-                            <label className="sketch-popover__site-row">
-                              <input
-                                type="checkbox"
-                                checked={popoverSketch.siteIds.length === sitesList.length}
-                                onChange={e => setAllSites(popoverSketch.id, e.target.checked)}
-                              />
-                              <span>All sites</span>
-                            </label>
-                            {sitesList.map(site => (
-                              <label key={site.slug} className="sketch-popover__site-row">
-                                <input
-                                  type="checkbox"
-                                  checked={popoverSketch.siteIds.includes(site.slug)}
-                                  onChange={() => toggleSiteAffinity(popoverSketch.id, site.slug)}
-                                />
-                                <span>{site.name}</span>
-                              </label>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      <button
-                        type="button"
-                        className="sketch-popover__item"
-                        onClick={() => {
-                          duplicateSketch(popoverSketch.id)
-                          closeSettingsPopover()
-                        }}
-                      >
-                        <Copy size={14} />
-                        <span>Duplicate sketch</span>
-                      </button>
-
-                      <button
-                        type="button"
-                        className="sketch-popover__item"
-                        onClick={() => {
-                          downloadSketchJson(popoverSketch.id)
-                        }}
-                      >
-                        <Download size={14} />
-                        <span>Download JSON</span>
-                      </button>
-
-                      <button
-                        type="button"
-                        className={`sketch-popover__item${popoverSketch.isDefault ? ' is-on' : ''}`}
-                        onClick={() => {
-                          setAsDefault(popoverSketch.id)
-                          closeSettingsPopover()
-                        }}
-                        disabled={popoverSketch.isDefault}
-                      >
-                        <Star size={14} fill={popoverSketch.isDefault ? 'currentColor' : 'none'} />
-                        <span>{popoverSketch.isDefault ? 'Default sketch' : 'Set as default'}</span>
-                      </button>
-
-                      <div className="sketch-popover__sep" />
-
-                      {confirmDeleteId === popoverSketch.id ? (
-                        <div className="sketch-popover__confirm-row">
-                          <button
-                            type="button"
-                            className="sketch-popover__confirm-yes"
-                            onClick={() => {
-                              deleteSketch(popoverSketch.id)
-                              setConfirmDeleteId(null)
-                              setPopoverSketchId(null)
-                            }}
-                          >
-                            Delete permanently
-                          </button>
-                          <button
-                            type="button"
-                            className="sketch-popover__confirm-no"
-                            onClick={() => setConfirmDeleteId(null)}
-                          >
-                            Cancel
-                          </button>
-                        </div>
-                      ) : (
-                        <button
-                          type="button"
-                          className="sketch-popover__item sketch-popover__item--danger"
-                          onClick={() => setConfirmDeleteId(popoverSketch.id)}
-                        >
-                          <Trash2 size={14} />
-                          <span>Delete sketch</span>
-                        </button>
-                      )}
-                    </div>
-                  )}
-                </div>
-              )
-            })()}
-                </React.Fragment>
-              )
-              })
-            })()}
-            {/* New-sketch type picker — three tiles, one per kind.
-                Compact (no expanded popover) since each option is a
-                single named action. Redline preserves the dedicated
-                "Redline…" modal entry below (which wires the
-                target-data-source picker); creating a blank redline
-                without a target is rarely useful, so we hide the
-                "blank redline" tile when the modal exists. */}
-            <button
-              className="sketch-tile sketch-tile--add"
-              onClick={() => startBlankSketch('cad')}
-              title="CAD sketch — vector drawing layers"
-            >
-              <Plus size={18} /> <span>New CAD sketch</span>
-            </button>
-            <button
-              className="sketch-tile sketch-tile--add"
-              onClick={() => startBlankSketch('voxel')}
-              title="Voxel sketch — 3D block grid"
-            >
-              <Plus size={18} /> <span>New voxel sketch</span>
-            </button>
-            {siteSlug && (
-              <button className="sketch-tile sketch-tile--redline" onClick={() => setRedlineModalOpen(true)}>
-                Redline
-              </button>
+          {/* ── 3 · Three type sections ──────────────────────────── */}
+          <div className="sketch-gallery-sections">
+            {renderGallerySection(
+              'cad',
+              'CAD Sketches',
+              'Vector drawing layers — strokes, shapes, annotations.',
+              cadSketches,
+              'New CAD',
+              () => startBlankSketch('cad'),
+            )}
+            {siteSlug && renderGallerySection(
+              'redline',
+              'Redline Sketches',
+              'Update site data with schema guard rails.',
+              redlineSketches,
+              'New redline',
+              () => setRedlineModalOpen(true),
+            )}
+            {renderGallerySection(
+              'voxel',
+              'Voxel Sketches',
+              '3D block grid — terrain, water, generated volumes.',
+              voxelSketches,
+              'New voxel',
+              () => startBlankSketch('voxel'),
             )}
           </div>
         </>
       )}
 
-      {/* ── 3 · Schema-preset selector + 4 · Layer list ────────────── */}
+      {/* ── 4 · Schema-preset selector + 5 · Layer list ────────────── */}
       {activeSketch && (
         <>
           {showSchemaPresetPicker && (
@@ -1153,7 +1208,7 @@ export default function LayersTab({ siteSlug = null }: Props) {
               spec. Renders only when the active sketch is a voxel
               sketch; the engine's global state is kept in sync via
               the effects above. */}
-          {sketchKind(activeSketch) === 'voxel' && (
+          {isVoxelSketch && (
             <div className="voxel-sketch-prefs">
               <div className="layers-tab__hd">Voxel settings · {activeSketch.name}</div>
               <label className="voxel-control-row">
@@ -1207,8 +1262,11 @@ export default function LayersTab({ siteSlug = null }: Props) {
 
           <div className="layers-tab__hd">Layers · {activeSketch.name}</div>
           <div className="sketch-layer-list">
-            {/* Drawing (vector) layers */}
-            {activeSketch.layers.map(layer => {
+            {/* Type-aware layer list. Voxel sketches never show
+                drawing layers; CAD / Redline sketches never show
+                voxel layers. The active sketch's kind is the single
+                source of truth for which collection appears. */}
+            {!isVoxelSketch && activeSketch.layers.map(layer => {
               const isLayerActive = layer.id === activeLayerId
               const isExpanded = expandedLayerId === layer.id
               return (
@@ -1225,9 +1283,6 @@ export default function LayersTab({ siteSlug = null }: Props) {
                   >
                     <span className="unified-layer-twirl" aria-hidden>
                       {isExpanded ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
-                    </span>
-                    <span className="unified-layer-type" title="Drawing layer">
-                      <Pencil size={13} />
                     </span>
                     <span className="unified-layer-swatch" style={{ background: layer.colour }} />
                     {editingLayerId === layer.id ? (
@@ -1344,7 +1399,7 @@ export default function LayersTab({ siteSlug = null }: Props) {
             })}
 
             {/* Voxel layers — same row shape, cube icon, richer body */}
-            {voxelLayers.map(vlayer => {
+            {isVoxelSketch && voxelLayers.map(vlayer => {
               const isActive = vlayer.id === activeVoxelLayerId
               const isExpanded = expandedLayerId === vlayer.id
               const datumOpen = voxelDatumOpenId === vlayer.id
@@ -1458,53 +1513,20 @@ export default function LayersTab({ siteSlug = null }: Props) {
             })}
           </div>
 
-          {/* Add Layer — single button + inline type picker */}
+          {/* ── 6 · Add Layer — no picker. Active sketch kind decides. */}
           <div className="unified-layer-add-wrap">
-            {!addPickerOpen ? (
-              <button
-                type="button"
-                className="sketch-layers-btn"
-                onClick={() => setAddPickerOpen(true)}
-                style={{ marginTop: 8 }}
-              >
-                <Plus size={14} /> <span>Add layer</span>
-              </button>
-            ) : (
-              <div className="unified-layer-add-picker">
-                <button
-                  type="button"
-                  className="unified-layer-add-picker__option"
-                  onClick={() => {
-                    addLayer(activeSketch.id)
-                    setAddPickerOpen(false)
-                  }}
-                >
-                  <Pencil size={14} />
-                  <span className="unified-layer-add-picker__title">Drawing layer</span>
-                  <span className="unified-layer-add-picker__sub">Vector strokes, shapes, redline</span>
-                </button>
-                <button
-                  type="button"
-                  className="unified-layer-add-picker__option"
-                  onClick={() => {
-                    createVoxelLayer()
-                    setAddPickerOpen(false)
-                  }}
-                >
-                  <Box size={14} />
-                  <span className="unified-layer-add-picker__title">Voxel layer</span>
-                  <span className="unified-layer-add-picker__sub">3D block grid, terrain mask, water</span>
-                </button>
-                <button
-                  type="button"
-                  className="unified-layer-add-picker__cancel"
-                  onClick={() => setAddPickerOpen(false)}
-                  aria-label="Cancel"
-                >
-                  <X size={12} />
-                </button>
-              </div>
-            )}
+            <button
+              type="button"
+              className="sketch-layers-btn"
+              onClick={handleAddLayer}
+              title={isVoxelSketch
+                ? 'Add a voxel layer to this sketch'
+                : 'Add a drawing layer to this sketch'}
+              style={{ marginTop: 8 }}
+            >
+              <Plus size={14} />
+              <span>{isVoxelSketch ? 'Add voxel layer' : 'Add drawing layer'}</span>
+            </button>
           </div>
         </>
       )}

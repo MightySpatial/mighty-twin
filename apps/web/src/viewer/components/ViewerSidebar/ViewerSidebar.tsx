@@ -25,6 +25,8 @@ import { AttributeTable } from '@mightydt/ui'
 import LayerItem from '../../widgets/layers/LayerItem'
 import { SitePickerContent, pushRecentSite, type SiteEntry } from '../SitePicker'
 import HomePanel from './HomePanel'
+import LegendWidget from '../../widgets/legend'
+import { useLegendDock } from '../../hooks/useLegendDock'
 import './ViewerSidebar.css'
 
 interface SidebarTab {
@@ -154,6 +156,11 @@ export default function ViewerSidebar({
   const navigate = useNavigate()
   const [attrLayerId, setAttrLayerId] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<string>('home')
+
+  // Legend dock state — when docked the Legend mounts at the bottom
+  // of this sidebar (below the active tab content). When undocked
+  // CesiumViewer renders the floating variant instead.
+  const legendDocked = useLegendDock(s => s.docked)
 
   // ── Pin / auto-collapse ────────────────────────────────────────────
   // Pin state is per-site: a user who pinned the sidebar on Site A
@@ -478,6 +485,18 @@ export default function ViewerSidebar({
                 <div className="sidebar-content-body">
                   {currentTab.content}
                 </div>
+                {/* Legend dock — persistent fixture pinned to the
+                    bottom of the sidebar content area. Coexists with
+                    whichever tab is active up top; the user can
+                    collapse it to a single "LEGEND ▸" row or undock
+                    it to a floating panel via its header controls.
+                    Excluded from the floating-panel manager — it is
+                    NOT a transient utility popup. */}
+                {legendDocked && (
+                  <div className="sidebar-legend-dock">
+                    <LegendWidget layers={layers} />
+                  </div>
+                )}
               </>
             )}
           </div>

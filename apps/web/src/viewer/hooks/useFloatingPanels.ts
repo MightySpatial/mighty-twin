@@ -1,28 +1,29 @@
 /** Single-active-utility-panel coordinator.
  *
- *  Several floating panels in the viewer (Table, Legend, Add Data)
- *  share the "utility" pool — only one is allowed to be open at a
- *  time. Opening one auto-closes whichever was active before, so
- *  the user is never juggling overlapping panels they didn't
- *  mean to stack.
+ *  Several floating panels in the viewer (Table, Add Data) share
+ *  the "utility" pool — only one is allowed to be open at a time.
+ *  Opening one auto-closes whichever was active before, so the
+ *  user is never juggling overlapping panels they didn't mean to
+ *  stack.
  *
- *  MAI (the AI chat FAB) and Fly are NOT part of this pool —
- *  they have fixed anchor positions and their own independent
- *  open states. They sit alongside utility panels without
- *  fighting them.
+ *  MAI (the AI chat FAB), Fly, and Legend are NOT part of this
+ *  pool — they have their own independent state. MAI/Fly are
+ *  fixed-anchor surfaces; Legend is a sidebar fixture managed by
+ *  `useLegendDock` and only renders as a floating panel when the
+ *  user explicitly undocks it.
  *
  *  Zustand keeps the state global so any consumer (sidebar tab
  *  buttons, modal close hooks, programmatic deep-links) can call
- *  `openPanel('legend')` or `togglePanel('table')` without
+ *  `openPanel('table')` or `togglePanel('add-data')` without
  *  threading callbacks through a parent.
  */
 
 import { create } from 'zustand'
 
 /** The utility panels managed by this slice. Keep the union narrow
- *  — pulling MAI / Fly / right-pane content in here would defeat
- *  the purpose of the exemption. */
-export type FloatingPanelId = 'table' | 'legend' | 'add-data'
+ *  — pulling MAI / Fly / Legend in here would defeat the purpose
+ *  of the exemption. */
+export type FloatingPanelId = 'table' | 'add-data'
 
 interface FloatingPanelsState {
   active: FloatingPanelId | null

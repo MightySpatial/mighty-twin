@@ -10,15 +10,15 @@
   bottom: 96px;
   right: 24px;
   z-index: 25;
-  width: 320px;
+  width: 368px;
   background: rgba(15, 15, 20, 0.90);
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
   border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 12px;
+  border-radius: 14px;
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
   color: #f0f2f8;
-  padding: 12px;
+  padding: 16px;
   transition: right 200ms ease, left 200ms ease, bottom 200ms ease, top 200ms ease;
 }
 
@@ -70,14 +70,14 @@
  * left so it doesn't sit under the pane. CesiumViewer adds the
  * `rp-open` class to <body> when activeRightWidget !== null. */
 body.rp-open .fly-panel {
-  right: calc(24px + 320px);
+  right: calc(24px + 368px);
 }
 
 .fly-panel-header {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 10px;
+  margin-bottom: 14px;
   color: #2dd4bf;
 }
 .fly-panel-title {
@@ -108,9 +108,9 @@ body.rp-open .fly-panel {
 .fly-shifter {
   display: grid;
   grid-template-columns: auto 1fr auto;
-  gap: 6px;
+  gap: 8px;
   align-items: center;
-  margin-bottom: 12px;
+  margin-bottom: 16px;
 }
 .fly-shifter-arrow {
   width: 32px;
@@ -138,7 +138,7 @@ body.rp-open .fly-panel {
 .fly-shifter-pills {
   display: grid;
   grid-template-columns: repeat(6, 1fr);
-  gap: 4px;
+  gap: 5px;
   min-width: 0;
 }
 .fly-shifter-pill {
@@ -146,8 +146,8 @@ body.rp-open .fly-panel {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 2px;
-  padding: 6px 4px;
+  gap: 3px;
+  padding: 8px 4px;
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.07);
   border-radius: 8px;
@@ -177,9 +177,10 @@ body.rp-open .fly-panel {
   font-size: 9px;
   font-weight: 600;
   letter-spacing: 0.02em;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  white-space: normal;
+  text-align: center;
+  line-height: 1.2;
+  word-break: break-word;
   max-width: 100%;
 }
 .fly-shifter-pill-mps {
@@ -199,9 +200,9 @@ body.rp-open .fly-panel {
 .fly-keys {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 4px 12px;
+  gap: 6px 16px;
   border-top: 1px solid rgba(255, 255, 255, 0.06);
-  padding-top: 10px;
+  padding-top: 14px;
 }
 .fly-keys-row {
   display: flex;

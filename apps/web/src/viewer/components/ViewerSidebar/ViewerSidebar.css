@@ -365,6 +365,17 @@
   min-height: 0;
 }
 
+/* Legend dock — persistent fixture at the bottom of the sidebar
+ * content area. Sits below the active tab body, separated by a
+ * top divider so it reads as its own section. flex-shrink: 0 so
+ * it never gets squeezed by the scrolling body above; the legend
+ * itself caps its own height via .legend-panel--docked. */
+.sidebar-legend-dock {
+  flex-shrink: 0;
+  border-top: 1px solid rgba(255,255,255,0.07);
+  background: rgba(255,255,255,0.015);
+}
+
 .sidebar-content-body::-webkit-scrollbar {
   width: 4px;
 }

@@ -8,6 +8,7 @@ import { Cartesian3, CameraEventType, Math as CesiumMath } from 'cesium'
 import { useBreakpoint } from '../../hooks/useBreakpoint'
 import { useWidgetLayout } from '../../hooks/useWidgetLayout'
 import { useFloatingPanels } from '../../hooks/useFloatingPanels'
+import { useLegendDock } from '../../hooks/useLegendDock'
 import { HelpCircle, Search as SearchIcon, Ruler, List as LegendIcon } from 'lucide-react'
 import { getExtensionPanels } from '../../extensions'
 import type { ViewerContext } from '../../extensions/types'
@@ -98,24 +99,36 @@ export default function CesiumViewerComponent({
   const { isMobile } = useBreakpoint()
   const widgetOverrides = useWidgetLayout()
   const [sidebarOpen, setSidebarOpen] = useState(!isMobile)
-  /** Shared utility-panel coordinator. Table / Legend / Add Data
-   *  share a single-active slot; opening one auto-closes whichever
-   *  was previously active. MAI + Fly are exempt — they have their
-   *  own independent state. Derived booleans `addDataOpen` /
-   *  `legendOpen` / `tableOpen` keep the existing call-site reads
+  /** Shared utility-panel coordinator. Table / Add Data share a
+   *  single-active slot; opening one auto-closes whichever was
+   *  previously active. MAI, Fly, and Legend are exempt — they each
+   *  have their own independent state. Derived booleans
+   *  `addDataOpen` / `tableOpen` keep the existing call-site reads
    *  unchanged. */
   const floatingPanel = useFloatingPanels(s => s.active)
   const togglePanel = useFloatingPanels(s => s.toggle)
   const openPanel = useFloatingPanels(s => s.open)
   const addDataOpen = floatingPanel === 'add-data'
-  const legendOpen = floatingPanel === 'legend'
   const tableOpen = floatingPanel === 'table'
+
+  // Legend dock state — when docked the LegendWidget mounts inside
+  // the sidebar (handled by ViewerSidebar). When undocked it renders
+  // as a floating draggable panel from this component. The rail tab
+  // toggles collapsed when docked / docks back when undocked, so the
+  // user always has a way to bring the legend home.
+  const legendDocked = useLegendDock(s => s.docked)
+  const toggleLegendCollapsed = useLegendDock(s => s.toggleCollapsed)
+  const dockLegend = useLegendDock(s => s.dock)
   /** Active sketch id — passed to AddDataWidget so the "Add to
    *  current sketch" destination knows which sketch to tag uploads
    *  with. Read from useCadEngine here rather than threading through
    *  every child. */
   const activeSketchIdForUpload = useCadEngine(s => s.activeSketchId)
   const [searchOpen, setSearchOpen] = useState(false)
+  /** Mobile legend visibility — phones have no sidebar so the legend
+   *  is always a tap-to-reveal overlay. Keeps its own toggle so it
+   *  doesn't fight the desktop dock state. */
+  const [mobileLegendOpen, setMobileLegendOpen] = useState(false)
   const [activeExtPanel, setActiveExtPanel] = useState<string | null>(null)
   const [siteConfigState, setSiteConfigState] = useState<SiteConfigState>({})
   const extensionPanels = useMemo(() => getExtensionPanels(), [])
@@ -182,9 +195,12 @@ export default function CesiumViewerComponent({
     if (activeExtPanel) { setActiveExtPanel(null); return }
     if (basemapOpen) { setBasemapOpen(false); return }
     if (transparencyOpen) { setTransparencyOpen(false); return }
-    if (legendOpen) { openPanel(null); return }
+    // Legend is no longer transient — it's a sidebar fixture (or a
+    // floating popup the user explicitly undocked). ESC intentionally
+    // doesn't dismiss it; the user controls dock/undock + collapse
+    // via the legend's own header controls.
     if (sidebarOpen) { setSidebarOpen(false); return }
-  }, [measureActive, measureResult, searchOpen, activeExtPanel, basemapOpen, transparencyOpen, legendOpen, sidebarOpen, cancelMeasure, cleanupMeasure, setMeasureResult, setBasemapOpen, setTransparencyOpen])
+  }, [measureActive, measureResult, searchOpen, activeExtPanel, basemapOpen, transparencyOpen, sidebarOpen, cancelMeasure, cleanupMeasure, setMeasureResult, setBasemapOpen, setTransparencyOpen])
 
   const closeDesign = useCallback(() => {
     setDesignOpen(false)
@@ -593,11 +609,15 @@ export default function CesiumViewerComponent({
   // Include all widget panels that open floating overlays so Mai doesn't overlap them.
   const { setDocked } = useMaiDock()
   useEffect(() => {
+    // Legend is intentionally excluded — it lives in the sidebar by
+    // default (already covered by sidebarOpen) and its undocked
+    // floating variant anchors bottom-left, away from MAI's bottom-
+    // right home position.
     const anyPanelOpen = sidebarOpen || designOpen || terrainOpen ||
-      snapOpen || tableOpen || legendOpen || transparencyOpen || storyActive
+      snapOpen || tableOpen || transparencyOpen || storyActive
     setDocked(!isMobile && anyPanelOpen)
   }, [sidebarOpen, designOpen, terrainOpen, snapOpen, tableOpen,
-      legendOpen, transparencyOpen, storyActive, isMobile, setDocked])
+      transparencyOpen, storyActive, isMobile, setDocked])
 
   // ── Right pane (desktop only) ─────────────────────────────────────
   // The pane has no controller of its own — it just shows whichever
@@ -686,7 +706,9 @@ export default function CesiumViewerComponent({
     if (searchOpen) return 'search'
     if (measureActive) return 'measure'
     if (sidebarOpen && !isMobile) return 'layers'
-    if (legendOpen) return 'legend'
+    // Legend is a fixture, not a transient tool — no rail highlight.
+    // Visible state is conveyed by the body showing/hiding inside the
+    // sidebar (docked) or the floating panel appearing (undocked).
     if (terrainOpen) return 'terrain'
     if (snapOpen) return 'snap'
     if (tableOpen) return 'table'
@@ -699,7 +721,7 @@ export default function CesiumViewerComponent({
     if (storyTabActive) return 'story'
     if (basemapOpen) return null  // basemap lives in zoom column, not bottom rail
     return null
-  }, [searchOpen, measureActive, sidebarOpen, isMobile, legendOpen, transparencyOpen, terrainOpen, snapOpen, tableOpen, storyActive, storyTabActive, basemapOpen, designOpen, flyActive, flyPanelOpen])
+  }, [searchOpen, measureActive, sidebarOpen, isMobile, transparencyOpen, terrainOpen, snapOpen, tableOpen, storyActive, storyTabActive, basemapOpen, designOpen, flyActive, flyPanelOpen])
 
   const onMapShellAction = useCallback((id: string) => {
     switch (id) {
@@ -713,7 +735,20 @@ export default function CesiumViewerComponent({
       case 'layers':
         setSidebarOpen((o) => !o); break
       case 'legend':
-        togglePanel('legend'); break
+        // Legend is a sidebar fixture, not a utility popup. The rail
+        // tab toggles its collapsed state when docked; when the user
+        // has popped it out into floating mode, the tab snaps it
+        // back home (and expands it) so they can always find it.
+        // Sidebar must be open for the docked body to be visible —
+        // expand it if collapsed so the action has feedback.
+        if (legendDocked) {
+          if (!sidebarOpen) setSidebarOpen(true)
+          toggleLegendCollapsed()
+        } else {
+          dockLegend()
+          if (!sidebarOpen) setSidebarOpen(true)
+        }
+        break
       case 'table':
         togglePanel('table'); break
       // ── Secondary widgets — route through the right pane on desktop ──
@@ -747,7 +782,7 @@ export default function CesiumViewerComponent({
         break
       default: break
     }
-  }, [measureActive, cancelMeasure, startMeasure, onOpenStoryPicker, isMobile, setActiveRightWidget, activeRightWidget])
+  }, [measureActive, cancelMeasure, startMeasure, onOpenStoryPicker, isMobile, setActiveRightWidget, activeRightWidget, legendDocked, sidebarOpen, toggleLegendCollapsed, dockLegend])
 
   // Sidebar width: tab rail (64px) + content panel (280px) when open
   const sidebarWidth = !isMobile && sidebarOpen ? 344 : !isMobile ? 64 : 0
@@ -1134,8 +1169,22 @@ export default function CesiumViewerComponent({
         onClearResult={() => setMeasureResult(null)}
       />
 
-      {/* Legend */}
-      {legendOpen && <LegendWidget layers={layers} onClose={() => openPanel(null)} />}
+      {/* Legend — desktop floating variant. The docked variant mounts
+          inside ViewerSidebar. LegendWidget reads useLegendDock to
+          decide which mode to render in; this mount only fires when
+          the user has explicitly undocked it on desktop. */}
+      {!isMobile && !legendDocked && <LegendWidget layers={layers} />}
+      {/* Legend — mobile overlay. Phones have no sidebar dock target,
+          so the legend is always a floating tap-to-reveal overlay;
+          forceMode pins it to the floating variant regardless of the
+          desktop dock store. */}
+      {isMobile && mobileLegendOpen && (
+        <LegendWidget
+          layers={layers}
+          forceMode="floating"
+          onClose={() => setMobileLegendOpen(false)}
+        />
+      )}
 
       {/* Mobile: floating layers panel (layer-toggle-btn at top: 60px) */}
       {isMobile && <MobileLayers
@@ -1166,9 +1215,9 @@ export default function CesiumViewerComponent({
             <Ruler size={20} />
           </button>
           <button
-            className={`mobile-tool-btn${legendOpen ? ' mobile-tool-btn--active' : ''}`}
+            className={`mobile-tool-btn${mobileLegendOpen ? ' mobile-tool-btn--active' : ''}`}
             style={{ pointerEvents: 'auto', top: 210 }}
-            onClick={() => togglePanel('legend')}
+            onClick={() => setMobileLegendOpen(o => !o)}
             title="Legend"
           >
             <LegendIcon size={20} />

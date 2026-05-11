@@ -182,6 +182,12 @@ export function useFlyMode({
     enableLook: boolean
   } | null>(null)
 
+  // Track the clock's animation state before we force it on.
+  // In a static scene (no time-dependent data) shouldAnimate is false
+  // and clock.onTick never fires — so locomotion silently does nothing.
+  // We force it true while fly is active and restore on exit.
+  const savedShouldAnimateRef = useRef<boolean | null>(null)
+
   const speedRef = useRef(speed)
   speedRef.current = speed
 
@@ -209,6 +215,11 @@ export function useFlyMode({
         ctrl.enableZoom = savedRef.current.enableZoom
         ctrl.enableLook = savedRef.current.enableLook
         savedRef.current = null
+      }
+      // Restore the clock animation state we saved on activation.
+      if (savedShouldAnimateRef.current !== null) {
+        viewer.clock.shouldAnimate = savedShouldAnimateRef.current
+        savedShouldAnimateRef.current = null
       }
       keysRef.current = {}
       isMovingRef.current = false
@@ -400,12 +411,24 @@ export function useFlyMode({
         }
       }
     }
+    // Force the clock to tick. In a static scene shouldAnimate is false
+    // and onTick never fires — locomotion silently does nothing. Save
+    // the previous value so we can restore it exactly on deactivation.
+    savedShouldAnimateRef.current = viewer.clock.shouldAnimate
+    viewer.clock.shouldAnimate = true
+
     const removeTick = viewer.clock.onTick.addEventListener(onTick)
 
     return () => {
       removeTick()
       window.removeEventListener('keydown', onKeyDown)
       window.removeEventListener('keyup', onKeyUp)
+      // Restore clock animation state on cleanup (covers the case where
+      // the component unmounts while active, bypassing the !active path).
+      if (savedShouldAnimateRef.current !== null) {
+        viewer.clock.shouldAnimate = savedShouldAnimateRef.current
+        savedShouldAnimateRef.current = null
+      }
     }
   }, [active, viewerRef])
 

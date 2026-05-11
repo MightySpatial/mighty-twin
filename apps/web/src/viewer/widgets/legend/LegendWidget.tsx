@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useRef, useState, useMemo } from 'react'
-import { ChevronDown, ChevronRight } from 'lucide-react'
+import { ChevronDown, ChevronRight, ExternalLink, Minimize2 } from 'lucide-react'
 import type { Layer } from '../../components/CesiumViewer/types'
 import type { LayerStyle } from '../../types/api'
+import { useLegendDock } from '../../hooks/useLegendDock'
 
-/** Session-scoped persistence — Legend remembers its last drag
+/** Session-scoped persistence for the drag position used by the
+ *  floating (undocked) variant — Legend remembers its last drag
  *  position within a tab but doesn't survive a reload (matches MAI). */
 const LEGEND_POS_KEY = 'mighty:legend:pos'
 function loadLegendPos(): { x: number; y: number } | null {
@@ -15,19 +17,23 @@ function loadLegendPos(): { x: number; y: number } | null {
 function saveLegendPos(p: { x: number; y: number }) {
   try { sessionStorage.setItem(LEGEND_POS_KEY, JSON.stringify(p)) } catch {}
 }
-/** Default anchor — bottom-left of the viewport, matching the
- *  original absolute CSS position (left: 16, bottom: 32) so users
- *  who never drag see the legend exactly where it always was. */
+/** Default anchor for the floating variant — bottom-left of the
+ *  viewport, matching the original absolute CSS position. */
 function defaultLegendPos() {
   if (typeof window === 'undefined') return { x: 16, y: 0 }
-  // The legend is ~260 wide, ~variable height; pick a sensible top
-  // ~32px above the bottom of the viewport.
   return { x: 16, y: Math.max(80, window.innerHeight - 360) }
 }
 
 interface LegendWidgetProps {
   layers: Layer[]
-  onClose: () => void
+  /** When set, override the store's `docked` flag for this render —
+   *  used on mobile (no sidebar) where the floating variant is the
+   *  only sensible option regardless of the user's desktop choice. */
+  forceMode?: 'floating'
+  /** Optional close handler — only used by the floating variant when
+   *  the caller wants its own "hide" semantics (e.g. mobile, where
+   *  the legend isn't a persistent sidebar fixture). */
+  onClose?: () => void
 }
 
 /** Geometry icon for layer type */
@@ -131,7 +137,9 @@ function LegendLayerEntry({ layer }: { layer: Layer }) {
   )
 }
 
-export default function LegendWidget({ layers, onClose }: LegendWidgetProps) {
+/** Body rows — shared between docked and floating variants so the
+ *  content is identical regardless of where the legend is mounted. */
+function LegendBody({ layers }: { layers: Layer[] }) {
   const visibleFirst = useMemo(
     () => [...layers].sort((a, b) => {
       if (a.visible !== b.visible) return a.visible ? -1 : 1
@@ -139,11 +147,86 @@ export default function LegendWidget({ layers, onClose }: LegendWidgetProps) {
     }),
     [layers],
   )
+  return (
+    <div className="legend-panel-body">
+      {visibleFirst.length === 0 ? (
+        <p className="legend-empty">No layers loaded</p>
+      ) : (
+        visibleFirst.map(layer => (
+          <LegendLayerEntry key={layer.id} layer={layer} />
+        ))
+      )}
+    </div>
+  )
+}
 
-  // Draggable position — pointer-events drag from the header grip
-  // matches MAI's pattern (one handler for mouse + touch, position
-  // persisted to sessionStorage). The panel's CSS becomes
-  // position: fixed so left/top here are viewport coordinates.
+export default function LegendWidget({ layers, forceMode, onClose }: LegendWidgetProps) {
+  const storeDocked = useLegendDock(s => s.docked)
+  const collapsed = useLegendDock(s => s.collapsed)
+  const toggleCollapsed = useLegendDock(s => s.toggleCollapsed)
+  const undock = useLegendDock(s => s.undock)
+  const dock = useLegendDock(s => s.dock)
+  const docked = forceMode === 'floating' ? false : storeDocked
+
+  // ── Docked variant ──────────────────────────────────────────────
+  // Lives inline at the bottom of the sidebar content. Header is
+  // clickable to toggle collapsed; right side carries the Undock
+  // button. When collapsed the body is hidden — just the header row
+  // remains as a "LEGEND ▸" affordance.
+  if (docked) {
+    return (
+      <div className={`legend-panel legend-panel--docked${collapsed ? ' legend-panel--collapsed' : ''}`}>
+        <button
+          type="button"
+          className="legend-panel-header legend-panel-header--toggle"
+          onClick={toggleCollapsed}
+          title={collapsed ? 'Expand legend' : 'Collapse legend'}
+          aria-expanded={!collapsed}
+        >
+          <span className="legend-panel-chevron">
+            {collapsed ? <ChevronRight size={12} /> : <ChevronDown size={12} />}
+          </span>
+          <span className="legend-panel-title">Legend</span>
+          <span className="legend-panel-spacer" />
+          <span
+            role="button"
+            tabIndex={0}
+            className="legend-panel-action"
+            onClick={(e) => { e.stopPropagation(); undock() }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault()
+                e.stopPropagation()
+                undock()
+              }
+            }}
+            title="Undock — make legend a floating panel"
+            aria-label="Undock legend"
+          >
+            <ExternalLink size={12} />
+          </span>
+        </button>
+        {!collapsed && <LegendBody layers={layers} />}
+      </div>
+    )
+  }
+
+  // ── Floating variant ────────────────────────────────────────────
+  // Draggable popup over the canvas. Same pointer-events pattern as
+  // before but the header now carries a "Dock" action — the legend
+  // never really closes, it just docks back to the sidebar.
+  // `onClose`, when provided, surfaces an extra × so a caller (e.g.
+  // mobile, where there's no sidebar dock target) can hide it.
+  return <LegendFloating layers={layers} onDock={dock} onClose={onClose} />
+}
+
+interface LegendFloatingProps {
+  layers: Layer[]
+  onDock: () => void
+  onClose?: () => void
+}
+
+function LegendFloating({ layers, onDock, onClose }: LegendFloatingProps) {
   const [pos, setPos] = useState(() => loadLegendPos() ?? defaultLegendPos())
   const drag = useRef({ px: 0, py: 0, ox: 0, oy: 0, pointerId: -1, moved: false })
 
@@ -159,9 +242,9 @@ export default function LegendWidget({ layers, onClose }: LegendWidgetProps) {
   }, [clamp])
 
   const onPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
-    // Only initiate drag when the user grabs the header itself,
-    // not when they click the × close button inside it.
-    if ((e.target as HTMLElement).closest('button')) return
+    // Only initiate drag when the user grabs the header itself, not
+    // when they click any of the action buttons inside it.
+    if ((e.target as HTMLElement).closest('button, [role="button"]')) return
     e.currentTarget.setPointerCapture(e.pointerId)
     drag.current = {
       px: e.clientX, py: e.clientY,
@@ -199,18 +282,30 @@ export default function LegendWidget({ layers, onClose }: LegendWidgetProps) {
         style={{ cursor: 'grab', touchAction: 'none' }}
         title="Drag to reposition"
       >
-        <span>Legend</span>
-        <button className="ext-panel-close" onClick={onClose}>×</button>
-      </div>
-      <div className="legend-panel-body">
-        {visibleFirst.length === 0 ? (
-          <p className="legend-empty">No layers loaded</p>
-        ) : (
-          visibleFirst.map(layer => (
-            <LegendLayerEntry key={layer.id} layer={layer} />
-          ))
+        <span className="legend-panel-title">Legend</span>
+        <span className="legend-panel-spacer" />
+        <button
+          type="button"
+          className="legend-panel-icon-btn"
+          onClick={onDock}
+          title="Dock legend to sidebar"
+          aria-label="Dock legend to sidebar"
+        >
+          <Minimize2 size={13} />
+        </button>
+        {onClose && (
+          <button
+            type="button"
+            className="ext-panel-close"
+            onClick={onClose}
+            title="Hide legend"
+            aria-label="Hide legend"
+          >
+            ×
+          </button>
         )}
       </div>
+      <LegendBody layers={layers} />
     </div>
   )
 }
