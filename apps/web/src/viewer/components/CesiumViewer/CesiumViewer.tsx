@@ -6,6 +6,7 @@ import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import type { SiteConfigState } from '../../types/api'
 import { Cartesian3, CameraEventType, Math as CesiumMath } from 'cesium'
 import { useBreakpoint } from '../../hooks/useBreakpoint'
+import { useHasCursor } from '../../hooks/useHasCursor'
 import { useWidgetLayout } from '../../hooks/useWidgetLayout'
 import { HelpCircle, Search as SearchIcon, Ruler, List as LegendIcon } from 'lucide-react'
 import { getExtensionPanels } from '../../extensions'
@@ -86,6 +87,7 @@ export default function CesiumViewerComponent({
   storyActive = false,
 }: CesiumViewerProps) {
   const { isMobile } = useBreakpoint()
+  const hasCursor = useHasCursor()
   const widgetOverrides = useWidgetLayout()
   const [sidebarOpen, setSidebarOpen] = useState(!isMobile)
   const [searchOpen, setSearchOpen] = useState(false)
@@ -333,7 +335,10 @@ export default function CesiumViewerComponent({
   const [flyActive, setFlyActive] = useState(false)
   const [flySpeed, setFlySpeed] = useState<FlySpeed>('cycling')
   const onGearShift = useGearShift(setFlySpeed, flySpeed)
-  useFlyMode({ viewerRef, active: flyActive, speed: flySpeed, onGearShift })
+  // Gate fly locomotion on cursor+hover availability so detaching a tablet
+  // keyboard mid-session immediately stops the camera and matches the rail.
+  const flyEnabled = flyActive && hasCursor
+  useFlyMode({ viewerRef, active: flyEnabled, speed: flySpeed, onGearShift })
 
   // Auto-exit fly mode when the user navigates away from the viewer
   // surface — otherwise WASD still moves the (unmounted) camera.
@@ -659,16 +664,16 @@ export default function CesiumViewerComponent({
           headingDeg={headingDeg}
           is2D={is2D}
           phoneMode={isMobile}
+          hasCursor={hasCursor}
           widgetOverrides={widgetOverrides}
         />
       </div>
 
-      {/* Fly widget — toggled from the secondary widget rail. The
-          inline HUD that lived here previously is now in FlyWidget,
-          which also has a mobile-friendly MiniPlayer ribbon variant
-          with on-screen arrow pads for touch locomotion + a 5-gear
-          sequential shifter. */}
-      {flyActive && (
+      {/* Fly widget — toggled from the secondary widget rail. Gated on
+          hasCursor (fine pointer + hover) since the locomotion uses
+          WASD/arrows/Q/E; tablets without an attached keyboard/trackpad
+          stay coarse-pointer and won't render it even if state lingers. */}
+      {flyEnabled && (
         <FlyWidget
           speed={flySpeed}
           setSpeed={setFlySpeed}

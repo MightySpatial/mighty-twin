@@ -103,6 +103,12 @@ export interface MapShellProps {
    *  compact site chip, etc.) regardless of viewport width. The host app's
    *  ShellContext breakpoint should drive this. */
   phoneMode?: boolean
+  /** Whether the current input setup has a precise pointer + hover (mouse
+   *  or trackpad). Drives input-gated widgets — Fly needs WASD/arrows/Q/E,
+   *  which implies a physical keyboard, and `(pointer: fine, hover: hover)`
+   *  is the closest web-platform proxy (it flips true on a tablet once a
+   *  Magic Keyboard / trackpad is attached). */
+  hasCursor?: boolean
   /** Workspace widget overrides — disabled widgets get filtered out, and
    *  controller/position changes get merged in. Pass null/undefined to
    *  fall back to DEFAULT_WIDGETS unchanged. */
@@ -129,6 +135,7 @@ export function MapShell({
   is2D = false,
   showPublicBanner = false,
   phoneMode = false,
+  hasCursor = true,
   widgetOverrides = null,
   children,
 }: MapShellProps) {
@@ -155,8 +162,14 @@ export function MapShell({
 
   const widgets = useMemo<WidgetDef[]>(() => {
     const base = publicMode ? publicWidgets(DEFAULT_WIDGETS) : DEFAULT_WIDGETS
-    return applyWidgetOverrides(base, widgetOverrides)
-  }, [publicMode, widgetOverrides])
+    const withOverrides = applyWidgetOverrides(base, widgetOverrides)
+    // Fly locomotion is keyboard-driven (WASD/arrows/Q/E); only surface it
+    // when a precise pointer is detected (mouse/trackpad), which is the
+    // best web-platform proxy for "has a physical keyboard too." Phones and
+    // bare tablets drop the entry; a tablet with an attached keyboard /
+    // trackpad keeps it.
+    return hasCursor ? withOverrides : withOverrides.filter((w) => w.id !== 'fly')
+  }, [publicMode, widgetOverrides, hasCursor])
   const secondary = useMemo(() => widgetsForController(widgets, 'secondary'), [widgets])
 
   // Phone-only: tools sheet open/closed.
