@@ -25,12 +25,13 @@ import { useTokenFetch } from './hooks/useTokenFetch'
 import { useCesiumMount } from './hooks/useCesiumMount'
 import { useLayerSync } from './hooks/useLayerSync'
 import { useSiteFocalPin } from './hooks/useSiteFocalPin'
-import WalkWidget from '../../widgets/walk/WalkWidget'
+import FlyWidget from '../../widgets/fly/FlyWidget'
 import { useSplatRenderer } from './hooks/useSplatRenderer'
 import {
-  useWalkMode,
-  type WalkSpeed,
-} from './hooks/useWalkMode'
+  useFlyMode,
+  useGearShift,
+  type FlySpeed,
+} from './hooks/useFlyMode'
 
 import MeasureWidget, { useMeasure } from '../../widgets/measure'
 import { SnapshotWidget } from '../../widgets/snapshot'
@@ -326,23 +327,24 @@ export default function CesiumViewerComponent({
     })
   }, [])
 
-  // Walking / running fly-through camera mode. Off by default; the
-  // toolbar exposes a play/stop control + speed picker. Activation
-  // toggles WASD locomotion at human speeds — see useWalkMode.
-  const [walkActive, setWalkActive] = useState(false)
-  const [walkSpeed, setWalkSpeed] = useState<WalkSpeed>('walk')
-  useWalkMode({ viewerRef, active: walkActive, speed: walkSpeed })
+  // Fly-through camera mode (formerly "walk"). Off by default; the
+  // toolbar exposes a play/stop control + sequential gear shifter.
+  // Activation toggles WASD/arrow locomotion — see useFlyMode.
+  const [flyActive, setFlyActive] = useState(false)
+  const [flySpeed, setFlySpeed] = useState<FlySpeed>('cycling')
+  const onGearShift = useGearShift(setFlySpeed, flySpeed)
+  useFlyMode({ viewerRef, active: flyActive, speed: flySpeed, onGearShift })
 
-  // Auto-exit walk mode when the user navigates away from the viewer
+  // Auto-exit fly mode when the user navigates away from the viewer
   // surface — otherwise WASD still moves the (unmounted) camera.
   useEffect(() => {
-    if (!walkActive) return
+    if (!flyActive) return
     function onEsc(e: KeyboardEvent) {
-      if (e.key === 'Escape') setWalkActive(false)
+      if (e.key === 'Escape') setFlyActive(false)
     }
     window.addEventListener('keydown', onEsc)
     return () => window.removeEventListener('keydown', onEsc)
-  }, [walkActive])
+  }, [flyActive])
 
   // Look-around mode: hold compass → first-person free-look (camera
   // pivots on its own lens, position stays still — like Ctrl+drag in
@@ -499,10 +501,10 @@ export default function CesiumViewerComponent({
     if (strikeOpen) return 'strike'
     if (storyActive) return 'story'
     if (designOpen) return 'design'
-    if (walkActive) return 'walk'
+    if (flyActive) return 'fly'
     if (basemapOpen) return null  // basemap lives in zoom column, not bottom rail
     return null
-  }, [searchOpen, measureActive, sidebarOpen, isMobile, legendOpen, transparencyOpen, terrainOpen, snapOpen, tableOpen, strikeOpen, storyActive, basemapOpen, designOpen, walkActive])
+  }, [searchOpen, measureActive, sidebarOpen, isMobile, legendOpen, transparencyOpen, terrainOpen, snapOpen, tableOpen, strikeOpen, storyActive, basemapOpen, designOpen, flyActive])
 
   const onMapShellAction = useCallback((id: string) => {
     switch (id) {
@@ -541,8 +543,8 @@ export default function CesiumViewerComponent({
           return next
         })
         break
-      case 'walk':
-        setWalkActive((a) => !a)
+      case 'fly':
+        setFlyActive((a) => !a)
         break
       default: break
     }
@@ -661,15 +663,16 @@ export default function CesiumViewerComponent({
         />
       </div>
 
-      {/* Walk widget — toggled from the secondary widget rail. The
-          inline HUD that lived here previously is now in WalkWidget,
+      {/* Fly widget — toggled from the secondary widget rail. The
+          inline HUD that lived here previously is now in FlyWidget,
           which also has a mobile-friendly MiniPlayer ribbon variant
-          with on-screen arrow pads for touch locomotion. */}
-      {walkActive && (
-        <WalkWidget
-          speed={walkSpeed}
-          setSpeed={setWalkSpeed}
-          onClose={() => setWalkActive(false)}
+          with on-screen arrow pads for touch locomotion + a 5-gear
+          sequential shifter. */}
+      {flyActive && (
+        <FlyWidget
+          speed={flySpeed}
+          setSpeed={setFlySpeed}
+          onClose={() => setFlyActive(false)}
           isMobile={isMobile}
         />
       )}

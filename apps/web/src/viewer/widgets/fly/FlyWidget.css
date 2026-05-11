@@ -1,0 +1,241 @@
+/* Fly widget — desktop floating panel + mobile MiniPlayer body + the
+   sequential gear shifter and on-change toast. */
+
+.fly-panel {
+  position: absolute;
+  bottom: 88px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 25;
+  width: 320px;
+  background: rgba(15, 15, 20, 0.90);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+  color: #f0f2f8;
+  padding: 12px;
+}
+
+.fly-panel-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  color: #2dd4bf;
+}
+.fly-panel-title {
+  flex: 1;
+  font-size: 13px;
+  font-weight: 600;
+  color: #f0f2f8;
+}
+.fly-panel-close {
+  width: 26px;
+  height: 26px;
+  border: none;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 6px;
+  color: rgba(240, 242, 248, 0.7);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.fly-panel-close:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #f0f2f8;
+}
+
+/* ── Sequential shifter (5 gears + ‹/› arrows) ──────────────────────── */
+
+.fly-shifter {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 6px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+.fly-shifter-arrow {
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  color: rgba(240, 242, 248, 0.7);
+  cursor: pointer;
+  transition: background 120ms, color 120ms, border-color 120ms;
+}
+.fly-shifter-arrow:hover:not(:disabled) {
+  background: rgba(45, 212, 191, 0.16);
+  border-color: rgba(45, 212, 191, 0.5);
+  color: #2dd4bf;
+}
+.fly-shifter-arrow:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.fly-shifter-pills {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 4px;
+  min-width: 0;
+}
+.fly-shifter-pill {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  padding: 4px 2px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 8px;
+  color: rgba(240, 242, 248, 0.65);
+  font: inherit;
+  cursor: pointer;
+  min-width: 0;
+  transition: background 120ms, border-color 120ms, color 120ms;
+}
+.fly-shifter-pill:hover:not(.fly-shifter-pill--active) {
+  background: rgba(255, 255, 255, 0.07);
+  color: #f0f2f8;
+}
+.fly-shifter-pill--active {
+  background: rgba(45, 212, 191, 0.16);
+  border-color: rgba(45, 212, 191, 0.5);
+  color: #2dd4bf;
+}
+.fly-shifter-pill-icon {
+  font-size: 16px;
+  line-height: 1;
+}
+.fly-shifter-pill-label {
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: capitalize;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+/* ── Key hints ───────────────────────────────────────────────────────── */
+
+.fly-keys {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  padding-top: 10px;
+}
+.fly-keys-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+}
+.fly-keys-keys {
+  display: flex;
+  gap: 3px;
+  flex-shrink: 0;
+}
+.fly-key {
+  font-family: monospace;
+  font-size: 10px;
+  padding: 1px 6px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  color: rgba(240, 242, 248, 0.85);
+  min-width: 14px;
+  text-align: center;
+}
+.fly-keys-label {
+  color: rgba(240, 242, 248, 0.55);
+  flex: 1;
+  font-size: 10px;
+}
+
+/* ── Mobile body (inside MiniPlayer) ─────────────────────────────────── */
+
+.fly-mobile-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+/* On mobile bump the shifter arrows up to 44px tap targets per task. */
+.fly-mobile-body .fly-shifter-arrow {
+  width: 44px;
+  height: 44px;
+}
+.fly-mobile-body .fly-shifter-pill {
+  min-height: 44px;
+}
+.fly-touch-pad {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  max-width: 220px;
+  margin: 0 auto;
+}
+.fly-touch-btn {
+  width: 100%;
+  aspect-ratio: 1;
+  background: rgba(45, 212, 191, 0.10);
+  border: 1px solid rgba(45, 212, 191, 0.35);
+  border-radius: 10px;
+  color: #2dd4bf;
+  font-size: 18px;
+  font-weight: 700;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+}
+.fly-touch-btn:active {
+  background: rgba(45, 212, 191, 0.22);
+}
+.fly-hint {
+  font-size: 11px;
+  color: rgba(240, 242, 248, 0.5);
+  text-align: center;
+  line-height: 1.4;
+}
+
+/* ── Gear-change toast ───────────────────────────────────────────────── */
+
+.fly-toast {
+  position: absolute;
+  bottom: 200px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 30;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  background: rgba(15, 15, 20, 0.90);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(45, 212, 191, 0.5);
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  color: #2dd4bf;
+  font-size: 13px;
+  font-weight: 600;
+  animation: flyToastPop 240ms ease-out;
+  pointer-events: none;
+}
+.fly-toast-icon { font-size: 16px; line-height: 1; }
+.fly-toast-label { letter-spacing: 0.02em; }
+
+@keyframes flyToastPop {
+  0%   { opacity: 0; transform: translate(-50%, 8px) scale(0.96); }
+  100% { opacity: 1; transform: translate(-50%, 0) scale(1); }
+}
