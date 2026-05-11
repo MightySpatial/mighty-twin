@@ -61,6 +61,8 @@ export default function SketchTab({ viewer, siteSlug = null }: Props) {
   const sketches = useCadEngine(s => s.sketches)
   const createSketch = useCadEngine(s => s.createSketch)
   const setLayerColour = useCadEngine(s => s.setLayerColour)
+  const setLayerLineWidth = useCadEngine(s => s.setLayerLineWidth)
+  const clearSketchNodes = useCadEngine(s => s.clearSketchNodes)
 
   const { templates } = useDesignTemplates(siteSlug)
 
@@ -157,6 +159,32 @@ export default function SketchTab({ viewer, siteSlug = null }: Props) {
                 )
               })}
             </div>
+            <div className="sketch-style-row__lw">
+              <span className="sketch-style-row__hint">
+                Line weight · {activeLayer.lineWidth ?? 3}px
+              </span>
+              <input
+                type="range"
+                min={1}
+                max={12}
+                step={1}
+                value={activeLayer.lineWidth ?? 3}
+                onChange={e => setLayerLineWidth(activeSketch.id, activeLayer.id, Number(e.target.value))}
+                aria-label="Layer line weight"
+                style={{ width: '100%' }}
+              />
+            </div>
+            <button
+              type="button"
+              className="sketch-style-row__clear"
+              onClick={() => {
+                if (!confirm(`Clear all features from "${activeSketch.name}"? This can be undone.`)) return
+                clearSketchNodes(activeSketch.id)
+              }}
+              title="Remove every feature in this sketch (undoable)"
+            >
+              Clear sketch
+            </button>
           </div>
         </div>
       )}

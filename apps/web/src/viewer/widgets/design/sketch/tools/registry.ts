@@ -31,6 +31,15 @@ export interface ToolFlags {
   /** Show the VertexListEditor (skip for auto-place + table-driven
    *  tools that build positions from their own UI). */
   usesDraftVertices: boolean
+  /** Drag-sample mode — useToolPicks listens for pointerdown/move/up
+   *  instead of LEFT_CLICK and appends a globe-picked position per
+   *  throttled move sample. Used by Pen (freehand) and Eraser (drag
+   *  to wipe). The geometry committed is whatever positions list
+   *  the user drew. */
+  dragSampled?: boolean
+  /** Eraser mode — useToolPicks treats each picked feature as a
+   *  delete target instead of writing into a draft node. */
+  eraser?: boolean
 }
 
 export const DEFAULT_FLAGS: ToolFlags = {
@@ -104,10 +113,22 @@ const LoftParameters      = lazy(() => import('./parameters/LoftParameters'))
 // ── Registry table ──────────────────────────────────────────────────────
 
 export const TOOL_REGISTRY: Record<string, ToolSpec> = {
+  freehand: {
+    id: 'freehand', label: 'Pen', geometryType: 'line',
+    clicksToFinish: null, parameters: null,
+    flags: { ...DEFAULT_FLAGS, dragSampled: true, usesDraftVertices: false },
+    finishLabel: null, icon: '✎', shortcut: 'B',
+  },
   point: {
     id: 'point', label: 'Point', geometryType: 'point',
     clicksToFinish: 1, parameters: null, flags: DEFAULT_FLAGS,
     finishLabel: null, icon: '●', shortcut: 'P',
+  },
+  eraser: {
+    id: 'eraser', label: 'Eraser', geometryType: 'point',
+    clicksToFinish: null, parameters: null,
+    flags: { ...DEFAULT_FLAGS, eraser: true, usesGenericAttributes: false, usesDraftVertices: false },
+    finishLabel: null, icon: '⌫', shortcut: 'E',
   },
   line: {
     id: 'line', label: 'Line', geometryType: 'line',
@@ -232,9 +253,14 @@ export const TOOL_ORDER: string[] = [
 /** Tools grouped by section for the SketchTab grid. */
 export const TOOL_GROUPS: { id: string; label: string; tools: string[] }[] = [
   {
+    id: 'sketch-draw',
+    label: 'Draw',
+    tools: ['freehand', 'point', 'line', 'polygon', 'rectangle', 'ellipse', 'eraser'],
+  },
+  {
     id: 'create-flat',
-    label: 'Create',
-    tools: ['point', 'line', 'polygon', 'rectangle', 'curve', 'ellipse', 'polygon_n', 'traverse'],
+    label: 'More shapes',
+    tools: ['curve', 'polygon_n', 'traverse'],
   },
   {
     id: 'create-pipes',

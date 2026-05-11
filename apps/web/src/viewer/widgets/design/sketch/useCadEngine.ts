@@ -57,9 +57,16 @@ export interface CadEngineActions {
   removeLayer: (sketchId: string, layerId: string) => void
   renameLayer: (sketchId: string, layerId: string, name: string) => void
   setLayerColour: (sketchId: string, layerId: string, colour: string) => void
+  /** Per-layer default stroke width (pixels). Inherited by new freehand
+   *  + line + polygon nodes via Style row in SketchTab. */
+  setLayerLineWidth: (sketchId: string, layerId: string, lineWidth: number) => void
   toggleLayerVisibility: (sketchId: string, layerId: string) => void
   toggleLayerLock: (sketchId: string, layerId: string) => void
   setActiveLayer: (layerId: string | null) => void
+  /** Drop every node belonging to a sketch (the Clear button on the
+   *  SketchTab toolbar). The sketch itself stays — only nodes are
+   *  removed. Pushes a single undo entry so the wipe can be undone. */
+  clearSketchNodes: (sketchId: string) => void
 
   // Nodes
   addNode: (node: SketchNode) => void
@@ -321,6 +328,31 @@ const cadEngineCreator: StateCreator<
 
     renameLayer: (sketchId, layerId, name) => {
       patchLayer(set, sketchId, layerId, l => ({ ...l, name }))
+    },
+
+    setLayerLineWidth: (sketchId, layerId, lineWidth) => {
+      const w = Math.max(1, Math.min(20, Math.round(lineWidth)))
+      patchLayer(set, sketchId, layerId, l => ({ ...l, lineWidth: w }))
+    },
+
+    clearSketchNodes: (sketchId) => {
+      set(state => {
+        const dropIds = Object.values(state.nodes)
+          .filter(n => n.params.sketchId === sketchId)
+          .map(n => n.id)
+        if (dropIds.length === 0) return state
+        const nextNodes: Record<string, SketchNode> = {}
+        for (const [id, n] of Object.entries(state.nodes)) {
+          if (!dropIds.includes(id)) nextNodes[id] = n
+        }
+        return {
+          ...pushUndo(state),
+          nodes: nextNodes,
+          outputIds: topoSort(nextNodes),
+          selectedNodeId: dropIds.includes(state.selectedNodeId ?? '') ? null : state.selectedNodeId,
+          dirtySketches: new Set([...state.dirtySketches, sketchId]),
+        }
+      })
     },
 
     setLayerColour: (sketchId, layerId, colour) => {

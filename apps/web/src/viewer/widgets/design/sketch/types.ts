@@ -137,6 +137,10 @@ export interface SketchLayerSpec {
   id: string
   name: string
   colour: string
+  /** Default stroke width (pixels) for line + polygon outline + freehand
+   *  strokes on this layer. New nodes inherit it via SketchTab's
+   *  Style row; defaults to 3 when unset. */
+  lineWidth?: number
   visible: boolean
   locked: boolean
   /** Per-layer overrides — collapse to sketch-level when undefined. */
