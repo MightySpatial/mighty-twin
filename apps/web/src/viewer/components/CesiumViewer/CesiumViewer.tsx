@@ -39,6 +39,7 @@ import { useFlyTouchGestures } from './hooks/useFlyTouchGestures'
 import FlyMiniPlayer from '../../widgets/fly/FlyMiniPlayer'
 
 import MeasureWidget, { useMeasure } from '../../widgets/measure'
+import type { MeasureMode } from '../../widgets/measure'
 import { SnapshotWidget } from '../../widgets/snapshot'
 import { AttributeTableWidget } from '../../widgets/attribute-table'
 import { TerrainWidget, useTerrain, useTerrainMask, useUnderground } from '../../widgets/terrain'
@@ -58,7 +59,7 @@ import ViewerSidebar from '../ViewerSidebar'
 import { DesignWidget } from '../../widgets/design'
 import { RightPane } from '../RightPane'
 
-type ActiveRightWidget = 'story' | 'snap' | 'design' | 'terrain' | null
+type ActiveRightWidget = 'story' | 'snap' | 'design' | 'terrain' | 'measure' | null
 
 // Mobile-only floating layer panel
 function MobileLayers({ layers, layersLoading, onLayerToggle, onLayerOpacityChange }: {
@@ -181,9 +182,20 @@ export default function CesiumViewerComponent({
 
   // Widget hooks
   const {
+    measureMode, setMeasureMode,
     measureActive, measureRunning, measureResult,
     startMeasure, cancelMeasure, cleanupMeasure, setMeasureResult,
   } = useMeasure(viewerRef)
+
+  /** Tab handler shared by the floating tooltip and the inline right-
+   *  pane control. Switching modes always restarts measurement in the
+   *  newly chosen mode — setMeasureMode synchronously cancels any
+   *  in-progress work and clears any displayed result, so startMeasure
+   *  begins from a clean slate using the new mode's ref. */
+  const onMeasureModeChange = useCallback((next: MeasureMode) => {
+    setMeasureMode(next)
+    startMeasure()
+  }, [setMeasureMode, startMeasure])
   const { activeBasemap, basemapOpen, setBasemapOpen, switchBasemap } = useBasemap(viewerRef, imgMapRef)
   const { globeAlpha, setGlobeAlpha, transparencyOpen, setTransparencyOpen } = useGlobeTransparency(viewerRef)
 
@@ -613,11 +625,14 @@ export default function CesiumViewerComponent({
     // default (already covered by sidebarOpen) and its undocked
     // floating variant anchors bottom-left, away from MAI's bottom-
     // right home position.
+    const measurePane = !isMobile && (measureActive || measureResult)
     const anyPanelOpen = sidebarOpen || designOpen || terrainOpen ||
-      snapOpen || tableOpen || transparencyOpen || storyActive
+      snapOpen || tableOpen || transparencyOpen || storyActive ||
+      measurePane
     setDocked(!isMobile && anyPanelOpen)
   }, [sidebarOpen, designOpen, terrainOpen, snapOpen, tableOpen,
-      transparencyOpen, storyActive, isMobile, setDocked])
+      transparencyOpen, storyActive, isMobile, setDocked,
+      measureActive, measureResult])
 
   // ── Right pane (desktop only) ─────────────────────────────────────
   // The pane has no controller of its own — it just shows whichever
@@ -639,13 +654,26 @@ export default function CesiumViewerComponent({
     if (snapOpen) return 'snap'
     if (terrainOpen) return 'terrain'
     if (storyTabActive) return 'story'
+    // Measure uses the right-pane controller on desktop only. On
+    // mobile the floating tooltip + result panel already cover the
+    // touch surface and routing through the drawer would just
+    // duplicate the same controls.
+    if (!isMobile && (measureActive || measureResult)) return 'measure'
     return null
-  }, [designOpen, snapOpen, terrainOpen, storyTabActive])
+  }, [designOpen, snapOpen, terrainOpen, storyTabActive, measureActive, measureResult, isMobile])
   const setActiveRightWidget = useCallback((next: ActiveRightWidget) => {
     setDesignOpen(next === 'design')
     setSnapOpen(next === 'snap')
     setTerrainOpen(next === 'terrain')
     setStoryTabActive(next === 'story')
+    // Measure ↔ right-pane sync: activating 'measure' starts a fresh
+    // measurement in the current mode; switching to any other right
+    // widget cancels measure so the pane releases cleanly.
+    if (next === 'measure') {
+      if (!measureActive) startMeasure()
+    } else if (measureActive || measureResult) {
+      cancelMeasure()
+    }
     // Design widget dispatches open/close window events so the AI
     // ChatPanel docks out of the way — keep that behaviour even when
     // the selection comes from the rail rather than a sidebar tab.
@@ -658,7 +686,7 @@ export default function CesiumViewerComponent({
     // pre-rearchitecture behaviour. The pane shows a placeholder
     // until/unless we land an inline story player later.
     if (next === 'story' && onOpenStoryPicker) onOpenStoryPicker()
-  }, [onOpenStoryPicker])
+  }, [onOpenStoryPicker, measureActive, measureResult, startMeasure, cancelMeasure])
   /** Sidebar widget-tab click handler: toggle if same, else set. */
   const onSidebarWidgetTabToggle = useCallback((id: ActiveRightWidget) => {
     setActiveRightWidget(activeRightWidget === id ? null : id)
@@ -728,10 +756,22 @@ export default function CesiumViewerComponent({
       case 'search':
         setSearchOpen((o) => !o); break
       case 'measure':
-        // cancelMeasure resets React state (measureActive=false) AND cleans
-        // up entities/handlers. cleanupMeasure alone left React state stale,
-        // which kept the toggle stuck on after a tap-to-disable.
-        measureActive ? cancelMeasure() : startMeasure(); break
+        // Desktop routes Measure through the right-pane controller so
+        // it picks up the inline tab UI (Line / Area / Point) like the
+        // other secondary widgets. Mobile keeps the floating tooltip
+        // path — the drawer would just duplicate the same controls.
+        if (isMobile) {
+          if (measureActive || measureResult) {
+            cancelMeasure()
+          } else {
+            startMeasure()
+          }
+        } else {
+          setActiveRightWidget(
+            (measureActive || measureResult) ? null : 'measure',
+          )
+        }
+        break
       case 'layers':
         setSidebarOpen((o) => !o); break
       case 'legend':
@@ -782,7 +822,7 @@ export default function CesiumViewerComponent({
         break
       default: break
     }
-  }, [measureActive, cancelMeasure, startMeasure, onOpenStoryPicker, isMobile, setActiveRightWidget, activeRightWidget, legendDocked, sidebarOpen, toggleLegendCollapsed, dockLegend])
+  }, [measureActive, measureResult, cancelMeasure, startMeasure, onOpenStoryPicker, isMobile, setActiveRightWidget, activeRightWidget, legendDocked, sidebarOpen, toggleLegendCollapsed, dockLegend])
 
   // Sidebar width: tab rail (64px) + content panel (280px) when open
   const sidebarWidth = !isMobile && sidebarOpen ? 344 : !isMobile ? 64 : 0
@@ -1160,14 +1200,22 @@ export default function CesiumViewerComponent({
           but isn't reachable from the rail anymore. */}
       {transparencyOpen && <TransparencyWidget globeAlpha={globeAlpha} setGlobeAlpha={setGlobeAlpha} onClose={() => setTransparencyOpen(false)} />}
 
-      {/* Measure */}
-      <MeasureWidget
-        measureActive={measureActive}
-        measureRunning={measureRunning}
-        measureResult={measureResult}
-        onCleanup={cleanupMeasure}
-        onClearResult={() => setMeasureResult(null)}
-      />
+      {/* Measure — floating overlay. On desktop we hand the UI off to
+          the right pane (see the RightPane render below) once measure
+          is the active right widget; mobile keeps the floating layout
+          because the pane is a drawer that can be closed. */}
+      {(isMobile || activeRightWidget !== 'measure') && (
+        <MeasureWidget
+          mode="floating"
+          measureMode={measureMode}
+          onModeChange={onMeasureModeChange}
+          measureActive={measureActive}
+          measureRunning={measureRunning}
+          measureResult={measureResult}
+          onCleanup={cleanupMeasure}
+          onClearResult={() => setMeasureResult(null)}
+        />
+      )}
 
       {/* Legend — desktop floating variant. The docked variant mounts
           inside ViewerSidebar. LegendWidget reads useLegendDock to
@@ -1389,6 +1437,7 @@ export default function CesiumViewerComponent({
           : activeRightWidget === 'snap' ? 'Snap'
           : activeRightWidget === 'design' ? 'Design'
           : activeRightWidget === 'terrain' ? 'Terrain'
+          : activeRightWidget === 'measure' ? 'Measure'
           : null
         const body = activeRightWidget === 'story' ? (
           <div style={{ padding: 16, fontSize: 12, color: 'rgba(230,237,243,0.6)', lineHeight: 1.5 }}>
@@ -1448,6 +1497,18 @@ export default function CesiumViewerComponent({
               Terrain idle.
             </div>
           )
+        )
+        : activeRightWidget === 'measure' ? (
+          <MeasureWidget
+            mode="inline"
+            measureMode={measureMode}
+            onModeChange={onMeasureModeChange}
+            measureActive={measureActive}
+            measureRunning={measureRunning}
+            measureResult={measureResult}
+            onCleanup={cleanupMeasure}
+            onClearResult={() => setMeasureResult(null)}
+          />
         )
         : null
 

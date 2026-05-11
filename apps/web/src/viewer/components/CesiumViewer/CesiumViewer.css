@@ -227,15 +227,24 @@
   transform: translateX(-50%);
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  padding: 10px 18px;
+  align-items: stretch;
+  gap: 6px;
+  padding: 8px 10px 10px;
+  min-width: 220px;
   background: rgba(15, 15, 20, 0.92);
   border: 1px solid rgba(255,255,255,0.12);
   border-radius: 10px;
   z-index: 20;
   backdrop-filter: blur(8px);
-  pointer-events: none;
+  /* Tabs need to be clickable for mode switching; the dist + hint
+     children are non-interactive text so leaving pointer-events on
+     here is fine. */
+  pointer-events: auto;
+}
+
+.measure-tooltip .measure-tooltip-dist,
+.measure-tooltip .measure-tooltip-hint {
+  text-align: center;
 }
 
 .measure-tooltip-dist {
@@ -300,6 +309,110 @@
   font-weight: 600;
   color: #a5b4fc;
   font-variant-numeric: tabular-nums;
+}
+
+/* ── Measure Mode Tabs (Line / Area / Point) ─────────────────────────────── */
+
+.measure-mode-tabs {
+  display: flex;
+  gap: 0;
+  padding: 3px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  align-self: stretch;
+}
+
+.measure-mode-tab {
+  flex: 1;
+  padding: 5px 10px;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease;
+  font-family: inherit;
+}
+
+.measure-mode-tab:hover {
+  color: rgba(255, 255, 255, 0.85);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.measure-mode-tab--active {
+  background: rgba(99, 102, 241, 0.22);
+  color: #a5b4fc;
+  box-shadow: inset 0 0 0 1px rgba(99, 102, 241, 0.35);
+}
+
+.measure-mode-tab--active:hover {
+  background: rgba(99, 102, 241, 0.28);
+}
+
+/* Per-segment readout for Line measurements with >1 segment. */
+.measure-result-segments {
+  margin-top: 4px;
+  padding-top: 6px;
+  border-top: 1px dashed rgba(255, 255, 255, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  max-height: 160px;
+  overflow-y: auto;
+}
+
+.measure-result-segment {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.55);
+  font-variant-numeric: tabular-nums;
+}
+
+.measure-result-segment-label {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.measure-result-segment-value {
+  color: rgba(165, 180, 252, 0.9);
+}
+
+/* Inline layout (rendered into the RightPane content slot). Strips
+   the floating positioning and stacks tabs + status + result inside
+   the pane's content column. */
+.measure-inline {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+}
+
+.measure-inline-running,
+.measure-inline-idle {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: flex-start;
+  padding: 8px 10px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 8px;
+}
+
+.measure-result--inline {
+  position: static;
+  transform: none;
+  left: auto;
+  bottom: auto;
+  width: 100%;
+  backdrop-filter: none;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 /* ── Layer Toggle ───────────────────────────────────────────────────────────── */
