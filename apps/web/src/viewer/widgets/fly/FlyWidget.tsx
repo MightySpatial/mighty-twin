@@ -177,9 +177,10 @@ export default function FlyWidget({
         {shifter}
         <div className="fly-keys">
           <KeyRow keys={['W', 'A', 'S', 'D']} label="Move" />
-          <KeyRow keys={['Q', 'E']} label="Up / down" />
           <KeyRow keys={['↑', '↓']} label="Pitch" />
           <KeyRow keys={['←', '→']} label="Yaw" />
+          <KeyRow keys={['Q', 'E']} label="Roll · auto-levels" />
+          <KeyRow keys={['Space']} label="Climb" />
           <KeyRow keys={['+', '−']} label="Shift gear" />
           <KeyRow keys={['Shift']} label="2× sprint" />
           <KeyRow keys={['Drag']} label="Look around" />
