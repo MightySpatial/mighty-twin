@@ -14,7 +14,7 @@ from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
 from mighty_db import get_engine, get_session_factory
@@ -154,6 +154,10 @@ if _VIEWER_DIST.is_dir():
         )
 
     _INDEX_HTML = _VIEWER_DIST / "index.html"
+
+    @app.get("/", include_in_schema=False)
+    async def _root_redirect() -> RedirectResponse:
+        return RedirectResponse(url="/viewer", status_code=302)
 
     @app.get("/viewer", include_in_schema=False)
     @app.get("/viewer/", include_in_schema=False)
