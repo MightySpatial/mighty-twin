@@ -28,7 +28,9 @@
  */
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
+  Box,
   ChevronDown,
+  ChevronRight,
   Copy,
   Download,
   Eye,
@@ -181,6 +183,19 @@ export default function LayersTab({ siteSlug = null }: Props) {
   const [editingLayerId, setEditingLayerId] = useState<string | null>(null)
   const [editingLayerName, setEditingLayerName] = useState('')
   const [redlineModalOpen, setRedlineModalOpen] = useState(false)
+
+  // Unified layer list state — which row (drawing or voxel) is
+  // currently inline-expanded. Only one row open at a time so the
+  // list stays scannable. Storing the id alone (not a discriminator)
+  // is OK because drawing and voxel layer ids are uuid-disjoint.
+  const [expandedLayerId, setExpandedLayerId] = useState<string | null>(null)
+  // "Add layer" inline picker — Drawing | Voxel.
+  const [addPickerOpen, setAddPickerOpen] = useState(false)
+  // Per-voxel-layer accordions for the heavier secondary sections
+  // (Datum coords, Generators). Datum + generators don't fit on the
+  // 280 px wide sidebar without collapsing.
+  const [voxelDatumOpenId, setVoxelDatumOpenId] = useState<string | null>(null)
+  const [voxelGenOpenId, setVoxelGenOpenId] = useState<string | null>(null)
 
   // Sketch settings popover — id of the sketch whose gear is open.
   const [popoverSketchId, setPopoverSketchId] = useState<string | null>(null)
@@ -960,175 +975,270 @@ export default function LayersTab({ siteSlug = null }: Props) {
 
           <div className="layers-tab__hd">Layers · {activeSketch.name}</div>
           <div className="sketch-layer-list">
+            {/* Drawing (vector) layers */}
             {activeSketch.layers.map(layer => {
               const isLayerActive = layer.id === activeLayerId
+              const isExpanded = expandedLayerId === layer.id
               return (
                 <div
                   key={layer.id}
-                  className={`sketch-layer-item${isLayerActive ? ' active' : ''}${!layer.visible ? ' hidden-layer' : ''}`}
-                  onClick={() => setActiveLayer(layer.id)}
+                  className={`unified-layer-item${isLayerActive ? ' active' : ''}${!layer.visible ? ' hidden-layer' : ''}${isExpanded ? ' is-expanded' : ''}`}
                 >
-                  <label className="sketch-layer-colour-wrap" onClick={e => e.stopPropagation()}>
-                    <input
-                      type="color"
-                      className="sketch-layer-colour-input"
-                      value={layer.colour}
-                      onChange={e => setLayerColour(activeSketch.id, layer.id, e.target.value)}
-                    />
-                    <span className="sketch-layer-colour-dot" style={{ background: layer.colour }} />
-                  </label>
-
-                  {editingLayerId === layer.id ? (
-                    <input
-                      className="sketch-layer-name-edit"
-                      autoFocus
-                      value={editingLayerName}
-                      onChange={e => setEditingLayerName(e.target.value)}
-                      onBlur={commitLayerRename}
-                      onKeyDown={e => {
-                        if (e.key === 'Enter') commitLayerRename()
-                        if (e.key === 'Escape') setEditingLayerId(null)
-                      }}
-                      onClick={e => e.stopPropagation()}
-                    />
-                  ) : (
-                    <span
-                      className="sketch-layer-name"
-                      onDoubleClick={e => {
-                        e.stopPropagation()
-                        setEditingLayerId(layer.id)
-                        setEditingLayerName(layer.name)
-                      }}
-                    >{layer.name}</span>
-                  )}
-
-                  <div className="sketch-layer-actions" onClick={e => e.stopPropagation()}>
-                    {isRedlineSketch && (
+                  <div
+                    className="unified-layer-row"
+                    onClick={() => {
+                      setActiveLayer(layer.id)
+                      setExpandedLayerId(prev => prev === layer.id ? null : layer.id)
+                    }}
+                  >
+                    <span className="unified-layer-twirl" aria-hidden>
+                      {isExpanded ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+                    </span>
+                    <span className="unified-layer-type" title="Drawing layer">
+                      <Pencil size={13} />
+                    </span>
+                    <span className="unified-layer-swatch" style={{ background: layer.colour }} />
+                    {editingLayerId === layer.id ? (
+                      <input
+                        className="sketch-layer-name-edit"
+                        autoFocus
+                        value={editingLayerName}
+                        onChange={e => setEditingLayerName(e.target.value)}
+                        onBlur={commitLayerRename}
+                        onKeyDown={e => {
+                          if (e.key === 'Enter') commitLayerRename()
+                          if (e.key === 'Escape') setEditingLayerId(null)
+                        }}
+                        onClick={e => e.stopPropagation()}
+                      />
+                    ) : (
+                      <span
+                        className="unified-layer-name"
+                        onDoubleClick={e => {
+                          e.stopPropagation()
+                          setEditingLayerId(layer.id)
+                          setEditingLayerName(layer.name)
+                        }}
+                      >{layer.name}</span>
+                    )}
+                    <div className="unified-layer-actions" onClick={e => e.stopPropagation()}>
                       <button
                         className="sketch-layer-action-btn"
-                        title="Edit layer schema"
-                        aria-label="Edit layer schema"
-                        onClick={() => setSchemaEditorLayerId(layer.id)}
+                        title={layer.visible ? 'Hide layer' : 'Show layer'}
+                        onClick={() => toggleLayerVisibility(activeSketch.id, layer.id)}
                       >
-                        <Sliders size={13} />
+                        {layer.visible ? <Eye size={13} /> : <EyeOff size={13} />}
                       </button>
-                    )}
-                    <button
-                      className="sketch-layer-action-btn"
-                      title={layer.visible ? 'Hide layer' : 'Show layer'}
-                      onClick={() => toggleLayerVisibility(activeSketch.id, layer.id)}
-                    >
-                      {layer.visible ? <Eye size={13} /> : <EyeOff size={13} />}
-                    </button>
-                    <button
-                      className="sketch-layer-action-btn"
-                      title={layer.locked ? 'Unlock layer' : 'Lock layer'}
-                      onClick={() => toggleLayerLock(activeSketch.id, layer.id)}
-                    >
-                      {layer.locked ? <Lock size={13} /> : <Unlock size={13} />}
-                    </button>
-                    {activeSketch.layers.length > 1 && (
                       <button
-                        className="sketch-layer-action-btn delete"
-                        title="Delete layer"
-                        onClick={() => removeLayer(activeSketch.id, layer.id)}
+                        className="sketch-layer-action-btn"
+                        title={layer.locked ? 'Unlock layer' : 'Lock layer'}
+                        onClick={() => toggleLayerLock(activeSketch.id, layer.id)}
                       >
-                        <Trash2 size={13} />
+                        {layer.locked ? <Lock size={13} /> : <Unlock size={13} />}
                       </button>
-                    )}
+                    </div>
                   </div>
+                  {isExpanded && (
+                    <div className="unified-layer-body" onClick={e => e.stopPropagation()}>
+                      <div className="unified-layer-prop">
+                        <span className="unified-layer-prop__label">Colour</span>
+                        <label className="sketch-layer-colour-wrap">
+                          <input
+                            type="color"
+                            className="sketch-layer-colour-input"
+                            value={layer.colour}
+                            onChange={e => setLayerColour(activeSketch.id, layer.id, e.target.value)}
+                          />
+                          <span className="sketch-layer-colour-dot" style={{ background: layer.colour }} />
+                        </label>
+                      </div>
+                      <div className="unified-layer-body__actions">
+                        {isRedlineSketch && (
+                          <button
+                            type="button"
+                            className="unified-layer-body__btn"
+                            onClick={() => setSchemaEditorLayerId(layer.id)}
+                          >
+                            <Sliders size={12} /> Edit schema
+                          </button>
+                        )}
+                        {activeSketch.layers.length > 1 && (
+                          <button
+                            type="button"
+                            className="unified-layer-body__btn danger"
+                            onClick={() => removeLayer(activeSketch.id, layer.id)}
+                          >
+                            <Trash2 size={12} /> Delete
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+
+            {/* Voxel layers — same row shape, cube icon, richer body */}
+            {voxelLayers.map(vlayer => {
+              const isActive = vlayer.id === activeVoxelLayerId
+              const isExpanded = expandedLayerId === vlayer.id
+              const datumOpen = voxelDatumOpenId === vlayer.id
+              const genOpen = voxelGenOpenId === vlayer.id
+              return (
+                <div
+                  key={vlayer.id}
+                  className={`unified-layer-item voxel${isActive ? ' active' : ''}${isExpanded ? ' is-expanded' : ''}`}
+                >
+                  <div
+                    className="unified-layer-row"
+                    onClick={() => {
+                      setActiveVoxelLayer(vlayer.id)
+                      setExpandedLayerId(prev => prev === vlayer.id ? null : vlayer.id)
+                    }}
+                  >
+                    <span className="unified-layer-twirl" aria-hidden>
+                      {isExpanded ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+                    </span>
+                    <span className="unified-layer-type" title="Voxel layer">
+                      <Box size={13} />
+                    </span>
+                    <span className="unified-layer-name">{vlayer.name}</span>
+                    <span className="unified-layer-badge">
+                      {voxelLevelLabel(activeVoxelLevel)}
+                    </span>
+                  </div>
+                  {isExpanded && (
+                    <div className="unified-layer-body" onClick={e => e.stopPropagation()}>
+                      <div className="unified-layer-prop">
+                        <span className="unified-layer-prop__label">Block size</span>
+                        <select
+                          className="voxel-control-row__select"
+                          value={activeVoxelLevel}
+                          onChange={e => setVoxelLevel(Number(e.target.value))}
+                        >
+                          {VOXEL_LEVELS.map(lvl => (
+                            <option key={lvl} value={lvl}>
+                              {voxelLevelLabel(lvl)} (level {lvl})
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="unified-layer-prop">
+                        <span className="unified-layer-prop__label">Render mode</span>
+                        <div className="voxel-mode-toggle" role="group" aria-label="Render mode">
+                          {RENDER_MODES.map(m => (
+                            <button
+                              key={m.value}
+                              type="button"
+                              className={`voxel-mode-toggle__btn${voxelRenderMode === m.value ? ' is-on' : ''}`}
+                              onClick={() => setVoxelRenderMode(m.value)}
+                              aria-pressed={voxelRenderMode === m.value}
+                              title={m.label}
+                            >
+                              {m.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        className="unified-layer-accordion"
+                        onClick={() => setVoxelDatumOpenId(prev => prev === vlayer.id ? null : vlayer.id)}
+                        aria-expanded={datumOpen}
+                      >
+                        <span>{datumOpen ? <ChevronDown size={11} /> : <ChevronRight size={11} />} Datum</span>
+                      </button>
+                      {datumOpen && (
+                        <div className="unified-layer-prop col">
+                          <span style={{ fontSize: 11, color: 'var(--dw-text-3)' }}>
+                            lon {vlayer.datum.lon.toFixed(6)} ·
+                            lat {vlayer.datum.lat.toFixed(6)} ·
+                            alt {Math.round(vlayer.datum.alt)} m
+                          </span>
+                        </div>
+                      )}
+                      <button
+                        type="button"
+                        className="unified-layer-accordion"
+                        onClick={() => setVoxelGenOpenId(prev => prev === vlayer.id ? null : vlayer.id)}
+                        aria-expanded={genOpen}
+                      >
+                        <span>
+                          {genOpen ? <ChevronDown size={11} /> : <ChevronRight size={11} />}
+                          {' '}Generators
+                          <span style={{ marginLeft: 6, color: 'var(--dw-text-3)' }}>
+                            ({vlayer.generators.length})
+                          </span>
+                        </span>
+                      </button>
+                      {genOpen && (
+                        <div className="unified-layer-prop col">
+                          {vlayer.generators.length === 0 ? (
+                            <span style={{ fontSize: 11, color: 'var(--dw-text-3)' }}>
+                              No generators yet. Use a voxel tool to add one.
+                            </span>
+                          ) : (
+                            <ul className="unified-layer-gens">
+                              {vlayer.generators.map((g, i) => (
+                                <li key={i}>{g.type ?? `generator ${i + 1}`}</li>
+                              ))}
+                            </ul>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               )
             })}
           </div>
 
-          <button
-            className="sketch-layers-btn"
-            onClick={() => addLayer(activeSketch.id)}
-            style={{ marginTop: 8 }}
-          >
-            <Plus size={14} /> <span>Add Layer</span>
-          </button>
-
-          {/* ── 5 · Voxel layers section ─────────────────────────── */}
-          <div className="voxel-layers-section">
-            <div className="layers-tab__hd">Voxel layers</div>
-            {voxelLayers.length === 0 ? (
+          {/* Add Layer — single button + inline type picker */}
+          <div className="unified-layer-add-wrap">
+            {!addPickerOpen ? (
               <button
                 type="button"
-                className="sketch-layers-btn voxel-layers-new"
-                onClick={createVoxelLayer}
+                className="sketch-layers-btn"
+                onClick={() => setAddPickerOpen(true)}
+                style={{ marginTop: 8 }}
               >
-                <Plus size={14} /> <span>New voxel layer</span>
+                <Plus size={14} /> <span>Add layer</span>
               </button>
             ) : (
-              <>
-                <div className="voxel-layer-list">
-                  {voxelLayers.map(layer => {
-                    const isActive = layer.id === activeVoxelLayerId
-                    return (
-                      <button
-                        key={layer.id}
-                        type="button"
-                        className={`voxel-layer-item${isActive ? ' active' : ''}`}
-                        onClick={() => setActiveVoxelLayer(layer.id)}
-                      >
-                        <span className="voxel-layer-item__name">{layer.name}</span>
-                        <span className="voxel-layer-item__badge">
-                          {voxelLevelLabel(activeVoxelLevel)}
-                        </span>
-                      </button>
-                    )
-                  })}
-                </div>
+              <div className="unified-layer-add-picker">
                 <button
                   type="button"
-                  className="sketch-layers-btn voxel-layers-new"
-                  onClick={createVoxelLayer}
+                  className="unified-layer-add-picker__option"
+                  onClick={() => {
+                    addLayer(activeSketch.id)
+                    setAddPickerOpen(false)
+                  }}
                 >
-                  <Plus size={14} /> <span>New voxel layer</span>
+                  <Pencil size={14} />
+                  <span className="unified-layer-add-picker__title">Drawing layer</span>
+                  <span className="unified-layer-add-picker__sub">Vector strokes, shapes, redline</span>
                 </button>
-
-                {/* Per-engine editor settings — block size and render
-                    mode are global engine state in v2 (one block size
-                    is active across all loaded layers), so we expose
-                    them once at the section level rather than per-row. */}
-                {activeVoxelLayerId && (
-                  <div className="voxel-layer-controls">
-                    <label className="voxel-control-row">
-                      <span className="voxel-control-row__label">Block size</span>
-                      <select
-                        className="voxel-control-row__select"
-                        value={activeVoxelLevel}
-                        onChange={e => setVoxelLevel(Number(e.target.value))}
-                      >
-                        {VOXEL_LEVELS.map(lvl => (
-                          <option key={lvl} value={lvl}>
-                            {voxelLevelLabel(lvl)} (level {lvl})
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-
-                    <div className="voxel-control-row">
-                      <span className="voxel-control-row__label">Render mode</span>
-                      <div className="voxel-mode-toggle" role="group" aria-label="Render mode">
-                        {RENDER_MODES.map(m => (
-                          <button
-                            key={m.value}
-                            type="button"
-                            className={`voxel-mode-toggle__btn${voxelRenderMode === m.value ? ' is-on' : ''}`}
-                            onClick={() => setVoxelRenderMode(m.value)}
-                            aria-pressed={voxelRenderMode === m.value}
-                          >
-                            {m.label}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </>
+                <button
+                  type="button"
+                  className="unified-layer-add-picker__option"
+                  onClick={() => {
+                    createVoxelLayer()
+                    setAddPickerOpen(false)
+                  }}
+                >
+                  <Box size={14} />
+                  <span className="unified-layer-add-picker__title">Voxel layer</span>
+                  <span className="unified-layer-add-picker__sub">3D block grid, terrain mask, water</span>
+                </button>
+                <button
+                  type="button"
+                  className="unified-layer-add-picker__cancel"
+                  onClick={() => setAddPickerOpen(false)}
+                  aria-label="Cancel"
+                >
+                  <X size={12} />
+                </button>
+              </div>
             )}
           </div>
         </>

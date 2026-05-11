@@ -216,3 +216,249 @@
   line-height: 1.5;
   padding-top: var(--dw-space-1);
 }
+
+/* ── Unified layer list — vector + voxel in one place ──────────── */
+
+.unified-layer-item {
+  display: flex;
+  flex-direction: column;
+  background: var(--dw-fill-1);
+  border: 1px solid transparent;
+  border-radius: var(--dw-radius-md);
+  margin-bottom: var(--dw-space-1);
+  overflow: hidden;
+  transition: background var(--dw-dur-fast), border-color var(--dw-dur-fast);
+}
+.unified-layer-item:hover { background: var(--dw-fill-2); }
+.unified-layer-item.active {
+  background: var(--dw-util-bg-soft);
+  border-color: var(--dw-util-d);
+}
+.unified-layer-item.hidden-layer .unified-layer-row { opacity: 0.5; }
+.unified-layer-item.is-expanded {
+  background: var(--dw-fill-2);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.unified-layer-row {
+  display: grid;
+  grid-template-columns: 14px 18px 14px 1fr auto auto;
+  align-items: center;
+  gap: var(--dw-space-2);
+  padding: 8px 10px;
+  cursor: pointer;
+  min-height: 40px;
+}
+.unified-layer-twirl {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--dw-text-3);
+}
+.unified-layer-type {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--dw-text-2);
+}
+.unified-layer-item.voxel .unified-layer-type { color: var(--dw-util); }
+.unified-layer-swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.18) inset;
+  display: inline-block;
+}
+.unified-layer-name {
+  font-size: var(--dw-fs-12);
+  color: var(--dw-text-strong);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+.unified-layer-badge {
+  font-size: 9px;
+  letter-spacing: var(--dw-tracking-meta);
+  text-transform: uppercase;
+  color: var(--dw-util);
+  background: var(--dw-util-bg-soft);
+  border: 1px solid var(--dw-util-d);
+  border-radius: var(--dw-radius-pill);
+  padding: 2px 7px;
+}
+.unified-layer-actions {
+  display: inline-flex;
+  gap: 2px;
+  opacity: 0;
+  transition: opacity var(--dw-dur-fast);
+}
+.unified-layer-item:hover .unified-layer-actions,
+.unified-layer-item.active .unified-layer-actions,
+.unified-layer-item.is-expanded .unified-layer-actions { opacity: 1; }
+
+/* Expanded body */
+.unified-layer-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dw-space-2);
+  padding: 8px 12px 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(0, 0, 0, 0.12);
+}
+.unified-layer-prop {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--dw-fs-11);
+}
+.unified-layer-prop.col {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 4px;
+}
+.unified-layer-prop__label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: var(--dw-tracking-meta);
+  color: var(--dw-text-3);
+  min-width: 72px;
+}
+.unified-layer-body__actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 2px;
+}
+.unified-layer-body__btn {
+  font-family: inherit;
+  font-size: var(--dw-fs-10);
+  padding: 4px 10px;
+  border-radius: var(--dw-radius-sm);
+  background: var(--dw-fill-3);
+  border: 1px solid var(--dw-border);
+  color: var(--dw-text-2);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.unified-layer-body__btn:hover {
+  color: var(--dw-text-strong);
+  background: var(--dw-fill-2);
+}
+.unified-layer-body__btn.danger {
+  color: var(--dw-danger);
+  border-color: rgba(248, 113, 113, 0.3);
+  background: var(--dw-danger-bg);
+}
+
+.unified-layer-accordion {
+  font-family: inherit;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: transparent;
+  border: none;
+  color: var(--dw-text-2);
+  font-size: var(--dw-fs-10);
+  text-transform: uppercase;
+  letter-spacing: var(--dw-tracking-meta);
+  padding: 4px 0;
+  cursor: pointer;
+  text-align: left;
+}
+.unified-layer-accordion:hover { color: var(--dw-text-strong); }
+
+.unified-layer-gens {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-size: 11px;
+  color: var(--dw-text-2);
+}
+.unified-layer-gens li {
+  padding: 4px 8px;
+  background: var(--dw-fill-3);
+  border-radius: 4px;
+}
+
+/* Add-layer type picker — flyout below the Add button */
+.unified-layer-add-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.unified-layer-add-picker {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 6px;
+  margin-top: 8px;
+  padding: 6px;
+  background: var(--dw-fill-2);
+  border: 1px solid var(--dw-border);
+  border-radius: var(--dw-radius-md);
+}
+.unified-layer-add-picker__option {
+  font-family: inherit;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 10px;
+  background: var(--dw-fill-1);
+  border: 1px solid var(--dw-border);
+  border-radius: var(--dw-radius-sm);
+  color: var(--dw-text-2);
+  cursor: pointer;
+  text-align: left;
+}
+.unified-layer-add-picker__option:hover {
+  color: var(--dw-text-strong);
+  border-color: var(--dw-util-d);
+  background: var(--dw-util-bg-soft);
+}
+.unified-layer-add-picker__title {
+  font-size: var(--dw-fs-11);
+  font-weight: 600;
+}
+.unified-layer-add-picker__sub {
+  font-size: 10px;
+  color: var(--dw-text-3);
+  line-height: 1.3;
+}
+.unified-layer-add-picker__cancel {
+  align-self: start;
+  width: 24px;
+  height: 24px;
+  background: transparent;
+  border: 1px solid var(--dw-border);
+  border-radius: var(--dw-radius-sm);
+  color: var(--dw-text-3);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.unified-layer-add-picker__cancel:hover {
+  color: var(--dw-text-strong);
+  background: var(--dw-fill-3);
+}
+
+/* Render-mode toggle inside the expanded voxel body — make pills
+   compact so all five fit on the 280 px sidebar without wrapping
+   awkwardly. */
+.unified-layer-body .voxel-mode-toggle {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 3px;
+  flex: 1;
+}
+.unified-layer-body .voxel-mode-toggle__btn {
+  padding: 4px 2px;
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
