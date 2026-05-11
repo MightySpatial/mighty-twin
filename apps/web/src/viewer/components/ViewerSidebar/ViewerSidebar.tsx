@@ -302,6 +302,7 @@ export default function ViewerSidebar({
                 { id: 'story',   label: 'Story',   Icon: BookOpen  , panelHome: 'right'   },
                 { id: 'snap',    label: 'Snap',    Icon: Camera    , panelHome: 'right'   },
                 { id: 'design',  label: 'Design',  Icon: Hexagon   , panelHome: 'right'   },
+                { id: 'terrain', label: 'Terrain', Icon: Mountain  , panelHome: 'right'   },
               ] as const)
                 .filter(t => !widgetTabIds || widgetTabIds.includes(t.id))
                 .map(({ id, label, Icon, panelHome }) => (
@@ -322,22 +323,10 @@ export default function ViewerSidebar({
               ))}
             </>
           )}
-          {/* Terrain tab — only when terrain panel is provided */}
-          {terrainPanel && (
-            <button
-              className={`sidebar-tab${terrainTabActive ? ' sidebar-tab--active' : ''}`}
-              onClick={() => {
-                onTerrainTabClick?.()
-                if (!terrainTabActive) setSidebarOpen(true)
-              }}
-              title="Terrain"
-            >
-              <span className="sidebar-tab-icon"><Mountain size={16} /></span>
-              <span className="sidebar-tab-label">
-                {sidebarOpen ? 'Terrain' : 'Terr'}
-              </span>
-            </button>
-          )}
+          {/* Terrain now lives in the widget-tabs row above and
+              routes through the right pane (drawer on mobile, docked
+              column on desktop). The old in-sidebar terrain panel
+              path was retired alongside the right-pane rearchitecture. */}
           {/* Collapse toggle */}
           <button
             className="sidebar-collapse-btn"
