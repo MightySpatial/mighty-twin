@@ -275,7 +275,11 @@ export function MapShell({
             {!publicMode && secondary.length > 0 && (
               <div className={styles.toolsSheetSection}>
                 <div className={styles.toolsSheetSectionLabel}>Widgets</div>
-                <div className={styles.toolsSheetGrid}>
+                <div
+                  className={styles.toolsSheetCarousel}
+                  role="listbox"
+                  aria-label="Widgets"
+                >
                   {secondary.map((w) => (
                     <SheetTile
                       key={w.id}
