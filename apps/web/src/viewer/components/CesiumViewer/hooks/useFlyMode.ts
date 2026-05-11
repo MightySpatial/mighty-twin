@@ -96,6 +96,12 @@ export function shiftGear(s: FlySpeed, delta: 1 | -1): FlySpeed {
 
 const DEFAULT_TURN_DEG_PER_SEC = 45
 const PITCH_LIMIT_RAD = CesiumMath.toRadians(89)
+
+/** Clamp a number to [-1, 1]. Used to merge keyboard + touch
+ *  locomotion intents without overshoot. */
+function clampUnit(x: number): number {
+  return Math.max(-1, Math.min(1, x))
+}
 const ROLL_LIMIT_RAD = CesiumMath.toRadians(60)
 /** Auto-leveling rate when Q/E aren't held — gentler than the active
  *  bank rate so the camera "drifts" back to wings-level rather than
@@ -104,6 +110,19 @@ const AUTO_LEVEL_DEG_PER_SEC = 30
 /** Below this angle we snap roll to exactly 0 — avoids endless tiny
  *  setView calls when the camera is effectively level. */
 const ROLL_EPSILON_RAD = CesiumMath.toRadians(0.1)
+
+/** Touch intent — set by useFlyTouchGestures for mobile. Mirrored
+ *  into the per-tick locomotion calculation alongside keyboard input
+ *  so a tap-and-drag + a pinch can drive the same camera as WASD on
+ *  desktop. All fields are -1..1 (or boolean for axes that only have
+ *  on/off semantics). */
+export interface FlyTouchIntent {
+  forward: number   // -1 .. 1 (negative = back)
+  right:   number   // -1 .. 1 (negative = strafe left)
+  up:      number   // -1 .. 1 (negative = sink — Space-only on keyboard)
+  yaw:     number   // -1 .. 1 (negative = right)
+  pitch:   number   // -1 .. 1 (negative = down)
+}
 
 interface UseFlyModeArgs {
   viewerRef: React.RefObject<CesiumViewerType | null>
@@ -117,6 +136,11 @@ interface UseFlyModeArgs {
   /** Called when the user presses `+`/`=` (delta=+1) or `-` (delta=-1).
    *  The host owns gear state — this hook is read-only on it. */
   onGearShift?: (delta: 1 | -1) => void
+  /** Optional touch-intent ref. When set, its values are mixed into
+   *  the per-tick locomotion calculation alongside the keyboard
+   *  state. Useful for mobile where useFlyTouchGestures translates
+   *  pointer events into intent values. */
+  touchIntentRef?: React.MutableRefObject<FlyTouchIntent>
 }
 
 interface UseFlyModeApi {
@@ -132,6 +156,7 @@ export function useFlyMode({
   minHeightAboveGround = 0.5,
   turnDegPerSec = DEFAULT_TURN_DEG_PER_SEC,
   onGearShift,
+  touchIntentRef,
 }: UseFlyModeArgs): UseFlyModeApi {
   // We track keys in a ref so the per-tick handler can read them
   // without re-subscribing on every keystroke.
@@ -265,15 +290,19 @@ export function useFlyMode({
       if (dt <= 0 || dt > 0.5) return // first tick or pause — skip
 
       const k = keysRef.current
+      const ti = touchIntentRef?.current
 
-      // ── Translation (WASD + Space) ─────────────────────────────────
+      // ── Translation (WASD + Space, plus touch intent) ──────────────
       // Q/E are reserved for roll. Space stays as the climb key; for
-      // descent the pilot pitches down and adds throttle.
-      const fwd = (k['w'] ? 1 : 0) - (k['s'] ? 1 : 0)
-      const right = (k['d'] ? 1 : 0) - (k['a'] ? 1 : 0)
-      const up = k[' '] ? 1 : 0
+      // descent the pilot pitches down and adds throttle. Touch intent
+      // is *added* (and clamped to ±1) so a finger drag composes with
+      // any held keys — on mobile keys are effectively zero so this
+      // degenerates to "touch only".
+      const fwd = clampUnit(((k['w'] ? 1 : 0) - (k['s'] ? 1 : 0)) + (ti?.forward ?? 0))
+      const right = clampUnit(((k['d'] ? 1 : 0) - (k['a'] ? 1 : 0)) + (ti?.right ?? 0))
+      const up = clampUnit((k[' '] ? 1 : 0) + (ti?.up ?? 0))
 
-      // ── Rotation (arrow keys + Q/E) ────────────────────────────────
+      // ── Rotation (arrow keys + Q/E + touch intent) ─────────────────
       //
       // ↑/↓ → pitch; ←/→ → yaw; Q/E → roll. Yaw/pitch go through
       // setView (with a pitch clamp); roll uses ``camera.twistRight``
@@ -283,8 +312,8 @@ export function useFlyMode({
       // setView round-trips heading→direction→heading and can
       // compound float drift across many frames — that drift was the
       // source of the spinning-on-activation bug.
-      const yawSign = (k['arrowleft'] ? 1 : 0) - (k['arrowright'] ? 1 : 0)
-      const pitchSign = (k['arrowup'] ? 1 : 0) - (k['arrowdown'] ? 1 : 0)
+      const yawSign = clampUnit(((k['arrowleft'] ? 1 : 0) - (k['arrowright'] ? 1 : 0)) + (ti?.yaw ?? 0))
+      const pitchSign = clampUnit(((k['arrowup'] ? 1 : 0) - (k['arrowdown'] ? 1 : 0)) + (ti?.pitch ?? 0))
       const rollSign = (k['e'] ? 1 : 0) - (k['q'] ? 1 : 0)
 
       const cam = v.camera

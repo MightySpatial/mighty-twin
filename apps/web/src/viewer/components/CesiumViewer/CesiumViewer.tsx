@@ -31,7 +31,10 @@ import {
   useFlyMode,
   useGearShift,
   type FlySpeed,
+  type FlyTouchIntent,
 } from './hooks/useFlyMode'
+import { useFlyTouchGestures } from './hooks/useFlyTouchGestures'
+import FlyMiniPlayer from '../../widgets/fly/FlyMiniPlayer'
 
 import MeasureWidget, { useMeasure } from '../../widgets/measure'
 import { SnapshotWidget } from '../../widgets/snapshot'
@@ -337,7 +340,25 @@ export default function CesiumViewerComponent({
   const [flyActive, setFlyActive] = useState(false)
   const [flySpeed, setFlySpeed] = useState<FlySpeed>('cycling')
   const onGearShift = useGearShift(setFlySpeed, flySpeed)
-  useFlyMode({ viewerRef, active: flyActive, speed: flySpeed, onGearShift })
+  // Mobile touch intent — populated by useFlyTouchGestures, read by
+  // useFlyMode's per-tick loop alongside keyboard state. The ref is
+  // stable so both hooks see the same object.
+  const flyTouchIntentRef = useRef<FlyTouchIntent>({
+    forward: 0, right: 0, up: 0, yaw: 0, pitch: 0,
+  })
+  useFlyMode({
+    viewerRef,
+    active: flyActive,
+    speed: flySpeed,
+    onGearShift,
+    touchIntentRef: flyTouchIntentRef,
+  })
+  useFlyTouchGestures({
+    viewerRef,
+    intentRef: flyTouchIntentRef,
+    active: isMobile && flyActive,
+    onGearShift,
+  })
 
   // Auto-exit fly mode when the user navigates away from the viewer
   // surface — otherwise WASD still moves the (unmounted) camera.
@@ -798,15 +819,19 @@ export default function CesiumViewerComponent({
         />
       </div>
 
-      {/* Fly widget — mobile only as a floating MiniPlayer. Desktop
-          users see Fly inside the right pane's bottom zone (always
-          visible). */}
-      {flyActive && isMobile && (
-        <FlyWidget
+      {/* Fly widget on mobile — pinned bottom bar (FlyMiniPlayer)
+          paired with canvas-wide touch gestures (useFlyTouchGestures
+          drives single-finger move, two-finger look, pinch shift).
+          The legacy floating MiniPlayer with touch pads is retired —
+          gestures handle locomotion now, the bar only exposes the
+          gear name + manual +/− and the ON/OFF toggle. Visible
+          whenever fly mode is on; tapping OFF exits. */}
+      {isMobile && (
+        <FlyMiniPlayer
           speed={flySpeed}
-          setSpeed={setFlySpeed}
-          onClose={() => setFlyActive(false)}
-          isMobile={isMobile}
+          active={flyActive}
+          onShift={onGearShift}
+          onToggleActive={() => setFlyActive(a => !a)}
         />
       )}
 

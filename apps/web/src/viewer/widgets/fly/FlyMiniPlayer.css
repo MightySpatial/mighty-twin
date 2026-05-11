@@ -1,0 +1,108 @@
+/* FlyMiniPlayer — mobile-only bottom bar.
+ *
+ * Renders below any other chrome (z-index 40) and respects the iOS
+ * home-indicator inset via env(safe-area-inset-bottom). Designed for
+ * one-handed reach: 56px high, full width, single row of controls. */
+
+.fly-mini {
+  position: fixed;
+  left: 8px;
+  right: 8px;
+  bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+  z-index: 40;
+  height: 56px;
+  display: grid;
+  grid-template-columns: auto auto 1fr auto auto;
+  gap: 8px;
+  align-items: center;
+  padding: 0 12px;
+  background: rgba(15, 19, 26, 0.92);
+  backdrop-filter: blur(16px) saturate(1.2);
+  -webkit-backdrop-filter: blur(16px) saturate(1.2);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  color: #f0f2f8;
+  font-family: 'Inter', -apple-system, sans-serif;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  pointer-events: auto;
+}
+
+.fly-mini__title {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(240, 242, 248, 0.6);
+}
+
+.fly-mini__shift {
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  border-radius: 8px;
+  color: rgba(240, 242, 248, 0.85);
+  cursor: pointer;
+  padding: 0;
+  font-family: inherit;
+}
+.fly-mini__shift:hover:not(:disabled) {
+  background: rgba(45, 212, 191, 0.16);
+  border-color: rgba(45, 212, 191, 0.5);
+  color: #2dd4bf;
+}
+.fly-mini__shift:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.fly-mini__gear {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  min-width: 0;
+}
+.fly-mini__gear-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: #2dd4bf;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+.fly-mini__gear-sub {
+  font-size: 10px;
+  color: rgba(240, 242, 248, 0.55);
+  margin-top: 3px;
+}
+
+.fly-mini__toggle {
+  height: 36px;
+  padding: 0 14px;
+  border-radius: 18px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 120ms, color 120ms, border-color 120ms;
+}
+.fly-mini__toggle.is-on {
+  background: rgba(45, 212, 191, 0.18);
+  border: 1px solid rgba(45, 212, 191, 0.4);
+  color: #2dd4bf;
+}
+.fly-mini__toggle.is-off {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: rgba(240, 242, 248, 0.7);
+}
