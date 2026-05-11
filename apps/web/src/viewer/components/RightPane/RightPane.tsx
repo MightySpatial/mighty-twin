@@ -29,9 +29,10 @@ export interface RightPaneProps {
   bodyLabel?: string | null
   /** Active widget body. null = empty hint shown instead. */
   body: ReactNode | null
-  /** Bottom-zone content — Fly widget today. Rendered in a fixed-height
-   *  slot below the body. */
-  bottomZone: ReactNode
+  /** Optional bottom-zone content. Renders in a fixed-height slot
+   *  below the body when provided; omit to give the body the full
+   *  pane height. */
+  bottomZone?: ReactNode
   /** Optional max width override. Defaults to 320px on desktop, ignored
    *  on mobile (drawer uses 85vw). */
   width?: number
@@ -101,7 +102,7 @@ export default function RightPane({
           <div className={styles.content}>
             {body}
           </div>
-          <div className={styles.bottomZone}>{bottomZone}</div>
+          {bottomZone && <div className={styles.bottomZone}>{bottomZone}</div>}
         </aside>
       </>
     )
@@ -124,12 +125,12 @@ export default function RightPane({
       <div className={styles.content}>
         {body ?? (
           <div className={styles.empty}>
-            <p>Pick a widget from the sidebar.</p>
+            <p>Pick a widget from the rail below.</p>
           </div>
         )}
       </div>
 
-      <div className={styles.bottomZone}>{bottomZone}</div>
+      {bottomZone && <div className={styles.bottomZone}>{bottomZone}</div>}
     </aside>
   )
 }

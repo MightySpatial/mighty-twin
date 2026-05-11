@@ -253,17 +253,23 @@
   100% { opacity: 1; transform: translate(-50%, 0) scale(1); }
 }
 
-/* ── Inline mode (RightPane bottom zone) ────────────────────────────── */
+/* ── Inline mode (RightPane content slot) ──────────────────────────── */
+/* Fly used to be pinned to a 140px bottom zone of the right pane —
+ * the rearchitecture treats Fly as a regular widget that fills the
+ * whole pane body when active, so the layout has real breathing
+ * room. Sections are stacked: header → shifter (chunky) → key
+ * legend → tip card. */
 
 .fly-inline {
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding: 10px 12px;
+  gap: 18px;
+  padding: 22px 20px;
   color: #f0f2f8;
   height: 100%;
   box-sizing: border-box;
+  overflow-y: auto;
 }
 .fly-inline__hd {
   display: flex;
@@ -273,43 +279,66 @@
 .fly-inline__title {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.08em;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: rgba(240, 242, 248, 0.55);
+  color: #f0f2f8;
 }
 .fly-inline__pill {
-  font-size: 10px;
-  padding: 2px 8px;
+  font-size: 11px;
+  padding: 4px 12px;
   border-radius: 20px;
-  font-weight: 600;
-  letter-spacing: 0.06em;
+  font-weight: 700;
+  letter-spacing: 0.08em;
   font-family: inherit;
   cursor: pointer;
   transition: background 120ms, color 120ms, border-color 120ms;
 }
 .fly-inline__pill.on {
-  background: rgba(45, 212, 191, 0.18);
+  background: rgba(45, 212, 191, 0.20);
   color: #2dd4bf;
-  border: 1px solid rgba(45, 212, 191, 0.3);
+  border: 1px solid rgba(45, 212, 191, 0.45);
 }
 .fly-inline__pill.off {
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.14);
-  color: rgba(240, 242, 248, 0.55);
+  color: rgba(240, 242, 248, 0.6);
 }
 .fly-inline__keys {
-  display: flex;
-  gap: 6px;
-  align-items: center;
-  justify-content: center;
-  font-size: 10px;
-  color: rgba(240, 242, 248, 0.45);
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px 14px;
+  font-size: 11px;
+  color: rgba(240, 242, 248, 0.55);
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 14px 0;
 }
-/* In the inline shifter, shrink the bottom-zone footprint a touch so
- * everything fits in ~140px. */
+.fly-inline__tip {
+  font-size: 11px;
+  line-height: 1.45;
+  color: rgba(240, 242, 248, 0.55);
+  background: rgba(45, 212, 191, 0.06);
+  border: 1px solid rgba(45, 212, 191, 0.18);
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+/* Shifter sits in the inline layout flow — give it more vertical
+ * presence than the floating version since it's not competing with
+ * a 140px ceiling. */
 .fly-inline .fly-shifter {
   margin-bottom: 0;
+}
+.fly-inline .fly-shifter-pill {
+  padding: 10px 4px;
+  min-height: 56px;
+}
+.fly-inline .fly-shifter-pill-label {
+  font-size: 11px;
+}
+.fly-inline .fly-shifter-arrow {
+  width: 40px;
+  height: 40px;
 }

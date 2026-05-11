@@ -54,7 +54,7 @@ import ViewerSidebar from '../ViewerSidebar'
 import { DesignWidget } from '../../widgets/design'
 import { RightPane } from '../RightPane'
 
-type ActiveRightWidget = 'story' | 'snap' | 'design' | 'terrain' | null
+type ActiveRightWidget = 'story' | 'snap' | 'design' | 'terrain' | 'fly' | null
 
 // Mobile-only floating layer panel
 function MobileLayers({ layers, layersLoading, onLayerToggle, onLayerOpacityChange }: {
@@ -582,25 +582,30 @@ export default function CesiumViewerComponent({
   // ── Right pane (desktop only) ─────────────────────────────────────
   // The pane has no controller of its own — it just shows whichever
   // secondary widget is currently active. The trigger for setting that
-  // active widget lives in the ViewerSidebar widget-tabs row (Story /
-  // Snap / Design / Terrain) and in onMapShellAction (mobile + future
-  // deep links). Toggling clears every other secondary state.
+  // active widget lives in the bottom-rail SecondaryRail (Story /
+  // Snap / Design / Terrain / Fly). Toggling clears every other
+  // secondary state. Fly is a special case — clicking the tile opens
+  // the Fly panel in the pane but doesn't auto-activate locomotion;
+  // the user toggles ON/OFF inside the panel.
   const [storyTabActive, setStoryTabActive] = useState(false)
+  const [flyPanelOpen, setFlyPanelOpen] = useState(false)
   const activeRightWidget = useMemo<ActiveRightWidget>(() => {
     if (designOpen) return 'design'
     if (snapOpen) return 'snap'
     if (terrainOpen) return 'terrain'
     if (storyTabActive) return 'story'
+    if (flyPanelOpen) return 'fly'
     return null
-  }, [designOpen, snapOpen, terrainOpen, storyTabActive])
+  }, [designOpen, snapOpen, terrainOpen, storyTabActive, flyPanelOpen])
   const setActiveRightWidget = useCallback((next: ActiveRightWidget) => {
     setDesignOpen(next === 'design')
     setSnapOpen(next === 'snap')
     setTerrainOpen(next === 'terrain')
     setStoryTabActive(next === 'story')
+    setFlyPanelOpen(next === 'fly')
     // Design widget dispatches open/close window events so the AI
     // ChatPanel docks out of the way — keep that behaviour even when
-    // the selection comes from the sidebar rather than the old rail.
+    // the selection comes from the rail rather than a sidebar tab.
     if (next === 'design') {
       window.dispatchEvent(new CustomEvent('design:open'))
     } else {
@@ -649,11 +654,14 @@ export default function CesiumViewerComponent({
     if (tableOpen) return 'table'
     if (storyActive) return 'story'
     if (designOpen) return 'design'
-    if (flyActive) return 'fly'
+    // Highlight Fly when the panel is open OR locomotion is engaged
+    // — covers both "panel parked open while parked" and the gear-
+    // active state after the user toggled ON.
+    if (flyPanelOpen || flyActive) return 'fly'
     if (storyTabActive) return 'story'
     if (basemapOpen) return null  // basemap lives in zoom column, not bottom rail
     return null
-  }, [searchOpen, measureActive, sidebarOpen, isMobile, legendOpen, transparencyOpen, terrainOpen, snapOpen, tableOpen, storyActive, storyTabActive, basemapOpen, designOpen, flyActive])
+  }, [searchOpen, measureActive, sidebarOpen, isMobile, legendOpen, transparencyOpen, terrainOpen, snapOpen, tableOpen, storyActive, storyTabActive, basemapOpen, designOpen, flyActive, flyPanelOpen])
 
   const onMapShellAction = useCallback((id: string) => {
     switch (id) {
@@ -691,7 +699,12 @@ export default function CesiumViewerComponent({
         setActiveRightWidget(activeRightWidget === 'design' ? null : 'design')
         break
       case 'fly':
-        setFlyActive((a) => !a)
+        // Rail click opens the Fly panel in the right pane (or closes
+        // it if it's already active). The user toggles locomotion
+        // (flyActive) from inside the panel via the ON/OFF pill —
+        // opening the panel is intentionally not the same as
+        // engaging fly mode, so users get the joy of opting in.
+        setActiveRightWidget(activeRightWidget === 'fly' ? null : 'fly')
         break
       default: break
     }
@@ -702,7 +715,12 @@ export default function CesiumViewerComponent({
   // Right pane width — fixed 320px on desktop, 0 on mobile (mobile
   // keeps the legacy floating widget overlays until the mobile PR
   // lands a slide-in pane).
-  const rightPaneWidth = !isMobile ? 320 : 0
+  // Right pane is a content slot — it only takes width when a
+  // secondary widget is open. When idle the canvas reclaims the full
+  // viewport width and the bottom rail centres on the whole canvas.
+  // Mobile uses the drawer overlay path so the pane never occupies
+  // layout width there.
+  const rightPaneWidth = (!isMobile && activeRightWidget) ? 320 : 0
 
   // Terrain panel rendered inline for the sidebar
   const terrainSidebarPanel = terrainOpen ? (
@@ -819,14 +837,13 @@ export default function CesiumViewerComponent({
         />
       </div>
 
-      {/* Fly widget on mobile — pinned bottom bar (FlyMiniPlayer)
-          paired with canvas-wide touch gestures (useFlyTouchGestures
-          drives single-finger move, two-finger look, pinch shift).
-          The legacy floating MiniPlayer with touch pads is retired —
-          gestures handle locomotion now, the bar only exposes the
-          gear name + manual +/− and the ON/OFF toggle. Visible
-          whenever fly mode is on; tapping OFF exits. */}
-      {isMobile && (
+      {/* Mobile fly bar — only visible when locomotion is engaged
+          (canvas gestures take over and the user wants a quick
+          gear / OFF readout). When fly mode is OFF, the user enters
+          via the secondary rail's Fly tile → opens the Fly panel →
+          toggles ACTIVE; the bar appears as a transient indicator
+          they can dismiss without going back into the panel. */}
+      {isMobile && flyActive && (
         <FlyMiniPlayer
           speed={flySpeed}
           active={flyActive}
@@ -1228,18 +1245,18 @@ export default function CesiumViewerComponent({
       )}
 
       {/* ── Right pane ─────────────────────────────────────────────
-          Hosts whichever secondary widget (Story / Snap / Design /
-          Terrain) is currently active. Desktop: docked 320px column.
-          Mobile: 85vw drawer that slides in from the right edge.
-          Activation lives in the ViewerSidebar widget-tabs row; the
-          pane itself has no controller. Fly is pinned in the fixed
-          bottom zone. On mobile the drawer auto-hides whenever fly
-          mode is active so the touch surface stays unobstructed. */}
-      {(() => {
+          Hosts whichever secondary widget the user activates from the
+          bottom rail (Story / Snap / Design / Terrain / Fly). Desktop:
+          docked 320px column, hidden entirely when nothing is active
+          so the canvas reclaims the space. Mobile: 85vw drawer that
+          slides in from the right edge. No always-pinned widget — the
+          pane is a content slot, the bottom rail is the controller. */}
+      {activeRightWidget !== null && (() => {
         const bodyLabel = activeRightWidget === 'story' ? 'Story'
           : activeRightWidget === 'snap' ? 'Snap'
           : activeRightWidget === 'design' ? 'Design'
           : activeRightWidget === 'terrain' ? 'Terrain'
+          : activeRightWidget === 'fly' ? 'Fly'
           : null
         const body = activeRightWidget === 'story' ? (
           <div style={{ padding: 16, fontSize: 12, color: 'rgba(230,237,243,0.6)', lineHeight: 1.5 }}>
@@ -1300,18 +1317,18 @@ export default function CesiumViewerComponent({
             </div>
           )
         )
-        : null
-        const bottomZone = (
+        : activeRightWidget === 'fly' ? (
           <FlyWidget
             speed={flySpeed}
             setSpeed={setFlySpeed}
-            onClose={() => setFlyActive(false)}
+            onClose={() => setFlyPanelOpen(false)}
             isMobile={isMobile}
             mode="inline"
             active={flyActive}
-            onToggleActive={() => setFlyActive((a) => !a)}
+            onToggleActive={() => setFlyActive(a => !a)}
           />
         )
+        : null
 
         if (isMobile) {
           return (
@@ -1322,12 +1339,11 @@ export default function CesiumViewerComponent({
                 setRightDrawerOpen(false)
                 // Closing the drawer also clears the active widget so
                 // reopening starts from a known state (and the
-                // sidebar tab highlight goes off).
+                // bottom-rail tile highlight goes off).
                 setActiveRightWidget(null)
               }}
               bodyLabel={bodyLabel}
               body={body}
-              bottomZone={bottomZone}
             />
           )
         }
@@ -1346,7 +1362,6 @@ export default function CesiumViewerComponent({
             <RightPane
               bodyLabel={bodyLabel}
               body={body}
-              bottomZone={bottomZone}
             />
           </div>
         )

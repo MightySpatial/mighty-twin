@@ -149,16 +149,19 @@ export default function FlyWidget({
     </div>
   ) : null
 
-  // ── Inline (right-pane bottom zone) ───────────────────────────────
-  // Compact header (title + active pill) + shifter row + key chip
-  // hint. No close button — the RightPane owns visibility. Falls
-  // through the toast since the inline bar is always visible.
+  // ── Inline (right-pane body slot) ─────────────────────────────────
+  // Fills the full right-pane height when Fly is the active widget —
+  // shifter is large, key legend is two-column, and a tip card
+  // bottoms out the layout. The user toggles locomotion via the
+  // ACTIVE / OFF pill; closing the pane is the rail's job, not the
+  // widget's. The toast still fires on gear changes so the shift
+  // feedback is visible.
   if (inline) {
     return (
       <div className="fly-inline">
         <div className="fly-inline__hd">
           <span className="fly-inline__title">
-            <Plane size={12} />
+            <Plane size={14} />
             Fly
           </span>
           <button
@@ -172,10 +175,19 @@ export default function FlyWidget({
         </div>
         {shifter}
         <div className="fly-inline__keys">
-          <kbd className="fly-key">W A S D</kbd>
-          <kbd className="fly-key">↑↓←→</kbd>
-          <kbd className="fly-key">Q E</kbd>
-          <kbd className="fly-key">+/−</kbd>
+          <KeyRow keys={['W', 'A', 'S', 'D']} label="Move" />
+          <KeyRow keys={['↑', '↓']} label="Pitch" />
+          <KeyRow keys={['←', '→']} label="Yaw" />
+          <KeyRow keys={['Q', 'E']} label="Roll" />
+          <KeyRow keys={['Space']} label="Climb" />
+          <KeyRow keys={['+', '−']} label="Gear" />
+          <KeyRow keys={['Shift']} label="2× sprint" />
+          <KeyRow keys={['Esc']} label="Exit" />
+        </div>
+        <div className="fly-inline__tip">
+          Click ACTIVE to engage locomotion. On mobile, single-finger
+          drag the canvas to move, two-finger drag to look, pinch to
+          shift gears.
         </div>
         {toastNode}
       </div>

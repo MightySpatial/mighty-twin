@@ -55,16 +55,16 @@ export const DEFAULT_WIDGETS: WidgetDef[] = [
   // sidebar so the secondary rail can go away entirely).
   { id: 'table',    label: 'Table',    icon: 'Table',    controller: 'primary',   position: 4, loadMode: 'drawer',    defaultSize: 'standard', scope: 'per-site' },
 
-  // Right pane — Story / Snap / Design / Terrain are activated from
-  // the ViewerSidebar widget-tab rail and render in the right pane.
-  // Fly is pinned in the bottom zone. `loadMode: 'sharePane'` ↔ the
-  // pane is the destination; the old floating + drawer behaviours are
-  // retired for these widgets.
+  // Secondary rail — bottom-centre below the canvas. Each tile opens
+  // its widget in the right pane (`loadMode: 'sharePane'`); the pane
+  // is a content slot, not a controller. Fly sits next to the others
+  // — opened on demand like any other widget, not pre-pinned to the
+  // pane bottom.
   { id: 'story',    label: 'Story',    icon: 'BookOpen', controller: 'secondary', position: 0, loadMode: 'sharePane', defaultSize: 'standard', scope: 'per-site', publicVisible: true,                       paneZone: 'top' },
   { id: 'snap',     label: 'Snap',     icon: 'Camera',   controller: 'secondary', position: 1, loadMode: 'sharePane', defaultSize: 'compact',  scope: 'per-site',                                            paneZone: 'top' },
   { id: 'design',   label: 'Design',   icon: 'Hexagon',  controller: 'secondary', position: 2, loadMode: 'sharePane', defaultSize: 'expanded', scope: 'per-site',                                            paneZone: 'top' },
   { id: 'terrain',  label: 'Terrain',  icon: 'Mountain', controller: 'secondary', position: 3, loadMode: 'sharePane', defaultSize: 'compact',  scope: 'per-site',                                            paneZone: 'top' },
-  { id: 'fly',      label: 'Fly',      icon: 'Plane',    controller: 'secondary', position: 4, loadMode: 'sharePane', defaultSize: 'compact',  scope: 'per-site', publicVisible: true,                       paneZone: 'bottom' },
+  { id: 'fly',      label: 'Fly',      icon: 'Plane',    controller: 'secondary', position: 4, loadMode: 'sharePane', defaultSize: 'compact',  scope: 'per-site', publicVisible: true,                       paneZone: 'top' },
 ]
 
 export function widgetsForController(

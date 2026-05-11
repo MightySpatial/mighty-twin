@@ -235,13 +235,13 @@ export function MapShell({
         </div>
       )}
 
-      {/* Secondary rail — phone-only. Desktop secondary widgets
-          (Story / Snap / Design / Strike / Terrain / Fly) live in the
-          right pane now; the rail is unreachable on phones via the
-          Tools FAB sheet anyway, so the rail+sheet duplication only
-          existed for safety on touch laptops. Phones keep the rail at
-          the bottom until the mobile slide-in pane lands. */}
-      {phoneMode && !publicMode && secondary.length > 0 && (
+      {/* Secondary rail — bottom-centre on desktop, bottom on phone.
+          Hosts Story / Snap / Design / Terrain / Fly. Each tile sets
+          the right pane's active widget (or toggles fly active) via
+          the parent's onAction handler — the pane is purely a content
+          slot, the rail is the controller. Phones get the same rail
+          plus a Tools FAB further below. */}
+      {!publicMode && secondary.length > 0 && (
         <div className={styles.rails}>
           <SecondaryRail
             widgets={secondary}

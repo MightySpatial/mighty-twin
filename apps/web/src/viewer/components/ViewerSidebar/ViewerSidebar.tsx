@@ -9,15 +9,11 @@ import {
   Layers,
   ChevronLeft,
   ChevronRight,
-  Mountain,
   Search,
   Ruler,
   List,
   Home,
   Table as TableIcon,
-  BookOpen,
-  Camera,
-  Hexagon,
 } from 'lucide-react'
 import type { Layer } from '../CesiumViewer/types'
 import type { ViewerContext, PanelProps } from '../../extensions/types'
@@ -282,15 +278,13 @@ export default function ViewerSidebar({
               </span>
             </button>
           ))}
-          {/* Widget action tabs — Search / Measure / Legend / Table
-              (primary, sidebar-resident) and Story / Snap / Design /
-              Terrain (secondary, right-pane-resident). All flow
-              through the same onWidgetTabClick callback; the host
-              decides where each widget renders.
-              `panelHome: 'sidebar'` means clicking expands the sidebar
-              (the panel content lives here). `panelHome: 'right'`
-              keeps the sidebar at its current width because the
-              widget renders in the right pane instead. */}
+          {/* Primary widget action tabs — Search / Measure / Legend /
+              Table. The sidebar is intentionally lean: secondary
+              widgets (Story / Snap / Design / Terrain / Fly) live on
+              the bottom rail beneath the canvas and load their UI
+              into the right pane. Clicking any of these tabs activates
+              the underlying tool and (for sidebar-resident widgets)
+              expands the sidebar so the panel UI has room to render. */}
           {onWidgetTabClick && (
             <>
               <div className="sidebar-tab-divider" />
@@ -299,10 +293,6 @@ export default function ViewerSidebar({
                 { id: 'measure', label: 'Measure', Icon: Ruler     , panelHome: 'sidebar' },
                 { id: 'legend',  label: 'Legend',  Icon: List      , panelHome: 'sidebar' },
                 { id: 'table',   label: 'Table',   Icon: TableIcon , panelHome: 'modal'   },
-                { id: 'story',   label: 'Story',   Icon: BookOpen  , panelHome: 'right'   },
-                { id: 'snap',    label: 'Snap',    Icon: Camera    , panelHome: 'right'   },
-                { id: 'design',  label: 'Design',  Icon: Hexagon   , panelHome: 'right'   },
-                { id: 'terrain', label: 'Terrain', Icon: Mountain  , panelHome: 'right'   },
               ] as const)
                 .filter(t => !widgetTabIds || widgetTabIds.includes(t.id))
                 .map(({ id, label, Icon, panelHome }) => (
