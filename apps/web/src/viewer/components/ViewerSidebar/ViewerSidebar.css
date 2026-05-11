@@ -303,6 +303,41 @@
   text-transform: uppercase;
 }
 
+/* Top-right actions row inside the panel header — pin + close. */
+.sidebar-header-actions {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.sidebar-header-btn {
+  width: 26px;
+  height: 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  border-radius: 5px;
+  color: rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+  padding: 0;
+  transition: color 120ms, background 120ms, border-color 120ms;
+}
+.sidebar-header-btn:hover {
+  color: rgba(255, 255, 255, 0.92);
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.18);
+}
+.sidebar-header-btn.is-pinned {
+  color: #fbbf24;
+  background: rgba(251, 191, 36, 0.10);
+  border-color: rgba(251, 191, 36, 0.34);
+}
+.sidebar-header-btn.is-pinned:hover {
+  background: rgba(251, 191, 36, 0.18);
+}
+
 .sidebar-content-body {
   flex: 1;
   overflow-y: auto;

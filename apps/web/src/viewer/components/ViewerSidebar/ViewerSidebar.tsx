@@ -405,36 +405,22 @@ export default function ViewerSidebar({
             </button>
           )}
           {/* Terrain now lives in the widget-tabs row above and
-              routes through the right pane (drawer on mobile, docked
-              column on desktop). The old in-sidebar terrain panel
-              path was retired alongside the right-pane rearchitecture. */}
-          {/* Pin toggle — only relevant when expanded. Pinning skips
-              the auto-collapse timer for this site/session. */}
-          {sidebarOpen && (
-            <button
-              className={`sidebar-collapse-btn${pinned ? ' is-pinned' : ''}`}
-              onClick={() => {
-                cancelAutoCollapse()
-                setPinned(p => !p)
-              }}
-              title={pinned ? 'Unpin — sidebar can auto-collapse' : 'Pin sidebar open'}
-              aria-pressed={pinned}
-            >
-              {pinned ? <Pin size={14} /> : <PinOff size={14} />}
-            </button>
-          )}
-          {/* Collapse toggle */}
+              routes through the right pane. The old in-sidebar
+              terrain panel path was retired alongside the right-
+              pane rearchitecture. The collapse button below stays
+              in the tab rail as an always-visible edge handle so
+              users can reopen the sidebar when collapsed (the rail
+              itself remains visible at 64 px). Pin + close move
+              into the content header now so they're prominent. */}
           <button
             className="sidebar-collapse-btn"
             onClick={() => {
               cancelAutoCollapse()
-              // Manual collapse drops the pinned flag — the user
-              // wants it closed; re-pinning is an explicit choice
-              // next time they open it.
               if (sidebarOpen) setPinned(false)
               setSidebarOpen(!sidebarOpen)
             }}
             title={sidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'}
+            aria-label={sidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'}
           >
             {sidebarOpen ? <ChevronLeft size={14} /> : <ChevronRight size={14} />}
           </button>
@@ -456,6 +442,38 @@ export default function ViewerSidebar({
                   {currentTab.id === 'layers' && layers.length > 0 && (
                     <span className="layer-count-badge">{layers.length}</span>
                   )}
+                  {/* Header pin + close — moved here from the tab
+                      rail so the controls live where users look
+                      first (top-right of the open panel) and the
+                      meaning is unambiguous. */}
+                  <div className="sidebar-header-actions">
+                    <button
+                      type="button"
+                      className={`sidebar-header-btn${pinned ? ' is-pinned' : ''}`}
+                      onClick={() => {
+                        cancelAutoCollapse()
+                        setPinned(p => !p)
+                      }}
+                      title={pinned ? 'Unpin sidebar — let it auto-collapse' : 'Pin sidebar open'}
+                      aria-pressed={pinned}
+                      aria-label={pinned ? 'Unpin sidebar' : 'Pin sidebar open'}
+                    >
+                      {pinned ? <Pin size={13} /> : <PinOff size={13} />}
+                    </button>
+                    <button
+                      type="button"
+                      className="sidebar-header-btn"
+                      onClick={() => {
+                        cancelAutoCollapse()
+                        setPinned(false)
+                        setSidebarOpen(false)
+                      }}
+                      title="Close sidebar"
+                      aria-label="Close sidebar"
+                    >
+                      <ChevronLeft size={14} />
+                    </button>
+                  </div>
                 </div>
                 <div className="sidebar-content-body">
                   {currentTab.content}

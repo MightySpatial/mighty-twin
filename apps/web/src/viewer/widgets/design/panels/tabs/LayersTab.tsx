@@ -50,6 +50,7 @@ import { useCadEngine } from '../../sketch/useCadEngine'
 import { generateLayerId, generateNodeId } from '../../sketch/dagOps'
 import { buildSketchDoc } from '../../sketch/persistence'
 import { SCHEMA_PRESETS, SCHEMA_PRESET_ORDER, DEFAULT_PRESET_ID } from '../../sketch/schemaPresets'
+import { preloadDefinitionKey, type DefinitionKey } from '../../definitionKey'
 import { useSvoEngine } from '../../voxel/useSvoEngine'
 import { blockEdgeMeters, type SVOLayer, type SVORenderMode } from '../../voxel/types'
 import RedlineCreationModal from '../modals/RedlineCreationModal'
@@ -201,6 +202,13 @@ export default function LayersTab({ siteSlug = null }: Props) {
   // default to expanded; the user collapses them via the header
   // chevron and the state lives only on the client (per-mount).
   const [collapsedGroupIds, setCollapsedGroupIds] = useState<Set<string>>(() => new Set())
+  // definition_key.json — loaded on first mount. Used by redline
+  // sketches to drive their layer-style category dropdown so the
+  // utility colour standard is the same as MightyDT.
+  const [defKey, setDefKey] = useState<DefinitionKey | null>(null)
+  useEffect(() => {
+    void preloadDefinitionKey().then(setDefKey).catch(() => { /* offline */ })
+  }, [])
 
   // Sketch settings popover — id of the sketch whose gear is open.
   const [popoverSketchId, setPopoverSketchId] = useState<string | null>(null)
@@ -1181,6 +1189,22 @@ export default function LayersTab({ siteSlug = null }: Props) {
             </div>
           )}
 
+          {/* Schema-divergence warning — mirrors MightyDT. Redline
+              sketches keep a tight link to the target layer's PostGIS
+              schema; if the user edits the schema after creation
+              (`_schemaModified` flips true), warn that the resulting
+              submission will be flagged for admin review so the
+              consequence is visible at the point of edit, not at
+              submit time. */}
+          {isRedlineSketch && activeSketch._schemaModified && (
+            <div className="layers-tab__warning" role="status">
+              <strong>Schema divergence</strong> — editing a redline
+              schema will flag this submission for admin review.
+              Revert via the sketch settings popover if this was
+              unintended.
+            </div>
+          )}
+
           <div className="layers-tab__hd">Layers · {activeSketch.name}</div>
           <div className="sketch-layer-list">
             {/* Drawing (vector) layers */}
@@ -1248,18 +1272,51 @@ export default function LayersTab({ siteSlug = null }: Props) {
                   </div>
                   {isExpanded && (
                     <div className="unified-layer-body" onClick={e => e.stopPropagation()}>
-                      <div className="unified-layer-prop">
-                        <span className="unified-layer-prop__label">Colour</span>
-                        <label className="sketch-layer-colour-wrap">
-                          <input
-                            type="color"
-                            className="sketch-layer-colour-input"
-                            value={layer.colour}
-                            onChange={e => setLayerColour(activeSketch.id, layer.id, e.target.value)}
-                          />
-                          <span className="sketch-layer-colour-dot" style={{ background: layer.colour }} />
-                        </label>
-                      </div>
+                      {isRedlineSketch && defKey ? (
+                        // Redline sketches use the authoritative
+                        // utility-category palette from definition_key
+                        // .json — colour-by-code, not free-form. The
+                        // select writes both the layer colour (so the
+                        // viewer renders correctly) AND the
+                        // `presetValue` on the layer so the active
+                        // category survives a reload.
+                        <div className="unified-layer-prop">
+                          <span className="unified-layer-prop__label">Category</span>
+                          <select
+                            className="voxel-control-row__select"
+                            value={layer.presetValue ?? ''}
+                            onChange={e => {
+                              const id = e.target.value
+                              const cat = defKey.categories.find(c => c.id === id)
+                              const colour = cat?.colour ?? '#555555'
+                              setLayerColour(activeSketch.id, layer.id, colour)
+                              patchSketch(activeSketch.id, {
+                                layers: activeSketch.layers.map(l =>
+                                  l.id === layer.id ? { ...l, presetValue: id } : l
+                                ),
+                              })
+                            }}
+                          >
+                            <option value="">— pick a category —</option>
+                            {defKey.categories.map(c => (
+                              <option key={c.id} value={c.id}>{c.label}</option>
+                            ))}
+                          </select>
+                        </div>
+                      ) : (
+                        <div className="unified-layer-prop">
+                          <span className="unified-layer-prop__label">Colour</span>
+                          <label className="sketch-layer-colour-wrap">
+                            <input
+                              type="color"
+                              className="sketch-layer-colour-input"
+                              value={layer.colour}
+                              onChange={e => setLayerColour(activeSketch.id, layer.id, e.target.value)}
+                            />
+                            <span className="sketch-layer-colour-dot" style={{ background: layer.colour }} />
+                          </label>
+                        </div>
+                      )}
                       <div className="unified-layer-body__actions">
                         {isRedlineSketch && (
                           <button

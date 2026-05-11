@@ -1404,3 +1404,18 @@
   border-radius: var(--dw-radius-md);
   margin-bottom: var(--dw-space-3);
 }
+
+/* Redline schema-divergence warning — amber pill that sits above
+ * the Layers section header when the user's edited a redline
+ * sketch's schema. Mirrors MightyDT's review-flag UX. */
+.layers-tab__warning {
+  font-size: var(--dw-fs-11);
+  color: var(--dw-warning-l);
+  background: var(--dw-warning-bg);
+  border: 1px solid var(--dw-warning-border);
+  border-radius: var(--dw-radius-md);
+  padding: 8px 12px;
+  margin-bottom: var(--dw-space-2);
+  line-height: 1.45;
+}
+.layers-tab__warning strong { color: var(--dw-warning-l); font-weight: 700; }

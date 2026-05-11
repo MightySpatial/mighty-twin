@@ -941,6 +941,13 @@
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.35);
 }
 
+/* Draggable variant — promote to fixed so the inline left/top
+ * coords from the React drag state are viewport-relative, not
+ * canvas-relative. */
+.legend-panel.legend-panel--draggable {
+  position: fixed;
+}
+
 @media (max-width: 767px) {
   .legend-panel {
     left: 62px;
