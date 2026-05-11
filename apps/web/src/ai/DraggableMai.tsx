@@ -99,6 +99,20 @@ function MaiFab({ variant }: { variant: 'desktop' | 'phone' }) {
     pointerId: -1,
     moved: false,
   })
+  // Phone tools sheet is up — hide the FAB so it doesn't cover the
+  // rightmost widget tile in the carousel. MapShell dispatches the
+  // open/close events when the mobile sheet toggles.
+  const [toolsOpen, setToolsOpen] = useState(false)
+  useEffect(() => {
+    const onOpen = () => setToolsOpen(true)
+    const onClose = () => setToolsOpen(false)
+    window.addEventListener('mighty:tools-open', onOpen)
+    window.addEventListener('mighty:tools-close', onClose)
+    return () => {
+      window.removeEventListener('mighty:tools-open', onOpen)
+      window.removeEventListener('mighty:tools-close', onClose)
+    }
+  }, [])
 
   const clampFab = useCallback((p: { x: number; y: number }) => ({
     x: Math.max(8, Math.min(window.innerWidth - FAB_SIZE - 8, p.x)),
@@ -203,9 +217,11 @@ function MaiFab({ variant }: { variant: 'desktop' | 'phone' }) {
             : '0 6px 20px rgba(236, 72, 153, 0.45)',
           zIndex: 8000,
           touchAction: 'none',
-          transition: 'box-shadow 180ms ease, transform 180ms ease, left 200ms ease',
+          transition: 'box-shadow 180ms ease, transform 180ms ease, left 200ms ease, opacity 160ms ease',
           transform: expanded ? 'scale(0.94)' : 'scale(1)',
           userSelect: 'none',
+          opacity: variant === 'phone' && toolsOpen ? 0 : 1,
+          pointerEvents: variant === 'phone' && toolsOpen ? 'none' : 'auto',
         }}
       >
         <Sparkles size={22} strokeWidth={2.25} />
