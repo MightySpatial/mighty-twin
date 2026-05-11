@@ -53,7 +53,7 @@ export const DEFAULT_WIDGETS: WidgetDef[] = [
   { id: 'table',    label: 'Table',    icon: 'Table',    controller: 'secondary', position: 3, loadMode: 'drawer',    defaultSize: 'standard', scope: 'per-site' },
   { id: 'strike',   label: 'Strike',   icon: 'Slash',    controller: 'secondary', position: 4, loadMode: 'sharePane', defaultSize: 'standard', scope: 'per-site' },
   { id: 'terrain',  label: 'Terrain',  icon: 'Mountain', controller: 'secondary', position: 5, loadMode: 'floating',  defaultSize: 'compact',  scope: 'per-site' },
-  { id: 'walk',     label: 'Walk',     icon: 'Footprints', controller: 'secondary', position: 6, loadMode: 'floating',  defaultSize: 'compact',  scope: 'per-site', publicVisible: true },
+  { id: 'fly',      label: 'Fly',      icon: 'Plane',     controller: 'secondary', position: 6, loadMode: 'floating',  defaultSize: 'compact',  scope: 'per-site', publicVisible: true },
 ]
 
 export function widgetsForController(
