@@ -1,0 +1,410 @@
+/** AI providers settings — provider card grid + 3-step wizard +
+ *  per-feature overrides + approval policy. Scoped via `.aiset`
+ *  root so we don't bleed into the host settings shell.
+ *
+ *  Ported from apps/web/public/dev/ai-providers/index.html. Variables
+ *  are namespaced --aiset-* so they don't fight with the broader
+ *  --dw-* / --color-* token sets the rest of the app uses.
+ */
+
+.aiset {
+  --aiset-bg: #0d1117;
+  --aiset-surface: #161b22;
+  --aiset-raised: #1c2128;
+  --aiset-border: rgba(255, 255, 255, 0.08);
+  --aiset-border-strong: rgba(255, 255, 255, 0.14);
+  --aiset-fg: rgba(255, 255, 255, 0.9);
+  --aiset-fg-2: rgba(255, 255, 255, 0.6);
+  --aiset-fg-3: rgba(255, 255, 255, 0.38);
+  --aiset-accent: #6366f1;
+  --aiset-accent-hover: #4f52d8;
+  --aiset-accent-soft: rgba(99, 102, 241, 0.14);
+  --aiset-emerald: #21c07a;
+  --aiset-emerald-soft: rgba(33, 192, 122, 0.12);
+  --aiset-danger: #f87171;
+  --aiset-danger-soft: rgba(248, 113, 113, 0.12);
+  --aiset-radius-sm: 6px;
+  --aiset-radius-md: 10px;
+  --aiset-font-mono: ui-monospace, 'JetBrains Mono', SFMono-Regular, Menlo, monospace;
+
+  color: var(--aiset-fg);
+  font-size: 14px;
+  line-height: 1.5;
+  padding: 32px 40px;
+  max-width: 960px;
+}
+
+.aiset h1 {
+  font-size: 22px;
+  font-weight: 700;
+  margin: 0 0 6px;
+}
+.aiset .aiset-lede {
+  color: var(--aiset-fg-2);
+  font-size: 13px;
+  line-height: 1.65;
+  max-width: 680px;
+  margin: 0 0 32px;
+}
+.aiset-section { margin-bottom: 40px; }
+.aiset-section h2 {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--aiset-fg-3);
+  margin: 0 0 14px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--aiset-border);
+}
+
+.aiset-toggle-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: var(--aiset-radius-sm);
+  border: 1px solid var(--aiset-border);
+  background: rgba(255, 255, 255, 0.02);
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--aiset-fg);
+  margin-bottom: 24px;
+}
+.aiset-toggle-row .aiset-toggle-aside {
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--aiset-fg-3);
+}
+
+/* ── Provider grid ── */
+
+.aiset-group-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--aiset-fg-3);
+  margin: 0 0 10px;
+}
+.aiset-group + .aiset-group { margin-top: 22px; }
+.aiset-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+@media (max-width: 860px) {
+  .aiset-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 560px) {
+  .aiset-grid { grid-template-columns: 1fr; }
+}
+
+.aiset-card {
+  background: var(--aiset-surface);
+  border: 1px solid var(--aiset-border);
+  border-radius: var(--aiset-radius-md);
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  position: relative;
+  transition: border-color 0.15s;
+}
+.aiset-card:hover { border-color: var(--aiset-border-strong); }
+.aiset-card.is-connected { border-color: var(--aiset-emerald); }
+.aiset-card.is-connected:hover { border-color: var(--aiset-emerald); }
+.aiset-card.is-active { box-shadow: inset 0 0 0 1px var(--aiset-accent); }
+
+.aiset-connected-badge {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 20px;
+  background: var(--aiset-emerald-soft);
+  color: var(--aiset-emerald);
+  letter-spacing: 0.03em;
+}
+
+.aiset-logo {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--aiset-radius-sm);
+  display: grid;
+  place-items: center;
+  font-weight: 800;
+  color: #fff;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+.logo-anthropic  { background: linear-gradient(135deg, #cc785c, #a3543a); }
+.logo-openai     { background: linear-gradient(135deg, #10a37f, #065f46); }
+.logo-gemini     { background: linear-gradient(135deg, #4285f4, #34a853); }
+.logo-openrouter { background: linear-gradient(135deg, #9333ea, #6d28d9); }
+.logo-groq       { background: linear-gradient(135deg, #f97316, #c2410c); }
+.logo-together   { background: linear-gradient(135deg, #0ea5e9, #0369a1); }
+.logo-fireworks  { background: linear-gradient(135deg, #ef4444, #b91c1c); }
+.logo-perplexity { background: linear-gradient(135deg, #20b2aa, #0f766e); }
+.logo-mistral    { background: linear-gradient(135deg, #ff7043, #c62828); }
+.logo-deepseek   { background: linear-gradient(135deg, #3b82f6, #1d4ed8); }
+.logo-xai        { background: linear-gradient(135deg, #334155, #0f172a); }
+.logo-ollama     { background: linear-gradient(135deg, #7c3aed, #4c1d95); }
+.logo-lmstudio   { background: linear-gradient(135deg, #059669, #064e3b); }
+.logo-custom     { background: linear-gradient(135deg, #475569, #1e293b); }
+
+.aiset-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--aiset-fg);
+}
+.aiset-desc {
+  font-size: 12px;
+  color: var(--aiset-fg-2);
+  line-height: 1.55;
+  flex: 1;
+}
+.aiset-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 5px;
+  min-height: 22px;
+}
+.aiset-pill {
+  font-size: 10px;
+  font-weight: 500;
+  padding: 2px 7px;
+  border-radius: 20px;
+  background: var(--aiset-raised);
+  border: 1px solid var(--aiset-border);
+  color: var(--aiset-fg-2);
+  letter-spacing: 0.02em;
+}
+.aiset-card-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.aiset-btn {
+  padding: 7px 14px;
+  border-radius: var(--aiset-radius-sm);
+  border: 1px solid var(--aiset-border-strong);
+  background: transparent;
+  color: var(--aiset-fg-2);
+  font: 500 12px/1 inherit;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
+}
+.aiset-btn:hover { background: var(--aiset-raised); color: var(--aiset-fg); }
+.aiset-btn.primary { background: var(--aiset-accent); border-color: var(--aiset-accent); color: #fff; }
+.aiset-btn.primary:hover { background: var(--aiset-accent-hover); }
+.aiset-btn.manage { border-color: var(--aiset-emerald); color: var(--aiset-emerald); }
+.aiset-btn.manage:hover { background: var(--aiset-emerald-soft); }
+.aiset-btn.danger { border-color: var(--aiset-danger); color: var(--aiset-danger); }
+.aiset-btn.danger:hover { background: var(--aiset-danger-soft); }
+
+/* "Set active" mini-button — used when a card is connected but not the
+   globally-active provider. Keeps the layout from getting too noisy. */
+.aiset-set-active {
+  font-size: 11px;
+  padding: 4px 10px;
+}
+
+/* ── Overrides table ── */
+
+.aiset-table {
+  background: var(--aiset-surface);
+  border: 1px solid var(--aiset-border);
+  border-radius: var(--aiset-radius-md);
+  overflow: hidden;
+}
+.aiset-row {
+  display: grid;
+  grid-template-columns: 1fr 200px 200px;
+  gap: 16px;
+  align-items: center;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--aiset-border);
+}
+.aiset-row:last-child { border-bottom: none; }
+.aiset-feat-name { font-size: 13px; font-weight: 600; color: var(--aiset-fg); }
+.aiset-feat-desc { font-size: 11px; color: var(--aiset-fg-3); margin-top: 3px; }
+.aiset-row.policy-row { grid-template-columns: 1fr 200px; }
+
+.aiset-select {
+  background: var(--aiset-raised);
+  border: 1px solid var(--aiset-border);
+  border-radius: var(--aiset-radius-sm);
+  color: var(--aiset-fg);
+  font: 12px inherit;
+  padding: 6px 10px;
+  width: 100%;
+  cursor: pointer;
+  outline: none;
+}
+.aiset-select:focus { border-color: var(--aiset-accent); }
+.aiset-select:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* ── Wizard ── */
+
+.aiset-wizard-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+.aiset-wizard {
+  background: var(--aiset-surface);
+  border: 1px solid var(--aiset-border-strong);
+  border-radius: 14px;
+  padding: 28px;
+  width: 480px;
+  max-width: 94vw;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  color: var(--aiset-fg);
+}
+
+.aiset-wizard-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.aiset-wizard-logo {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--aiset-radius-sm);
+  display: grid;
+  place-items: center;
+  font-size: 22px;
+  font-weight: 800;
+  color: #fff;
+  flex-shrink: 0;
+}
+.aiset-wizard-title { font-size: 17px; font-weight: 700; }
+.aiset-wizard-sub { font-size: 12px; color: var(--aiset-fg-3); margin-top: 2px; }
+
+.aiset-wizard-steps {
+  display: flex;
+  gap: 6px;
+}
+.aiset-step-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--aiset-border-strong);
+  transition: background 0.15s;
+}
+.aiset-step-dot.is-active { background: var(--aiset-accent); }
+.aiset-step-dot.is-done { background: var(--aiset-emerald); }
+
+.aiset-field { display: flex; flex-direction: column; gap: 6px; }
+.aiset-field-label { font-size: 12px; font-weight: 600; color: var(--aiset-fg-2); }
+.aiset-input {
+  background: var(--aiset-raised);
+  border: 1px solid var(--aiset-border-strong);
+  border-radius: var(--aiset-radius-sm);
+  color: var(--aiset-fg);
+  font: 13px var(--aiset-font-mono);
+  padding: 9px 12px;
+  width: 100%;
+  outline: none;
+  transition: border-color 0.12s;
+}
+.aiset-input:focus { border-color: var(--aiset-accent); }
+.aiset-hint { font-size: 11px; color: var(--aiset-fg-3); line-height: 1.55; }
+.aiset-hint a { color: var(--aiset-accent); text-decoration: none; }
+.aiset-hint a:hover { text-decoration: underline; }
+.aiset-hint code {
+  background: var(--aiset-raised);
+  padding: 1px 6px;
+  border-radius: 4px;
+  font: 11px var(--aiset-font-mono);
+}
+
+.aiset-model-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.aiset-model-tile {
+  border: 1px solid var(--aiset-border);
+  border-radius: var(--aiset-radius-sm);
+  padding: 10px 12px;
+  cursor: pointer;
+  background: transparent;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  transition: border-color 0.12s, background 0.12s;
+}
+.aiset-model-tile:hover { border-color: var(--aiset-border-strong); background: var(--aiset-raised); }
+.aiset-model-tile.is-selected { border-color: var(--aiset-accent); background: var(--aiset-accent-soft); }
+.aiset-model-tile .aiset-model-name { font-size: 12px; font-weight: 600; color: var(--aiset-fg); }
+.aiset-model-tile .aiset-model-meta { font-size: 10px; color: var(--aiset-fg-3); margin-top: 3px; }
+
+.aiset-test {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  background: var(--aiset-raised);
+  border: 1px solid var(--aiset-border);
+  border-radius: var(--aiset-radius-sm);
+  font-size: 12px;
+}
+.aiset-test-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.aiset-test-dot.pending { background: var(--aiset-fg-3); animation: aiset-pulse 1.5s infinite; }
+.aiset-test-dot.ok { background: var(--aiset-emerald); }
+.aiset-test-dot.err { background: var(--aiset-danger); }
+@keyframes aiset-pulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.4; }
+}
+
+.aiset-test-success {
+  padding: 12px 14px;
+  background: var(--aiset-emerald-soft);
+  border: 1px solid var(--aiset-emerald);
+  border-radius: var(--aiset-radius-sm);
+  font-size: 12px;
+  color: var(--aiset-emerald);
+  line-height: 1.5;
+}
+.aiset-test-error {
+  padding: 12px 14px;
+  background: var(--aiset-danger-soft);
+  border: 1px solid var(--aiset-danger);
+  border-radius: var(--aiset-radius-sm);
+  font-size: 12px;
+  color: var(--aiset-danger);
+  line-height: 1.5;
+  font-family: var(--aiset-font-mono);
+  word-break: break-word;
+}
+
+.aiset-wizard-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.aiset-wizard-actions .aiset-btn { padding: 9px 18px; font-size: 13px; font-weight: 600; }
+.aiset-wizard-actions .aiset-btn.primary:disabled,
+.aiset-wizard-actions .aiset-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
