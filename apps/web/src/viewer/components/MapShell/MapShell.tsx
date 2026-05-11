@@ -52,6 +52,7 @@ import {
   type WidgetOverrides,
 } from './widgetRegistry'
 import styles from './MapShell.module.css'
+import { Carousel } from './Carousel'
 
 type IconComponent = React.ComponentType<{ size?: number | string }>
 const ICON_MAP: Record<string, IconComponent> = {
@@ -173,8 +174,14 @@ export function MapShell({
   }, [publicMode, widgetOverrides, hasCursor, phoneMode])
   const secondary = useMemo(() => widgetsForController(widgets, 'secondary'), [widgets])
 
-  // Phone-only: tools sheet open/closed.
+  // Phone-only: tools sheet open/closed. Notify DraggableMai via
+  // window events so the Mai FAB can step aside while the sheet is
+  // up — otherwise it sits bottom-right over the rightmost widget tile.
   const [toolsOpen, setToolsOpen] = useState(false)
+  useEffect(() => {
+    const evt = toolsOpen ? 'mighty:tools-open' : 'mighty:tools-close'
+    window.dispatchEvent(new Event(evt))
+  }, [toolsOpen])
 
   return (
     <div
@@ -287,10 +294,10 @@ export function MapShell({
             {!publicMode && secondary.length > 0 && (
               <div className={styles.toolsSheetSection}>
                 <div className={styles.toolsSheetSectionLabel}>Widgets</div>
-                <div
-                  className={styles.toolsSheetCarousel}
-                  role="listbox"
-                  aria-label="Widgets"
+                <Carousel
+                  showArrows={false}
+                  snap
+                  className={styles.toolsSheetWidgets}
                 >
                   {secondary.map((w) => (
                     <SheetTile
@@ -303,7 +310,7 @@ export function MapShell({
                       }}
                     />
                   ))}
-                </div>
+                </Carousel>
               </div>
             )}
           </div>
@@ -337,14 +344,13 @@ function SheetTile({
   )
 }
 
-/** Secondary rail wrapper — measures overflow and only applies the
- *  fade-right mask when there's actually content scrolling out of view.
- *  Otherwise the mask just turns the right edge of "Terrain" /
- *  whatever-the-last-tile-is into a faded ghost which looks broken.
- *
- *  ResizeObserver fires both on viewport change and on widget catalog
- *  change (admin enables/disables a widget → tile count changes →
- *  scrollWidth changes → we re-measure). */
+/** Secondary rail — desktop bottom-centre widget controller. Renders
+ *  a single-row carousel: tiles flow horizontally, chevron arrows
+ *  appear only when there's overflow in that direction, and the
+ *  underlying tiles fade into transparency beneath each arrow so the
+ *  edge doesn't feel chopped. The Carousel primitive owns the scroll
+ *  + measurement machinery so the same component drives the mobile
+ *  tools-sheet WIDGETS row. */
 function SecondaryRail({
   widgets,
   activeToolId,
@@ -354,28 +360,9 @@ function SecondaryRail({
   activeToolId: string | null
   onAction: (id: string) => void
 }) {
-  const railRef = useRef<HTMLDivElement | null>(null)
-  const [overflowing, setOverflowing] = useState(false)
-  useEffect(() => {
-    const el = railRef.current
-    if (!el) return
-    const measure = () => {
-      // 2px tolerance — sub-pixel rounding can make a perfectly-fitting
-      // rail report a 0.4px overflow which still triggers the mask.
-      setOverflowing(el.scrollWidth - el.clientWidth > 2)
-    }
-    measure()
-    const ro = new ResizeObserver(measure)
-    ro.observe(el)
-    return () => ro.disconnect()
-  }, [widgets.length])
   return (
-    <div
-      ref={railRef}
-      className={`${styles.rail} ${styles.railSecondary} ${styles.railScrollable}${
-        overflowing ? ' ' + styles.railFadeRight : ''
-      }`}
-    >
+    <div className={`${styles.rail} ${styles.railSecondary}`}>
+      <Carousel showArrows>
       {widgets.map((w) => (
         <RailTile
           key={w.id}
@@ -384,6 +371,7 @@ function SecondaryRail({
           onClick={() => onAction(w.id)}
         />
       ))}
+      </Carousel>
     </div>
   )
 }

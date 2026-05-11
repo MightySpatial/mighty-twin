@@ -121,7 +121,12 @@
   background: rgba(36,83,255,0.10);
   border-color: rgba(36,83,255,0.22);
 }
-.railSecondary { background: rgba(17,20,29,0.7); }
+.railSecondary {
+  background: rgba(17,20,29,0.7);
+  /* Cap the rail width so the carousel inside has something to
+     overflow and the chevron arrows have a reason to appear. */
+  width: min(720px, calc(100vw - 120px));
+}
 .tile {
   display: inline-flex; flex-direction: column; align-items: center; gap: 3px;
   padding: 8px 12px;
@@ -161,21 +166,9 @@
   border-color: rgba(255,255,255,0.08);
 }
 
-/* Scrollable secondary rail — all items inline, hidden scrollbar.
-   Fade-right mask is opt-in (see .railFadeRight) and only applied
-   by SecondaryRail when scrollWidth > clientWidth. Always-on mask
-   was eating the right edge of the last tile when the rail fit. */
-.railScrollable {
-  overflow-x: auto;
-  scrollbar-width: none;       /* Firefox */
-  -webkit-overflow-scrolling: touch;
-  flex-wrap: nowrap;
-}
-.railScrollable::-webkit-scrollbar { display: none; } /* Chrome/Safari */
-.railFadeRight {
-  -webkit-mask-image: linear-gradient(to right, black calc(100% - 28px), transparent 100%);
-  mask-image: linear-gradient(to right, black calc(100% - 28px), transparent 100%);
-}
+/* The scroll/fade/snap machinery for the secondary rail now lives
+   in Carousel.module.css. .rail just provides the bezel + width
+   cap; Carousel handles overflow, masks, and arrows. */
 
 /* Customer brand zone (rendered in app shell topbar via slot) */
 .brandZone {
@@ -302,34 +295,19 @@
   color: rgba(240, 242, 248, 0.45);
   margin-bottom: 8px;
 }
-.toolsSheetGrid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 8px;
-}
-/* Horizontal touch carousel — used for the secondary widgets row in the
-   phone Tools sheet. Free-momentum scroll with x-axis snap so a flick
-   settles on a tile rather than mid-tile. Scrollbar hidden; edge padding
-   lets the first/last tile snap flush against the viewport edge. */
-.toolsSheetCarousel {
-  display: flex;
-  gap: 10px;
-  overflow-x: auto;
-  overflow-y: hidden;
-  scroll-snap-type: x mandatory;
-  scroll-padding-inline: 4px;
-  padding: 4px 4px 8px;
+/* Mobile tools-sheet widgets carousel — bleeds to the sheet's full
+   inner width so the rightmost tile isn't clipped by the Mai FAB
+   region (the FAB itself is hidden while the sheet is open). The
+   Carousel primitive owns scroll/snap/scrollbar; this wrapper just
+   sets gap, padding, and tile sizing. */
+.toolsSheetWidgets {
   margin: 0 -16px;
-  padding-left: 16px;
-  padding-right: 16px;
-  overscroll-behavior-x: contain;
-  scrollbar-width: none;
-  -webkit-overflow-scrolling: touch;
 }
-.toolsSheetCarousel::-webkit-scrollbar { display: none; }
-.toolsSheetCarousel > * {
-  flex: 0 0 auto;
-  scroll-snap-align: start;
+.toolsSheetWidgets > div {
+  gap: 10px;
+  padding: 4px 16px 8px;
+}
+.toolsSheetWidgets > div > * {
   min-width: 84px;
 }
 /* Camera controls row inside tools sheet */

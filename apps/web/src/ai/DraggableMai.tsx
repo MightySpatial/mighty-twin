@@ -233,6 +233,19 @@ function MaiFab() {
   const [fabPos, setFabPos] = useState(() => loadFabPos() ?? defaultFabPos())
   const [sheetOpen, setSheetOpen] = useState(false)
   const touchOrigin = useRef({ tx: 0, ty: 0, px: 0, py: 0, moved: false })
+  // Tools sheet is up — hide the FAB so it doesn't cover the
+  // rightmost widget tile in the carousel.
+  const [toolsOpen, setToolsOpen] = useState(false)
+  useEffect(() => {
+    const onOpen = () => setToolsOpen(true)
+    const onClose = () => setToolsOpen(false)
+    window.addEventListener('mighty:tools-open', onOpen)
+    window.addEventListener('mighty:tools-close', onClose)
+    return () => {
+      window.removeEventListener('mighty:tools-open', onOpen)
+      window.removeEventListener('mighty:tools-close', onClose)
+    }
+  }, [])
 
   const clampFab = useCallback((p: { x: number; y: number }) => ({
     x: Math.max(8, Math.min(window.innerWidth - 62, p.x)),
@@ -285,6 +298,9 @@ function MaiFab() {
           boxShadow: '0 6px 20px rgba(167,139,250,0.45)',
           zIndex: 8000,
           touchAction: 'none',
+          opacity: toolsOpen ? 0 : 1,
+          pointerEvents: toolsOpen ? 'none' : 'auto',
+          transition: 'opacity 160ms ease',
         }}
       >
         <Sparkles size={22} />
