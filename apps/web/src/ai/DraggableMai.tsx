@@ -26,13 +26,24 @@ function saveFabPos(p: { x: number; y: number }) {
   try { sessionStorage.setItem(FAB_KEY, JSON.stringify(p)) } catch {}
 }
 
-/** Default FAB anchor: bottom-right of the viewport, sitting above the
- *  secondary rail (~80 px clearance). Recomputed if sessionStorage is
- *  empty on first mount. */
+/** Default FAB anchor: bottom-right of the viewport, sitting above
+ *  the secondary rail (~72 px clearance so MAI clears the ~48 px
+ *  rail with ~20 px of breathing room). Recomputed if sessionStorage
+ *  is empty on first mount. */
 function defaultFabPos() {
   if (typeof window === 'undefined') return { x: 0, y: 0 }
-  return { x: window.innerWidth - 72, y: window.innerHeight - 152 }
+  return {
+    x: window.innerWidth - FAB_SIZE - 24,
+    y: window.innerHeight - FAB_SIZE - 72,
+  }
 }
+
+const FAB_SIZE = 52
+const PANEL_W = 360
+const PANEL_H = 540
+/** Width that MAI shifts left by when the right pane is docked
+ *  open. Matches CesiumViewer's rightPaneWidth (320 px). */
+const RP_SHIFT = 320
 
 /** Top-level entry point. Desktop and phone share the FAB pattern;
  *  the only difference is how the expanded chat surfaces (anchored
@@ -56,12 +67,28 @@ export function DraggableMai() {
    On phone the surface is a bottom sheet (modal-like).
 ─────────────────────────────────────────────────────────────────────────── */
 
-const FAB_SIZE = 52
-const PANEL_W = 360
-const PANEL_H = 540
 
 function MaiFab({ variant }: { variant: 'desktop' | 'phone' }) {
   const [fabPos, setFabPos] = useState(() => loadFabPos() ?? defaultFabPos())
+  // Right-pane open / closed — flipped by a window event the
+  // viewer host dispatches when activeRightWidget changes. Used to
+  // shift MAI left by 320px so the FAB doesn't end up under the
+  // docked pane.
+  const [rpOpen, setRpOpen] = useState(false)
+  useEffect(() => {
+    const onOpen = () => setRpOpen(true)
+    const onClose = () => setRpOpen(false)
+    window.addEventListener('mighty:rp-open', onOpen)
+    window.addEventListener('mighty:rp-close', onClose)
+    return () => {
+      window.removeEventListener('mighty:rp-open', onOpen)
+      window.removeEventListener('mighty:rp-close', onClose)
+    }
+  }, [])
+  // Effective fab x — saved pos shifted by RP_SHIFT when the pane
+  // is open. Clamped so an extreme shift doesn't push MAI off the
+  // left edge.
+  const fabRenderX = rpOpen ? Math.max(8, fabPos.x - RP_SHIFT) : fabPos.x
   const [expanded, setExpanded] = useState(false)
   // Drag bookkeeping. We use one pointer event handler that runs on
   // both mouse and touch so the FAB feels identical on every device.
@@ -151,6 +178,7 @@ function MaiFab({ variant }: { variant: 'desktop' | 'phone' }) {
         type="button"
         aria-label="Open Mighty AI"
         aria-expanded={expanded}
+        data-rp-open={rpOpen ? '1' : '0'}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
@@ -158,7 +186,7 @@ function MaiFab({ variant }: { variant: 'desktop' | 'phone' }) {
         onClick={onClick}
         style={{
           position: 'fixed',
-          left: fabPos.x,
+          left: fabRenderX,
           top: fabPos.y,
           width: FAB_SIZE,
           height: FAB_SIZE,
@@ -175,7 +203,7 @@ function MaiFab({ variant }: { variant: 'desktop' | 'phone' }) {
             : '0 6px 20px rgba(236, 72, 153, 0.45)',
           zIndex: 8000,
           touchAction: 'none',
-          transition: 'box-shadow 180ms ease, transform 180ms ease',
+          transition: 'box-shadow 180ms ease, transform 180ms ease, left 200ms ease',
           transform: expanded ? 'scale(0.94)' : 'scale(1)',
           userSelect: 'none',
         }}

@@ -56,7 +56,7 @@ import ViewerSidebar from '../ViewerSidebar'
 import { DesignWidget } from '../../widgets/design'
 import { RightPane } from '../RightPane'
 
-type ActiveRightWidget = 'story' | 'snap' | 'design' | 'terrain' | 'fly' | null
+type ActiveRightWidget = 'story' | 'snap' | 'design' | 'terrain' | null
 
 // Mobile-only floating layer panel
 function MobileLayers({ layers, layersLoading, onLayerToggle, onLayerOpacityChange }: {
@@ -599,21 +599,24 @@ export default function CesiumViewerComponent({
   // the Fly panel in the pane but doesn't auto-activate locomotion;
   // the user toggles ON/OFF inside the panel.
   const [storyTabActive, setStoryTabActive] = useState(false)
+  // flyPanelOpen toggles a free-floating Fly popup (bottom-right of
+  // the viewport). It is NOT a right-pane widget — Rahman wanted Fly
+  // simplified back to a plain floating panel separate from the
+  // pane/rail content swap dance. Clicking the FLY tile in the
+  // bottom rail toggles this state directly.
   const [flyPanelOpen, setFlyPanelOpen] = useState(false)
   const activeRightWidget = useMemo<ActiveRightWidget>(() => {
     if (designOpen) return 'design'
     if (snapOpen) return 'snap'
     if (terrainOpen) return 'terrain'
     if (storyTabActive) return 'story'
-    if (flyPanelOpen) return 'fly'
     return null
-  }, [designOpen, snapOpen, terrainOpen, storyTabActive, flyPanelOpen])
+  }, [designOpen, snapOpen, terrainOpen, storyTabActive])
   const setActiveRightWidget = useCallback((next: ActiveRightWidget) => {
     setDesignOpen(next === 'design')
     setSnapOpen(next === 'snap')
     setTerrainOpen(next === 'terrain')
     setStoryTabActive(next === 'story')
-    setFlyPanelOpen(next === 'fly')
     // Design widget dispatches open/close window events so the AI
     // ChatPanel docks out of the way — keep that behaviour even when
     // the selection comes from the rail rather than a sidebar tab.
@@ -631,6 +634,21 @@ export default function CesiumViewerComponent({
   const onSidebarWidgetTabToggle = useCallback((id: ActiveRightWidget) => {
     setActiveRightWidget(activeRightWidget === id ? null : id)
   }, [activeRightWidget, setActiveRightWidget])
+
+  // Tell the rest of the chrome (DraggableMai, FlyWidget) when the
+  // right pane is open. MAI shifts left, the floating Fly popup
+  // shifts left — both listen via the body.rp-open class + window
+  // events without threading state through their parents.
+  useEffect(() => {
+    const open = activeRightWidget !== null && !isMobile
+    if (open) {
+      document.body.classList.add('rp-open')
+      window.dispatchEvent(new CustomEvent('mighty:rp-open'))
+    } else {
+      document.body.classList.remove('rp-open')
+      window.dispatchEvent(new CustomEvent('mighty:rp-close'))
+    }
+  }, [activeRightWidget, isMobile])
 
   // Mobile drawer state for the right pane. Auto-opens whenever the
   // user activates a secondary widget on mobile, and auto-closes
@@ -710,12 +728,14 @@ export default function CesiumViewerComponent({
         setActiveRightWidget(activeRightWidget === 'design' ? null : 'design')
         break
       case 'fly':
-        // Rail click opens the Fly panel in the right pane (or closes
-        // it if it's already active). The user toggles locomotion
-        // (flyActive) from inside the panel via the ON/OFF pill —
-        // opening the panel is intentionally not the same as
-        // engaging fly mode, so users get the joy of opting in.
-        setActiveRightWidget(activeRightWidget === 'fly' ? null : 'fly')
+        // Rail click toggles the free-floating Fly popup. It lives
+        // outside the right-pane content slot — Rahman explicitly
+        // wanted Fly reverted to a plain pop-out so it doesn't get
+        // tangled with the Story / Snap / Design / Terrain swap
+        // dance. The popup's internal ON/OFF pill still gates
+        // locomotion (flyActive); just opening the popup doesn't
+        // engage the camera.
+        setFlyPanelOpen(o => !o)
         break
       default: break
     }
@@ -878,12 +898,27 @@ export default function CesiumViewerComponent({
         />
       </div>
 
+      {/* Desktop floating Fly popup — opened via the FLY tile in
+          the bottom rail. Lives outside the right-pane content slot
+          so toggling Story / Snap / Design / Terrain doesn't yank
+          Fly with them. CSS pins the panel to the bottom-right of
+          the canvas above MAI; the existing FlyWidget `floating`
+          mode owns the shifter + key legend. */}
+      {!isMobile && flyPanelOpen && (
+        <FlyWidget
+          speed={flySpeed}
+          setSpeed={setFlySpeed}
+          onClose={() => setFlyPanelOpen(false)}
+          isMobile={false}
+          mode="floating"
+          active={flyActive}
+          onToggleActive={() => setFlyActive(a => !a)}
+        />
+      )}
+
       {/* Mobile fly bar — only visible when locomotion is engaged
           (canvas gestures take over and the user wants a quick
-          gear / OFF readout). When fly mode is OFF, the user enters
-          via the secondary rail's Fly tile → opens the Fly panel →
-          toggles ACTIVE; the bar appears as a transient indicator
-          they can dismiss without going back into the panel. */}
+          gear / OFF readout). */}
       {isMobile && flyActive && (
         <FlyMiniPlayer
           speed={flySpeed}
@@ -1297,7 +1332,6 @@ export default function CesiumViewerComponent({
           : activeRightWidget === 'snap' ? 'Snap'
           : activeRightWidget === 'design' ? 'Design'
           : activeRightWidget === 'terrain' ? 'Terrain'
-          : activeRightWidget === 'fly' ? 'Fly'
           : null
         const body = activeRightWidget === 'story' ? (
           <div style={{ padding: 16, fontSize: 12, color: 'rgba(230,237,243,0.6)', lineHeight: 1.5 }}>
@@ -1357,17 +1391,6 @@ export default function CesiumViewerComponent({
               Terrain idle.
             </div>
           )
-        )
-        : activeRightWidget === 'fly' ? (
-          <FlyWidget
-            speed={flySpeed}
-            setSpeed={setFlySpeed}
-            onClose={() => setFlyPanelOpen(false)}
-            isMobile={isMobile}
-            mode="inline"
-            active={flyActive}
-            onToggleActive={() => setFlyActive(a => !a)}
-          />
         )
         : null
 

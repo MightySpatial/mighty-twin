@@ -2,12 +2,15 @@
    sequential gear shifter and on-change toast. */
 
 .fly-panel {
-  position: absolute;
-  bottom: 88px;
-  left: 50%;
-  transform: translateX(-50%);
+  /* Anchored to the viewport's bottom-right corner so the popup
+   * sits above MAI (bottom: 24px) and clears the bottom rail. MAI
+   * occupies ~76px of vertical space; we sit at 96px so there's a
+   * clean ~20px gap. */
+  position: fixed;
+  bottom: 96px;
+  right: 24px;
   z-index: 25;
-  width: 380px;
+  width: 320px;
   background: rgba(15, 15, 20, 0.90);
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
@@ -16,6 +19,13 @@
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
   color: #f0f2f8;
   padding: 12px;
+  transition: right 200ms ease;
+}
+/* When the right pane is docked open the floating Fly panel shifts
+ * left so it doesn't sit under the pane. CesiumViewer adds the
+ * `rp-open` class to <body> when activeRightWidget !== null. */
+body.rp-open .fly-panel {
+  right: calc(24px + 320px);
 }
 
 .fly-panel-header {
