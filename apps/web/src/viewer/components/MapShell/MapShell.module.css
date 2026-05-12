@@ -84,6 +84,52 @@
   height: 2px; background: #2dd4bf; border-radius: 1px;
 }
 .tile svg { width: 18px; height: 18px; }
+
+/* Overview tile — square icon-only button prepended to the widget
+   rail when a site is loaded. Violet tint signals it's navigation,
+   not a tool. Tapping it pops back to the all-sites overview state.
+   Mockup ref: mockups/mobile-redesign.html .rail-tile.overview and
+   mockups/desktop-tablet-redesign.html .rail-tile.overview. */
+.overviewTile {
+  width: 44px;
+  height: 44px;
+  margin: 4px 4px 4px 0;
+  background: rgba(167, 139, 250, 0.12);
+  border: 1px solid rgba(167, 139, 250, 0.30);
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #a78bfa;
+  padding: 0;
+  flex: 0 0 auto;
+  position: relative;
+  cursor: pointer;
+  font: inherit;
+}
+.overviewTile:hover {
+  background: rgba(167, 139, 250, 0.18);
+  border-color: rgba(167, 139, 250, 0.45);
+}
+.overviewTile::after {
+  content: '';
+  position: absolute;
+  right: -4px;
+  top: 6px;
+  bottom: 6px;
+  width: 1px;
+  background: rgba(240, 242, 248, 0.07);
+}
+.overviewTile svg {
+  width: 22px;
+  height: 22px;
+}
+.shellPhone .overviewTile {
+  width: 48px;
+  height: 48px;
+  margin: 8px 4px 8px 0;
+}
+
 .railDivider { width: 1px; height: 24px; background: rgba(255,255,255,0.07); margin: 0 4px; }
 .moreToggle {
   display: inline-flex; align-items: center; gap: 4px;

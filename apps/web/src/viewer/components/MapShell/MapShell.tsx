@@ -33,6 +33,7 @@ import {
   BookOpen,
   Mountain,
   Plane,
+  Globe2,
   LayoutGrid as ToolsIcon,
 } from 'lucide-react'
 
@@ -101,6 +102,10 @@ export interface MapShellProps {
    *  controller/position changes get merged in. Pass null/undefined to
    *  fall back to DEFAULT_WIDGETS unchanged. */
   widgetOverrides?: WidgetOverrides | null
+  /** Navigate back to the all-sites overview. When set + a site is
+   *  loaded, the widget rail prepends a violet Overview tile (§3.5 of
+   *  the implementation brief). */
+  onNavigateOverview?: () => void
   /** Extra render slot for floating overlays (feature popup etc.) */
   children?: React.ReactNode
 }
@@ -124,6 +129,7 @@ export function MapShell({
   showPublicBanner = false,
   phoneMode = false,
   widgetOverrides = null,
+  onNavigateOverview,
   children,
 }: MapShellProps) {
   // Hold-to-look-around on the compass:
@@ -226,6 +232,8 @@ export function MapShell({
             widgets={secondary}
             activeToolId={activeToolId}
             onAction={onAction}
+            showOverviewTile={Boolean(site && onNavigateOverview)}
+            onNavigateOverview={onNavigateOverview}
           />
         </div>
       )}
@@ -315,14 +323,30 @@ function SecondaryRail({
   widgets,
   activeToolId,
   onAction,
+  showOverviewTile,
+  onNavigateOverview,
 }: {
   widgets: WidgetDef[]
   activeToolId: string | null
   onAction: (id: string) => void
+  showOverviewTile: boolean
+  onNavigateOverview?: () => void
 }) {
   return (
     <div className={`${styles.rail} ${styles.railSecondary}`}>
       <Carousel showArrows>
+      {showOverviewTile && (
+        <button
+          key="__overview"
+          type="button"
+          className={styles.overviewTile}
+          onClick={() => onNavigateOverview?.()}
+          title="Back to all sites"
+          aria-label="Back to all sites"
+        >
+          <Globe2 size={22} />
+        </button>
+      )}
       {widgets.map((w) => (
         <RailTile
           key={w.id}

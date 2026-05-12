@@ -1006,6 +1006,7 @@ export default function CesiumViewerComponent({
           is2D={is2D}
           phoneMode={isMobile}
           widgetOverrides={widgetOverrides}
+          onNavigateOverview={() => navigate('/viewer')}
         />
       </div>
 
