@@ -1,12 +1,17 @@
 /** Fallback basemap helper.
  *
- *  Cesium's `Viewer` constructor defaults to Bing Aerial via Ion, which
- *  fails silently to a black globe when no Cesium Ion access token is
- *  configured. This helper returns viewer-constructor options that use
- *  OpenStreetMap + the default ellipsoid terrain whenever
- *  `Ion.defaultAccessToken` is empty — so the globe paints something
- *  useful without a token. With a token, returns the original
- *  Ion-backed defaults (Bing imagery + world terrain).
+ *  Cesium's `Viewer` constructor defaults to Bing Aerial via Ion. In
+ *  practice it works out of the box because Cesium ships a bundled
+ *  default Ion token that grants free Bing imagery on most domains.
+ *  Together with the env / server / user token tiers in
+ *  `useTokenFetch`, `Ion.defaultAccessToken` is almost never empty.
+ *
+ *  This helper exists for the rare case where someone explicitly
+ *  clears the bundled token (e.g. a privacy-conscious deploy) — when
+ *  `Ion.defaultAccessToken` is empty we swap in OpenStreetMap +
+ *  the default ellipsoid terrain so the globe still paints
+ *  something useful. With any token present, falls through to the
+ *  original Ion-backed defaults (Bing imagery + world terrain).
  *
  *  Used by every place that calls `new Viewer(...)`:
  *  CesiumViewer (per-site), SitesMapPage (all-sites overview),
