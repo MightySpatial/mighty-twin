@@ -37,6 +37,15 @@
   transition: background 100ms ease;
 }
 
+/* Desktop: hide the icon span — left-rail stays text-only.
+   The icon is for the phone bottom carousel below. */
+.navItemIcon {
+  display: none;
+}
+.navItemLabel {
+  display: inline;
+}
+
 .navItem:hover {
   background: rgba(255, 255, 255, 0.04);
   color: #fff;
@@ -335,21 +344,31 @@
   flex: 0 0 auto;
   scroll-snap-align: start;
   width: auto;
-  min-width: 88px;
-  padding: 8px 14px;
+  min-width: 76px;
+  padding: 6px 10px;
   min-height: 44px;
   border: none;
   border-radius: 0;
   background: none;
   white-space: nowrap;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 500;
   color: rgba(240, 242, 248, 0.6);
   display: inline-flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 2px;
   text-align: center;
   -webkit-tap-highlight-color: transparent;
+}
+
+.shell.isPhone .navItemIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
 }
 
 .shell.isPhone .navItemActive {

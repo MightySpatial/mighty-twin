@@ -1,0 +1,1013 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MightyTwin · desktop & tablet coherence pass</title>
+<style>
+  :root {
+    --bg-base: #0a0c14;
+    --bg-surface: #11141d;
+    --bg-elev: #161a25;
+    --bg-glass: rgba(15,17,28,0.92);
+    --fg-primary: #f0f2f8;
+    --fg-secondary: rgba(240,242,248,0.72);
+    --fg-muted: rgba(240,242,248,0.5);
+    --fg-faint: rgba(240,242,248,0.28);
+    --line: rgba(240,242,248,0.07);
+    --line-strong: rgba(240,242,248,0.14);
+    --cobalt: #2453ff;
+    --violet: #a78bfa;
+    --magenta: #ec4899;
+    --amber: #f59e0b;
+    --emerald: #34d399;
+    --teal: #2dd4bf;
+    --sky: #38bdf8;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    background: #05050a;
+    color: var(--fg-primary);
+    font-family: -apple-system, "SF Pro Text", "Inter", system-ui, sans-serif;
+    margin: 0;
+    padding: 32px;
+    -webkit-font-smoothing: antialiased;
+  }
+  h1 { font-size: 22px; font-weight: 600; letter-spacing: -0.01em; margin: 0 0 6px; }
+  .lede { color: var(--fg-secondary); font-size: 13px; margin: 0 0 28px; max-width: 760px; line-height: 1.5; }
+  .lede strong { color: var(--fg-primary); font-weight: 600; }
+  .lede a { color: var(--teal); }
+
+  .row-title {
+    font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em;
+    color: var(--fg-muted); font-weight: 600; margin: 0 0 18px;
+  }
+  .frame-wrap { display: flex; flex-direction: column; gap: 14px; margin-bottom: 56px; align-items: flex-start; }
+  .caption {
+    font-size: 11px; color: var(--fg-muted); text-transform: uppercase;
+    letter-spacing: 0.1em; font-weight: 600;
+  }
+  .annot {
+    font-size: 12px; color: var(--fg-secondary); line-height: 1.5;
+    max-width: 760px;
+  }
+  .annot b { color: var(--fg-primary); font-weight: 600; }
+  .annot code { font-size: 11px; background: var(--bg-elev); padding: 1px 5px; border-radius: 3px; color: var(--teal); }
+
+  /* ── Device frames ────────────────────────────────────────── */
+  .desktop {
+    width: 1200px;
+    height: 750px;
+    border-radius: 10px;
+    background: var(--bg-base);
+    overflow: hidden;
+    position: relative;
+    box-shadow: 0 0 0 1px rgba(255,255,255,0.06), 0 20px 60px rgba(0,0,0,0.5);
+  }
+  .desktop-titlebar {
+    height: 26px;
+    background: #0f0f14;
+    border-bottom: 1px solid var(--line);
+    display: flex; align-items: center;
+    padding: 0 12px;
+    gap: 6px;
+  }
+  .traffic { width: 11px; height: 11px; border-radius: 50%; }
+  .traffic.red    { background: #ff5f56; }
+  .traffic.amber  { background: #ffbd2e; }
+  .traffic.green  { background: #27c93f; }
+  .desktop-url {
+    flex: 1; text-align: center;
+    font-size: 10px; color: var(--fg-faint);
+  }
+
+  .desktop-body {
+    position: relative;
+    height: calc(100% - 26px);
+    overflow: hidden;
+  }
+
+  .tablet {
+    border-radius: 22px;
+    overflow: hidden;
+    position: relative;
+    background: var(--bg-base);
+    box-shadow:
+      0 0 0 8px #1a1a24,
+      0 0 0 9px rgba(255,255,255,0.06),
+      0 30px 60px rgba(0,0,0,0.45);
+  }
+  .tablet.landscape { width: 900px; height: 680px; }
+  .tablet.portrait  { width: 680px; height: 900px; }
+  .tablet-grid {
+    height: 100%;
+    display: grid;
+    grid-template-rows: 44px 1fr 56px;
+  }
+  .tablet.landscape .tablet-grid { grid-template-rows: 44px 1fr; }
+
+  /* ── Shell brand bar / mode switcher ──────────────────────── */
+  .brand-bar {
+    height: 44px;
+    background: var(--bg-surface);
+    border-bottom: 1px solid var(--line);
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 16px;
+    position: relative; z-index: 30;
+  }
+  .desktop .brand-bar { padding: 0 20px; }
+  .brand { color: var(--violet); font-size: 14px; font-weight: 600; letter-spacing: -0.01em; }
+  .mode-tabs {
+    display: inline-flex; gap: 2px;
+    background: var(--bg-elev);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 3px;
+  }
+  .mode-tab {
+    padding: 5px 14px;
+    font-size: 12px;
+    color: var(--fg-muted);
+    border-radius: 6px;
+  }
+  .mode-tab.active {
+    background: rgba(167,139,250,0.15);
+    color: var(--violet);
+  }
+  .brand-chip {
+    background: var(--bg-elev); border: 1px solid var(--line);
+    color: var(--fg-secondary); font-size: 11px; font-weight: 500;
+    padding: 3px 8px; border-radius: 6px;
+    display: inline-flex; align-items: center; gap: 4px;
+    margin-left: 4px;
+  }
+  .brand-controls { display: flex; gap: 4px; align-items: center; }
+
+  /* ── Map pane ─────────────────────────────────────────────── */
+  .pane { position: relative; overflow: hidden; height: 100%; }
+  .map-bg {
+    position: absolute; inset: 0;
+    background:
+      radial-gradient(ellipse at 30% 40%, rgba(75,116,168,0.4), transparent 55%),
+      radial-gradient(ellipse at 75% 65%, rgba(141,123,89,0.45), transparent 60%),
+      linear-gradient(135deg, #1d2a3c 0%, #2c2418 60%, #1a2a23 100%);
+  }
+  .map-bg::after {
+    content: '';
+    position: absolute; inset: 0;
+    background:
+      radial-gradient(2px 2px at 30% 20%, rgba(255,255,255,0.08), transparent),
+      radial-gradient(2px 2px at 60% 70%, rgba(255,255,255,0.05), transparent),
+      radial-gradient(1px 1px at 15% 50%, rgba(255,255,255,0.06), transparent);
+  }
+  .pin {
+    position: absolute; width: 24px; height: 32px;
+    transform: translate(-50%, -100%);
+    z-index: 4;
+  }
+  .pin::before {
+    content: ''; position: absolute; inset: 0 0 6px 0;
+    background: var(--cobalt); border-radius: 50% 50% 50% 0;
+    transform: rotate(-45deg); transform-origin: bottom center;
+    box-shadow: 0 4px 12px rgba(36,83,255,0.5);
+  }
+  .pin::after {
+    content: ''; position: absolute; left: 50%; top: 6px;
+    width: 8px; height: 8px; border-radius: 50%;
+    background: white; transform: translateX(-50%);
+  }
+  .pin-label {
+    position: absolute; top: 22px; left: 50%;
+    transform: translateX(-50%); font-size: 10px; color: white;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.8); white-space: nowrap; font-weight: 500;
+  }
+
+  /* ── Primary controller pill (now on desktop + tablet too) ── */
+  .ctrl-pill {
+    position: absolute;
+    top: 14px; left: 14px;
+    display: inline-flex; align-items: stretch;
+    gap: 4px;
+    padding: 4px;
+    background: rgba(15,17,28,0.92);
+    backdrop-filter: blur(14px);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    z-index: 5;
+  }
+  .ctrl-site {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 4px 12px 4px 4px;
+    border-radius: 999px;
+    color: var(--fg-primary);
+    font-size: 13px; font-weight: 500;
+  }
+  .ctrl-site .avatar {
+    width: 26px; height: 26px; border-radius: 50%;
+    display: inline-flex; align-items: center; justify-content: center;
+    background: linear-gradient(135deg, #6366f1, #a78bfa);
+    color: white; font-size: 12px; font-weight: 700;
+  }
+  .ctrl-site .back-affordance {
+    color: var(--fg-faint); display: inline-flex; align-items: center;
+    margin-left: -2px;
+  }
+  .ctrl-site .back-affordance svg { width: 12px; height: 12px; }
+  .ctrl-divider { width: 1px; background: var(--line); margin: 4px 2px; }
+  .ctrl-btn {
+    width: 32px; height: 32px; border-radius: 50%;
+    display: inline-flex; align-items: center; justify-content: center;
+    color: var(--fg-secondary);
+  }
+  .ctrl-btn svg { width: 16px; height: 16px; }
+
+  /* ── Floating left icon stack ─────────────────────────────── */
+  .float-icons {
+    position: absolute;
+    left: 14px; top: 76px;
+    display: flex; flex-direction: column; gap: 6px;
+    z-index: 5;
+  }
+  .float-icon {
+    width: 40px; height: 40px;
+    border-radius: 10px;
+    background: rgba(15,17,28,0.86);
+    backdrop-filter: blur(12px);
+    border: 1px solid var(--line);
+    display: flex; align-items: center; justify-content: center;
+    color: var(--fg-secondary);
+  }
+  .float-icon svg { width: 18px; height: 18px; }
+  .float-icon.active {
+    background: rgba(99,102,241,0.18);
+    border-color: rgba(99,102,241,0.45);
+    color: var(--fg-primary);
+  }
+
+  /* ── Bottom widget rail (desktop, tablet landscape) ───────── */
+  .rail-container {
+    position: absolute;
+    bottom: 16px; left: 50%;
+    transform: translateX(-50%);
+    z-index: 6;
+  }
+  .rail {
+    display: inline-flex;
+    background: rgba(15,17,28,0.92);
+    backdrop-filter: blur(14px);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 6px;
+    gap: 2px;
+    max-width: min(720px, calc(100% - 32px));
+  }
+  .rail-tile {
+    display: inline-flex; flex-direction: column;
+    align-items: center; gap: 3px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    color: var(--fg-muted);
+    font-size: 10px; font-weight: 500;
+    text-transform: uppercase; letter-spacing: 0.04em;
+    min-width: 64px;
+  }
+  .rail-tile svg { width: 18px; height: 18px; }
+  .rail-tile.active {
+    background: rgba(45,212,191,0.10);
+    color: var(--teal);
+  }
+
+  /* ── Desktop right pane ──────────────────────────────────── */
+  .right-pane {
+    position: absolute;
+    top: 0; right: 0; bottom: 0;
+    width: 360px;
+    background: var(--bg-surface);
+    border-left: 1px solid var(--line);
+    z-index: 7;
+    display: flex; flex-direction: column;
+  }
+  .rp-header {
+    padding: 16px 18px 12px;
+    display: flex; align-items: center; justify-content: space-between;
+    border-bottom: 1px solid var(--line);
+  }
+  .rp-title { display: flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 600; }
+  .rp-title svg { width: 18px; height: 18px; color: var(--teal); }
+  .rp-close {
+    width: 30px; height: 30px; border-radius: 50%;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--line);
+    display: flex; align-items: center; justify-content: center;
+    color: var(--fg-secondary);
+  }
+  .rp-close svg { width: 14px; height: 14px; }
+  .rp-body { flex: 1; overflow-y: auto; padding: 14px 18px 20px; }
+  .rp-body h4 {
+    font-size: 11px; color: var(--fg-muted);
+    text-transform: uppercase; letter-spacing: 0.1em;
+    margin: 0 0 10px; font-weight: 600;
+  }
+  .snap-grid {
+    display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px;
+    margin-bottom: 16px;
+  }
+  .snap-thumb {
+    height: 90px; border-radius: 10px;
+    background: linear-gradient(135deg, #2c4a6d, #2c5e4a);
+    position: relative; border: 1px solid var(--line);
+  }
+  .snap-thumb.alt-1 { background: linear-gradient(135deg, #3a2a52, #2c5e4a); }
+  .snap-thumb.alt-2 { background: linear-gradient(135deg, #5c3424, #2c4a6d); }
+  .snap-thumb.alt-3 { background: linear-gradient(135deg, #1d2a3c, #4a5c2c); }
+  .snap-thumb .timestamp {
+    position: absolute; bottom: 4px; left: 4px;
+    background: rgba(0,0,0,0.55); color: white;
+    font-size: 9px; padding: 1px 6px; border-radius: 4px;
+  }
+  .primary-pill {
+    width: 100%; padding: 12px;
+    border-radius: 999px;
+    background: var(--teal); color: #0a0c14;
+    font-size: 12px; font-weight: 600;
+    text-align: center; letter-spacing: 0.04em;
+    text-transform: uppercase;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    border: none;
+  }
+  .primary-pill svg { width: 16px; height: 16px; }
+
+  /* ── Mai FAB ──────────────────────────────────────────────── */
+  .mai {
+    position: absolute;
+    right: 18px; bottom: 92px;
+    width: 48px; height: 48px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #ec4899, #d946ef);
+    display: flex; align-items: center; justify-content: center;
+    color: white;
+    box-shadow: 0 6px 20px rgba(236,72,153,0.45);
+    z-index: 9;
+  }
+  .mai svg { width: 22px; height: 22px; }
+
+  /* ── Atlas / Settings desktop layout ──────────────────────── */
+  .app-layout {
+    display: flex;
+    height: 100%;
+    background: var(--bg-base);
+  }
+  .sidebar {
+    width: 240px;
+    background: var(--bg-surface);
+    border-right: 1px solid var(--line);
+    padding: 20px 12px;
+    display: flex; flex-direction: column;
+    gap: 2px;
+    flex-shrink: 0;
+  }
+  .sidebar-section-title {
+    font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--fg-faint); font-weight: 600;
+    padding: 0 12px 8px;
+  }
+  .nav-link {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    color: var(--fg-secondary);
+    font-size: 13px;
+    text-decoration: none;
+  }
+  .nav-link svg { width: 18px; height: 18px; color: var(--fg-muted); }
+  .nav-link.active {
+    background: rgba(45,212,191,0.10);
+    color: var(--teal);
+  }
+  .nav-link.active svg { color: var(--teal); }
+  .nav-link .badge {
+    margin-left: auto;
+    background: #f59e0b; color: #0f0f14;
+    font-size: 10px; font-weight: 700;
+    padding: 1px 6px; border-radius: 999px;
+  }
+
+  .main-content {
+    flex: 1; overflow-y: auto; padding: 28px 36px;
+  }
+  .page-head h2 { font-size: 24px; font-weight: 600; margin: 0 0 4px; letter-spacing: -0.01em; }
+  .page-head p { font-size: 13px; color: var(--fg-muted); margin: 0 0 24px; }
+  .stat-grid {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;
+  }
+  .stat-card {
+    background: var(--bg-elev);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 14px;
+    min-height: 100px;
+  }
+  .stat-card .lbl { font-size: 10px; color: var(--fg-muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px; font-weight: 600; }
+  .stat-card .val { font-size: 28px; font-weight: 600; line-height: 1.1; }
+  .stat-card .sub { font-size: 11px; color: var(--fg-faint); margin-top: 4px; }
+
+  /* ── Settings desktop ─────────────────────────────────────── */
+  .settings-rail {
+    width: 220px;
+    background: var(--bg-surface);
+    border-right: 1px solid var(--line);
+    padding: 28px 14px;
+    flex-shrink: 0;
+  }
+  .settings-rail h3 {
+    font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--fg-faint); font-weight: 600; margin: 0 0 12px; padding: 0 8px;
+  }
+  .settings-content {
+    flex: 1; padding: 32px 40px;
+    overflow-y: auto;
+  }
+  .settings-content h3 { font-size: 22px; font-weight: 600; margin: 0 0 6px; }
+  .settings-content > p { font-size: 13px; color: var(--fg-muted); margin: 0 0 24px; max-width: 580px; }
+  .setting-row {
+    display: grid; grid-template-columns: 200px 1fr;
+    gap: 16px 24px; padding: 14px 0;
+    border-bottom: 1px solid var(--line);
+    max-width: 640px;
+    align-items: center;
+  }
+  .setting-row .label { font-size: 13px; font-weight: 500; }
+  .setting-row .hint { font-size: 11px; color: var(--fg-faint); margin-top: 2px; }
+  .setting-row select, .setting-row input {
+    padding: 7px 10px; font-size: 13px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--line);
+    border-radius: 8px; color: var(--fg-primary);
+    max-width: 360px;
+  }
+  .toggle {
+    width: 40px; height: 22px;
+    background: rgba(255,255,255,0.12);
+    border-radius: 11px; position: relative;
+    justify-self: start;
+  }
+  .toggle.on { background: var(--cobalt); }
+  .toggle::after {
+    content: ''; position: absolute; top: 2px; left: 2px;
+    width: 18px; height: 18px; border-radius: 50%;
+    background: white; transition: transform 160ms ease;
+  }
+  .toggle.on::after { transform: translateX(18px); }
+
+  /* ── Tablet portrait — mobile pattern ─────────────────────── */
+  .tablet-bottom-nav {
+    height: 56px;
+    background: rgba(15,17,28,0.92);
+    backdrop-filter: blur(14px);
+    border-top: 1px solid var(--line);
+    display: flex; align-items: stretch;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .tablet-bottom-nav::-webkit-scrollbar { display: none; }
+  .tnav-tab {
+    flex: 0 0 auto; min-width: 80px;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 2px;
+    color: var(--fg-muted);
+    font-size: 11px; font-weight: 500;
+  }
+  .tnav-tab svg { width: 20px; height: 20px; }
+  .tnav-tab.active { color: var(--teal); }
+
+  /* ── Annotation grid ──────────────────────────────────────── */
+  .pattern-key {
+    background: var(--bg-surface);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 20px 24px;
+    margin-bottom: 40px;
+    max-width: 980px;
+  }
+  .pattern-key h2 { font-size: 14px; margin: 0 0 12px; font-weight: 600; color: var(--fg-primary); }
+  .pattern-key dl { display: grid; grid-template-columns: 220px 1fr; gap: 8px 16px; font-size: 12px; line-height: 1.5; margin: 0; }
+  .pattern-key dt { color: var(--fg-secondary); font-weight: 500; }
+  .pattern-key dd { color: var(--fg-muted); margin: 0; }
+  .pattern-key dt b { color: var(--teal); font-weight: 600; }
+  .pattern-key dd code { font-size: 11px; background: var(--bg-elev); padding: 1px 5px; border-radius: 3px; color: var(--teal); }
+
+  .change-list {
+    background: var(--bg-surface);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 18px 24px;
+    margin-top: 14px;
+    max-width: 760px;
+  }
+  .change-list h3 {
+    font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em;
+    color: var(--fg-muted); font-weight: 600; margin: 0 0 10px;
+  }
+  .change-list ul { margin: 0; padding: 0 0 0 18px; }
+  .change-list li {
+    font-size: 12px; color: var(--fg-secondary); line-height: 1.6;
+  }
+  .change-list li b { color: var(--fg-primary); }
+  .change-list li code { font-size: 11px; background: var(--bg-elev); padding: 1px 5px; border-radius: 3px; color: var(--teal); }
+
+  /* ── Drawing overlay for design frames ────────────────────── */
+  .drawing-overlay {
+    position: absolute; inset: 0;
+    pointer-events: none; z-index: 4;
+  }
+</style>
+</head>
+<body>
+
+<h1>MightyTwin · Desktop &amp; Tablet Coherence</h1>
+<p class="lede">
+  Brings the mobile pattern set (<a href="mobile-redesign.html">see mobile mockup</a>) up to desktop and tablet so the
+  three form factors share a coherent visual language. Three changes drive the coherence:
+  the <strong>primary controller pill</strong> arrives on desktop + tablet, the settings nav shows
+  <strong>icons on every size</strong>, and <strong>tablet picks a side per orientation</strong> (portrait = mobile pattern,
+  landscape = desktop pattern). The widget sheet vs right-pane split stays intentionally
+  asymmetric — different real estate, different ergonomics.
+</p>
+
+<section class="pattern-key">
+  <h2>What's the same as mobile</h2>
+  <dl>
+    <dt><b>Primary controller pill</b></dt>
+    <dd>Horizontal floating pill carrying site chip (with back-to-overview chevron) + zoom + home + bounds + basemap. Same component, same position (top-left of map). Replaces ViewerSidebar's site-chip duty on desktop.</dd>
+    <dt><b>Floating left icons</b></dt>
+    <dd>Slim vertical stack for Search · Measure · Legend. No duplicate layers/3D/basemap — those live in the pill.</dd>
+    <dt><b>Mai FAB</b></dt>
+    <dd>Bottom-right, persistent across all sizes. <code>defaultFabPos.y</code> already calculated to clear stacked nav chrome.</dd>
+    <dt><b>Settings nav icons</b></dt>
+    <dd>Icon-left-of-label in the desktop rail, icon-above-label on tablet portrait + phone. Same icon set throughout. Drop the <code>.shell.isPhone .navItemIcon</code> gate.</dd>
+  </dl>
+  <dl style="margin-top: 16px;">
+    <dt><b>Widget surface on desktop</b></dt>
+    <dd>Right pane (existing). Docked on the right edge, ~360px wide. Same widget components as the phone sheet, different render target.</dd>
+    <dt><b>Widget surface on tablet</b></dt>
+    <dd>Portrait → phone-style bottom widget sheet. Landscape → desktop-style right pane. Decided by orientation, not just breakpoint.</dd>
+    <dt><b>ViewerSidebar role</b></dt>
+    <dd>Shrinks. Site chip moves to the pill; LAYERS and MEASURE join the floating icon stack. Sidebar can disappear or collapse to a slim icon column.</dd>
+  </dl>
+</section>
+
+<!-- ═══ Desktop ════════════════════════════════════════════════ -->
+<p class="row-title">Desktop · ~1200×750</p>
+
+<!-- 1: Map · site loaded, right pane open (Snap) -->
+<div class="frame-wrap">
+  <div class="caption">D1 · Map · Snap right-pane open</div>
+  <div class="desktop">
+    <div class="desktop-titlebar">
+      <span class="traffic red"></span>
+      <span class="traffic amber"></span>
+      <span class="traffic green"></span>
+      <div class="desktop-url">mighty-twin-web.up.railway.app</div>
+    </div>
+    <div class="desktop-body">
+      <div class="brand-bar">
+        <div class="brand">MightyTwin</div>
+        <div class="mode-tabs">
+          <div class="mode-tab active">Map</div>
+          <div class="mode-tab">Atlas</div>
+          <div class="mode-tab">Settings</div>
+        </div>
+        <div class="brand-controls">
+          <span class="brand-chip">P</span>
+          <span class="brand-chip">T</span>
+          <span class="brand-chip">D</span>
+        </div>
+      </div>
+
+      <div class="pane" style="height: calc(100% - 44px);">
+        <div class="map-bg"></div>
+
+        <div class="ctrl-pill">
+          <div class="ctrl-site">
+            <span class="back-affordance"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg></span>
+            <span class="avatar">D</span>
+            Demo site
+          </div>
+          <div class="ctrl-divider"></div>
+          <button class="ctrl-btn" aria-label="Zoom in"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg></button>
+          <button class="ctrl-btn" aria-label="Zoom out"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/><line x1="8" y1="11" x2="14" y2="11"/></svg></button>
+          <div class="ctrl-divider"></div>
+          <button class="ctrl-btn" aria-label="Home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12l9-9 9 9"/><path d="M5 10v10a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1V10"/></svg></button>
+          <button class="ctrl-btn" aria-label="Fit bounds"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/></svg></button>
+          <button class="ctrl-btn" aria-label="Basemap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><polygon points="3 7 9 4 15 7 21 4 21 17 15 20 9 17 3 20 3 7"/><line x1="9" y1="4" x2="9" y2="17"/><line x1="15" y1="7" x2="15" y2="20"/></svg></button>
+        </div>
+
+        <div class="float-icons">
+          <div class="float-icon" title="Search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg></div>
+          <div class="float-icon" title="Measure"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M21.3 8.7L8.7 21.3a2 2 0 0 1-2.8 0L2.7 18.1a2 2 0 0 1 0-2.8L15.3 2.7a2 2 0 0 1 2.8 0l3.2 3.2a2 2 0 0 1 0 2.8z"/><path d="M14.5 12.5l-2-2"/><path d="M11.5 15.5l-2-2"/><path d="M8.5 18.5l-2-2"/><path d="M17.5 9.5l-2-2"/></svg></div>
+          <div class="float-icon" title="Legend"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg></div>
+        </div>
+
+        <div class="pin" style="left: 38%; top: 48%;">
+          <div class="pin-label">Demo site</div>
+        </div>
+
+        <div class="rail-container" style="left: calc(50% - 180px);">
+          <div class="rail">
+            <div class="rail-tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>Story</div>
+            <div class="rail-tile active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>Snap</div>
+            <div class="rail-tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/></svg>Design</div>
+            <div class="rail-tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 17 9 11 13 15 21 7"/></svg>Terrain</div>
+            <div class="rail-tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.8 19.2L16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"/></svg>Fly</div>
+          </div>
+        </div>
+
+        <!-- Right pane (Snap widget) -->
+        <div class="right-pane">
+          <div class="rp-header">
+            <div class="rp-title">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
+              Snap
+            </div>
+            <button class="rp-close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+          </div>
+          <div class="rp-body">
+            <h4>Recent snaps · 24</h4>
+            <div class="snap-grid">
+              <div class="snap-thumb"><span class="timestamp">Just now</span></div>
+              <div class="snap-thumb alt-1"><span class="timestamp">2 min</span></div>
+              <div class="snap-thumb alt-2"><span class="timestamp">12 min</span></div>
+              <div class="snap-thumb alt-3"><span class="timestamp">1 hr</span></div>
+            </div>
+            <button class="primary-pill">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
+              Take snap
+            </button>
+          </div>
+        </div>
+
+        <div class="mai" style="right: 378px;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l1.9 4.6L18 9l-4.1 1.4L12 15l-1.9-4.6L6 9l4.1-1.4L12 3z"/></svg></div>
+      </div>
+    </div>
+  </div>
+  <div class="annot">
+    Same primary controller pill as mobile. Same floating icon stack. Same widget components, rendered into the docked right pane instead of a slide-up sheet. <b>ViewerSidebar is gone</b> — the site chip lives in the pill; LAYERS / MEASURE moved into the floating icon stack. Mai shifted left to clear the right pane (320 px offset, already wired via <code>mighty:rp-open</code> in <a href="../apps/web/src/ai/DraggableMai.tsx">DraggableMai.tsx</a>).
+  </div>
+  <div class="change-list">
+    <h3>Code changes implied</h3>
+    <ul>
+      <li>Add a <b>shared <code>CtrlPill</code> component</b> at <code>apps/web/src/viewer/components/CtrlPill/</code>. Phone + tablet portrait already render it via <code>MapShell</code>; desktop + tablet landscape mount it inside <code>CesiumViewer</code>.</li>
+      <li><b>Remove the site chip</b> from <code>ViewerSidebar</code> Home tab — it's redundant once the pill is there.</li>
+      <li><b>Slim ViewerSidebar</b> to just the per-tab drilldowns (LAYERS panel, MEASURE active state, etc.) and consider moving those entry points to the floating icon stack so the whole sidebar can collapse.</li>
+      <li><b>Zoom controls</b>: replace whatever <code>.map-controls</code> currently does in <a href="../apps/web/src/viewer/components/CesiumViewer/CesiumViewer.css">CesiumViewer.css:1285</a> with the pill's controls (single source).</li>
+    </ul>
+  </div>
+</div>
+
+<!-- 2: Atlas Overview on desktop -->
+<div class="frame-wrap">
+  <div class="caption">D2 · Atlas · Overview (sidebar w/ icons)</div>
+  <div class="desktop">
+    <div class="desktop-titlebar">
+      <span class="traffic red"></span>
+      <span class="traffic amber"></span>
+      <span class="traffic green"></span>
+      <div class="desktop-url">mighty-twin-web.up.railway.app/admin/overview</div>
+    </div>
+    <div class="desktop-body">
+      <div class="brand-bar">
+        <div class="brand">MightyTwin</div>
+        <div class="mode-tabs">
+          <div class="mode-tab">Map</div>
+          <div class="mode-tab active">Atlas</div>
+          <div class="mode-tab">Settings</div>
+        </div>
+        <div class="brand-controls">
+          <span class="brand-chip">P</span>
+          <span class="brand-chip">T</span>
+          <span class="brand-chip">D</span>
+        </div>
+      </div>
+
+      <div class="app-layout" style="height: calc(100% - 44px);">
+        <aside class="sidebar">
+          <div class="sidebar-section-title">Publisher</div>
+          <a class="nav-link active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>Overview</a>
+          <a class="nav-link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>Sites</a>
+          <a class="nav-link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>Data</a>
+          <a class="nav-link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M4 11a9 9 0 0 1 9 9"/><path d="M4 4a16 16 0 0 1 16 16"/><circle cx="5" cy="19" r="1"/></svg>Feeds</a>
+          <a class="nav-link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>Library</a>
+          <a class="nav-link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>Stories</a>
+          <a class="nav-link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>Snaps</a>
+          <a class="nav-link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><rect x="3" y="3" width="18" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>Submissions<span class="badge">3</span></a>
+          <a class="nav-link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>Upload</a>
+        </aside>
+
+        <div class="main-content">
+          <div class="page-head">
+            <h2>Overview</h2>
+            <p>Workspace at a glance — sites, users, recent activity.</p>
+          </div>
+          <div class="stat-grid">
+            <div class="stat-card"><div class="lbl">Sites</div><div class="val">7</div><div class="sub">1 public</div></div>
+            <div class="stat-card"><div class="lbl">Active users</div><div class="val">1</div><div class="sub">of 1 total</div></div>
+            <div class="stat-card"><div class="lbl">Layers</div><div class="val">36</div></div>
+            <div class="stat-card"><div class="lbl">Data sources</div><div class="val">37</div></div>
+            <div class="stat-card"><div class="lbl">Story maps</div><div class="val">2</div></div>
+            <div class="stat-card"><div class="lbl">Snaps</div><div class="val">1</div></div>
+            <div class="stat-card"><div class="lbl">Snaps · last 24h</div><div class="val" style="color: var(--emerald)">0</div></div>
+            <div class="stat-card"><div class="lbl">Snaps · last 7d</div><div class="val" style="color: var(--emerald)">0</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="annot">
+    Desktop keeps its 240px left sidebar (more discoverable for many sections than a horizontal carousel). <b>Icons are now first-class</b> — matches the icon set used on mobile bottom-nav. Drilldowns (Sites, Data, Library, etc.) stay full-page, table-first. The Sites cards carousel from mobile (Frame 6) is <i>optional</i> as a secondary "map view" toggle on desktop — defaults to the existing table.
+  </div>
+  <div class="change-list">
+    <h3>Code changes implied</h3>
+    <ul>
+      <li>In <a href="../apps/web/src/admin/layouts/AppLayout.jsx">AppLayout.jsx</a>, render the same Lucide icons on desktop sidebar links — already exist in <code>NAV_ITEMS</code>, just need to render in the <code>{isDesktop &amp;&amp; ...}</code> branch (currently icons render in tablet drawer + phone bottom-nav, but the desktop branch only renders <code>&lt;item.icon&gt;</code> — verify and clean.)</li>
+    </ul>
+  </div>
+</div>
+
+<!-- 3: Settings on desktop with icons -->
+<div class="frame-wrap">
+  <div class="caption">D3 · Settings · Basemap (icons in left rail)</div>
+  <div class="desktop">
+    <div class="desktop-titlebar">
+      <span class="traffic red"></span>
+      <span class="traffic amber"></span>
+      <span class="traffic green"></span>
+      <div class="desktop-url">mighty-twin-web.up.railway.app/settings</div>
+    </div>
+    <div class="desktop-body">
+      <div class="brand-bar">
+        <div class="brand">MightyTwin</div>
+        <div class="mode-tabs">
+          <div class="mode-tab">Map</div>
+          <div class="mode-tab">Atlas</div>
+          <div class="mode-tab active">Settings</div>
+        </div>
+        <div class="brand-controls">
+          <span class="brand-chip">P</span>
+          <span class="brand-chip">T</span>
+          <span class="brand-chip">D</span>
+        </div>
+      </div>
+
+      <div class="app-layout" style="height: calc(100% - 44px);">
+        <aside class="settings-rail">
+          <h3>Settings</h3>
+          <a class="nav-link active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round"><polygon points="3 7 9 4 15 7 21 4 21 17 15 20 9 17 3 20 3 7"/><line x1="9" y1="4" x2="9" y2="17"/><line x1="15" y1="7" x2="15" y2="20"/></svg>Basemap &amp; terrain</a>
+          <a class="nav-link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><path d="M3 7v10"/><path d="M3 12h18"/><path d="M21 7v10"/><path d="M7 9v6"/><path d="M11 8v8"/><path d="M15 9v6"/></svg>Units</a>
+          <a class="nav-link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>Widget host</a>
+          <a class="nav-link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 0 0 18"/></svg>Theme &amp; density</a>
+          <a class="nav-link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round"><path d="M14.7 6.3a3 3 0 0 1 0 4.2l-1.5 1.5 4.2 4.2-2.1 2.1-4.2-4.2-1.5 1.5a3 3 0 0 1-4.2 0L3.5 13.5a3 3 0 0 1 0-4.2l4.2-4.2a3 3 0 0 1 4.2 0z"/></svg>Developer</a>
+          <a class="nav-link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Profile</a>
+          <a class="nav-link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round"><path d="M12 3l1.9 4.6L18 9l-4.1 1.4L12 15l-1.9-4.6L6 9l4.1-1.4L12 3z"/></svg>Branding</a>
+          <a class="nav-link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>Users</a>
+          <a class="nav-link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><rect x="3" y="11" width="18" height="11" rx="2"/><circle cx="12" cy="5" r="2"/><line x1="12" y1="7" x2="12" y2="11"/></svg>AI</a>
+        </aside>
+
+        <div class="settings-content">
+          <h3>Basemap &amp; terrain</h3>
+          <p>Choose the imagery provider and terrain for the globe. Ion providers require a free Cesium Ion access token.</p>
+          <div class="setting-row">
+            <div>
+              <div class="label">Provider</div>
+              <div class="hint">OSM works without a token.</div>
+            </div>
+            <select><option>OpenStreetMap (no token)</option></select>
+          </div>
+          <div class="setting-row">
+            <div>
+              <div class="label">Ion token</div>
+              <div class="hint">Stored in localStorage only.</div>
+            </div>
+            <input placeholder="Paste Ion token"/>
+          </div>
+          <div class="setting-row">
+            <div>
+              <div class="label">Cesium World Terrain</div>
+              <div class="hint">3D terrain. Requires Ion token.</div>
+            </div>
+            <div class="toggle"></div>
+          </div>
+          <div class="setting-row">
+            <div>
+              <div class="label">Default zoom</div>
+              <div class="hint">When opening a new site.</div>
+            </div>
+            <input placeholder="14" style="max-width: 120px"/>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="annot">
+    Settings rail finally gets icons (currently text-only on desktop, icons hidden via <code>.shell.isPhone .navItemIcon</code>). Same icon set as the phone bottom carousel. <b>No layout changes</b> — just visual coherence.
+  </div>
+  <div class="change-list">
+    <h3>Code changes implied</h3>
+    <ul>
+      <li>In <a href="../packages/settings-panels/src/SettingsShell.module.css">SettingsShell.module.css</a>, remove <code>.navItemIcon { display: none }</code> from the base rule. Render the icon inline with the label in the desktop left-rail layout (gap: 10px, icon 18×18).</li>
+      <li>No JSX changes — icons already pass through the <code>icon?: ReactNode</code> prop on <code>Section</code>.</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ═══ Tablet ════════════════════════════════════════════════ -->
+<p class="row-title">Tablet · orientation-driven pattern switch</p>
+
+<!-- 4: Tablet portrait — mobile pattern -->
+<div class="frame-wrap">
+  <div class="caption">T1 · Tablet portrait · Map (mobile pattern · 680×900)</div>
+  <div class="tablet portrait">
+    <div class="tablet-grid">
+      <div class="brand-bar">
+        <div class="brand">MightyTwin</div>
+        <div class="mode-tabs">
+          <div class="mode-tab active">Map</div>
+          <div class="mode-tab">Atlas</div>
+          <div class="mode-tab">Settings</div>
+        </div>
+        <div class="brand-controls">
+          <span class="brand-chip">P</span>
+          <span class="brand-chip">T</span>
+          <span class="brand-chip">D</span>
+        </div>
+      </div>
+
+      <div class="pane">
+        <div class="map-bg"></div>
+
+        <div class="ctrl-pill">
+          <div class="ctrl-site">
+            <span class="back-affordance"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg></span>
+            <span class="avatar">D</span>
+            Demo site
+          </div>
+          <div class="ctrl-divider"></div>
+          <button class="ctrl-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg></button>
+          <button class="ctrl-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/><line x1="8" y1="11" x2="14" y2="11"/></svg></button>
+          <div class="ctrl-divider"></div>
+          <button class="ctrl-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12l9-9 9 9"/><path d="M5 10v10a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1V10"/></svg></button>
+          <button class="ctrl-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/></svg></button>
+          <button class="ctrl-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><polygon points="3 7 9 4 15 7 21 4 21 17 15 20 9 17 3 20 3 7"/><line x1="9" y1="4" x2="9" y2="17"/><line x1="15" y1="7" x2="15" y2="20"/></svg></button>
+        </div>
+
+        <div class="float-icons">
+          <div class="float-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg></div>
+          <div class="float-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M21.3 8.7L8.7 21.3a2 2 0 0 1-2.8 0L2.7 18.1a2 2 0 0 1 0-2.8L15.3 2.7a2 2 0 0 1 2.8 0l3.2 3.2a2 2 0 0 1 0 2.8z"/><path d="M14.5 12.5l-2-2"/><path d="M11.5 15.5l-2-2"/><path d="M8.5 18.5l-2-2"/><path d="M17.5 9.5l-2-2"/></svg></div>
+          <div class="float-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg></div>
+        </div>
+
+        <div class="pin" style="left: 48%; top: 38%;">
+          <div class="pin-label">Demo site</div>
+        </div>
+
+        <!-- Bottom carousel — wider tiles than phone, same pattern -->
+        <div class="rail-container" style="left: 50%;">
+          <div class="rail" style="max-width: 540px;">
+            <div class="rail-tile active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>Story</div>
+            <div class="rail-tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>Snap</div>
+            <div class="rail-tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/></svg>Design</div>
+            <div class="rail-tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 17 9 11 13 15 21 7"/></svg>Terrain</div>
+          </div>
+        </div>
+
+        <div class="mai"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l1.9 4.6L18 9l-4.1 1.4L12 15l-1.9-4.6L6 9l4.1-1.4L12 3z"/></svg></div>
+      </div>
+
+      <div class="tablet-bottom-nav">
+        <div class="tnav-tab active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round"><polygon points="3 7 9 4 15 7 21 4 21 17 15 20 9 17 3 20 3 7"/></svg>Map</div>
+        <div class="tnav-tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>Atlas</div>
+        <div class="tnav-tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>Settings</div>
+      </div>
+    </div>
+  </div>
+  <div class="annot">
+    <b>Tablet portrait</b> uses the same chrome as phone, just roomier. Ctrl-pill is wider, bottom rail tiles are wider, widget sheet (when launched) covers ~55-70% of the viewport rather than 65-80% on a phone. Bottom mode-switcher tabs (Map/Atlas/Settings) live below the widget rail. The tablet's tighter ergonomics (thumb-reach) work better with the phone pattern than the desktop sidebar.
+  </div>
+</div>
+
+<!-- 5: Tablet landscape — desktop pattern -->
+<div class="frame-wrap">
+  <div class="caption">T2 · Tablet landscape · Map (desktop pattern · 900×680)</div>
+  <div class="tablet landscape">
+    <div class="tablet-grid">
+      <div class="brand-bar">
+        <div class="brand">MightyTwin</div>
+        <div class="mode-tabs">
+          <div class="mode-tab active">Map</div>
+          <div class="mode-tab">Atlas</div>
+          <div class="mode-tab">Settings</div>
+        </div>
+        <div class="brand-controls">
+          <span class="brand-chip">P</span>
+          <span class="brand-chip">T</span>
+          <span class="brand-chip">D</span>
+        </div>
+      </div>
+
+      <div class="pane">
+        <div class="map-bg"></div>
+
+        <div class="ctrl-pill">
+          <div class="ctrl-site">
+            <span class="back-affordance"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg></span>
+            <span class="avatar">D</span>
+            Demo site
+          </div>
+          <div class="ctrl-divider"></div>
+          <button class="ctrl-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg></button>
+          <button class="ctrl-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/><line x1="8" y1="11" x2="14" y2="11"/></svg></button>
+          <div class="ctrl-divider"></div>
+          <button class="ctrl-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12l9-9 9 9"/><path d="M5 10v10a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1V10"/></svg></button>
+          <button class="ctrl-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/></svg></button>
+          <button class="ctrl-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><polygon points="3 7 9 4 15 7 21 4 21 17 15 20 9 17 3 20 3 7"/><line x1="9" y1="4" x2="9" y2="17"/><line x1="15" y1="7" x2="15" y2="20"/></svg></button>
+        </div>
+
+        <div class="float-icons">
+          <div class="float-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg></div>
+          <div class="float-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M21.3 8.7L8.7 21.3a2 2 0 0 1-2.8 0L2.7 18.1a2 2 0 0 1 0-2.8L15.3 2.7a2 2 0 0 1 2.8 0l3.2 3.2a2 2 0 0 1 0 2.8z"/><path d="M14.5 12.5l-2-2"/><path d="M11.5 15.5l-2-2"/><path d="M8.5 18.5l-2-2"/><path d="M17.5 9.5l-2-2"/></svg></div>
+          <div class="float-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg></div>
+        </div>
+
+        <div class="pin" style="left: 36%; top: 48%;">
+          <div class="pin-label">Demo site</div>
+        </div>
+
+        <div class="rail-container" style="left: calc(50% - 180px);">
+          <div class="rail" style="max-width: 540px;">
+            <div class="rail-tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>Story</div>
+            <div class="rail-tile active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>Snap</div>
+            <div class="rail-tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/></svg>Design</div>
+            <div class="rail-tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 17 9 11 13 15 21 7"/></svg>Terrain</div>
+            <div class="rail-tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.8 19.2L16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"/></svg>Fly</div>
+          </div>
+        </div>
+
+        <!-- Right pane on landscape -->
+        <div class="right-pane" style="width: 320px;">
+          <div class="rp-header">
+            <div class="rp-title">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
+              Snap
+            </div>
+            <button class="rp-close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+          </div>
+          <div class="rp-body">
+            <h4>Recent · 24</h4>
+            <div class="snap-grid">
+              <div class="snap-thumb"><span class="timestamp">Just</span></div>
+              <div class="snap-thumb alt-1"><span class="timestamp">2m</span></div>
+            </div>
+            <button class="primary-pill">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
+              Take snap
+            </button>
+          </div>
+        </div>
+
+        <div class="mai" style="right: 340px;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l1.9 4.6L18 9l-4.1 1.4L12 15l-1.9-4.6L6 9l4.1-1.4L12 3z"/></svg></div>
+      </div>
+    </div>
+  </div>
+  <div class="annot">
+    <b>Tablet landscape</b> matches desktop chrome — sidebar/right-pane patterns reappear, no bottom carousel, no mode-switcher tabs at the bottom (mode lives in the brand bar). Pivot is purely orientation, not breakpoint width.
+  </div>
+  <div class="change-list">
+    <h3>Code changes implied</h3>
+    <ul>
+      <li>In <a href="../packages/app-shell/src/hooks/useBreakpoint.ts">useBreakpoint.ts</a> + <code>useOrientation</code>, fold orientation into the layout decision. Probably ship a derived <code>layoutMode</code> = <code>'phone' | 'tabletPortrait' | 'tabletLandscape' | 'desktop'</code> so call sites stop branching on two axes.</li>
+      <li>In <a href="../apps/web/src/admin/layouts/AppLayout.jsx">AppLayout.jsx</a>, replace the <code>isTablet</code> drawer pattern with: portrait → use the phone bottom-nav, landscape → use the desktop sidebar.</li>
+      <li>Same in <code>SettingsShell</code> — flip the bottom-carousel branch on tablet portrait too, not just phone.</li>
+      <li>Viewer chrome (<code>MapShell</code>, <code>CesiumViewer</code>): right pane on landscape, widget sheet on portrait. Both consume the same widget-component contract.</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ═══ Summary ════════════════════════════════════════════════ -->
+<section class="pattern-key" style="max-width: 980px;">
+  <h2>Phased implementation plan</h2>
+  <dl>
+    <dt><b>Phase 1 · Primary controller pill</b></dt>
+    <dd>Extract a shared <code>CtrlPill</code> component. Mount it on phone (already in mobile mockup), tablet portrait, tablet landscape, desktop. Behind it, kill the duplicate site-chip / map-controls instances in <code>ViewerSidebar</code>, <code>CesiumViewer</code> map-controls, etc.</dd>
+    <dt><b>Phase 2 · Settings icons everywhere</b></dt>
+    <dd>Drop the <code>.shell.isPhone .navItemIcon</code> gate. Render icons in desktop left rail too. Trivial CSS edit.</dd>
+    <dt><b>Phase 3 · Tablet orientation pivot</b></dt>
+    <dd>Introduce <code>layoutMode</code> derived from breakpoint × orientation. Replace tablet-drawer branch with portrait → phone-pattern, landscape → desktop-pattern.</dd>
+    <dt><b>Phase 4 · ViewerSidebar simplification</b></dt>
+    <dd>Once the pill owns site picker + basemap, ViewerSidebar shrinks. LAYERS / MEASURE entry points move to the floating icon stack (which already exists on phone). The sidebar can collapse entirely on desktop too, mirroring the mobile floating-icons pattern.</dd>
+    <dt><b>Phase 5 · Atlas Sites cards (optional)</b></dt>
+    <dd>Add a card carousel "map view" as a secondary tab on the desktop Atlas Sites page. Same cards as mobile, just wider with more visible at once. Defaults to the existing table view.</dd>
+  </dl>
+</section>
+
+</body>
+</html>

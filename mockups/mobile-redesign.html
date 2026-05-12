@@ -1,0 +1,1373 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MightyTwin · mobile UX redesign</title>
+<style>
+  :root {
+    --bg-base: #0a0c14;
+    --bg-surface: #11141d;
+    --bg-elev: #161a25;
+    --bg-glass: rgba(15,17,28,0.86);
+    --fg-primary: #f0f2f8;
+    --fg-secondary: rgba(240,242,248,0.72);
+    --fg-muted: rgba(240,242,248,0.5);
+    --fg-faint: rgba(240,242,248,0.28);
+    --line: rgba(240,242,248,0.07);
+    --line-strong: rgba(240,242,248,0.14);
+    --cobalt: #2453ff;
+    --violet: #a78bfa;
+    --magenta: #ec4899;
+    --amber: #f59e0b;
+    --emerald: #34d399;
+    --teal: #2dd4bf;
+    --sky: #38bdf8;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    background: #05050a;
+    color: var(--fg-primary);
+    font-family: -apple-system, "SF Pro Text", "Inter", system-ui, sans-serif;
+    margin: 0;
+    padding: 32px;
+    -webkit-font-smoothing: antialiased;
+  }
+  h1 { font-size: 22px; font-weight: 600; letter-spacing: -0.01em; margin: 0 0 6px; }
+  .lede { color: var(--fg-secondary); font-size: 13px; margin: 0 0 32px; max-width: 720px; line-height: 1.5; }
+  .lede strong { color: var(--fg-primary); font-weight: 600; }
+  .row { display: flex; gap: 36px; flex-wrap: wrap; align-items: flex-start; margin-bottom: 56px; }
+  .row-title { font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--fg-muted); font-weight: 600; margin: 0 0 18px; }
+
+  .phone-wrap { display: flex; flex-direction: column; align-items: center; gap: 14px; max-width: 390px; }
+  .caption {
+    font-size: 11px; color: var(--fg-muted); text-transform: uppercase;
+    letter-spacing: 0.1em; font-weight: 600;
+  }
+  .desktop-note {
+    font-size: 11px; color: var(--fg-faint); line-height: 1.5;
+    max-width: 390px; text-align: center;
+  }
+  .desktop-note b { color: var(--fg-secondary); font-weight: 500; }
+
+  /* ── Phone frame ──────────────────────────────────────────────── */
+  .phone {
+    width: 390px; height: 780px;
+    border-radius: 36px;
+    background: var(--bg-base);
+    overflow: hidden;
+    position: relative;
+    box-shadow:
+      0 0 0 10px #1a1a24,
+      0 0 0 11px rgba(255,255,255,0.06),
+      0 30px 80px rgba(0,0,0,0.5);
+  }
+  .phone-grid {
+    height: 100%;
+    display: grid;
+    grid-template-rows: 48px 1fr 64px;
+  }
+
+  /* ── Top brand bar ──────────────────────────────────────────── */
+  .brand-bar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 16px;
+    background: var(--bg-surface);
+    border-bottom: 1px solid var(--line);
+  }
+  .brand { color: var(--violet); font-size: 14px; font-weight: 600; letter-spacing: -0.01em; }
+  .brand-controls { display: flex; gap: 8px; }
+  .brand-chip {
+    background: var(--bg-elev); border: 1px solid var(--line);
+    color: var(--fg-secondary); font-size: 11px; font-weight: 500;
+    padding: 4px 8px; border-radius: 6px;
+    display: inline-flex; align-items: center; gap: 4px;
+  }
+  .brand-chip svg { width: 12px; height: 12px; }
+
+  /* ── Pane body (varies per screen) ──────────────────────────── */
+  .pane { position: relative; overflow: hidden; }
+
+  /* Map pane */
+  .map-bg {
+    position: absolute; inset: 0;
+    background:
+      radial-gradient(ellipse at 30% 40%, rgba(75,116,168,0.4), transparent 55%),
+      radial-gradient(ellipse at 75% 65%, rgba(141,123,89,0.45), transparent 60%),
+      linear-gradient(135deg, #1d2a3c 0%, #2c2418 60%, #1a2a23 100%);
+  }
+  .map-bg::after {
+    content: '';
+    position: absolute; inset: 0;
+    background:
+      radial-gradient(2px 2px at 30% 20%, rgba(255,255,255,0.08), transparent),
+      radial-gradient(2px 2px at 60% 70%, rgba(255,255,255,0.05), transparent),
+      radial-gradient(1px 1px at 15% 50%, rgba(255,255,255,0.06), transparent);
+  }
+  .pin {
+    position: absolute;
+    width: 24px; height: 32px;
+    transform: translate(-50%, -100%);
+  }
+  .pin::before {
+    content: '';
+    position: absolute; inset: 0 0 6px 0;
+    background: var(--cobalt);
+    border-radius: 50% 50% 50% 0;
+    transform: rotate(-45deg);
+    transform-origin: bottom center;
+    box-shadow: 0 4px 12px rgba(36,83,255,0.5);
+  }
+  .pin::after {
+    content: '';
+    position: absolute;
+    left: 50%; top: 6px;
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: white;
+    transform: translateX(-50%);
+  }
+  .pin-label {
+    position: absolute;
+    top: 22px; left: 50%;
+    transform: translateX(-50%);
+    font-size: 9px; color: white;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.8);
+    white-space: nowrap;
+    font-weight: 500;
+  }
+
+  /* Floating icon stack (left edge of map). Only carries actions that
+     AREN'T already on the primary controller pill: search, measure,
+     legend. Layers / basemap / zoom / home / bounds all live in the
+     pill, no duplication. */
+  .float-icons {
+    position: absolute;
+    left: 10px; top: 76px;
+    display: flex; flex-direction: column; gap: 6px;
+    z-index: 5;
+  }
+  .float-icon {
+    width: 40px; height: 40px;
+    border-radius: 10px;
+    background: var(--bg-glass);
+    backdrop-filter: blur(12px);
+    border: 1px solid var(--line);
+    display: flex; align-items: center; justify-content: center;
+    color: var(--fg-secondary);
+  }
+  .float-icon.active { background: rgba(99,102,241,0.18); border-color: rgba(99,102,241,0.45); color: var(--fg-primary); }
+  .float-icon svg { width: 18px; height: 18px; }
+
+  /* Primary controller pill — horizontal, anchored to the top-left of
+     the map area. Carries the site chip + map controls (zoom, home,
+     bounds, basemap). Matches the live Railway deployment. The site
+     chip itself is tappable for site switching / back-to-overview. */
+  .ctrl-pill {
+    position: absolute;
+    top: 12px; left: 10px;
+    display: inline-flex; align-items: stretch;
+    gap: 4px;
+    padding: 4px;
+    background: rgba(15,17,28,0.92);
+    backdrop-filter: blur(14px);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    color: var(--fg-secondary);
+    z-index: 5;
+    max-width: calc(100% - 20px);
+  }
+  .ctrl-site {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 4px 10px 4px 4px;
+    border-radius: 999px;
+    color: var(--fg-primary);
+    font-size: 13px; font-weight: 500;
+  }
+  .ctrl-site .avatar {
+    width: 26px; height: 26px;
+    border-radius: 50%;
+    display: inline-flex; align-items: center; justify-content: center;
+    background: linear-gradient(135deg, #6366f1, #a78bfa);
+    color: white; font-size: 12px; font-weight: 700;
+  }
+  .ctrl-site .back-affordance {
+    color: var(--fg-faint);
+    display: inline-flex; align-items: center;
+    margin-left: -2px;
+  }
+  .ctrl-site .back-affordance svg { width: 12px; height: 12px; }
+  .ctrl-divider {
+    width: 1px;
+    background: var(--line);
+    margin: 4px 2px;
+  }
+  .ctrl-btn {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    display: inline-flex; align-items: center; justify-content: center;
+    color: var(--fg-secondary);
+  }
+  .ctrl-btn svg { width: 16px; height: 16px; }
+
+  /* Bottom widget carousel (compact) */
+  .bottom-rail {
+    position: absolute;
+    bottom: 12px; left: 12px; right: 12px;
+    background: var(--bg-glass);
+    backdrop-filter: blur(14px);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    overflow: hidden;
+    z-index: 8;
+    transition: height 220ms ease;
+  }
+  .rail-strip {
+    display: flex;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    height: 64px;
+  }
+  .rail-tile {
+    flex: 0 0 auto;
+    width: 78px;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 2px; padding: 8px 0;
+    color: var(--fg-muted);
+    font-size: 10px; font-weight: 500;
+    text-transform: uppercase; letter-spacing: 0.04em;
+  }
+  .rail-tile svg { width: 18px; height: 18px; }
+  .rail-tile.active { color: var(--teal); }
+  .rail-handle {
+    position: absolute;
+    top: 5px; left: 50%;
+    transform: translateX(-50%);
+    width: 32px; height: 3px;
+    background: var(--fg-faint);
+    border-radius: 2px;
+  }
+
+  /* Bottom rail — expanded (mini-widget mode) */
+  .bottom-rail.expanded {
+    height: 280px;
+    bottom: 12px;
+  }
+  .rail-expanded-body {
+    padding: 10px 16px 16px;
+    color: var(--fg-secondary);
+    font-size: 12px;
+  }
+  .rail-expanded-body h4 {
+    font-size: 11px;
+    color: var(--fg-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin: 0 0 8px;
+  }
+
+  /* ── Widget sheet ─────────────────────────────────────────────
+     Decoupled from the carousel. Tapping a tile launches a sheet
+     that slides up over the top of EVERYTHING below the brand bar
+     — the carousel and the Map/Atlas/Settings tab bar both get
+     covered. The sheet's height is dynamic per-widget-state (a
+     simple "Take snap" action might want 280 px; an active Design
+     session needs 600 px). The visible map peeking above keeps
+     spatial context for the user. */
+  .widget-sheet {
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    height: 64%;
+    background: rgba(15, 17, 28, 0.97);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    border-top: 1px solid var(--line-strong);
+    border-top-left-radius: 20px;
+    border-top-right-radius: 20px;
+    box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.55);
+    z-index: 20;
+    display: flex; flex-direction: column;
+    overflow: hidden;
+    /* Cue: faint border at the bottom to remind the user the sheet
+       is sitting over chrome — that the carousel + shell tabs are
+       just one swipe-down away. */
+    transition: height 220ms ease;
+  }
+  .sheet-handle {
+    width: 38px; height: 4px;
+    background: rgba(255, 255, 255, 0.22);
+    border-radius: 2px;
+    margin: 9px auto 4px;
+  }
+  .sheet-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 6px 18px 14px;
+    border-bottom: 1px solid var(--line);
+  }
+  .sheet-title {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 16px; font-weight: 600; color: var(--fg-primary);
+  }
+  .sheet-title svg { width: 18px; height: 18px; color: var(--teal); }
+  .sheet-close {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--line);
+    display: flex; align-items: center; justify-content: center;
+    color: var(--fg-secondary);
+  }
+  .sheet-close svg { width: 14px; height: 14px; }
+  .sheet-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 14px 18px 22px;
+    color: var(--fg-secondary);
+    font-size: 13px;
+  }
+  .sheet-body h4 {
+    font-size: 11px; color: var(--fg-muted);
+    text-transform: uppercase; letter-spacing: 0.1em;
+    margin: 0 0 10px; font-weight: 600;
+  }
+  .snap-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+  .snap-thumb {
+    height: 96px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #2c4a6d, #2c5e4a);
+    position: relative;
+    overflow: hidden;
+    border: 1px solid var(--line);
+  }
+  .snap-thumb.alt-1 { background: linear-gradient(135deg, #3a2a52, #2c5e4a); }
+  .snap-thumb.alt-2 { background: linear-gradient(135deg, #5c3424, #2c4a6d); }
+  .snap-thumb.alt-3 { background: linear-gradient(135deg, #1d2a3c, #4a5c2c); }
+  .snap-thumb.alt-4 { background: linear-gradient(135deg, #2c5e4a, #3a2a52); }
+  .snap-thumb.alt-5 { background: linear-gradient(135deg, #4a5c2c, #1d2a3c); }
+  .snap-thumb .timestamp {
+    position: absolute;
+    bottom: 4px; left: 4px;
+    background: rgba(0, 0, 0, 0.55);
+    color: white;
+    font-size: 9px;
+    padding: 1px 6px;
+    border-radius: 4px;
+  }
+  .caption-row {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 10px 14px;
+    margin-bottom: 14px;
+    color: var(--fg-faint);
+    font-size: 13px;
+  }
+  .primary-pill {
+    width: 100%;
+    padding: 14px;
+    border-radius: 999px;
+    background: var(--teal); color: #0a0c14;
+    font-size: 12px; font-weight: 600;
+    text-align: center;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    border: none;
+  }
+  .primary-pill svg { width: 16px; height: 16px; }
+
+  /* ── Design widget — tall "setup" state ─────────────────────── */
+  .design-cards {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+  .design-card {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 12px 8px;
+    display: flex; flex-direction: column;
+    align-items: center; gap: 6px;
+    text-align: center;
+    color: var(--fg-secondary);
+  }
+  .design-card.active {
+    background: rgba(45, 212, 191, 0.10);
+    border-color: rgba(45, 212, 191, 0.4);
+    color: var(--teal);
+  }
+  .design-card svg { width: 22px; height: 22px; }
+  .design-card .card-name { font-size: 12px; font-weight: 600; }
+  .design-card .card-hint { font-size: 10px; color: var(--fg-faint); }
+  .color-row {
+    display: flex; gap: 10px;
+    margin-bottom: 16px;
+  }
+  .color-swatch {
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    border: 2px solid rgba(255, 255, 255, 0.08);
+  }
+  .color-swatch.active {
+    box-shadow: 0 0 0 2px var(--teal);
+  }
+
+  /* ── Design widget — compact "drawing" state (2/3 map visible) ─ */
+  .tools-row {
+    display: flex; gap: 6px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    margin: 0 -18px 10px;
+    padding: 0 18px 4px;
+  }
+  .tools-row::-webkit-scrollbar { display: none; }
+  .tool-btn {
+    flex: 0 0 auto;
+    width: 56px; height: 56px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--line);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 3px;
+    color: var(--fg-secondary);
+  }
+  .tool-btn svg { width: 20px; height: 20px; }
+  .tool-btn .tool-label { font-size: 9px; }
+  .tool-btn.active {
+    background: rgba(45, 212, 191, 0.14);
+    border-color: rgba(45, 212, 191, 0.45);
+    color: var(--teal);
+  }
+
+  .inputs-ribbon {
+    display: flex; gap: 6px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    margin: 0 -18px;
+    padding: 0 18px;
+  }
+  .inputs-ribbon::-webkit-scrollbar { display: none; }
+  .input-chip {
+    flex: 0 0 auto;
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 7px 10px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--line);
+    color: var(--fg-muted);
+    font-size: 11px;
+    white-space: nowrap;
+  }
+  .input-chip .chip-value { color: var(--fg-primary); font-weight: 500; }
+  .input-chip .chip-swatch {
+    width: 12px; height: 12px;
+    border-radius: 50%;
+  }
+
+  /* Drawn-line overlay on the map (drawing-state frame). */
+  .drawing-overlay {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 4;
+  }
+
+  /* Mai FAB. Bottom clearance has to cover the per-pane carousel
+     (~76 px = 64 px tall + 12 px margin on Map) AND leave 16 px gap,
+     so the FAB sits *above* the rail rather than over the top of it.
+     Atlas/Settings use `.mai.atlas` — their nav is flush to the pane
+     bottom (no 12 px margin), so 80 px clearance is enough. */
+  .mai {
+    position: absolute;
+    right: 16px; bottom: 92px;
+    width: 48px; height: 48px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #ec4899, #d946ef);
+    display: flex; align-items: center; justify-content: center;
+    color: white;
+    box-shadow: 0 6px 20px rgba(236,72,153,0.5);
+    z-index: 9;
+  }
+  .mai.atlas { bottom: 80px; }
+  .mai svg { width: 22px; height: 22px; }
+
+  /* Site context chip in brand bar */
+  .site-chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: var(--bg-elev);
+    border: 1px solid var(--line-strong);
+    border-radius: 18px;
+    padding: 4px 4px 4px 8px;
+    font-size: 12px;
+    color: var(--fg-primary);
+    font-weight: 500;
+  }
+  .site-chip .back-affordance {
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.06);
+    display: inline-flex; align-items: center; justify-content: center;
+    color: var(--fg-secondary);
+    margin-right: 2px;
+  }
+  .site-chip .back-affordance svg { width: 12px; height: 12px; }
+
+  /* ── Atlas pane (content + bottom carousel nav) ─────────────── */
+  .atlas-pane {
+    position: relative;
+    background: var(--bg-base);
+    display: flex; flex-direction: column;
+    height: 100%;
+  }
+  .page-head {
+    padding: 16px 18px 6px;
+  }
+  .page-head h2 { font-size: 22px; font-weight: 600; margin: 0 0 4px; letter-spacing: -0.01em; }
+  .page-head p { font-size: 12px; color: var(--fg-muted); margin: 0; }
+  .stat-grid {
+    flex: 1;
+    padding: 12px 16px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    overflow-y: auto;
+  }
+  .stat-card {
+    background: var(--bg-elev);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 12px;
+    min-height: 90px;
+  }
+  .stat-card .lbl { font-size: 10px; color: var(--fg-muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px; font-weight: 600; }
+  .stat-card .val { font-size: 26px; font-weight: 600; line-height: 1.1; }
+  .stat-card .sub { font-size: 11px; color: var(--fg-faint); margin-top: 4px; }
+  .stat-card.accent .val { color: var(--emerald); }
+
+  .nav-bar {
+    flex-shrink: 0;
+    height: 64px;
+    display: flex; align-items: stretch;
+    overflow-x: auto;
+    background: var(--bg-glass);
+    backdrop-filter: blur(14px);
+    border-top: 1px solid var(--line);
+  }
+  .nav-tab {
+    flex: 0 0 auto;
+    min-width: 78px;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 2px;
+    color: var(--fg-muted);
+    font-size: 10px; font-weight: 500;
+    padding: 4px;
+  }
+  .nav-tab svg { width: 20px; height: 20px; }
+  .nav-tab.active { color: var(--teal); }
+
+  /* Sites cards carousel (AllTrails-style content carousel) */
+  .site-carousel {
+    position: absolute;
+    bottom: 76px; left: 0; right: 0;
+    padding: 0 16px;
+  }
+  .site-card {
+    display: flex; gap: 12px;
+    background: var(--bg-surface);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    overflow: hidden;
+    padding: 12px;
+  }
+  .site-card .thumb {
+    width: 76px; height: 76px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #2c4a6d, #2c5e4a);
+    flex-shrink: 0;
+    position: relative;
+  }
+  .site-card .thumb::after {
+    content: '';
+    position: absolute; inset: 30% 30% 25% 30%;
+    background:
+      radial-gradient(circle at 50% 70%, rgba(255,255,255,0.15), transparent 70%);
+  }
+  .site-card .info { flex: 1; min-width: 0; }
+  .site-card .info-tags {
+    display: flex; gap: 6px;
+    font-size: 10px; color: var(--fg-muted);
+    margin-bottom: 4px;
+    text-transform: uppercase; letter-spacing: 0.04em;
+    align-items: center;
+  }
+  .site-card .tag {
+    background: rgba(36,83,255,0.16);
+    color: var(--cobalt);
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-weight: 600;
+  }
+  .site-card .name { font-size: 14px; font-weight: 600; color: var(--fg-primary); margin-bottom: 2px; }
+  .site-card .meta { font-size: 11px; color: var(--fg-faint); }
+  .site-pager {
+    position: absolute;
+    top: -22px;
+    left: 50%; transform: translateX(-50%);
+    background: rgba(0,0,0,0.65);
+    color: var(--fg-primary);
+    font-size: 10px;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-weight: 500;
+  }
+
+  /* Settings pane */
+  .settings-pane {
+    position: relative;
+    background: var(--bg-base);
+    display: flex; flex-direction: column;
+    height: 100%;
+  }
+  .settings-body {
+    flex: 1;
+    padding: 18px 18px 22px;
+    overflow-y: auto;
+  }
+  .settings-body h3 { font-size: 18px; font-weight: 600; margin: 0 0 4px; }
+  .settings-body p { font-size: 12px; color: var(--fg-muted); margin: 0 0 18px; line-height: 1.5; }
+  .setting-row {
+    padding: 14px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .setting-row .label { font-size: 13px; font-weight: 500; margin-bottom: 2px; }
+  .setting-row .hint { font-size: 11px; color: var(--fg-faint); margin-bottom: 8px; }
+  .setting-row select, .setting-row input {
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid var(--line);
+    background: rgba(255,255,255,0.04);
+    color: var(--fg-primary);
+    font-size: 13px;
+  }
+  .setting-row .toggle {
+    width: 40px; height: 22px;
+    background: rgba(255,255,255,0.12);
+    border-radius: 11px;
+    position: relative;
+  }
+  .setting-row .toggle.on { background: var(--cobalt); }
+  .setting-row .toggle::after {
+    content: '';
+    position: absolute;
+    top: 2px; left: 2px;
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    background: white;
+    transition: transform 160ms ease;
+  }
+  .setting-row .toggle.on::after { transform: translateX(18px); }
+
+  /* ── App-shell tab bar ──────────────────────────────────────── */
+  .tab-bar {
+    display: flex;
+    background: var(--bg-surface);
+    border-top: 1px solid var(--line);
+  }
+  .tab {
+    flex: 1;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 2px;
+    color: var(--fg-muted);
+    font-size: 11px; font-weight: 500;
+    padding: 6px 0 8px;
+  }
+  .tab::before {
+    content: ''; width: 4px; height: 4px;
+    border-radius: 50%; background: var(--fg-faint);
+    margin-bottom: 3px;
+  }
+  .tab.active { color: var(--violet); }
+  .tab.active::before { background: var(--violet); }
+
+  /* ── Annotation card ───────────────────────────────────────── */
+  .pattern-key {
+    background: var(--bg-surface);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 20px 24px;
+    margin-bottom: 40px;
+    max-width: 900px;
+  }
+  .pattern-key h2 { font-size: 14px; margin: 0 0 12px; font-weight: 600; color: var(--fg-primary); }
+  .pattern-key dl { display: grid; grid-template-columns: 200px 1fr; gap: 8px 16px; font-size: 12px; line-height: 1.5; margin: 0; }
+  .pattern-key dt { color: var(--fg-secondary); font-weight: 500; }
+  .pattern-key dd { color: var(--fg-muted); margin: 0; }
+  .pattern-key dt b { color: var(--teal); font-weight: 600; }
+</style>
+</head>
+<body>
+
+<h1>MightyTwin · Mobile UX Redesign</h1>
+<p class="lede">
+  A coherent, top-to-bottom mobile experience built on three reusable patterns — <strong>persistent shell tabs</strong>,
+  a <strong>per-pane bottom carousel</strong>, and an <strong>expandable mini-widget mode</strong> for in-place tools.
+  Borrows useful conventions from apps like AllTrails (carousel-of-cards, pull-up sheets) but keeps Twin's existing
+  desktop chrome — sidebar, right pane, dock — intact. Each mobile pattern below has a corresponding desktop
+  surface listed underneath.
+</p>
+
+<section class="pattern-key">
+  <h2>Pattern key</h2>
+  <dl>
+    <dt><b>Shell tab bar</b></dt>
+    <dd>Persistent Map · Atlas · Settings at the very bottom (already shipped by app-shell). Same on every screen.</dd>
+    <dt><b>Top brand bar</b></dt>
+    <dd>48px. Just the "MightyTwin" wordmark + dev-only breakpoint chips. Identity only — no critical controls (so iOS banner notifications dropping in at the top don't eat anything functional).</dd>
+    <dt><b>Primary controller pill</b></dt>
+    <dd>Horizontal floating pill anchored top-left of the map area (matches the live Railway deployment). Carries the site chip with a back-to-overview chevron, then zoom +/−, home, fit-bounds, basemap toggle. Single home for all map controls; nothing duplicated.</dd>
+    <dt><b>Bottom carousel</b></dt>
+    <dd>Horizontal scroll, snap-x, hidden scrollbar. On Map it's the widget controller (Story/Snap/Design/Terrain/Fly). On Atlas/Settings it's the section nav. On Sites it's a content carousel of site cards.</dd>
+    <dt><b>Widget sheet (decoupled)</b></dt>
+    <dd>Tapping a carousel tile launches a sheet that slides up <b>over</b> the carousel <i>and</i> the shell tab bar — the widget gets the full lower viewport rather than fighting the carousel for vertical space. Height is <b>dynamic per widget-state</b>: a single quick action collapses to ~280px; an active Design session can grow past 600px. Map + ctrl-pill stay visible above for spatial context. Pull-down or tap-close returns to launcher (carousel + tabs visible again).</dd>
+    <dt><b>Drill-in</b></dt>
+    <dd>Tapping a content card (e.g. a site in Atlas → Sites) pushes a full-pane detail view. Brand bar gets a back chip. Bottom carousel can persist or hide depending on the destination.</dd>
+    <dt><b>Floating left-edge icons</b></dt>
+    <dd>Slim vertical stack on the Map canvas — only the actions NOT already in the primary controller pill. Currently: Search, Measure, Legend. No layers/basemap/3D buttons — those live in the pill. Replaces ViewerSidebar's column from desktop.</dd>
+    <dt><b>Mai FAB</b></dt>
+    <dd>Bottom-right, persistent. Default Y clears the 64px bottom rail (88 px above the shell tab bar). Hides during forced-breakpoint preview and while a tools sheet is open.</dd>
+  </dl>
+</section>
+
+<p class="row-title">Map mode — viewing a site</p>
+<section class="row">
+
+  <!-- ───────────────────────────────────────────────────────── -->
+  <!-- Map · default (compact rail) -->
+  <div class="phone-wrap">
+    <div class="caption">1 · Map · compact rail</div>
+    <div class="phone"><div class="phone-grid">
+      <div class="brand-bar">
+        <div class="brand">MightyTwin</div>
+        <div class="brand-controls">
+          <span class="brand-chip">P</span>
+          <span class="brand-chip">T</span>
+          <span class="brand-chip">D</span>
+        </div>
+      </div>
+
+      <div class="pane">
+        <div class="map-bg"></div>
+
+        <div class="ctrl-pill">
+          <div class="ctrl-site">
+            <span class="back-affordance"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg></span>
+            <span class="avatar">D</span>
+            Demo site
+          </div>
+          <div class="ctrl-divider"></div>
+          <button class="ctrl-btn" aria-label="Zoom in"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg></button>
+          <button class="ctrl-btn" aria-label="Zoom out"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/><line x1="8" y1="11" x2="14" y2="11"/></svg></button>
+          <div class="ctrl-divider"></div>
+          <button class="ctrl-btn" aria-label="Home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12l9-9 9 9"/><path d="M5 10v10a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1V10"/></svg></button>
+          <button class="ctrl-btn" aria-label="Fit bounds"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/></svg></button>
+          <button class="ctrl-btn" aria-label="Basemap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><polygon points="3 7 9 4 15 7 21 4 21 17 15 20 9 17 3 20 3 7"/><line x1="9" y1="4" x2="9" y2="17"/><line x1="15" y1="7" x2="15" y2="20"/></svg></button>
+        </div>
+
+        <div class="float-icons">
+          <div class="float-icon" title="Search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg></div>
+          <div class="float-icon" title="Measure"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M21.3 8.7L8.7 21.3a2 2 0 0 1-2.8 0L2.7 18.1a2 2 0 0 1 0-2.8L15.3 2.7a2 2 0 0 1 2.8 0l3.2 3.2a2 2 0 0 1 0 2.8z"/><path d="M14.5 12.5l-2-2"/><path d="M11.5 15.5l-2-2"/><path d="M8.5 18.5l-2-2"/><path d="M17.5 9.5l-2-2"/></svg></div>
+          <div class="float-icon" title="Legend"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg></div>
+        </div>
+
+        <div class="pin" style="left: 50%; top: 50%;">
+          <div class="pin-label">Demo site</div>
+        </div>
+
+        <div class="bottom-rail">
+          <div class="rail-handle"></div>
+          <div class="rail-strip">
+            <div class="rail-tile active">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+              Story
+            </div>
+            <div class="rail-tile">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
+              Snap
+            </div>
+            <div class="rail-tile">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/></svg>
+              Design
+            </div>
+            <div class="rail-tile">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 17 9 11 13 15 21 7"/></svg>
+              Terrain
+            </div>
+          </div>
+        </div>
+
+        <div class="mai"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l1.9 4.6L18 9l-4.1 1.4L12 15l-1.9-4.6L6 9l4.1-1.4L12 3z"/></svg></div>
+      </div>
+
+      <div class="tab-bar">
+        <div class="tab active">Map</div>
+        <div class="tab">Atlas</div>
+        <div class="tab">Settings</div>
+      </div>
+    </div></div>
+    <div class="desktop-note">
+      <b>Desktop equivalent:</b> ViewerSidebar (HOME/SITE/LAYERS/MEASURE) on left → floating icon stack here. SecondaryRail on desktop → bottom carousel. Right pane → mini-widget mode (see next frame).
+    </div>
+  </div>
+
+  <!-- ───────────────────────────────────────────────────────── -->
+  <!-- Map · Snap mini-widget pulled up -->
+  <div class="phone-wrap">
+    <div class="caption">2 · Map · Snap widget sheet (dynamic height)</div>
+    <div class="phone">
+      <div class="phone-grid">
+        <div class="brand-bar">
+          <div class="brand">MightyTwin</div>
+          <div class="brand-controls">
+            <span class="brand-chip">P</span>
+            <span class="brand-chip">T</span>
+            <span class="brand-chip">D</span>
+          </div>
+        </div>
+
+        <div class="pane">
+          <div class="map-bg"></div>
+
+          <div class="ctrl-pill">
+            <div class="ctrl-site">
+              <span class="back-affordance"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg></span>
+              <span class="avatar">D</span>
+              Demo site
+            </div>
+            <div class="ctrl-divider"></div>
+            <button class="ctrl-btn" aria-label="Zoom in"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg></button>
+            <button class="ctrl-btn" aria-label="Zoom out"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/><line x1="8" y1="11" x2="14" y2="11"/></svg></button>
+            <div class="ctrl-divider"></div>
+            <button class="ctrl-btn" aria-label="Home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12l9-9 9 9"/><path d="M5 10v10a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1V10"/></svg></button>
+            <button class="ctrl-btn" aria-label="Fit bounds"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/></svg></button>
+            <button class="ctrl-btn" aria-label="Basemap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><polygon points="3 7 9 4 15 7 21 4 21 17 15 20 9 17 3 20 3 7"/><line x1="9" y1="4" x2="9" y2="17"/><line x1="15" y1="7" x2="15" y2="20"/></svg></button>
+          </div>
+
+          <div class="float-icons">
+            <div class="float-icon" title="Search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg></div>
+            <div class="float-icon" title="Measure"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M21.3 8.7L8.7 21.3a2 2 0 0 1-2.8 0L2.7 18.1a2 2 0 0 1 0-2.8L15.3 2.7a2 2 0 0 1 2.8 0l3.2 3.2a2 2 0 0 1 0 2.8z"/><path d="M14.5 12.5l-2-2"/><path d="M11.5 15.5l-2-2"/><path d="M8.5 18.5l-2-2"/><path d="M17.5 9.5l-2-2"/></svg></div>
+            <div class="float-icon" title="Legend"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg></div>
+          </div>
+
+          <div class="pin" style="left: 50%; top: 22%;">
+            <div class="pin-label">Demo site</div>
+          </div>
+
+          <!-- Carousel still rendered underneath, just hidden behind the sheet. -->
+          <div class="bottom-rail">
+            <div class="rail-handle"></div>
+            <div class="rail-strip">
+              <div class="rail-tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>Story</div>
+              <div class="rail-tile active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>Snap</div>
+              <div class="rail-tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/></svg>Design</div>
+              <div class="rail-tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 17 9 11 13 15 21 7"/></svg>Terrain</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="tab-bar">
+          <div class="tab active">Map</div>
+          <div class="tab">Atlas</div>
+          <div class="tab">Settings</div>
+        </div>
+      </div>
+
+      <!-- Widget sheet — overlays the carousel AND the shell tab bar. -->
+      <div class="widget-sheet">
+        <div class="sheet-handle"></div>
+        <div class="sheet-header">
+          <div class="sheet-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
+            Snap
+          </div>
+          <button class="sheet-close" aria-label="Close">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 6l12 12M18 6L6 18"/></svg>
+          </button>
+        </div>
+        <div class="sheet-body">
+          <h4>Recent snaps · 24</h4>
+          <div class="snap-grid">
+            <div class="snap-thumb"><span class="timestamp">Just now</span></div>
+            <div class="snap-thumb alt-1"><span class="timestamp">2 min</span></div>
+            <div class="snap-thumb alt-2"><span class="timestamp">12 min</span></div>
+            <div class="snap-thumb alt-3"><span class="timestamp">1 hr</span></div>
+            <div class="snap-thumb alt-4"><span class="timestamp">3 hr</span></div>
+            <div class="snap-thumb alt-5"><span class="timestamp">Yesterday</span></div>
+          </div>
+          <div class="caption-row">Add a caption…</div>
+          <button class="primary-pill">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
+            Take snap
+          </button>
+        </div>
+      </div>
+    </div>
+    <div class="desktop-note">
+      Tapping a tile in the carousel launches a widget sheet that slides up over <b>both the carousel AND the Map/Atlas/Settings tab bar</b>. Sheet height is dynamic per widget-state — a quick "Take snap" sits in ~280px. Pull-down on the handle or tap close returns to the launcher. Map + ctrl-pill stay visible above so the user keeps spatial context. <b>Desktop equivalent:</b> the existing right-pane.
+    </div>
+  </div>
+
+  <!-- ───────────────────────────────────────────────────────── -->
+  <!-- Map · Design setup (tall sheet, ~78vh) -->
+  <div class="phone-wrap">
+    <div class="caption">3 · Map · Design setup (tall sheet)</div>
+    <div class="phone">
+      <div class="phone-grid">
+        <div class="brand-bar">
+          <div class="brand">MightyTwin</div>
+          <div class="brand-controls">
+            <span class="brand-chip">P</span>
+            <span class="brand-chip">T</span>
+            <span class="brand-chip">D</span>
+          </div>
+        </div>
+
+        <div class="pane">
+          <div class="map-bg"></div>
+
+          <div class="ctrl-pill">
+            <div class="ctrl-site">
+              <span class="back-affordance"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg></span>
+              <span class="avatar">D</span>
+              Demo site
+            </div>
+            <div class="ctrl-divider"></div>
+            <button class="ctrl-btn" aria-label="Zoom in"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg></button>
+            <button class="ctrl-btn" aria-label="Zoom out"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/><line x1="8" y1="11" x2="14" y2="11"/></svg></button>
+            <div class="ctrl-divider"></div>
+            <button class="ctrl-btn" aria-label="Home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12l9-9 9 9"/><path d="M5 10v10a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1V10"/></svg></button>
+            <button class="ctrl-btn" aria-label="Fit bounds"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/></svg></button>
+            <button class="ctrl-btn" aria-label="Basemap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><polygon points="3 7 9 4 15 7 21 4 21 17 15 20 9 17 3 20 3 7"/><line x1="9" y1="4" x2="9" y2="17"/><line x1="15" y1="7" x2="15" y2="20"/></svg></button>
+          </div>
+
+          <div class="float-icons">
+            <div class="float-icon" title="Search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg></div>
+          </div>
+
+          <div class="pin" style="left: 50%; top: 14%;">
+            <div class="pin-label">Demo site</div>
+          </div>
+
+          <div class="bottom-rail">
+            <div class="rail-handle"></div>
+            <div class="rail-strip">
+              <div class="rail-tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>Story</div>
+              <div class="rail-tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>Snap</div>
+              <div class="rail-tile active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/></svg>Design</div>
+              <div class="rail-tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 17 9 11 13 15 21 7"/></svg>Terrain</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="tab-bar">
+          <div class="tab active">Map</div>
+          <div class="tab">Atlas</div>
+          <div class="tab">Settings</div>
+        </div>
+      </div>
+
+      <div class="widget-sheet" style="height: 78%">
+        <div class="sheet-handle"></div>
+        <div class="sheet-header">
+          <div class="sheet-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/></svg>
+            Design
+          </div>
+          <button class="sheet-close" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+        </div>
+        <div class="sheet-body">
+          <h4>Sketch type</h4>
+          <div class="design-cards">
+            <div class="design-card active">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 3v18M3 12h18"/><circle cx="12" cy="12" r="3"/></svg>
+              <span class="card-name">CAD</span>
+              <span class="card-hint">Precise</span>
+            </div>
+            <div class="design-card">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M4 19l5-1 10-10-4-4-10 10-1 5z"/><path d="M14 5l4 4"/></svg>
+              <span class="card-name">Redline</span>
+              <span class="card-hint">Freehand</span>
+            </div>
+            <div class="design-card">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="10" width="7" height="7"/><rect x="14" y="10" width="7" height="7"/><rect x="8" y="3" width="7" height="7"/><rect x="8" y="17" width="7" height="4"/></svg>
+              <span class="card-name">Voxel</span>
+              <span class="card-hint">3D blocks</span>
+            </div>
+          </div>
+
+          <h4>Active layer</h4>
+          <div class="caption-row" style="margin-bottom: 16px">Site notes · 12 elements</div>
+
+          <h4>Quick colour</h4>
+          <div class="color-row">
+            <div class="color-swatch active" style="background:#ec4899"></div>
+            <div class="color-swatch" style="background:#fb7185"></div>
+            <div class="color-swatch" style="background:#f59e0b"></div>
+            <div class="color-swatch" style="background:#34d399"></div>
+            <div class="color-swatch" style="background:#38bdf8"></div>
+            <div class="color-swatch" style="background:#a78bfa"></div>
+          </div>
+
+          <button class="primary-pill">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 4v16M4 12h16"/></svg>
+            Start drawing
+          </button>
+        </div>
+      </div>
+    </div>
+    <div class="desktop-note">
+      <b>Setup state.</b> Sheet grows to ~78vh because the user is choosing — sketch type, layer, palette. Map is a thin strip at the top for orientation. As soon as they tap "Start drawing", the sheet auto-shrinks (next frame).
+    </div>
+  </div>
+
+  <!-- ───────────────────────────────────────────────────────── -->
+  <!-- Map · Design drawing (compact sheet, 2/3 map visible) -->
+  <div class="phone-wrap">
+    <div class="caption">4 · Map · Design drawing (compact · 2/3 map)</div>
+    <div class="phone">
+      <div class="phone-grid">
+        <div class="brand-bar">
+          <div class="brand">MightyTwin</div>
+          <div class="brand-controls">
+            <span class="brand-chip">P</span>
+            <span class="brand-chip">T</span>
+            <span class="brand-chip">D</span>
+          </div>
+        </div>
+
+        <div class="pane">
+          <div class="map-bg"></div>
+
+          <!-- Active drawn line: pink polyline + endpoint vertex -->
+          <svg class="drawing-overlay" viewBox="0 0 390 668" preserveAspectRatio="none">
+            <path d="M110 240 L180 220 L245 270 L295 340" stroke="#ec4899" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle cx="110" cy="240" r="4" fill="#ec4899" stroke="white" stroke-width="2"/>
+            <circle cx="180" cy="220" r="4" fill="#ec4899" stroke="white" stroke-width="2"/>
+            <circle cx="245" cy="270" r="4" fill="#ec4899" stroke="white" stroke-width="2"/>
+            <circle cx="295" cy="340" r="6" fill="#ec4899" stroke="white" stroke-width="2.5"/>
+          </svg>
+
+          <div class="ctrl-pill">
+            <div class="ctrl-site">
+              <span class="back-affordance"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg></span>
+              <span class="avatar">D</span>
+              Demo site
+            </div>
+            <div class="ctrl-divider"></div>
+            <button class="ctrl-btn" aria-label="Zoom in"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg></button>
+            <button class="ctrl-btn" aria-label="Zoom out"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/><line x1="8" y1="11" x2="14" y2="11"/></svg></button>
+            <div class="ctrl-divider"></div>
+            <button class="ctrl-btn" aria-label="Home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12l9-9 9 9"/><path d="M5 10v10a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1V10"/></svg></button>
+            <button class="ctrl-btn" aria-label="Fit bounds"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/></svg></button>
+            <button class="ctrl-btn" aria-label="Basemap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><polygon points="3 7 9 4 15 7 21 4 21 17 15 20 9 17 3 20 3 7"/><line x1="9" y1="4" x2="9" y2="17"/><line x1="15" y1="7" x2="15" y2="20"/></svg></button>
+          </div>
+
+          <div class="float-icons">
+            <div class="float-icon" title="Search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg></div>
+            <div class="float-icon" title="Measure"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M21.3 8.7L8.7 21.3a2 2 0 0 1-2.8 0L2.7 18.1a2 2 0 0 1 0-2.8L15.3 2.7a2 2 0 0 1 2.8 0l3.2 3.2a2 2 0 0 1 0 2.8z"/><path d="M14.5 12.5l-2-2"/><path d="M11.5 15.5l-2-2"/><path d="M8.5 18.5l-2-2"/><path d="M17.5 9.5l-2-2"/></svg></div>
+            <div class="float-icon" title="Legend"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg></div>
+          </div>
+
+          <div class="bottom-rail">
+            <div class="rail-handle"></div>
+            <div class="rail-strip">
+              <div class="rail-tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>Story</div>
+              <div class="rail-tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>Snap</div>
+              <div class="rail-tile active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/></svg>Design</div>
+              <div class="rail-tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 17 9 11 13 15 21 7"/></svg>Terrain</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="tab-bar">
+          <div class="tab active">Map</div>
+          <div class="tab">Atlas</div>
+          <div class="tab">Settings</div>
+        </div>
+      </div>
+
+      <!-- Compact sheet: just the tool palette + parameter ribbon.
+           Sized to 36% so 2/3 of the map is interactive. -->
+      <div class="widget-sheet" style="height: 36%">
+        <div class="sheet-handle"></div>
+        <div class="sheet-header" style="padding: 6px 18px 10px; border-bottom: none">
+          <div class="sheet-title" style="font-size: 14px">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/></svg>
+            CAD · Polyline
+          </div>
+          <button class="sheet-close" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+        </div>
+        <div class="sheet-body" style="padding: 4px 18px 14px">
+          <div class="tools-row">
+            <div class="tool-btn active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 19L19 5"/><circle cx="5" cy="19" r="2"/><circle cx="19" cy="5" r="2"/></svg><span class="tool-label">Line</span></div>
+            <div class="tool-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="16" height="16"/></svg><span class="tool-label">Rect</span></div>
+            <div class="tool-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polygon points="12 3 22 10 18 21 6 21 2 10"/></svg><span class="tool-label">Polygon</span></div>
+            <div class="tool-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/></svg><span class="tool-label">Circle</span></div>
+            <div class="tool-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17c3-7 7-12 9-12s5 5 9 12"/></svg><span class="tool-label">Free</span></div>
+            <div class="tool-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M3 21l9-9-5-5-9 9 5 5z"/><path d="M22 21h-7"/></svg><span class="tool-label">Erase</span></div>
+          </div>
+          <div class="inputs-ribbon">
+            <div class="input-chip"><span class="chip-swatch" style="background:#ec4899"></span><span class="chip-value">Pink</span></div>
+            <div class="input-chip"><span>Stroke</span><span class="chip-value">2 px</span></div>
+            <div class="input-chip"><span>Style</span><span class="chip-value">Solid</span></div>
+            <div class="input-chip"><span>Layer</span><span class="chip-value">Site notes</span></div>
+            <div class="input-chip"><span>Snap</span><span class="chip-value">Vertex</span></div>
+            <div class="input-chip"><span>Units</span><span class="chip-value">m</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="desktop-note">
+      <b>Drawing state.</b> Sheet auto-shrinks to ~36vh so 2/3 of the viewport is interactive map (4 vertices drawn here, last one being placed). The sheet now carries just two horizontal scrollers: <b>tool carousel</b> (Line · Rect · Polygon · Circle · Free · Erase) and <b>parameter ribbon</b> (colour · stroke · style · layer · snap · units). Tap a tool → it becomes active; swipe to switch. Tap close (or finish the shape) → sheet animates back to the setup state if more drawing is queued.
+    </div>
+  </div>
+
+</section>
+
+<p class="row-title">Atlas mode — drilling into a section</p>
+<section class="row">
+
+  <!-- ───────────────────────────────────────────────────────── -->
+  <!-- Atlas · Overview -->
+  <div class="phone-wrap">
+    <div class="caption">5 · Atlas · Overview</div>
+    <div class="phone"><div class="phone-grid">
+      <div class="brand-bar">
+        <div class="brand">MightyTwin</div>
+        <div class="brand-controls">
+          <span class="brand-chip">P</span>
+          <span class="brand-chip">T</span>
+          <span class="brand-chip">D</span>
+        </div>
+      </div>
+
+      <div class="atlas-pane">
+        <div class="page-head">
+          <h2>Overview</h2>
+          <p>Workspace at a glance — sites, users, recent activity.</p>
+        </div>
+        <div class="stat-grid">
+          <div class="stat-card"><div class="lbl">Sites</div><div class="val">7</div><div class="sub">1 public</div></div>
+          <div class="stat-card"><div class="lbl">Active users</div><div class="val">1</div><div class="sub">of 1 total</div></div>
+          <div class="stat-card"><div class="lbl">Layers</div><div class="val">36</div></div>
+          <div class="stat-card"><div class="lbl">Data sources</div><div class="val">37</div></div>
+          <div class="stat-card"><div class="lbl">Story maps</div><div class="val">2</div></div>
+          <div class="stat-card"><div class="lbl">Snaps</div><div class="val">1</div></div>
+        </div>
+        <div class="nav-bar">
+          <div class="nav-tab active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>Overview</div>
+          <div class="nav-tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>Sites</div>
+          <div class="nav-tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>Data</div>
+          <div class="nav-tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 11a9 9 0 0 1 9 9"/><path d="M4 4a16 16 0 0 1 16 16"/><circle cx="5" cy="19" r="1"/></svg>Feeds</div>
+          <div class="nav-tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>Library</div>
+        </div>
+        <div class="mai atlas"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l1.9 4.6L18 9l-4.1 1.4L12 15l-1.9-4.6L6 9l4.1-1.4L12 3z"/></svg></div>
+      </div>
+
+      <div class="tab-bar">
+        <div class="tab">Map</div>
+        <div class="tab active">Atlas</div>
+        <div class="tab">Settings</div>
+      </div>
+    </div></div>
+    <div class="desktop-note">
+      <b>Desktop equivalent:</b> AdminRoot's `.sidebar` left-rail nav becomes this scrollable bottom carousel; the rest of the layout stays the same.
+    </div>
+  </div>
+
+  <!-- ───────────────────────────────────────────────────────── -->
+  <!-- Atlas · Sites · drill-up carousel (AllTrails-style) -->
+  <div class="phone-wrap">
+    <div class="caption">6 · Atlas · Sites · cards carousel</div>
+    <div class="phone"><div class="phone-grid">
+      <div class="brand-bar">
+        <div class="brand">MightyTwin</div>
+        <div class="brand-controls">
+          <span class="brand-chip">P</span>
+          <span class="brand-chip">T</span>
+          <span class="brand-chip">D</span>
+        </div>
+      </div>
+
+      <div class="atlas-pane" style="position: relative;">
+        <div class="map-bg"></div>
+        <div class="pin" style="left: 35%; top: 32%;">
+          <div class="pin-label">Demo site</div>
+        </div>
+        <div class="pin" style="left: 65%; top: 50%;">
+          <div class="pin-label">Wentworth</div>
+        </div>
+
+        <div class="site-carousel">
+          <div class="site-pager">1 of 7 · swipe →</div>
+          <div class="site-card">
+            <div class="thumb"></div>
+            <div class="info">
+              <div class="info-tags">
+                <span class="tag">Public</span>
+                <span>Updated 2d ago</span>
+              </div>
+              <div class="name">Demo site</div>
+              <div class="meta">12 layers · 5 sources · Sydney CBD</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="nav-bar">
+          <div class="nav-tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>Overview</div>
+          <div class="nav-tab active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>Sites</div>
+          <div class="nav-tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>Data</div>
+          <div class="nav-tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 11a9 9 0 0 1 9 9"/><path d="M4 4a16 16 0 0 1 16 16"/><circle cx="5" cy="19" r="1"/></svg>Feeds</div>
+          <div class="nav-tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>Library</div>
+        </div>
+      </div>
+
+      <div class="tab-bar">
+        <div class="tab">Map</div>
+        <div class="tab active">Atlas</div>
+        <div class="tab">Settings</div>
+      </div>
+    </div></div>
+    <div class="desktop-note">
+      Sites pane gets a content carousel — swipe horizontally to scrub through sites with the map zooming/panning to each. Tap a card to drill into the site in Map mode. <b>Desktop equivalent:</b> the existing Sites table on the Atlas page.
+    </div>
+  </div>
+
+</section>
+
+<p class="row-title">Settings mode — already shipped, shown for completeness</p>
+<section class="row">
+
+  <!-- ───────────────────────────────────────────────────────── -->
+  <!-- Settings · Basemap -->
+  <div class="phone-wrap">
+    <div class="caption">7 · Settings · Basemap</div>
+    <div class="phone"><div class="phone-grid">
+      <div class="brand-bar">
+        <div class="brand">MightyTwin</div>
+        <div class="brand-controls">
+          <span class="brand-chip">P</span>
+          <span class="brand-chip">T</span>
+          <span class="brand-chip">D</span>
+        </div>
+      </div>
+
+      <div class="settings-pane">
+        <div class="settings-body">
+          <h3>Basemap &amp; terrain</h3>
+          <p>Choose the imagery provider and terrain for the globe.</p>
+
+          <div class="setting-row">
+            <div class="label">Provider</div>
+            <div class="hint">OSM works without a token.</div>
+            <select>
+              <option>OpenStreetMap (no token)</option>
+            </select>
+          </div>
+
+          <div class="setting-row">
+            <div class="label">Ion token</div>
+            <div class="hint">Stored in localStorage only.</div>
+            <input placeholder="Paste Ion token"/>
+          </div>
+
+          <div class="setting-row" style="display:flex; justify-content:space-between; align-items:center;">
+            <div>
+              <div class="label">Cesium World Terrain</div>
+              <div class="hint">3D terrain. Requires Ion token.</div>
+            </div>
+            <div class="toggle"></div>
+          </div>
+        </div>
+
+        <div class="nav-bar">
+          <div class="nav-tab active" style="min-width:120px">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round"><polygon points="3 7 9 4 15 7 21 4 21 17 15 20 9 17 3 20 3 7"/><line x1="9" y1="4" x2="9" y2="17"/><line x1="15" y1="7" x2="15" y2="20"/></svg>
+            Basemap &amp; terrain
+          </div>
+          <div class="nav-tab" style="min-width:76px">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><path d="M3 7v10"/><path d="M3 12h18"/><path d="M21 7v10"/><path d="M7 9v6"/><path d="M11 8v8"/><path d="M15 9v6"/></svg>
+            Units
+          </div>
+          <div class="nav-tab" style="min-width:90px">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>
+            Widget host
+          </div>
+          <div class="nav-tab" style="min-width:120px">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 0 0 18"/><circle cx="8.5" cy="9.5" r="1" fill="currentColor"/><circle cx="15.5" cy="9.5" r="1" fill="currentColor"/><circle cx="8.5" cy="14.5" r="1" fill="currentColor"/></svg>
+            Theme &amp; density
+          </div>
+          <div class="nav-tab" style="min-width:90px">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round"><path d="M14.7 6.3a3 3 0 0 1 0 4.2l-1.5 1.5 4.2 4.2-2.1 2.1-4.2-4.2-1.5 1.5a3 3 0 0 1-4.2 0L3.5 13.5a3 3 0 0 1 0-4.2l4.2-4.2a3 3 0 0 1 4.2 0z"/></svg>
+            Developer
+          </div>
+          <div class="nav-tab" style="min-width:76px">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            Profile
+          </div>
+          <div class="nav-tab" style="min-width:80px">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round"><path d="M12 3l1.9 4.6L18 9l-4.1 1.4L12 15l-1.9-4.6L6 9l4.1-1.4L12 3z"/></svg>
+            Branding
+          </div>
+          <div class="nav-tab" style="min-width:60px">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            Users
+          </div>
+        </div>
+        <div class="mai atlas"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l1.9 4.6L18 9l-4.1 1.4L12 15l-1.9-4.6L6 9l4.1-1.4L12 3z"/></svg></div>
+      </div>
+
+      <div class="tab-bar">
+        <div class="tab">Map</div>
+        <div class="tab">Atlas</div>
+        <div class="tab active">Settings</div>
+      </div>
+    </div></div>
+    <div class="desktop-note">
+      Already shipped: layout flipped to content-top / carousel-bottom, label-only flat tabs. <b>Desktop equivalent:</b> SettingsShell's 200px left rail; same panels, same persistence.
+    </div>
+  </div>
+
+</section>
+
+<section class="pattern-key">
+  <h2>Open questions to confirm before code</h2>
+  <dl>
+    <dt><b>Launch gesture</b></dt>
+    <dd>Tapping a tile launches the widget sheet directly — no drag-up handle on the carousel itself. The carousel becomes purely a launcher; the sheet is the workspace. Sheet's own handle handles resize / dismiss.</dd>
+    <dt><b>Sheet height policy</b></dt>
+    <dd>Sheet sizes to its content per widget-state, capped at <code>min(content, ~92vh)</code> with a sensible minimum (~240px so single-action widgets don't look cramped). User can drag the handle to override within those bounds. Pull-down past a threshold dismisses entirely.</dd>
+    <dt><b>Widget sheet contents</b></dt>
+    <dd>Each widget renders its own sheet body — same component, but with mobile-first density. Proposed registry slot: <code>widget.MobileSheet</code> on the widget extension. Existing desktop right-pane render stays untouched.</dd>
+    <dt><b>Atlas Sites carousel</b></dt>
+    <dd>Wholly new for mobile, optional for desktop. Sources its data from the existing <code>/api/sites</code> endpoint. Tap a card → drills into Map mode with that site loaded.</dd>
+    <dt><b>Back-to-overview</b></dt>
+    <dd>Small chevron left of the site avatar inside the primary controller pill (frames 1, 2). Tap → navigates to <code>/viewer</code> (all-sites overview). The whole site chip can double as a site-switcher sheet.</dd>
+    <dt><b>Right-pane on desktop</b></dt>
+    <dd>Unchanged. The widget sheet is phone-only — desktop continues to dock widget content in the right pane. Same widget components, two render targets (<code>widget.MobileSheet</code> vs <code>widget.RightPane</code>).</dd>
+  </dl>
+</section>
+
+</body>
+</html>

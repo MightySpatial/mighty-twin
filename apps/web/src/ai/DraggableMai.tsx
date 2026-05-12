@@ -26,16 +26,18 @@ function saveFabPos(p: { x: number; y: number }) {
   try { sessionStorage.setItem(FAB_KEY, JSON.stringify(p)) } catch {}
 }
 
-/** Default FAB anchor: bottom-right of the viewport. Clearance has to
- *  cover the *worst* per-pane bottom chrome (the 64 px Atlas bottom-nav
- *  and the Settings tabbar are both 64 px; viewer has only the ~48 px
- *  secondary rail). 88 px gives the FAB ~24 px breathing room above
- *  any of them so it never overlaps a tap target. */
+/** Default FAB anchor: bottom-right of the viewport. On phone the shell
+ *  stacks two 64 px chromes at the bottom — the per-pane bottom-nav
+ *  (Atlas section nav, Settings section nav) and the outer Map/Atlas/
+ *  Settings tab bar. Clearance has to cover BOTH (64 + 64 = 128) plus
+ *  ~14 px breathing room so the FAB sits cleanly above the carousel
+ *  rather than over its top edge. Viewer's compact widget rail uses
+ *  the same height, so this value works on every pane. */
 function defaultFabPos() {
   if (typeof window === 'undefined') return { x: 0, y: 0 }
   return {
     x: window.innerWidth - FAB_SIZE - 24,
-    y: window.innerHeight - FAB_SIZE - 88,
+    y: window.innerHeight - FAB_SIZE - 142,
   }
 }
 
