@@ -191,12 +191,102 @@
     background: linear-gradient(135deg, #6366f1, #a78bfa);
     color: white; font-size: 12px; font-weight: 700;
   }
-  .ctrl-site .back-affordance {
-    color: var(--fg-faint);
-    display: inline-flex; align-items: center;
-    margin-left: -2px;
+  /* Overview button — visible back-to-overview affordance.
+     Shown in the ctrl-pill whenever a single site is loaded. Tap
+     navigates to /viewer (all-sites overview state). The breadcrumb
+     separator › makes the hierarchy unambiguous: Overview › Site. */
+  .ctrl-overview {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 4px 10px 4px 6px;
+    border-radius: 999px;
+    background: rgba(255,255,255,0.04);
+    color: var(--fg-primary);
+    font-size: 13px; font-weight: 500;
+    border: none; cursor: pointer;
   }
-  .ctrl-site .back-affordance svg { width: 12px; height: 12px; }
+  .ctrl-overview svg { width: 12px; height: 12px; color: var(--fg-secondary); }
+  .ctrl-breadcrumb-sep {
+    color: var(--fg-faint);
+    font-size: 14px;
+    padding: 0 2px;
+    align-self: center;
+  }
+  /* Special "all-sites" avatar (used when in the overview state). */
+  .ctrl-site .avatar.all-sites {
+    background: linear-gradient(135deg, #38bdf8, #a78bfa);
+    font-size: 13px;
+  }
+  /* Site list strip — replaces the widget rail at the bottom of
+     Map mode when no site is selected (all-sites overview state).
+     Cards are ~280px wide, scroll-snap-x, with a peek of the next
+     card so the user knows it's scrollable. */
+  .site-strip {
+    position: absolute;
+    bottom: 12px; left: 0; right: 0;
+    padding: 0 12px;
+    z-index: 6;
+  }
+  .site-strip-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 6px 8px;
+    color: var(--fg-muted);
+    font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em;
+    font-weight: 600;
+  }
+  .site-strip-header .count { color: var(--teal); }
+  .site-strip-cards {
+    display: flex; gap: 10px;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+    padding: 0 2px 6px;
+    margin: 0 -6px;
+  }
+  .site-strip-cards::-webkit-scrollbar { display: none; }
+  .site-card-mini {
+    flex: 0 0 280px;
+    scroll-snap-align: start;
+    display: flex; gap: 10px;
+    padding: 10px;
+    background: rgba(15, 17, 28, 0.92);
+    backdrop-filter: blur(14px);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+  }
+  .site-card-mini.active {
+    border-color: rgba(45, 212, 191, 0.45);
+    box-shadow: 0 0 0 1px rgba(45, 212, 191, 0.25);
+  }
+  .site-card-mini .thumb {
+    width: 60px; height: 60px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #2c4a6d, #2c5e4a);
+    flex-shrink: 0;
+    position: relative;
+  }
+  .site-card-mini.alt-1 .thumb { background: linear-gradient(135deg, #5c3424, #2c4a6d); }
+  .site-card-mini.alt-2 .thumb { background: linear-gradient(135deg, #3a2a52, #2c5e4a); }
+  .site-card-mini.alt-3 .thumb { background: linear-gradient(135deg, #1d2a3c, #4a5c2c); }
+  .site-card-mini .info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; justify-content: center; }
+  .site-card-mini .name {
+    font-size: 13px; font-weight: 600; color: var(--fg-primary);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .site-card-mini .meta {
+    font-size: 11px; color: var(--fg-faint);
+    display: flex; align-items: center; gap: 4px;
+  }
+  .site-card-mini .meta .dot {
+    width: 4px; height: 4px; border-radius: 50%;
+    background: var(--fg-faint);
+  }
+  .site-card-mini .meta .badge {
+    background: rgba(36, 83, 255, 0.16);
+    color: var(--cobalt);
+    font-size: 9px; font-weight: 700;
+    padding: 1px 6px; border-radius: 999px;
+    text-transform: uppercase; letter-spacing: 0.04em;
+  }
   .ctrl-divider {
     width: 1px;
     background: var(--line);
@@ -731,7 +821,9 @@
     <dt><b>Top brand bar</b></dt>
     <dd>48px. Just the "MightyTwin" wordmark + dev-only breakpoint chips. Identity only — no critical controls (so iOS banner notifications dropping in at the top don't eat anything functional).</dd>
     <dt><b>Primary controller pill</b></dt>
-    <dd>Horizontal floating pill anchored top-left of the map area (matches the live Railway deployment). Carries the site chip with a back-to-overview chevron, then zoom +/−, home, fit-bounds, basemap toggle. Single home for all map controls; nothing duplicated.</dd>
+    <dd>Horizontal floating pill anchored top-left of the map area. Two states: <b>Overview state</b> (no site loaded) shows the "All sites · N" label with a stack-of-maps avatar; <b>Site state</b> shows an <b>"Overview" button</b> (with chevron-left icon) + a "›" breadcrumb separator + the site chip — tapping Overview navigates back to the all-sites state. Right of the chip: zoom + home + bounds + basemap controls.</dd>
+    <dt><b>Site list strip</b></dt>
+    <dd>When in Overview state the bottom of the map shows a horizontal site picker (cards scroll-snap, peek-of-next, click to load). Replaces the widget rail one-for-one — widget rail is per-site so it doesn't appear until a site is loaded. Same data + same component on every form factor; just sized differently.</dd>
     <dt><b>Bottom carousel</b></dt>
     <dd>Horizontal scroll, snap-x, hidden scrollbar. On Map it's the widget controller (Story/Snap/Design/Terrain/Fly). On Atlas/Settings it's the section nav. On Sites it's a content carousel of site cards.</dd>
     <dt><b>Widget sheet (decoupled)</b></dt>
@@ -745,13 +837,13 @@
   </dl>
 </section>
 
-<p class="row-title">Map mode — viewing a site</p>
+<p class="row-title">Map mode — overview → site → tools</p>
 <section class="row">
 
   <!-- ───────────────────────────────────────────────────────── -->
-  <!-- Map · default (compact rail) -->
+  <!-- Map · ALL SITES overview (no site loaded) -->
   <div class="phone-wrap">
-    <div class="caption">1 · Map · compact rail</div>
+    <div class="caption">0 · Map · all sites overview (entry state)</div>
     <div class="phone"><div class="phone-grid">
       <div class="brand-bar">
         <div class="brand">MightyTwin</div>
@@ -767,7 +859,110 @@
 
         <div class="ctrl-pill">
           <div class="ctrl-site">
-            <span class="back-affordance"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg></span>
+            <span class="avatar all-sites"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" style="width:14px;height:14px;"><polygon points="3 7 9 4 15 7 21 4 21 17 15 20 9 17 3 20 3 7"/><line x1="9" y1="4" x2="9" y2="17"/><line x1="15" y1="7" x2="15" y2="20"/></svg></span>
+            All sites · 7
+          </div>
+          <div class="ctrl-divider"></div>
+          <button class="ctrl-btn" aria-label="Zoom in"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg></button>
+          <button class="ctrl-btn" aria-label="Zoom out"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/><line x1="8" y1="11" x2="14" y2="11"/></svg></button>
+          <div class="ctrl-divider"></div>
+          <button class="ctrl-btn" aria-label="Fit bounds"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/></svg></button>
+          <button class="ctrl-btn" aria-label="Basemap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><polygon points="3 7 9 4 15 7 21 4 21 17 15 20 9 17 3 20 3 7"/><line x1="9" y1="4" x2="9" y2="17"/><line x1="15" y1="7" x2="15" y2="20"/></svg></button>
+        </div>
+
+        <div class="float-icons">
+          <div class="float-icon" title="Search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg></div>
+          <div class="float-icon" title="Filter"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg></div>
+        </div>
+
+        <!-- Several pins on the map — all sites visible at once -->
+        <div class="pin" style="left: 28%; top: 24%;">
+          <div class="pin-label">Demo site</div>
+        </div>
+        <div class="pin" style="left: 62%; top: 32%;">
+          <div class="pin-label">Wentworth</div>
+        </div>
+        <div class="pin" style="left: 42%; top: 50%;">
+          <div class="pin-label">Royal NP</div>
+        </div>
+        <div class="pin" style="left: 78%; top: 56%;">
+          <div class="pin-label">Coastal</div>
+        </div>
+
+        <!-- Site list strip replaces the widget rail when no site is loaded -->
+        <div class="site-strip">
+          <div class="site-strip-header">
+            <span>All sites <span class="count">· 7</span></span>
+            <span style="text-transform:none;letter-spacing:0;font-size:10px;color:var(--fg-faint)">Swipe →</span>
+          </div>
+          <div class="site-strip-cards">
+            <div class="site-card-mini active">
+              <div class="thumb"></div>
+              <div class="info">
+                <div class="name">Demo site</div>
+                <div class="meta">Sydney CBD<span class="dot"></span>12 layers<span class="badge">Public</span></div>
+              </div>
+            </div>
+            <div class="site-card-mini alt-1">
+              <div class="thumb"></div>
+              <div class="info">
+                <div class="name">Wentworth Falls</div>
+                <div class="meta">Blue Mountains<span class="dot"></span>8 layers</div>
+              </div>
+            </div>
+            <div class="site-card-mini alt-2">
+              <div class="thumb"></div>
+              <div class="info">
+                <div class="name">Royal National Park</div>
+                <div class="meta">Audley<span class="dot"></span>14 layers</div>
+              </div>
+            </div>
+            <div class="site-card-mini alt-3">
+              <div class="thumb"></div>
+              <div class="info">
+                <div class="name">Coastal walk</div>
+                <div class="meta">Bondi→Coogee<span class="dot"></span>6 layers</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="tab-bar">
+        <div class="tab active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round"><polygon points="3 7 9 4 15 7 21 4 21 17 15 20 9 17 3 20 3 7"/><line x1="9" y1="4" x2="9" y2="17"/><line x1="15" y1="7" x2="15" y2="20"/></svg>Map</div>
+        <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>Atlas</div>
+        <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>Settings</div>
+      </div>
+    </div></div>
+    <div class="desktop-note">
+      <b>Entry state for Map mode.</b> No site loaded — multiple pins on the map, ctrl-pill shows "All sites · 7" instead of a site chip + Overview button (you ARE in overview). Bottom strip is the site picker: cards scroll horizontally, snap-to-card, peek-of-next so it reads as swipeable. Tap a card → that site loads, pin animates to focus, ctrl-pill morphs to <code>Overview › Site name</code>, and the bottom strip is replaced by the widget rail (next frame). The "Overview" button in subsequent frames returns to this exact state.
+    </div>
+  </div>
+
+  <!-- ───────────────────────────────────────────────────────── -->
+  <!-- Map · default (compact rail) -->
+  <div class="phone-wrap">
+    <div class="caption">1 · Map · compact rail (after picking a site)</div>
+    <div class="phone"><div class="phone-grid">
+      <div class="brand-bar">
+        <div class="brand">MightyTwin</div>
+        <div class="brand-controls">
+          <span class="brand-chip">P</span>
+          <span class="brand-chip">T</span>
+          <span class="brand-chip">D</span>
+        </div>
+      </div>
+
+      <div class="pane">
+        <div class="map-bg"></div>
+
+        <div class="ctrl-pill">
+          <button class="ctrl-overview" aria-label="Back to all sites">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg>
+            Overview
+          </button>
+          <span class="ctrl-breadcrumb-sep">›</span>
+          <div class="ctrl-site">
             <span class="avatar">D</span>
             Demo site
           </div>

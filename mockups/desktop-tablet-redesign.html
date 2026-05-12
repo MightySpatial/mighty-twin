@@ -212,11 +212,99 @@
     background: linear-gradient(135deg, #6366f1, #a78bfa);
     color: white; font-size: 12px; font-weight: 700;
   }
-  .ctrl-site .back-affordance {
-    color: var(--fg-faint); display: inline-flex; align-items: center;
-    margin-left: -2px;
+  /* Overview button — visible back-to-overview affordance.
+     Shown in the ctrl-pill whenever a single site is loaded. */
+  .ctrl-overview {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 4px 10px 4px 6px;
+    border-radius: 999px;
+    background: rgba(255,255,255,0.04);
+    color: var(--fg-primary);
+    font-size: 13px; font-weight: 500;
+    border: none; cursor: pointer;
   }
-  .ctrl-site .back-affordance svg { width: 12px; height: 12px; }
+  .ctrl-overview svg { width: 12px; height: 12px; color: var(--fg-secondary); }
+  .ctrl-breadcrumb-sep {
+    color: var(--fg-faint);
+    font-size: 14px;
+    padding: 0 2px;
+    align-self: center;
+  }
+  .ctrl-site .avatar.all-sites {
+    background: linear-gradient(135deg, #38bdf8, #a78bfa);
+    font-size: 13px;
+  }
+  /* Site list strip — replaces the widget rail at the bottom of
+     Map mode when no site is selected. Same pattern as mobile but
+     cards are slightly wider on desktop. */
+  .site-strip {
+    position: absolute;
+    bottom: 16px; left: 50%;
+    transform: translateX(-50%);
+    z-index: 6;
+    max-width: min(960px, calc(100% - 32px));
+    width: 100%;
+  }
+  .site-strip-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 10px 8px;
+    color: var(--fg-muted);
+    font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em;
+    font-weight: 600;
+  }
+  .site-strip-header .count { color: var(--teal); }
+  .site-strip-cards {
+    display: flex; gap: 10px;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+    padding: 0 8px 6px;
+    margin: 0 -8px;
+  }
+  .site-strip-cards::-webkit-scrollbar { display: none; }
+  .site-card-mini {
+    flex: 0 0 300px;
+    scroll-snap-align: start;
+    display: flex; gap: 12px;
+    padding: 12px;
+    background: rgba(15, 17, 28, 0.92);
+    backdrop-filter: blur(14px);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+  }
+  .site-card-mini.active {
+    border-color: rgba(45, 212, 191, 0.45);
+    box-shadow: 0 0 0 1px rgba(45, 212, 191, 0.25);
+  }
+  .site-card-mini .thumb {
+    width: 64px; height: 64px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #2c4a6d, #2c5e4a);
+    flex-shrink: 0;
+  }
+  .site-card-mini.alt-1 .thumb { background: linear-gradient(135deg, #5c3424, #2c4a6d); }
+  .site-card-mini.alt-2 .thumb { background: linear-gradient(135deg, #3a2a52, #2c5e4a); }
+  .site-card-mini.alt-3 .thumb { background: linear-gradient(135deg, #1d2a3c, #4a5c2c); }
+  .site-card-mini .info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; justify-content: center; }
+  .site-card-mini .name {
+    font-size: 13px; font-weight: 600; color: var(--fg-primary);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .site-card-mini .meta {
+    font-size: 11px; color: var(--fg-faint);
+    display: flex; align-items: center; gap: 4px;
+  }
+  .site-card-mini .meta .dot {
+    width: 4px; height: 4px; border-radius: 50%;
+    background: var(--fg-faint);
+  }
+  .site-card-mini .meta .badge {
+    background: rgba(36, 83, 255, 0.16);
+    color: var(--cobalt);
+    font-size: 9px; font-weight: 700;
+    padding: 1px 6px; border-radius: 999px;
+    text-transform: uppercase; letter-spacing: 0.04em;
+  }
   .ctrl-divider { width: 1px; background: var(--line); margin: 4px 2px; }
   .ctrl-btn {
     width: 32px; height: 32px; border-radius: 50%;
@@ -619,7 +707,9 @@
   <h2>What's the same as mobile</h2>
   <dl>
     <dt><b>Primary controller pill</b></dt>
-    <dd>Horizontal floating pill carrying site chip (with back-to-overview chevron) + zoom + home + bounds + basemap. Same component, same position (top-left of map). Replaces ViewerSidebar's site-chip duty on desktop.</dd>
+    <dd>Horizontal floating pill anchored top-left of the map. Two states: <b>Overview</b> (no site loaded) → "All sites · N" label. <b>Site loaded</b> → <b>"Overview" button</b> + "›" separator + site chip; tapping Overview returns to the all-sites state. Right of the chip: zoom + home + bounds + basemap. Same component, same position across phone / tablet / desktop. Replaces ViewerSidebar's site-chip duty on desktop.</dd>
+    <dt><b>Site list strip</b></dt>
+    <dd>Shown only in the Overview state. Bottom of the map carries a horizontal scroll-snap strip of site cards (thumb + name + meta + Public badge). Replaces the widget rail one-for-one — widget rail is per-site, so it appears only after a site is loaded. Same component on every form factor; max-width 960px on desktop, full-width on phone.</dd>
     <dt><b>Floating left icons</b></dt>
     <dd>Vertical stack for the panel-bearing chrome — Search · Site info · Layers · Measure · Terrain · Legend. Acts as the <b>primary sidebar</b> (always visible). Map controls that already live in the pill (zoom / home / bounds / basemap) are not duplicated here.</dd>
     <dt><b>Floating side panel</b></dt>
@@ -641,6 +731,114 @@
 
 <!-- ═══ Desktop ════════════════════════════════════════════════ -->
 <p class="row-title">Desktop · ~1200×750</p>
+
+<!-- 0: Map · all sites overview (entry state) -->
+<div class="frame-wrap">
+  <div class="caption">D0 · Map · all sites overview (entry state)</div>
+  <div class="desktop">
+    <div class="desktop-titlebar">
+      <span class="traffic red"></span>
+      <span class="traffic amber"></span>
+      <span class="traffic green"></span>
+      <div class="desktop-url">mighty-twin-web.up.railway.app/viewer</div>
+    </div>
+    <div class="desktop-body">
+      <div class="brand-bar">
+        <div class="brand">MightyTwin</div>
+        <div class="mode-tabs">
+          <div class="mode-tab active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round"><polygon points="3 7 9 4 15 7 21 4 21 17 15 20 9 17 3 20 3 7"/><line x1="9" y1="4" x2="9" y2="17"/><line x1="15" y1="7" x2="15" y2="20"/></svg>Map</div>
+          <div class="mode-tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>Atlas</div>
+          <div class="mode-tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>Settings</div>
+        </div>
+        <div class="brand-controls">
+          <span class="brand-chip">P</span>
+          <span class="brand-chip">T</span>
+          <span class="brand-chip">D</span>
+        </div>
+      </div>
+
+      <div class="pane" style="height: calc(100% - 44px);">
+        <div class="map-bg"></div>
+
+        <div class="ctrl-pill">
+          <div class="ctrl-site">
+            <span class="avatar all-sites"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" style="width:14px;height:14px;"><polygon points="3 7 9 4 15 7 21 4 21 17 15 20 9 17 3 20 3 7"/><line x1="9" y1="4" x2="9" y2="17"/><line x1="15" y1="7" x2="15" y2="20"/></svg></span>
+            All sites · 7
+          </div>
+          <div class="ctrl-divider"></div>
+          <button class="ctrl-btn" aria-label="Zoom in"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg></button>
+          <button class="ctrl-btn" aria-label="Zoom out"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/><line x1="8" y1="11" x2="14" y2="11"/></svg></button>
+          <div class="ctrl-divider"></div>
+          <button class="ctrl-btn" aria-label="Fit bounds"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/></svg></button>
+          <button class="ctrl-btn" aria-label="Basemap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><polygon points="3 7 9 4 15 7 21 4 21 17 15 20 9 17 3 20 3 7"/><line x1="9" y1="4" x2="9" y2="17"/><line x1="15" y1="7" x2="15" y2="20"/></svg></button>
+        </div>
+
+        <div class="float-icons">
+          <div class="float-icon" title="Search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg></div>
+          <div class="float-icon" title="Filter"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg></div>
+          <div class="float-icon" title="Layers"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg></div>
+        </div>
+
+        <div class="pin" style="left: 28%; top: 26%;"><div class="pin-label">Demo site</div></div>
+        <div class="pin" style="left: 56%; top: 32%;"><div class="pin-label">Wentworth</div></div>
+        <div class="pin" style="left: 44%; top: 56%;"><div class="pin-label">Royal NP</div></div>
+        <div class="pin" style="left: 70%; top: 62%;"><div class="pin-label">Coastal</div></div>
+        <div class="pin" style="left: 38%; top: 78%;"><div class="pin-label">Hunter</div></div>
+
+        <div class="site-strip">
+          <div class="site-strip-header">
+            <span>All sites <span class="count">· 7</span></span>
+            <span style="text-transform:none;letter-spacing:0;font-size:11px;color:var(--fg-faint)">Click a card to load · scroll for more</span>
+          </div>
+          <div class="site-strip-cards">
+            <div class="site-card-mini active">
+              <div class="thumb"></div>
+              <div class="info">
+                <div class="name">Demo site</div>
+                <div class="meta">Sydney CBD<span class="dot"></span>12 layers<span class="badge">Public</span></div>
+              </div>
+            </div>
+            <div class="site-card-mini alt-1">
+              <div class="thumb"></div>
+              <div class="info">
+                <div class="name">Wentworth Falls</div>
+                <div class="meta">Blue Mountains<span class="dot"></span>8 layers</div>
+              </div>
+            </div>
+            <div class="site-card-mini alt-2">
+              <div class="thumb"></div>
+              <div class="info">
+                <div class="name">Royal National Park</div>
+                <div class="meta">Audley<span class="dot"></span>14 layers</div>
+              </div>
+            </div>
+            <div class="site-card-mini alt-3">
+              <div class="thumb"></div>
+              <div class="info">
+                <div class="name">Coastal walk</div>
+                <div class="meta">Bondi → Coogee<span class="dot"></span>6 layers</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="mai"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l1.9 4.6L18 9l-4.1 1.4L12 15l-1.9-4.6L6 9l4.1-1.4L12 3z"/></svg></div>
+      </div>
+    </div>
+  </div>
+  <div class="annot">
+    <b>Entry state — no site loaded.</b> Ctrl-pill shows "All sites · 7" instead of a site chip + Overview button (you ARE in overview). Bottom is a site picker strip — cards scroll-snap horizontally, peek-of-next, click to load. The widget rail does not appear here — it's per-site. Once a site is loaded (next frame), the pill morphs to <code>Overview › Site name</code> and the bottom strip is replaced by the widget rail.
+  </div>
+  <div class="change-list">
+    <h3>Code changes implied</h3>
+    <ul>
+      <li><a href="../apps/web/src/viewer/pages/SitesMapPage.tsx">SitesMapPage</a> already renders the all-sites map. Add the bottom site strip as a sibling of the Cesium canvas — same component as <code>CtrlPill</code>'s sibling.</li>
+      <li>New <code>SiteStrip</code> component at <code>apps/web/src/viewer/components/SiteStrip/</code>. Data source: <code>/api/sites</code>. Same component on phone (full width) and desktop (centered, max-width 960px).</li>
+      <li>Pin click → scroll the strip to the matching card (active state). Card click → navigate to <code>/viewer/site/&lt;slug&gt;</code>.</li>
+      <li>Ctrl-pill: derive <code>state = currentSite ? 'site' : 'overview'</code>. In <code>site</code> state render the Overview button + breadcrumb sep + site chip. In <code>overview</code> state render just the all-sites label with the map-stack avatar.</li>
+    </ul>
+  </div>
+</div>
 
 <!-- 1: Map · site loaded, right pane open (Snap) -->
 <div class="frame-wrap">
@@ -671,8 +869,12 @@
         <div class="map-bg"></div>
 
         <div class="ctrl-pill">
+          <button class="ctrl-overview" aria-label="Back to all sites">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg>
+            Overview
+          </button>
+          <span class="ctrl-breadcrumb-sep">›</span>
           <div class="ctrl-site">
-            <span class="back-affordance"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg></span>
             <span class="avatar">D</span>
             Demo site
           </div>
@@ -779,8 +981,12 @@
         <div class="map-bg"></div>
 
         <div class="ctrl-pill">
+          <button class="ctrl-overview" aria-label="Back to all sites">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg>
+            Overview
+          </button>
+          <span class="ctrl-breadcrumb-sep">›</span>
           <div class="ctrl-site">
-            <span class="back-affordance"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg></span>
             <span class="avatar">D</span>
             Demo site
           </div>
@@ -1059,8 +1265,12 @@
         <div class="map-bg"></div>
 
         <div class="ctrl-pill">
+          <button class="ctrl-overview" aria-label="Back to all sites">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg>
+            Overview
+          </button>
+          <span class="ctrl-breadcrumb-sep">›</span>
           <div class="ctrl-site">
-            <span class="back-affordance"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg></span>
             <span class="avatar">D</span>
             Demo site
           </div>
@@ -1134,8 +1344,12 @@
         <div class="map-bg"></div>
 
         <div class="ctrl-pill">
+          <button class="ctrl-overview" aria-label="Back to all sites">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg>
+            Overview
+          </button>
+          <span class="ctrl-breadcrumb-sep">›</span>
           <div class="ctrl-site">
-            <span class="back-affordance"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg></span>
             <span class="avatar">D</span>
             Demo site
           </div>
