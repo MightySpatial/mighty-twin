@@ -18,6 +18,16 @@ import {
   BrandingPanel,
   WidgetLayoutPanel,
 } from './admin/pages/EngineSettingsPanels'
+import {
+  User as ProfileIcon,
+  Sparkles as BrandingIcon,
+  Users as UsersIcon,
+  Bot as AIIcon,
+  Eye as AutodetectIcon,
+  Grid3x3 as WidgetsIcon,
+  Server as SystemIcon,
+  Activity as DiagnosticsIcon,
+} from 'lucide-react'
 
 const LoginPage = lazy(() => import('./viewer/pages/LoginPage'))
 const SetupPage = lazy(() => import('./viewer/pages/SetupPage'))
@@ -44,17 +54,19 @@ const loadingFallback = (
  *  are server-persisted settings that only apply to MightyTwin (not lite
  *  or dev-web). The shared panels (Basemap, Units, Theme, etc.) render
  *  above these automatically. */
+const ICON_SIZE = 20
+const ICON_STROKE = 1.75
 const TWIN_SETTINGS_SECTIONS = [
   // Workspace admin
-  { id: 'profile', label: 'Profile', panel: <ProfilePanel /> },
-  { id: 'branding', label: 'Branding', panel: <BrandingPanel /> },
-  { id: 'users', label: 'Users', panel: <UsersPage /> },
+  { id: 'profile', label: 'Profile', icon: <ProfileIcon size={ICON_SIZE} strokeWidth={ICON_STROKE} />, panel: <ProfilePanel /> },
+  { id: 'branding', label: 'Branding', icon: <BrandingIcon size={ICON_SIZE} strokeWidth={ICON_STROKE} />, panel: <BrandingPanel /> },
+  { id: 'users', label: 'Users', icon: <UsersIcon size={ICON_SIZE} strokeWidth={ICON_STROKE} />, panel: <UsersPage /> },
   // Engine
-  { id: 'ai', label: 'AI', panel: <AISettings /> },
-  { id: 'autodetect', label: 'Autodetect', panel: <AutodetectRulesPanel /> },
-  { id: 'widgets', label: 'Widgets', panel: <WidgetLayoutPanel /> },
-  { id: 'system', label: 'System', panel: <SystemSettingsPage /> },
-  { id: 'diagnostics', label: 'Diagnostics', panel: <DiagnosticsPanel /> },
+  { id: 'ai', label: 'AI', icon: <AIIcon size={ICON_SIZE} strokeWidth={ICON_STROKE} />, panel: <AISettings /> },
+  { id: 'autodetect', label: 'Autodetect', icon: <AutodetectIcon size={ICON_SIZE} strokeWidth={ICON_STROKE} />, panel: <AutodetectRulesPanel /> },
+  { id: 'widgets', label: 'Widgets', icon: <WidgetsIcon size={ICON_SIZE} strokeWidth={ICON_STROKE} />, panel: <WidgetLayoutPanel /> },
+  { id: 'system', label: 'System', icon: <SystemIcon size={ICON_SIZE} strokeWidth={ICON_STROKE} />, panel: <SystemSettingsPage /> },
+  { id: 'diagnostics', label: 'Diagnostics', icon: <DiagnosticsIcon size={ICON_SIZE} strokeWidth={ICON_STROKE} />, panel: <DiagnosticsPanel /> },
 ]
 
 /** Auth gate: when not authenticated, the entire screen is the login

@@ -1,0 +1,90 @@
+/* Horizontal scroll carousel used by both the desktop SecondaryRail
+   and the mobile tools-sheet Widgets row. See Carousel.tsx. */
+
+.carousel {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  min-width: 0;
+  width: 100%;
+}
+
+.scroller {
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+}
+.scroller::-webkit-scrollbar { display: none; }
+.scroller > * {
+  flex: 0 0 auto;
+}
+
+.snap {
+  scroll-snap-type: x mandatory;
+  scroll-padding-inline: 4px;
+}
+.snap > * {
+  scroll-snap-align: start;
+}
+
+/* Fade-mask — tiles fade to transparent under the chevron arrows on
+   the edge that's currently overflowing. Both edges combine into one
+   gradient so the mask isn't fighting itself. */
+.fadeLeft {
+  -webkit-mask-image: linear-gradient(to right, transparent, black 36px);
+          mask-image: linear-gradient(to right, transparent, black 36px);
+}
+.fadeRight {
+  -webkit-mask-image: linear-gradient(to left, transparent, black 36px);
+          mask-image: linear-gradient(to left, transparent, black 36px);
+}
+.fadeLeft.fadeRight {
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent, black 36px,
+    black calc(100% - 36px), transparent
+  );
+          mask-image: linear-gradient(
+    to right,
+    transparent, black 36px,
+    black calc(100% - 36px), transparent
+  );
+}
+
+/* Chevron arrows — sit absolutely on top of the fade-mask. Pointer
+   events on the button work fine even though the masked tiles behind
+   are visually fading because the mask only affects the .scroller. */
+.arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(15, 17, 24, 0.85);
+  -webkit-backdrop-filter: blur(8px);
+          backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  border-radius: 50%;
+  color: rgba(240, 242, 248, 0.9);
+  cursor: pointer;
+  z-index: 2;
+  padding: 0;
+  transition: background 120ms ease, color 120ms ease;
+}
+.arrow:hover {
+  background: rgba(35, 40, 55, 0.95);
+  color: #ffffff;
+}
+.arrow:active {
+  background: rgba(45, 50, 65, 1);
+}
+.arrowLeft  { left: 2px; }
+.arrowRight { right: 2px; }

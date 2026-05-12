@@ -33,12 +33,7 @@ import {
   BookOpen,
   Mountain,
   Plane,
-  ZoomIn,
-  ZoomOut,
-  Home as HomeIcon,
-  Square,
-  Globe,
-  Map as MapIcon,
+  Globe2,
   LayoutGrid as ToolsIcon,
 } from 'lucide-react'
 
@@ -51,6 +46,8 @@ import {
   type WidgetOverrides,
 } from './widgetRegistry'
 import styles from './MapShell.module.css'
+import { Carousel } from './Carousel'
+import { CtrlPill } from '../CtrlPill/CtrlPill'
 
 type IconComponent = React.ComponentType<{ size?: number | string }>
 const ICON_MAP: Record<string, IconComponent> = {
@@ -105,6 +102,10 @@ export interface MapShellProps {
    *  controller/position changes get merged in. Pass null/undefined to
    *  fall back to DEFAULT_WIDGETS unchanged. */
   widgetOverrides?: WidgetOverrides | null
+  /** Navigate back to the all-sites overview. When set + a site is
+   *  loaded, the widget rail prepends a violet Overview tile (§3.5 of
+   *  the implementation brief). */
+  onNavigateOverview?: () => void
   /** Extra render slot for floating overlays (feature popup etc.) */
   children?: React.ReactNode
 }
@@ -128,6 +129,7 @@ export function MapShell({
   showPublicBanner = false,
   phoneMode = false,
   widgetOverrides = null,
+  onNavigateOverview,
   children,
 }: MapShellProps) {
   // Hold-to-look-around on the compass:
@@ -160,54 +162,34 @@ export function MapShell({
   }, [publicMode, widgetOverrides, phoneMode])
   const secondary = useMemo(() => widgetsForController(widgets, 'secondary'), [widgets])
 
-  // Phone-only: tools sheet open/closed.
+  // Phone-only: tools sheet open/closed. Notify DraggableMai via
+  // window events so the Mai FAB can step aside while the sheet is
+  // up — otherwise it sits bottom-right over the rightmost widget tile.
   const [toolsOpen, setToolsOpen] = useState(false)
+  useEffect(() => {
+    const evt = toolsOpen ? 'mighty:tools-open' : 'mighty:tools-close'
+    window.dispatchEvent(new Event(evt))
+  }, [toolsOpen])
 
   return (
     <div
-      className={`${styles.shell} ${phoneMode ? styles.shellPhone : ''}`}
+      className={`${styles.shell} ${phoneMode ? `${styles.shellPhone} is-phone` : ''}`}
       aria-hidden="false"
     >
-      {/* Top-left bar.
-          Desktop: nav buttons only (site chip lives in sidebar ribbon).
-          Mobile: site chip only (nav buttons hidden; pinch-to-zoom + tools sheet replaces them). */}
-      {/* Top-left bar: site chip (mobile only) + camera controls */}
-      <div className={styles.topBar}>
-        {site && (
-          <button
-            type="button"
-            className={`${styles.siteChip} ${styles.siteChipMobile}`}
-            onClick={onOpenSitePicker}
-            title={`Switch site — ${site.name}`}
-          >
-            <span className={styles.siteChipIcon}>
-              {site.name.slice(0, 1).toUpperCase()}
-            </span>
-            <span className={styles.siteChipName}>{site.name}</span>
-          </button>
-        )}
-        {site && <div className={`${styles.barDiv} ${styles.barDivDesktop}`} />}
-        <button className={styles.barBtn} onClick={onZoomIn} title="Zoom in">
-          <ZoomIn size={16} />
-        </button>
-        <button className={styles.barBtn} onClick={onZoomOut} title="Zoom out">
-          <ZoomOut size={16} />
-        </button>
-        <div className={styles.barDiv} />
-        <button className={styles.barBtn} onClick={onHome} title="Home">
-          <HomeIcon size={16} />
-        </button>
-        <button
-          className={`${styles.barBtn} ${is2D ? styles.active : ''}`}
-          onClick={onToggle2D3D}
-          title={is2D ? 'Switch to 3D' : 'Switch to 2D'}
-        >
-          {is2D ? <Globe size={16} /> : <Square size={16} />}
-        </button>
-        <button className={styles.barBtn} onClick={onToggleBasemap} title="Basemap">
-          <MapIcon size={16} />
-        </button>
-      </div>
+      {/* Primary controller pill — site chip + camera controls.
+          One component across every form factor; the brief mandates
+          the same chrome on phone, tablet portrait/landscape, and
+          desktop (see §3.1 of mockups/IMPLEMENTATION.md). */}
+      <CtrlPill
+        currentSite={site ? { slug: site.slug, name: site.name } : null}
+        onSiteChipClick={onOpenSitePicker}
+        onZoomIn={onZoomIn}
+        onZoomOut={onZoomOut}
+        onHome={onHome}
+        onToggle2D3D={onToggle2D3D}
+        is2D={is2D}
+        onBasemapClick={onToggleBasemap}
+      />
 
       {/* Compact needle compass — tap = face north, hold = look-around mode */}
       <button
@@ -250,6 +232,8 @@ export function MapShell({
             widgets={secondary}
             activeToolId={activeToolId}
             onAction={onAction}
+            showOverviewTile={Boolean(site && onNavigateOverview)}
+            onNavigateOverview={onNavigateOverview}
           />
         </div>
       )}
@@ -278,10 +262,10 @@ export function MapShell({
             {!publicMode && secondary.length > 0 && (
               <div className={styles.toolsSheetSection}>
                 <div className={styles.toolsSheetSectionLabel}>Widgets</div>
-                <div
-                  className={styles.toolsSheetCarousel}
-                  role="listbox"
-                  aria-label="Widgets"
+                <Carousel
+                  showArrows={false}
+                  snap
+                  className={styles.toolsSheetWidgets}
                 >
                   {secondary.map((w) => (
                     <SheetTile
@@ -294,7 +278,7 @@ export function MapShell({
                       }}
                     />
                   ))}
-                </div>
+                </Carousel>
               </div>
             )}
           </div>
@@ -328,45 +312,41 @@ function SheetTile({
   )
 }
 
-/** Secondary rail wrapper — measures overflow and only applies the
- *  fade-right mask when there's actually content scrolling out of view.
- *  Otherwise the mask just turns the right edge of "Terrain" /
- *  whatever-the-last-tile-is into a faded ghost which looks broken.
- *
- *  ResizeObserver fires both on viewport change and on widget catalog
- *  change (admin enables/disables a widget → tile count changes →
- *  scrollWidth changes → we re-measure). */
+/** Secondary rail — desktop bottom-centre widget controller. Renders
+ *  a single-row carousel: tiles flow horizontally, chevron arrows
+ *  appear only when there's overflow in that direction, and the
+ *  underlying tiles fade into transparency beneath each arrow so the
+ *  edge doesn't feel chopped. The Carousel primitive owns the scroll
+ *  + measurement machinery so the same component drives the mobile
+ *  tools-sheet WIDGETS row. */
 function SecondaryRail({
   widgets,
   activeToolId,
   onAction,
+  showOverviewTile,
+  onNavigateOverview,
 }: {
   widgets: WidgetDef[]
   activeToolId: string | null
   onAction: (id: string) => void
+  showOverviewTile: boolean
+  onNavigateOverview?: () => void
 }) {
-  const railRef = useRef<HTMLDivElement | null>(null)
-  const [overflowing, setOverflowing] = useState(false)
-  useEffect(() => {
-    const el = railRef.current
-    if (!el) return
-    const measure = () => {
-      // 2px tolerance — sub-pixel rounding can make a perfectly-fitting
-      // rail report a 0.4px overflow which still triggers the mask.
-      setOverflowing(el.scrollWidth - el.clientWidth > 2)
-    }
-    measure()
-    const ro = new ResizeObserver(measure)
-    ro.observe(el)
-    return () => ro.disconnect()
-  }, [widgets.length])
   return (
-    <div
-      ref={railRef}
-      className={`${styles.rail} ${styles.railSecondary} ${styles.railScrollable}${
-        overflowing ? ' ' + styles.railFadeRight : ''
-      }`}
-    >
+    <div className={`${styles.rail} ${styles.railSecondary}`}>
+      <Carousel showArrows>
+      {showOverviewTile && (
+        <button
+          key="__overview"
+          type="button"
+          className={styles.overviewTile}
+          onClick={() => onNavigateOverview?.()}
+          title="Back to all sites"
+          aria-label="Back to all sites"
+        >
+          <Globe2 size={22} />
+        </button>
+      )}
       {widgets.map((w) => (
         <RailTile
           key={w.id}
@@ -375,6 +355,7 @@ function SecondaryRail({
           onClick={() => onAction(w.id)}
         />
       ))}
+      </Carousel>
     </div>
   )
 }

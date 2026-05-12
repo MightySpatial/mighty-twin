@@ -26,15 +26,18 @@ function saveFabPos(p: { x: number; y: number }) {
   try { sessionStorage.setItem(FAB_KEY, JSON.stringify(p)) } catch {}
 }
 
-/** Default FAB anchor: bottom-right of the viewport, sitting above
- *  the secondary rail (~72 px clearance so MAI clears the ~48 px
- *  rail with ~20 px of breathing room). Recomputed if sessionStorage
- *  is empty on first mount. */
+/** Default FAB anchor: bottom-right of the viewport. On phone the shell
+ *  stacks two 64 px chromes at the bottom — the per-pane bottom-nav
+ *  (Atlas section nav, Settings section nav) and the outer Map/Atlas/
+ *  Settings tab bar. Clearance has to cover BOTH (64 + 64 = 128) plus
+ *  ~14 px breathing room so the FAB sits cleanly above the carousel
+ *  rather than over its top edge. Viewer's compact widget rail uses
+ *  the same height, so this value works on every pane. */
 function defaultFabPos() {
   if (typeof window === 'undefined') return { x: 0, y: 0 }
   return {
     x: window.innerWidth - FAB_SIZE - 24,
-    y: window.innerHeight - FAB_SIZE - 72,
+    y: window.innerHeight - FAB_SIZE - 142,
   }
 }
 
@@ -47,9 +50,22 @@ const RP_SHIFT = 320
 
 /** Top-level entry point. Desktop and phone share the FAB pattern;
  *  the only difference is how the expanded chat surfaces (anchored
- *  floating panel on desktop, bottom sheet on phone). */
+ *  floating panel on desktop, bottom sheet on phone).
+ *
+ *  In `?forceBreakpoint=` dev-preview mode the shell wraps the app in a
+ *  device-frame mockup, but DraggableMai is mounted as a sibling of
+ *  AppShell at App.tsx root — so its position:fixed FAB lands in the
+ *  outer viewport corner, far outside the frame. Hide the FAB whenever
+ *  a forced breakpoint is active so the preview is navigable; Mai is
+ *  still available in real use (and on actual phones). */
+function isForcedPreview(): boolean {
+  if (typeof window === 'undefined') return false
+  return new URLSearchParams(window.location.search).has('forceBreakpoint')
+}
+
 export function DraggableMai() {
   const [isPhone, setIsPhone] = useState(() => window.innerWidth < 768)
+  const [previewActive, setPreviewActive] = useState(() => isForcedPreview())
 
   useEffect(() => {
     const mq = window.matchMedia('(max-width: 767px)')
@@ -58,6 +74,23 @@ export function DraggableMai() {
     return () => mq.removeEventListener('change', onChange)
   }, [])
 
+  useEffect(() => {
+    // The shell toggles `forceBreakpoint` via history.replaceState, which
+    // doesn't fire popstate. Re-check on every render path that could
+    // have changed it: popstate (back/forward), pageshow, and a short
+    // polling fallback for in-place URL rewrites.
+    const update = () => setPreviewActive(isForcedPreview())
+    window.addEventListener('popstate', update)
+    window.addEventListener('pageshow', update)
+    const id = window.setInterval(update, 500)
+    return () => {
+      window.removeEventListener('popstate', update)
+      window.removeEventListener('pageshow', update)
+      window.clearInterval(id)
+    }
+  }, [])
+
+  if (previewActive) return null
   return isPhone ? <MaiFab variant="phone" /> : <MaiFab variant="desktop" />
 }
 
@@ -99,6 +132,20 @@ function MaiFab({ variant }: { variant: 'desktop' | 'phone' }) {
     pointerId: -1,
     moved: false,
   })
+  // Phone tools sheet is up — hide the FAB so it doesn't cover the
+  // rightmost widget tile in the carousel. MapShell dispatches the
+  // open/close events when the mobile sheet toggles.
+  const [toolsOpen, setToolsOpen] = useState(false)
+  useEffect(() => {
+    const onOpen = () => setToolsOpen(true)
+    const onClose = () => setToolsOpen(false)
+    window.addEventListener('mighty:tools-open', onOpen)
+    window.addEventListener('mighty:tools-close', onClose)
+    return () => {
+      window.removeEventListener('mighty:tools-open', onOpen)
+      window.removeEventListener('mighty:tools-close', onClose)
+    }
+  }, [])
 
   const clampFab = useCallback((p: { x: number; y: number }) => ({
     x: Math.max(8, Math.min(window.innerWidth - FAB_SIZE - 8, p.x)),
@@ -203,9 +250,11 @@ function MaiFab({ variant }: { variant: 'desktop' | 'phone' }) {
             : '0 6px 20px rgba(236, 72, 153, 0.45)',
           zIndex: 8000,
           touchAction: 'none',
-          transition: 'box-shadow 180ms ease, transform 180ms ease, left 200ms ease',
+          transition: 'box-shadow 180ms ease, transform 180ms ease, left 200ms ease, opacity 160ms ease',
           transform: expanded ? 'scale(0.94)' : 'scale(1)',
           userSelect: 'none',
+          opacity: variant === 'phone' && toolsOpen ? 0 : 1,
+          pointerEvents: variant === 'phone' && toolsOpen ? 'none' : 'auto',
         }}
       >
         <Sparkles size={22} strokeWidth={2.25} />

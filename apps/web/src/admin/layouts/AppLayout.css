@@ -165,39 +165,11 @@
   border-top: 1px solid var(--color-border-light);
 }
 
-/* ─── SIDEBAR (Tablet - Drawer) ───────────────────────────────────────────── */
-
-.sidebar-tablet {
-  /* absolute (not fixed): scoped to .app-layout, not the viewport */
-  position: absolute;
-  top: 0;
-  left: 0;
-  bottom: 0;
-  z-index: 200;
-  transform: translateX(-100%);
-  transition: transform var(--transition-slow);
-  width: 280px;
-}
-
-.sidebar-tablet.open {
-  transform: translateX(0);
-}
-
-.sidebar-tablet .sidebar-close {
-  display: block;
-}
-
-.sidebar-backdrop {
-  /* absolute (not fixed): scoped to .app-layout */
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  z-index: 199;
-  animation: fadeIn var(--transition-fast);
-}
+/* ─── Tablet drawer retired in Phase 3 (mockups/IMPLEMENTATION.md §5.3).
+   Tablet portrait now uses the phone bottom-carousel pattern; tablet
+   landscape uses the desktop sidebar. The old .sidebar-tablet,
+   .sidebar-backdrop, .header-tablet, and .header-menu-btn rules are
+   gone; .header-phone is the only mobile header style left. */
 
 /* ─── MAIN WRAPPER ────────────────────────────────────────────────────────── */
 
@@ -227,26 +199,10 @@
   justify-content: center;
 }
 
-.header-tablet {
-  gap: var(--space-4);
-}
-
 .header-title {
   font-size: var(--font-size-lg);
   font-weight: var(--font-weight-semibold);
   margin: 0;
-}
-
-.header-menu-btn {
-  background: none;
-  border: none;
-  color: var(--color-text-secondary);
-  padding: var(--space-2);
-  cursor: pointer;
-}
-
-.header-spacer {
-  width: 40px;
 }
 
 /* ─── MAIN CONTENT ────────────────────────────────────────────────────────── */
@@ -257,30 +213,31 @@
   -webkit-overflow-scrolling: touch;
 }
 
-/* Phone: add padding for the inner Atlas bottom nav (which is fixed at
-   bottom: 64px above the outer Map/Atlas/Settings tab bar). */
-@media (max-width: 767px) {
-  .main-content {
-    padding-bottom: calc(var(--bottom-nav-height) + 16px);
-  }
-  .header-phone {
-    /* Outer MobileHeader already provides a 48px brand bar; keep this
-       title bar compact, with safe-area padding off (the outer header
-       owns the notch). Dark-glass aesthetic to match the bottom nav. */
-    padding-top: 0;
-    height: var(--header-height);
-    background: rgba(15, 15, 20, 0.92);
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-  }
+/* Phone-only styling — keyed off the `.is-phone` class on .app-layout
+   instead of a viewport media query, so the styling fires in
+   `?forceBreakpoint=phone` preview at any window width. */
+.app-layout.is-phone .main-content {
+  padding-bottom: calc(var(--bottom-nav-height) + 16px);
+}
+.app-layout.is-phone .header-phone {
+  /* Outer MobileHeader already provides a 48px brand bar; keep this
+     title bar compact, with safe-area padding off (the outer header
+     owns the notch). Dark-glass aesthetic to match the bottom nav. */
+  padding-top: 0;
+  height: var(--header-height);
+  background: rgba(15, 15, 20, 0.92);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 /* ─── BOTTOM NAV (Phone) ──────────────────────────────────────────────────── */
 
-/* Fixed to viewport so it survives the .app-layout `overflow: hidden`
-   clipping on phones. `bottom: 64px` clears the outer Map/Atlas/Settings
-   tab bar that the AppShell renders below this layout. */
+/* Phone bottom-nav: horizontal scrollable tabbar holding ALL admin
+   sections. Scoped to .app-layout (position: relative) — absolute (not
+   fixed) is what makes this work in phone-preview mode on a wide
+   viewport. Snap-x so flicks settle on a tab; scrollbar hidden so it
+   reads as a tabbar rather than a content strip. */
 .bottom-nav {
   display: flex;
   background: rgba(15, 15, 20, 0.92);
@@ -288,21 +245,30 @@
   -webkit-backdrop-filter: blur(14px);
   border-top: 1px solid rgba(255, 255, 255, 0.08);
   height: var(--bottom-nav-height);
-  position: fixed;
-  bottom: 64px;
+  position: absolute;
+  bottom: 0;
   left: 0;
   right: 0;
   z-index: 100;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x mandatory;
 }
+.bottom-nav::-webkit-scrollbar { display: none; }
 
 .bottom-nav-item {
-  flex: 1;
+  flex: 0 0 auto;
+  min-width: 72px;
+  scroll-snap-align: start;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 2px;
-  padding: 6px 4px;
+  padding: 6px 8px;
   min-height: 44px;
   background: none;
   border: none;
@@ -376,131 +342,3 @@
   border: 2px solid #0f0f14;
 }
 
-/* ─── Phone "More" sheet (T+1570) ────────────────────────────────────── */
-
-.bottom-nav-more-fab {
-  position: fixed;
-  right: 14px;
-  /* Clear the inner Atlas bottom-nav (64px, sitting at bottom: 64px),
-     and the outer Map/Atlas/Settings tab bar (64px). */
-  bottom: 142px;
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  background: rgba(15, 15, 20, 0.92);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  color: #f0f2f8;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
-  z-index: 110;
-}
-
-.bottom-nav-more-backdrop {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.5);
-  z-index: 200;
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  animation: more-fade 180ms ease-out;
-}
-@keyframes more-fade {
-  from { background: rgba(0, 0, 0, 0); }
-  to   { background: rgba(0, 0, 0, 0.5); }
-}
-
-.bottom-nav-more-sheet {
-  width: 100%;
-  background: rgba(15, 15, 20, 0.96);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-  border-top-left-radius: 16px;
-  border-top-right-radius: 16px;
-  padding: 8px 16px calc(24px + var(--safe-bottom));
-  animation: more-slide 220ms ease-out;
-}
-
-.bottom-nav-more-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 4px 4px 12px;
-}
-
-.bottom-nav-more-title {
-  font-size: 14px;
-  font-weight: 600;
-  color: #f0f2f8;
-}
-
-.bottom-nav-more-close {
-  width: 36px;
-  height: 36px;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  color: rgba(240, 242, 248, 0.7);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-}
-@keyframes more-slide {
-  from { transform: translateY(100%); }
-  to   { transform: translateY(0); }
-}
-
-.bottom-nav-more-handle {
-  width: 36px;
-  height: 4px;
-  background: rgba(255, 255, 255, 0.18);
-  border-radius: 2px;
-  margin: 8px auto 14px;
-}
-
-.bottom-nav-more-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
-}
-
-.bottom-nav-more-tile {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: 14px 8px;
-  min-height: 76px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.07);
-  border-radius: 12px;
-  color: rgba(240, 242, 248, 0.85);
-  text-decoration: none;
-  font-size: 11px;
-  font-weight: 500;
-  text-align: center;
-  -webkit-tap-highlight-color: transparent;
-}
-
-.bottom-nav-more-tile:active,
-.bottom-nav-more-tile.active {
-  background: rgba(45, 212, 191, 0.10);
-  border-color: rgba(45, 212, 191, 0.4);
-  color: #2dd4bf;
-}
-
-.bottom-nav-more-tile .nav-badge {
-  position: absolute;
-  top: 6px;
-  right: 6px;
-  margin-left: 0;
-}

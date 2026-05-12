@@ -7,6 +7,7 @@
 export { AppShell } from './components/AppShell'
 export { useShellContext } from './context/ShellContext'
 export { useBreakpoint } from './hooks/useBreakpoint'
+export { useOrientation } from './hooks/useOrientation'
 export { useViewMode } from './hooks/useViewMode'
 export { useResizeObserver } from './hooks/useResizeObserver'
 export { pathnameToMode, modeToPathname, shouldPush } from './routes'
@@ -18,5 +19,6 @@ export type {
   Breakpoint,
   DisplayMode,
   PaneRole,
+  Orientation,
   ShellContextValue,
 } from './types'

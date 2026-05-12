@@ -1,0 +1,55 @@
+/* FloatingIconStack — left-edge vertical column of icon buttons.
+   Styling copied from mockups/mobile-redesign.html (.float-icons /
+   .float-icon) + mockups/desktop-tablet-redesign.html. */
+
+.stack {
+  position: absolute;
+  left: 10px;
+  top: 76px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  z-index: 5;
+  pointer-events: auto;
+}
+
+@media (min-width: 1024px) {
+  .stack {
+    left: 14px;
+  }
+}
+
+.icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: rgba(15, 17, 28, 0.86);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(240, 242, 248, 0.07);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(240, 242, 248, 0.72);
+  cursor: pointer;
+  padding: 0;
+  font: inherit;
+  transition: background 120ms ease, color 120ms ease, border-color 120ms ease;
+}
+
+.icon:hover {
+  background: rgba(22, 26, 37, 0.92);
+  color: #f0f2f8;
+  border-color: rgba(240, 242, 248, 0.14);
+}
+
+.iconActive {
+  background: rgba(99, 102, 241, 0.18);
+  border-color: rgba(99, 102, 241, 0.45);
+  color: #f0f2f8;
+}
+
+.icon svg {
+  width: 18px;
+  height: 18px;
+}
