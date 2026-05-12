@@ -658,6 +658,11 @@
     background: var(--bg-glass);
     backdrop-filter: blur(14px);
     border-top: 1px solid var(--line);
+    /* margin-top: auto pins the nav-bar to the bottom of the atlas
+       pane even when there are no flex siblings above it pushing it
+       down (e.g. frame 6 — Sites cards carousel — has only the
+       absolutely-positioned map + carousel as siblings). */
+    margin-top: auto;
   }
   .nav-tab {
     flex: 0 0 auto;
