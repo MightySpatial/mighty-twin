@@ -212,23 +212,32 @@
     background: linear-gradient(135deg, #6366f1, #a78bfa);
     color: white; font-size: 12px; font-weight: 700;
   }
-  /* Overview button — visible back-to-overview affordance.
-     Shown in the ctrl-pill whenever a single site is loaded. */
-  .ctrl-overview {
-    display: inline-flex; align-items: center; gap: 4px;
-    padding: 4px 10px 4px 6px;
-    border-radius: 999px;
-    background: rgba(255,255,255,0.04);
-    color: var(--fg-primary);
-    font-size: 13px; font-weight: 500;
-    border: none; cursor: pointer;
+  /* Overview tile — square icon-only button at the start of the
+     widget carousel. Violet tint signals it's navigation, not a tool.
+     Tap → back to all-sites overview state. Lives at the start of
+     the bottom rail; no Overview button in the ctrl-pill. */
+  .rail-tile.overview {
+    width: 44px;
+    height: 44px;
+    margin: 4px 4px 4px 0;
+    background: rgba(167, 139, 250, 0.12);
+    border: 1px solid rgba(167, 139, 250, 0.30);
+    border-radius: 10px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--violet);
+    padding: 0;
+    flex: 0 0 auto;
+    position: relative;
   }
-  .ctrl-overview svg { width: 12px; height: 12px; color: var(--fg-secondary); }
-  .ctrl-breadcrumb-sep {
-    color: var(--fg-faint);
-    font-size: 14px;
-    padding: 0 2px;
-    align-self: center;
+  .rail-tile.overview svg { width: 22px; height: 22px; }
+  .rail-tile.overview::after {
+    content: '';
+    position: absolute;
+    right: -4px; top: 6px; bottom: 6px;
+    width: 1px;
+    background: var(--line);
   }
   .ctrl-site .avatar.all-sites {
     background: linear-gradient(135deg, #38bdf8, #a78bfa);
@@ -707,9 +716,11 @@
   <h2>What's the same as mobile</h2>
   <dl>
     <dt><b>Primary controller pill</b></dt>
-    <dd>Horizontal floating pill anchored top-left of the map. Two states: <b>Overview</b> (no site loaded) → "All sites · N" label. <b>Site loaded</b> → <b>"Overview" button</b> + "›" separator + site chip; tapping Overview returns to the all-sites state. Right of the chip: zoom + home + bounds + basemap. Same component, same position across phone / tablet / desktop. Replaces ViewerSidebar's site-chip duty on desktop.</dd>
+    <dd>Horizontal floating pill anchored top-left of the map. Two states: <b>Overview</b> (no site loaded) → "All sites · N" label. <b>Site loaded</b> → just the site chip (no back affordance — that lives at the start of the widget rail). Right of the chip: zoom + home + bounds + basemap. Same component, same position across phone / tablet / desktop. Replaces ViewerSidebar's site-chip duty on desktop.</dd>
+    <dt><b>Overview tile (back-to-overview)</b></dt>
+    <dd>Square 44×44 icon-only button at the <b>start of the widget rail</b> when a site is loaded. Violet tint signals navigation (not a tool). Tap → back to all-sites overview. Hidden in Overview state (you're already there).</dd>
     <dt><b>Site list strip</b></dt>
-    <dd>Shown only in the Overview state. Bottom of the map carries a horizontal scroll-snap strip of site cards (thumb + name + meta + Public badge). Replaces the widget rail one-for-one — widget rail is per-site, so it appears only after a site is loaded. Same component on every form factor; max-width 960px on desktop, full-width on phone.</dd>
+    <dd>Shown only in the Overview state. Bottom of the map carries a horizontal scroll-snap strip of site cards (thumb + name + meta + Public badge). Replaces the widget rail one-for-one. Same component on every form factor; max-width 960px on desktop, full-width on phone.</dd>
     <dt><b>Floating left icons</b></dt>
     <dd>Vertical stack for the panel-bearing chrome — Search · Site info · Layers · Measure · Terrain · Legend. Acts as the <b>primary sidebar</b> (always visible). Map controls that already live in the pill (zoom / home / bounds / basemap) are not duplicated here.</dd>
     <dt><b>Floating side panel</b></dt>
@@ -869,11 +880,6 @@
         <div class="map-bg"></div>
 
         <div class="ctrl-pill">
-          <button class="ctrl-overview" aria-label="Back to all sites">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg>
-            Overview
-          </button>
-          <span class="ctrl-breadcrumb-sep">›</span>
           <div class="ctrl-site">
             <span class="avatar">D</span>
             Demo site
@@ -901,7 +907,7 @@
         </div>
 
         <div class="rail-container" style="left: calc(50% - 180px);">
-          <div class="rail">
+          <div class="rail"><button class="rail-tile overview" aria-label="Back to all sites" title="Back to all sites"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15 15 0 0 1 4 10 15 15 0 0 1-4 10 15 15 0 0 1-4-10 15 15 0 0 1 4-10z"/></svg></button>
             <div class="rail-tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>Story</div>
             <div class="rail-tile active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>Snap</div>
             <div class="rail-tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/></svg>Design</div>
@@ -981,11 +987,6 @@
         <div class="map-bg"></div>
 
         <div class="ctrl-pill">
-          <button class="ctrl-overview" aria-label="Back to all sites">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg>
-            Overview
-          </button>
-          <span class="ctrl-breadcrumb-sep">›</span>
           <div class="ctrl-site">
             <span class="avatar">D</span>
             Demo site
@@ -1058,7 +1059,7 @@
         </div>
 
         <div class="rail-container" style="left: calc(50% + 60px);">
-          <div class="rail">
+          <div class="rail"><button class="rail-tile overview" aria-label="Back to all sites" title="Back to all sites"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15 15 0 0 1 4 10 15 15 0 0 1-4 10 15 15 0 0 1-4-10 15 15 0 0 1 4-10z"/></svg></button>
             <div class="rail-tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>Story</div>
             <div class="rail-tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>Snap</div>
             <div class="rail-tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/></svg>Design</div>
@@ -1265,11 +1266,6 @@
         <div class="map-bg"></div>
 
         <div class="ctrl-pill">
-          <button class="ctrl-overview" aria-label="Back to all sites">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg>
-            Overview
-          </button>
-          <span class="ctrl-breadcrumb-sep">›</span>
           <div class="ctrl-site">
             <span class="avatar">D</span>
             Demo site
@@ -1344,11 +1340,6 @@
         <div class="map-bg"></div>
 
         <div class="ctrl-pill">
-          <button class="ctrl-overview" aria-label="Back to all sites">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg>
-            Overview
-          </button>
-          <span class="ctrl-breadcrumb-sep">›</span>
           <div class="ctrl-site">
             <span class="avatar">D</span>
             Demo site

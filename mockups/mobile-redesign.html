@@ -191,25 +191,32 @@
     background: linear-gradient(135deg, #6366f1, #a78bfa);
     color: white; font-size: 12px; font-weight: 700;
   }
-  /* Overview button — visible back-to-overview affordance.
-     Shown in the ctrl-pill whenever a single site is loaded. Tap
-     navigates to /viewer (all-sites overview state). The breadcrumb
-     separator › makes the hierarchy unambiguous: Overview › Site. */
-  .ctrl-overview {
-    display: inline-flex; align-items: center; gap: 4px;
-    padding: 4px 10px 4px 6px;
-    border-radius: 999px;
-    background: rgba(255,255,255,0.04);
-    color: var(--fg-primary);
-    font-size: 13px; font-weight: 500;
-    border: none; cursor: pointer;
+  /* Overview tile — square icon-only button at the start of the
+     widget carousel. Distinct violet tint signals it's navigation,
+     not a tool. Tap → back to the all-sites overview state. */
+  .rail-tile.overview {
+    width: 48px;
+    height: 48px;
+    margin: 8px 4px 8px 0;
+    background: rgba(167, 139, 250, 0.12);
+    border: 1px solid rgba(167, 139, 250, 0.30);
+    border-radius: 10px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--violet);
+    padding: 0;
+    flex: 0 0 auto;
+    position: relative;
   }
-  .ctrl-overview svg { width: 12px; height: 12px; color: var(--fg-secondary); }
-  .ctrl-breadcrumb-sep {
-    color: var(--fg-faint);
-    font-size: 14px;
-    padding: 0 2px;
-    align-self: center;
+  .rail-tile.overview svg { width: 22px; height: 22px; }
+  /* Subtle separator line between Overview and the widget tiles. */
+  .rail-tile.overview::after {
+    content: '';
+    position: absolute;
+    right: -4px; top: 6px; bottom: 6px;
+    width: 1px;
+    background: var(--line);
   }
   /* Special "all-sites" avatar (used when in the overview state). */
   .ctrl-site .avatar.all-sites {
@@ -821,9 +828,11 @@
     <dt><b>Top brand bar</b></dt>
     <dd>48px. Just the "MightyTwin" wordmark + dev-only breakpoint chips. Identity only — no critical controls (so iOS banner notifications dropping in at the top don't eat anything functional).</dd>
     <dt><b>Primary controller pill</b></dt>
-    <dd>Horizontal floating pill anchored top-left of the map area. Two states: <b>Overview state</b> (no site loaded) shows the "All sites · N" label with a stack-of-maps avatar; <b>Site state</b> shows an <b>"Overview" button</b> (with chevron-left icon) + a "›" breadcrumb separator + the site chip — tapping Overview navigates back to the all-sites state. Right of the chip: zoom + home + bounds + basemap controls.</dd>
+    <dd>Horizontal floating pill anchored top-left of the map. Two states: <b>Overview</b> (no site loaded) → "All sites · N" label with a stack-of-maps avatar. <b>Site loaded</b> → just the site chip (no back affordance here — that lives at the start of the widget rail instead). Right of the chip: zoom + home + bounds + basemap controls.</dd>
+    <dt><b>Overview tile (back-to-overview)</b></dt>
+    <dd>Square 48×48 icon-only button at the <b>start of the widget rail</b> when a site is loaded. Violet tint signals it's a navigation action (not a tool). Tap → back to all-sites overview. A subtle 1px separator divides it from the widget tiles. Doesn't appear in Overview state (you're already there).</dd>
     <dt><b>Site list strip</b></dt>
-    <dd>When in Overview state the bottom of the map shows a horizontal site picker (cards scroll-snap, peek-of-next, click to load). Replaces the widget rail one-for-one — widget rail is per-site so it doesn't appear until a site is loaded. Same data + same component on every form factor; just sized differently.</dd>
+    <dd>In Overview state the bottom of the map shows a horizontal site picker (cards scroll-snap, peek-of-next, click to load). Replaces the widget rail one-for-one — widget rail is per-site so it doesn't appear until a site is loaded. Same data + same component on every form factor; just sized differently.</dd>
     <dt><b>Bottom carousel</b></dt>
     <dd>Horizontal scroll, snap-x, hidden scrollbar. On Map it's the widget controller (Story/Snap/Design/Terrain/Fly). On Atlas/Settings it's the section nav. On Sites it's a content carousel of site cards.</dd>
     <dt><b>Widget sheet (decoupled)</b></dt>
@@ -957,11 +966,6 @@
         <div class="map-bg"></div>
 
         <div class="ctrl-pill">
-          <button class="ctrl-overview" aria-label="Back to all sites">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg>
-            Overview
-          </button>
-          <span class="ctrl-breadcrumb-sep">›</span>
           <div class="ctrl-site">
             <span class="avatar">D</span>
             Demo site
@@ -987,7 +991,7 @@
 
         <div class="bottom-rail">
           <div class="rail-handle"></div>
-          <div class="rail-strip">
+          <div class="rail-strip"><button class="rail-tile overview" aria-label="Back to all sites" title="Back to all sites"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15 15 0 0 1 4 10 15 15 0 0 1-4 10 15 15 0 0 1-4-10 15 15 0 0 1 4-10z"/></svg></button>
             <div class="rail-tile active">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
               Story
@@ -1067,7 +1071,7 @@
           <!-- Carousel still rendered underneath, just hidden behind the sheet. -->
           <div class="bottom-rail">
             <div class="rail-handle"></div>
-            <div class="rail-strip">
+            <div class="rail-strip"><button class="rail-tile overview" aria-label="Back to all sites" title="Back to all sites"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15 15 0 0 1 4 10 15 15 0 0 1-4 10 15 15 0 0 1-4-10 15 15 0 0 1 4-10z"/></svg></button>
               <div class="rail-tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>Story</div>
               <div class="rail-tile active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>Snap</div>
               <div class="rail-tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/></svg>Design</div>
@@ -1161,7 +1165,7 @@
 
           <div class="bottom-rail">
             <div class="rail-handle"></div>
-            <div class="rail-strip">
+            <div class="rail-strip"><button class="rail-tile overview" aria-label="Back to all sites" title="Back to all sites"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15 15 0 0 1 4 10 15 15 0 0 1-4 10 15 15 0 0 1-4-10 15 15 0 0 1 4-10z"/></svg></button>
               <div class="rail-tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>Story</div>
               <div class="rail-tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>Snap</div>
               <div class="rail-tile active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/></svg>Design</div>
@@ -1281,7 +1285,7 @@
 
           <div class="bottom-rail">
             <div class="rail-handle"></div>
-            <div class="rail-strip">
+            <div class="rail-strip"><button class="rail-tile overview" aria-label="Back to all sites" title="Back to all sites"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15 15 0 0 1 4 10 15 15 0 0 1-4 10 15 15 0 0 1-4-10 15 15 0 0 1 4-10z"/></svg></button>
               <div class="rail-tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>Story</div>
               <div class="rail-tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>Snap</div>
               <div class="rail-tile active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/></svg>Design</div>
