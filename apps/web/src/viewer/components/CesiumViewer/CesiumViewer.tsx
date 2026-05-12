@@ -16,7 +16,6 @@ import {
   List as LegendIcon,
   Layers as LayersIcon,
   Info,
-  Mountain,
   Plus,
 } from 'lucide-react'
 import { AttributeTable } from '@mightydt/ui'
@@ -527,12 +526,6 @@ export default function CesiumViewerComponent({
   // Terrain section — opens via Terrain rail tile (T+1170). Folds the
   // existing globe-transparency knob into a tab inside the same panel.
   const [terrainOpen, setTerrainOpen] = useState(false)
-  // Sync terrain tool state with the floating side panel. Opening the
-  // terrain panel engages the tool; closing the panel disengages.
-  useEffect(() => {
-    if (activeSidePanel === 'terrain' && !terrainOpen) setTerrainOpen(true)
-    if (activeSidePanel !== 'terrain' && terrainOpen) setTerrainOpen(false)
-  }, [activeSidePanel, terrainOpen])
   const terrain = useTerrain(viewerRef)
   const underground = useUnderground(viewerRef, globeAlpha, setGlobeAlpha)
 
@@ -957,12 +950,10 @@ export default function CesiumViewerComponent({
       isActive: measureActive || !!measureResult,
       onClick: () => onMapShellAction('measure'),
     })
-    items.push({
-      id: 'terrain',
-      label: 'Terrain',
-      icon: <Mountain size={18} />,
-      hasPanel: true,
-    })
+    // Terrain is intentionally NOT in the floating icon stack — it
+    // already lives as a tile in the bottom widget rail (Story / Snap
+    // / Design / Terrain / Fly). Two entry points for the same tool
+    // is anti-pattern §4.5; pick one home (the rail) and live with it.
     items.push({
       id: 'legend',
       label: 'Legend',
@@ -1039,14 +1030,10 @@ export default function CesiumViewerComponent({
         ) as React.ReactNode,
       }
     }
-    if (activeSidePanel === 'terrain' && terrainSidebarPanel) {
-      return {
-        title: 'Terrain',
-        icon: <Mountain size={16} />,
-        body: terrainSidebarPanel,
-        footer: null as React.ReactNode,
-      }
-    }
+    // Terrain intentionally does NOT mount as a side panel — the
+    // bottom widget rail (Story / Snap / Design / Terrain / Fly)
+    // owns it via `setActiveRightWidget('terrain')`. Keeping the
+    // terrain entry point in one place avoids the §4.5 anti-pattern.
     if (activeSidePanel.startsWith('ext:') && viewerRef.current) {
       const epId = activeSidePanel.slice(4)
       const ep = extensionPanels.find((p) => p.id === epId)
