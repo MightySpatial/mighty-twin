@@ -26,6 +26,7 @@ import { flyToTarget } from '../utils/flyToTarget'
 import SplashOverlay from '../components/SplashOverlay/SplashOverlay'
 import ViewerSidebar from '../components/ViewerSidebar'
 import { CtrlPill } from '../components/CtrlPill/CtrlPill'
+import { SiteStrip } from '../components/SiteStrip/SiteStrip'
 import MeasureWidget, { useMeasure } from '../widgets/measure'
 import type { PublicSettings, OverlayConfig, SiteListItem } from '../types/api'
 import type { SiteEntry } from '../components/SitePicker'
@@ -500,6 +501,34 @@ export default function SitesMapPage() {
           />
         </div>
       </div>
+
+      {/* Site list strip — replaces the (non-existent) widget rail at
+          the bottom of the overview pane. Phone full-width; on desktop
+          this wrapper centers the strip with max-width 960. Card click
+          + pin click stay in sync via activeSiteSlug. */}
+      {pickerSites.length > 0 && (
+        <div
+          style={{
+            position: 'absolute',
+            bottom: isMobile ? 12 : 16,
+            left: sidebarWidth,
+            right: 0,
+            display: 'flex',
+            justifyContent: 'center',
+            pointerEvents: 'none',
+            transition: 'left 0.2s ease',
+            zIndex: 6,
+          }}
+        >
+          <div style={{ width: '100%', maxWidth: isMobile ? 'none' : 960, pointerEvents: 'auto' }}>
+            <SiteStrip
+              sites={pickerSites}
+              activeSiteSlug={selectedSlug}
+              onSelectSite={onSitePickerSelect}
+            />
+          </div>
+        </div>
+      )}
 
       {/* "Zoom to" button — appears when a site pin is selected on
           the globe. Offset right so it sits inside the visible canvas. */}
