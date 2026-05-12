@@ -6,17 +6,13 @@
   height: 100%;
 }
 
-/* ── Map Controls ──────────────────────────────────────────────────────────── */
-
-.map-controls {
-  position: absolute;
-  top: 80px;
-  right: 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  z-index: 10;
-}
+/* ── Map controls container moved to viewer/components/CtrlPill in
+   Phase 1. The legacy .map-controls / .map-controls-divider rules
+   lived here as dead CSS (MapShell owned the rendering); they were
+   removed alongside the CtrlPill cutover. The standalone
+   .map-control-btn button style stays — it's still used by the Site-
+   info trigger, the extension-panel toggle row, and the Search close
+   button. */
 
 .map-control-btn {
   width: 44px;
@@ -32,27 +28,15 @@
   transition: background 0.15s, border-color 0.15s;
   backdrop-filter: blur(8px);
 }
-
 .map-control-btn:hover {
   background: rgba(30, 30, 42, 0.95);
   border-color: rgba(255,255,255,0.2);
 }
-
-.map-control-btn:active {
-  background: rgba(99, 102, 241, 0.25);
-  border-color: rgba(99, 102, 241, 0.5);
-}
-
+.map-control-btn:active,
 .map-control-btn.active {
   background: rgba(99, 102, 241, 0.25);
   border-color: rgba(99, 102, 241, 0.5);
   color: #a5b4fc;
-}
-
-.map-controls-divider {
-  height: 1px;
-  margin: 3px 6px;
-  background: rgba(255, 255, 255, 0.08);
 }
 
 /* ── Search ────────────────────────────────────────────────────────────────── */
@@ -1283,10 +1267,6 @@
 /* ── Mobile overrides ──────────────────────────────────────────────────────── */
 
 @media (max-width: 767px) {
-  .map-controls {
-    right: 10px;
-    top: 70px;
-  }
   .ext-panel-container {
     left: 12px;
     right: 12px;

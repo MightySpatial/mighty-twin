@@ -330,22 +330,9 @@ export default function ViewerSidebar({
       >
         {/* Tab Bar */}
         <div className="sidebar-tabs">
-          {/* Legacy fallback — when the sidebar can't host the in-tab
-              picker (no pickerSites passed, e.g. mobile or public viewer)
-              we still need a way to open the picker. Show the original
-              chip and route the click to the host's onOpenSitePicker
-              callback (which opens the popover/sheet). */}
-          {site && pickerSites.length === 0 && onOpenSitePicker && (
-            <button
-              className="sidebar-site-chip-legacy"
-              onClick={onOpenSitePicker}
-              title={`Switch site — ${site.name}`}
-            >
-              <span className="sidebar-site-chip-icon">
-                {site.name.slice(0, 1).toUpperCase()}
-              </span>
-            </button>
-          )}
+          {/* Site identity now lives in CtrlPill (top-left of the map
+              pane). The legacy chip on the sidebar was removed in Phase 1
+              per anti-pattern §4.11 — no duplicate site chips. */}
           {tabs.map(tab => (
             <button
               key={tab.id}

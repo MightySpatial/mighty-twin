@@ -33,12 +33,6 @@ import {
   BookOpen,
   Mountain,
   Plane,
-  ZoomIn,
-  ZoomOut,
-  Home as HomeIcon,
-  Square,
-  Globe,
-  Map as MapIcon,
   LayoutGrid as ToolsIcon,
 } from 'lucide-react'
 
@@ -52,6 +46,7 @@ import {
 } from './widgetRegistry'
 import styles from './MapShell.module.css'
 import { Carousel } from './Carousel'
+import { CtrlPill } from '../CtrlPill/CtrlPill'
 
 type IconComponent = React.ComponentType<{ size?: number | string }>
 const ICON_MAP: Record<string, IconComponent> = {
@@ -172,49 +167,23 @@ export function MapShell({
 
   return (
     <div
-      className={`${styles.shell} ${phoneMode ? styles.shellPhone : ''}`}
+      className={`${styles.shell} ${phoneMode ? `${styles.shellPhone} is-phone` : ''}`}
       aria-hidden="false"
     >
-      {/* Top-left bar.
-          Desktop: nav buttons only (site chip lives in sidebar ribbon).
-          Mobile: site chip only (nav buttons hidden; pinch-to-zoom + tools sheet replaces them). */}
-      {/* Top-left bar: site chip (mobile only) + camera controls */}
-      <div className={styles.topBar}>
-        {site && (
-          <button
-            type="button"
-            className={`${styles.siteChip} ${styles.siteChipMobile}`}
-            onClick={onOpenSitePicker}
-            title={`Switch site — ${site.name}`}
-          >
-            <span className={styles.siteChipIcon}>
-              {site.name.slice(0, 1).toUpperCase()}
-            </span>
-            <span className={styles.siteChipName}>{site.name}</span>
-          </button>
-        )}
-        {site && <div className={`${styles.barDiv} ${styles.barDivDesktop}`} />}
-        <button className={styles.barBtn} onClick={onZoomIn} title="Zoom in">
-          <ZoomIn size={16} />
-        </button>
-        <button className={styles.barBtn} onClick={onZoomOut} title="Zoom out">
-          <ZoomOut size={16} />
-        </button>
-        <div className={styles.barDiv} />
-        <button className={styles.barBtn} onClick={onHome} title="Home">
-          <HomeIcon size={16} />
-        </button>
-        <button
-          className={`${styles.barBtn} ${is2D ? styles.active : ''}`}
-          onClick={onToggle2D3D}
-          title={is2D ? 'Switch to 3D' : 'Switch to 2D'}
-        >
-          {is2D ? <Globe size={16} /> : <Square size={16} />}
-        </button>
-        <button className={styles.barBtn} onClick={onToggleBasemap} title="Basemap">
-          <MapIcon size={16} />
-        </button>
-      </div>
+      {/* Primary controller pill — site chip + camera controls.
+          One component across every form factor; the brief mandates
+          the same chrome on phone, tablet portrait/landscape, and
+          desktop (see §3.1 of mockups/IMPLEMENTATION.md). */}
+      <CtrlPill
+        currentSite={site ? { slug: site.slug, name: site.name } : null}
+        onSiteChipClick={onOpenSitePicker}
+        onZoomIn={onZoomIn}
+        onZoomOut={onZoomOut}
+        onHome={onHome}
+        onToggle2D3D={onToggle2D3D}
+        is2D={is2D}
+        onBasemapClick={onToggleBasemap}
+      />
 
       {/* Compact needle compass — tap = face north, hold = look-around mode */}
       <button

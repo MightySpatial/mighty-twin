@@ -1,0 +1,130 @@
+/* CtrlPill — primary controller pill (top-left of Map pane).
+   Styling copied verbatim from mockups/mobile-redesign.html (.ctrl-pill,
+   .ctrl-site, .ctrl-divider, .ctrl-btn) and mockups/desktop-tablet-redesign.html
+   (same class names, slightly larger inset on desktop). One component,
+   responsive sizing — see §3.1 of mockups/IMPLEMENTATION.md. */
+
+.ctrlPill {
+  position: absolute;
+  top: 12px;
+  left: 10px;
+  display: inline-flex;
+  align-items: stretch;
+  gap: 4px;
+  padding: 4px;
+  background: rgba(15, 17, 28, 0.92);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  border: 1px solid rgba(240, 242, 248, 0.07);
+  border-radius: 999px;
+  color: rgba(240, 242, 248, 0.72);
+  z-index: 5;
+  max-width: calc(100% - 20px);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.32);
+}
+
+.ctrlSite {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px 4px 4px;
+  border-radius: 999px;
+  color: #f0f2f8;
+  font-size: 13px;
+  font-weight: 500;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  min-width: 0;
+}
+
+button.ctrlSite:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.avatar {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #6366f1, #a78bfa);
+  color: white;
+  font-size: 12px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.avatarAllSites {
+  background: linear-gradient(135deg, #38bdf8, #a78bfa);
+  font-size: 13px;
+}
+
+.avatarAllSites svg {
+  width: 14px;
+  height: 14px;
+}
+
+.siteName {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 180px;
+}
+
+.siteCount {
+  color: rgba(45, 212, 191, 1);
+  font-weight: 600;
+}
+
+.ctrlDivider {
+  width: 1px;
+  background: rgba(240, 242, 248, 0.07);
+  margin: 4px 2px;
+  flex-shrink: 0;
+}
+
+.ctrlBtn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(240, 242, 248, 0.72);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  flex-shrink: 0;
+  padding: 0;
+}
+
+.ctrlBtn:hover {
+  background: rgba(255, 255, 255, 0.07);
+  color: #f0f2f8;
+}
+
+.ctrlBtn svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* Tighten the pill on small viewports. The pill is class-gated by
+   the host (via .is-phone on the pane container) rather than @media
+   so the ?forceBreakpoint=phone preview at desktop width works. */
+:global(.is-phone) .ctrlPill {
+  top: 10px;
+  left: 10px;
+}
+
+:global(.is-phone) .siteName {
+  max-width: 120px;
+  font-size: 12px;
+}
+
+:global(.is-phone) .ctrlBtn {
+  width: 28px;
+  height: 28px;
+}

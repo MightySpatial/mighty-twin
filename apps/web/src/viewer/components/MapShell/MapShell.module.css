@@ -6,75 +6,9 @@
 .shell { position: absolute; inset: 0; pointer-events: none; }
 .shell > * { pointer-events: auto; }
 
-/* ── Top-left inline bar — site chip (mobile) + camera controls ──────────── */
-.topBar {
-  position: absolute;
-  top: 14px; left: 14px;
-  display: inline-flex; align-items: center; gap: 2px;
-  padding: 4px;
-  background: rgba(15,15,20,0.90);
-  backdrop-filter: blur(14px);
-  border: 1px solid rgba(255,255,255,0.08);
-  border-radius: 12px;
-  box-shadow: 0 4px 14px rgba(0,0,0,0.32);
-  max-width: calc(100vw - 70px);
-}
-
-/* Site chip — inline button inside topBar */
-.siteChip {
-  display: inline-flex; align-items: center; gap: 8px;
-  padding: 4px 8px 4px 4px;
-  background: transparent;
-  border: none; border-radius: 8px;
-  cursor: pointer;
-  color: #f0f2f8;
-  font: inherit;
-  min-width: 0;
-}
-.siteChip:hover { background: rgba(255,255,255,0.06); }
-.siteChipIcon {
-  width: 24px; height: 24px;
-  background: linear-gradient(135deg, #2453ff, #a78bfa);
-  border-radius: 6px;
-  display: flex; align-items: center; justify-content: center;
-  color: #fff; font-size: 11px; font-weight: 700;
-  flex-shrink: 0;
-}
-.siteChipName {
-  font-size: 13px; font-weight: 600;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-  max-width: 140px;
-}
-.siteChipChev { color: rgba(240,242,248,0.35); font-size: 10px; flex-shrink: 0; }
-
-/* Mobile-only site chip */
-.siteChipMobile { display: none; }
-@media (max-width: 640px) {
-  .siteChipMobile { display: inline-flex; }
-}
-.shellPhone .siteChipMobile { display: inline-flex; }
-
-.barDivDesktop { display: none; }
-.barDiv { width: 1px; height: 20px; background: rgba(255,255,255,0.08); margin: 0 2px; flex-shrink: 0; }
-
-.barBtn {
-  width: 32px; height: 32px;
-  display: flex; align-items: center; justify-content: center;
-  border: none; background: transparent;
-  border-radius: 10px;
-  color: rgba(240,242,248,0.7);
-  cursor: pointer;
-  flex-shrink: 0;
-}
-.barBtn:hover { background: rgba(255,255,255,0.07); color: #f0f2f8; }
-.barBtn.active { color: #2dd4bf; }
-
-/* ── Legacy aliases */
-.zoomCol { display: none; }
-.zoomBtn { display: none; }
-.zoomDiv { display: none; }
-.siteChipMeta { display: none; }
-.siteChipSub { display: none; }
+/* Top-left primary controller pill (site chip + camera controls)
+   moved to a shared component at viewer/components/CtrlPill.
+   The legacy topBar / siteChip / barBtn rules were removed in Phase 1. */
 
 /* ── Compact needle compass — top-right ───────────────────────────────── */
 .gimbal {
@@ -217,17 +151,11 @@
      2. native @media (max-width: 640px) for real small viewports
    The rules below are duplicated as-needed.
 */
-.shellPhone .topBar { top: 10px; left: 10px; padding: 3px; border-radius: 10px; }
-.shellPhone .siteChipName { max-width: 96px; font-size: 12px; }
-.shellPhone .barBtn { width: 26px; height: 26px; }
 .shellPhone .gimbal { width: 32px; height: 32px; right: 10px; top: 10px; }
 .shellPhone .rails { display: none; }
 .shellPhone .toolsFab { display: flex; }
 
 @media (max-width: 640px) {
-  .topBar { top: 10px; left: 10px; padding: 3px; border-radius: 12px; }
-  .siteChipName { max-width: 96px; font-size: 12px; }
-  .barBtn { width: 28px; height: 28px; border-radius: 10px; }
   /* compass stays round, 44px to match column hit target */
   .gimbal { width: 44px; height: 44px; border-radius: 50%; right: 10px; top: 10px; }
   .rails { display: none; }

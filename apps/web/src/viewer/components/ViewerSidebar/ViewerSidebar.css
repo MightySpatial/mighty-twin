@@ -46,25 +46,8 @@
   flex-shrink: 0;
 }
 
-/* Legacy popover-trigger chip — only used when the host doesn't pass
-   pickerSites (mobile, public viewer). Square icon button matching
-   the regular tab tile size. */
-.sidebar-site-chip-legacy {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 8px 4px;
-  margin-bottom: 6px;
-  border: none;
-  background: transparent;
-  cursor: pointer;
-  border-radius: 6px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
-  border-radius: 0;
-}
-.sidebar-site-chip-legacy:hover {
-  background: rgba(255, 255, 255, 0.05);
-}
+/* Legacy popover-trigger chip removed in Phase 1 — CtrlPill now owns
+   site identity (see anti-pattern §4.11 of mockups/IMPLEMENTATION.md). */
 
 /* Site picker panel content area — flex column so the search bar
    stays pinned and the list scrolls. */

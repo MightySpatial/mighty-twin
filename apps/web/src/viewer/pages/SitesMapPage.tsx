@@ -25,6 +25,7 @@ import { authFetch } from '../utils/authFetch'
 import { flyToTarget } from '../utils/flyToTarget'
 import SplashOverlay from '../components/SplashOverlay/SplashOverlay'
 import ViewerSidebar from '../components/ViewerSidebar'
+import { CtrlPill } from '../components/CtrlPill/CtrlPill'
 import MeasureWidget, { useMeasure } from '../widgets/measure'
 import type { PublicSettings, OverlayConfig, SiteListItem } from '../types/api'
 import type { SiteEntry } from '../components/SitePicker'
@@ -408,6 +409,27 @@ export default function SitesMapPage() {
     })
   }, [selectedSite, navigateToSite])
 
+  // CtrlPill camera handlers — drive the overview globe directly.
+  const ctrlZoomIn = useCallback(() => {
+    const v = viewerRef.current
+    if (!v || v.isDestroyed()) return
+    v.camera.zoomIn(v.camera.positionCartographic.height * 0.35)
+  }, [])
+  const ctrlZoomOut = useCallback(() => {
+    const v = viewerRef.current
+    if (!v || v.isDestroyed()) return
+    v.camera.zoomOut(v.camera.positionCartographic.height * 0.5)
+  }, [])
+  const ctrlHome = useCallback(() => {
+    const v = viewerRef.current
+    if (!v || v.isDestroyed()) return
+    const cam = overviewCameraRef.current
+    v.camera.flyTo({
+      destination: Cartesian3.fromDegrees(cam.lon, cam.lat, cam.height),
+      duration: 1.2,
+    })
+  }, [])
+
   // Mirror the viewer page's left-rail offset math so the canvas and
   // the floating "Zoom to" button stay clear of the sidebar.
   const sidebarWidth = !isMobile && sidebarOpen ? 344 : !isMobile ? 64 : 0
@@ -452,6 +474,32 @@ export default function SitesMapPage() {
           transition: 'left 0.2s ease',
         }}
       />
+
+      {/* Primary controller pill — overview state ("All sites · N").
+          Mounted directly on the page (not via MapShell) because the
+          overview route owns its own globe + sidebar layout. */}
+      <div
+        className={isMobile ? 'is-phone' : ''}
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: sidebarWidth,
+          right: 0,
+          height: 0,
+          pointerEvents: 'none',
+          transition: 'left 0.2s ease',
+        }}
+      >
+        <div style={{ pointerEvents: 'auto' }}>
+          <CtrlPill
+            currentSite={null}
+            siteCount={loadedSites.length}
+            onZoomIn={ctrlZoomIn}
+            onZoomOut={ctrlZoomOut}
+            onHome={ctrlHome}
+          />
+        </div>
+      </div>
 
       {/* "Zoom to" button — appears when a site pin is selected on
           the globe. Offset right so it sits inside the visible canvas. */}
