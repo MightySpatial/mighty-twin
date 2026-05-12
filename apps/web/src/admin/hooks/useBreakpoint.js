@@ -1,4 +1,4 @@
-import { useShellContext } from '@mightyspatial/app-shell'
+import { useShellContext, useOrientation } from '@mightyspatial/app-shell'
 
 // Breakpoints retained for any code still reading the numeric values directly.
 export const BREAKPOINTS = {
@@ -16,11 +16,20 @@ export const BREAKPOINTS = {
  *  ResizeObserver; delegating to it keeps every call site working
  *  unchanged (same return shape: breakpoint + width + booleans).
  *
- *  `width` mirrors the pane's width, not the window's — more useful
- *  for CSS-media-query-like consumer code (e.g. the inline table-vs-
- *  cards toggle in UsersPage). */
+ *  `layoutMode` is an orientation-aware variant — see §3 of the
+ *  implementation brief (mockups/IMPLEMENTATION.md). Tablet portrait
+ *  uses the phone pattern (bottom nav, widget sheet); tablet landscape
+ *  uses the desktop pattern (sidebar, right pane). Branch on
+ *  `layoutMode` instead of `isTablet` to retire the drawer pattern. */
 export function useBreakpoint() {
   const { breakpoint, paneSize } = useShellContext()
+  const orientation = useOrientation()
+  const layoutMode =
+    breakpoint === 'phone'
+      ? 'phone'
+      : breakpoint === 'tablet'
+        ? (orientation === 'portrait' ? 'tabletPortrait' : 'tabletLandscape')
+        : 'desktop'
   return {
     breakpoint,
     width: paneSize.width,
@@ -28,5 +37,7 @@ export function useBreakpoint() {
     isTablet: breakpoint === 'tablet',
     isDesktop: breakpoint === 'desktop',
     isMobile: breakpoint !== 'desktop',
+    orientation,
+    layoutMode,
   }
 }

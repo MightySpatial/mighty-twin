@@ -56,7 +56,10 @@ function resolveSymbol(raw?: string): PointSymbolType {
 export default function SitesMapPage() {
   const navigate = useNavigate()
   const tokenReady = useTokenFetch()
-  const { isMobile } = useBreakpoint()
+  // Phase 3 pivot: tablet portrait gets the phone-style sidebar layout;
+  // tablet landscape mirrors desktop.
+  const { layoutMode } = useBreakpoint()
+  const isMobile = layoutMode === 'phone' || layoutMode === 'tabletPortrait'
   const containerRef = useRef<HTMLDivElement>(null)
   const viewerRef = useRef<CesiumViewerType | null>(null)
   const destroyedRef = useRef(false)

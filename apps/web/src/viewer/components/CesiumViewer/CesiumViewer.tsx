@@ -97,7 +97,12 @@ export default function CesiumViewerComponent({
   onOpenStoryPicker,
   storyActive = false,
 }: CesiumViewerProps) {
-  const { isMobile } = useBreakpoint()
+  // Phase 3 pivot: route widget surface by layoutMode so tablet portrait
+  // gets the phone widget sheet and tablet landscape gets the desktop
+  // right pane. The bool stays named `isMobile` for downstream code; its
+  // meaning is now "phone-style layout" (phone + tablet portrait).
+  const { layoutMode } = useBreakpoint()
+  const isMobile = layoutMode === 'phone' || layoutMode === 'tabletPortrait'
   const widgetOverrides = useWidgetLayout()
   const [sidebarOpen, setSidebarOpen] = useState(!isMobile)
   /** Shared utility-panel coordinator. Table / Add Data share a

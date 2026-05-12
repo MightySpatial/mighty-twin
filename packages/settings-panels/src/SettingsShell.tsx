@@ -48,16 +48,34 @@ export interface SettingsShellProps {
  *  Reads the initial section from the URL hash (`#basemap`, `#units`, etc.).
  *  Consumer apps pass `extraSections` to add app-specific panels (e.g.
  *  Users, System Settings) without forking the shell. */
-/** Detect phone breakpoint without depending on the host shell: native
- *  matchMedia for real devices, plus a `?forceBreakpoint=phone` URL
- *  check so AppShell's preview mode flips the layout too. */
-function detectPhone(): boolean {
+/** Detect whether the phone-style layout (bottom carousel) should be
+ *  used. Returns true for real phones AND for tablet portrait — the
+ *  orientation pivot in §5.3 of the implementation brief. Tablet
+ *  landscape keeps the desktop sidebar.
+ *
+ *  Detection sources, in priority order:
+ *    1. `?forceBreakpoint=` URL param (AppShell preview mode) +
+ *       `?forceOrientation=` for tablet.
+ *    2. Native matchMedia (max-width: 767px) for real phones.
+ *    3. Aspect ratio at tablet widths (768–1023): portrait → phone
+ *       layout, landscape → desktop layout. */
+function detectPhoneLikeLayout(): boolean {
   if (typeof window === 'undefined') return false
-  const forced = new URLSearchParams(window.location.search).get('forceBreakpoint')
-  if (forced === 'phone' || forced === 'tablet' || forced === 'desktop') {
-    return forced === 'phone'
+  const params = new URLSearchParams(window.location.search)
+  const forcedBp = params.get('forceBreakpoint')
+  if (forcedBp === 'phone') return true
+  if (forcedBp === 'desktop') return false
+  if (forcedBp === 'tablet') {
+    const forcedOrient = params.get('forceOrientation')
+    if (forcedOrient === 'portrait') return true
+    if (forcedOrient === 'landscape') return false
   }
-  return window.matchMedia('(max-width: 767px)').matches
+  if (window.matchMedia('(max-width: 767px)').matches) return true
+  // Tablet portrait — width 768-1023 and portrait aspect ratio.
+  const w = window.innerWidth
+  const h = window.innerHeight
+  if (w >= 768 && w < 1024 && h > w) return true
+  return false
 }
 
 export function SettingsShell({ extraSections = [] }: SettingsShellProps) {
@@ -69,7 +87,7 @@ export function SettingsShell({ extraSections = [] }: SettingsShellProps) {
     return h && validIds.has(h) ? h : 'basemap'
   })
 
-  const [isPhone, setIsPhone] = useState<boolean>(detectPhone)
+  const [isPhone, setIsPhone] = useState<boolean>(detectPhoneLikeLayout)
 
   useEffect(() => {
     const onHashChange = () => {
@@ -81,15 +99,21 @@ export function SettingsShell({ extraSections = [] }: SettingsShellProps) {
   }, [validIds])
 
   useEffect(() => {
-    const update = () => setIsPhone(detectPhone())
+    const update = () => setIsPhone(detectPhoneLikeLayout())
     const mq = window.matchMedia('(max-width: 767px)')
     mq.addEventListener('change', update)
+    // Listen for orientation flips so tablet portrait <-> landscape
+    // re-evaluates without a reload.
+    window.addEventListener('orientationchange', update)
+    window.addEventListener('resize', update)
     // AppShell rewrites the `forceBreakpoint` URL via history.replaceState
     // (no popstate fires); poll cheaply so preview-mode toggles flip
     // the layout without a page reload.
     const id = window.setInterval(update, 500)
     return () => {
       mq.removeEventListener('change', update)
+      window.removeEventListener('orientationchange', update)
+      window.removeEventListener('resize', update)
       window.clearInterval(id)
     }
   }, [])
