@@ -24,10 +24,12 @@ import { pointSymbolToDataUrl } from '../shared/pointSymbology'
 import { authFetch } from '../utils/authFetch'
 import { flyToTarget } from '../utils/flyToTarget'
 import SplashOverlay from '../components/SplashOverlay/SplashOverlay'
-import ViewerSidebar from '../components/ViewerSidebar'
 import { CtrlPill } from '../components/CtrlPill/CtrlPill'
 import { SiteStrip } from '../components/SiteStrip/SiteStrip'
+import { FloatingIconStack } from '../components/FloatingIconStack'
+import type { FloatingIconStackItem } from '../components/FloatingIconStack'
 import MeasureWidget, { useMeasure } from '../widgets/measure'
+import { Ruler, Search as SearchIcon } from 'lucide-react'
 import type { PublicSettings, OverlayConfig, SiteListItem } from '../types/api'
 import type { SiteEntry } from '../components/SitePicker'
 import type { PointSymbolType } from '../shared/pointSymbology'
@@ -64,24 +66,11 @@ export default function SitesMapPage() {
   const viewerRef = useRef<CesiumViewerType | null>(null)
   const destroyedRef = useRef(false)
 
-  // ── Sidebar wiring ────────────────────────────────────────────────
-  // We mount the same ViewerSidebar as the per-site viewer: Home tab
-  // (now hosting what was the SplashOverlay), Site tab (the picker
-  // list across all sites), and a single Measure widget tab. No
-  // layers/extensions/terrain on the overview.
-  const [sidebarOpen, setSidebarOpen] = useState(true)
-
-  // ── Measure widget — wired into the sidebar's Measure tab ─────────
+  // ── Measure widget — wired into the FloatingIconStack ─────────────
   const {
     measureActive, measureRunning, measureResult, measureMode, setMeasureMode,
     startMeasure, cancelMeasure, cleanupMeasure, setMeasureResult,
   } = useMeasure(viewerRef)
-  const activeWidgetId = measureActive ? 'measure' : null
-  const onSidebarWidgetTabClick = useCallback((id: string) => {
-    if (id !== 'measure') return
-    if (measureActive) cancelMeasure()
-    else startMeasure()
-  }, [measureActive, cancelMeasure, startMeasure])
 
   const sitesWithCamera = useRef<SiteWithCamera[]>([])
   const sitesLoaded = useRef(false)
@@ -376,30 +365,11 @@ export default function SitesMapPage() {
     })
   }, [navigateToSite])
 
-  // Map the legacy home_widget_* settings into the HomePanel's
-  // expected shape. We tuck the message into `intro_html` and append
-  // a support-email line so the panel renders as one continuous
-  // welcome block — no need for an extra prop on HomePanel itself.
-  const homePanelContent = useMemo(() => {
-    if (!homeWidget?.home_widget_enabled) return null
-    const msg = homeWidget.home_widget_message ?? ''
-    const support = homeWidget.home_widget_support_email
-      ? `<p>Support: <a href="mailto:${homeWidget.home_widget_support_email}">${homeWidget.home_widget_support_email}</a></p>`
-      : ''
-    const intro = (msg + support).trim()
-    if (!intro) return null
-    return { intro_html: intro }
-  }, [homeWidget])
-  // ViewerSidebar's Home tab renders "Welcome to {site.name}" — we
-  // synthesize a site handle whose `name` is the configured home
-  // widget title (or "All Sites" as a friendly fallback).
-  const overviewSite = useMemo(
-    () => ({
-      slug: '__overview__',
-      name: homeWidget?.home_widget_title ?? 'All Sites',
-    }),
-    [homeWidget?.home_widget_title],
-  )
+  // Legacy home_widget_* welcome content used to render inside
+  // ViewerSidebar's Home tab. Phase 4 retired ViewerSidebar; the
+  // overview pane now leads with the SiteStrip directly. The
+  // home_widget settings are no longer surfaced on this route.
+  void homeWidget // silence "set but unread" noise
 
   const handleZoomTo = useCallback(() => {
     if (!selectedSite || !viewerRef.current || viewerRef.current.isDestroyed()) return
@@ -434,64 +404,70 @@ export default function SitesMapPage() {
     })
   }, [])
 
-  // Mirror the viewer page's left-rail offset math so the canvas and
-  // the floating "Zoom to" button stay clear of the sidebar.
-  const sidebarWidth = !isMobile && sidebarOpen ? 344 : !isMobile ? 64 : 0
+  // Phase 4: no layout-reserving sidebar. FloatingIconStack overlays
+  // the canvas; canvas is full-width.
+  const sidebarWidth = 0
+
+  // FloatingIconStack items for the overview pane. Search is a tool
+  // toggle (defers to the existing SearchWidget infra — not mounted
+  // here yet, so this is a TODO no-op stub on overview). Measure
+  // toggles the measure tool inline.
+  const overviewIconStackItems: FloatingIconStackItem[] = [
+    {
+      id: 'search',
+      label: 'Search',
+      icon: <SearchIcon size={18} />,
+      hasPanel: false,
+      onClick: () => { /* TODO: wire SearchWidget on overview route */ },
+    },
+    {
+      id: 'measure',
+      label: 'Measure',
+      icon: <Ruler size={18} />,
+      hasPanel: false,
+      isActive: measureActive,
+      onClick: () => {
+        if (measureActive) cancelMeasure()
+        else startMeasure()
+      },
+    },
+  ]
 
   return (
     <div style={{ width: '100vw', height: '100vh', position: 'relative', background: '#0f0f14' }}>
-      {/* Sidebar — Home / Site / Measure. Replaces the bare back-button
-          + title dropdown + SplashOverlay that used to live here. */}
-      <ViewerSidebar
-        site={overviewSite}
-        pickerSites={pickerSites}
-        pickerLoading={pickerLoading}
-        onSitePickerSelect={onSitePickerSelect}
-        homeContent={homePanelContent}
-        layers={[]}
-        layersLoading={false}
-        extensionPanels={[]}
-        activeExtPanel={null}
-        setActiveExtPanel={() => { /* no extensions on overview */ }}
-        viewer={viewerRef.current}
-        siteId=""
-        siteConfigState={{}}
-        setSiteConfigState={() => { /* no per-site config on overview */ }}
-        sidebarOpen={sidebarOpen}
-        setSidebarOpen={setSidebarOpen}
-        isMobile={isMobile}
-        activeWidgetId={activeWidgetId}
-        onWidgetTabClick={onSidebarWidgetTabClick}
-        widgetTabIds={['measure']}
-      />
-
-      {/* Cesium canvas — offset by sidebar width to match the viewer
-          page's layout pattern. */}
+      {/* Cesium canvas — full width; floating chrome overlays. */}
       <div
         ref={containerRef}
         style={{
           position: 'absolute',
           top: 0,
-          left: sidebarWidth,
+          left: 0,
           right: 0,
           bottom: 0,
-          transition: 'left 0.2s ease',
         }}
       />
 
+      {/* Floating icon stack — Search + Measure for the overview pane. */}
+      <div className={isMobile ? 'is-phone' : ''}>
+        <FloatingIconStack
+          items={overviewIconStackItems}
+          activePanel={null}
+          onTogglePanel={() => { /* no panels on overview */ }}
+        />
+      </div>
+
       {/* Primary controller pill — overview state ("All sites · N").
           Mounted directly on the page (not via MapShell) because the
-          overview route owns its own globe + sidebar layout. */}
+          overview route owns its own globe layout. */}
       <div
         className={isMobile ? 'is-phone' : ''}
         style={{
           position: 'absolute',
           top: 0,
-          left: sidebarWidth,
+          left: 0,
           right: 0,
           height: 0,
           pointerEvents: 'none',
-          transition: 'left 0.2s ease',
         }}
       >
         <div style={{ pointerEvents: 'auto' }}>

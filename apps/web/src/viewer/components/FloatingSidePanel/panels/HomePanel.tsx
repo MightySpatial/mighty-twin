@@ -12,6 +12,7 @@
 
 import { ArrowLeft, ExternalLink, ImageIcon, Sparkles } from 'lucide-react'
 import { Link } from 'react-router-dom'
+import './panels.css'
 
 interface HomeContent {
   hero_image_url?: string | null
