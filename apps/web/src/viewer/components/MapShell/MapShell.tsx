@@ -21,7 +21,7 @@
  *  rails are filtered to widgets with ``publicVisible: true`` only.
  */
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useMemo, useRef } from 'react'
 import {
   Layers as LayersIcon,
   List as ListIcon,
@@ -34,7 +34,6 @@ import {
   Mountain,
   Plane,
   Globe2,
-  LayoutGrid as ToolsIcon,
 } from 'lucide-react'
 
 import {
@@ -162,14 +161,10 @@ export function MapShell({
   }, [publicMode, widgetOverrides, phoneMode])
   const secondary = useMemo(() => widgetsForController(widgets, 'secondary'), [widgets])
 
-  // Phone-only: tools sheet open/closed. Notify DraggableMai via
-  // window events so the Mai FAB can step aside while the sheet is
-  // up — otherwise it sits bottom-right over the rightmost widget tile.
-  const [toolsOpen, setToolsOpen] = useState(false)
-  useEffect(() => {
-    const evt = toolsOpen ? 'mighty:tools-open' : 'mighty:tools-close'
-    window.dispatchEvent(new Event(evt))
-  }, [toolsOpen])
+  // The tools-open / tools-close window events were tied to the
+  // retired Tools FAB sheet. Mai's clearance is now governed by the
+  // permanent bottom widget rail (defaultFabPos.y already reserves
+  // 142px so it doesn't overlap).
 
   return (
     <div
@@ -238,77 +233,12 @@ export function MapShell({
         </div>
       )}
 
-      {/* Phone — Tools FAB substitutes for the bottom rails. Opens a
-          slide-up sheet with all widgets in a 4-column grid. */}
-      <button
-        type="button"
-        className={styles.toolsFab}
-        aria-label="Tools"
-        onClick={() => setToolsOpen(true)}
-      >
-        <ToolsIcon size={22} />
-      </button>
-      {toolsOpen && (
-        <div
-          className={styles.toolsSheetBackdrop}
-          onClick={() => setToolsOpen(false)}
-        >
-          <div className={styles.toolsSheet} onClick={(e) => e.stopPropagation()}>
-            <div className={styles.toolsSheetHandle} />
-            {/* Primary tools (Search / Measure / Legend / Layers) live as
-                standalone floating buttons on the left column on phones —
-                they intentionally do NOT appear in this sheet. Only the
-                secondary "Widgets" section is rendered here. */}
-            {!publicMode && secondary.length > 0 && (
-              <div className={styles.toolsSheetSection}>
-                <div className={styles.toolsSheetSectionLabel}>Widgets</div>
-                <Carousel
-                  showArrows={false}
-                  snap
-                  className={styles.toolsSheetWidgets}
-                >
-                  {secondary.map((w) => (
-                    <SheetTile
-                      key={w.id}
-                      widget={w}
-                      active={activeToolId === w.id}
-                      onClick={() => {
-                        onAction(w.id)
-                        setToolsOpen(false)
-                      }}
-                    />
-                  ))}
-                </Carousel>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+      {/* Tools FAB + slide-up sheet retired — the SecondaryRail above
+          is now permanently visible on phone, so there's no need for
+          a FAB indirection. */}
 
       {children}
     </div>
-  )
-}
-
-function SheetTile({
-  widget,
-  active,
-  onClick,
-}: {
-  widget: WidgetDef
-  active: boolean
-  onClick: () => void
-}) {
-  const Icon = ICON_MAP[widget.icon]
-  return (
-    <button
-      type="button"
-      className={`${styles.toolsSheetTile} ${active ? styles.active : ''}`}
-      onClick={onClick}
-    >
-      {Icon ? <Icon size={20} /> : null}
-      {widget.label}
-    </button>
   )
 }
 

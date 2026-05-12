@@ -10,13 +10,20 @@ import type { SystemConfig } from '../../../types/api'
  *  Priority (first non-empty wins):
  *    1. User-set token in Settings → Basemap (per-browser, localStorage)
  *    2. Server config `/api/system/config.cesium_ion_token` (per-tenant, DB)
- *    3. VITE_CESIUM_ACCESS_TOKEN (build-time env var, baseline)
+ *    3. VITE_CESIUM_ACCESS_TOKEN or VITE_CESIUM_ION_TOKEN env var
+ *       (build-time, baseline) — both names accepted to bridge an
+ *       historical mismatch between the env example and the code.
  *
  *  The browser-scoped setting overrides because it's the knob users
  *  reach for — typing a token into Settings should always take effect.
  *  The server config stays because that's how MightyTwin v1 distributes
  *  tokens to tenants. The env var is the dev fallback so local dev
- *  doesn't need either of the above to work. */
+ *  doesn't need either of the above to work.
+ *
+ *  Cesium's bundled default token is left intact so the Bing imagery
+ *  out-of-box experience keeps working when none of the tiers above
+ *  is configured. The OSM fallback in basemapFallback.ts only kicks
+ *  in when the bundled default has been explicitly removed. */
 export function useTokenFetch() {
   const [tokenReady, setTokenReady] = useState(false)
   const { addToast } = useToast()
@@ -24,14 +31,21 @@ export function useTokenFetch() {
   const userToken = settings.basemap.ionToken.trim()
 
   useEffect(() => {
-    const envToken = import.meta.env.VITE_CESIUM_ACCESS_TOKEN as string | undefined
+    // Both env var names are accepted because the historical
+    // .env.local.example file advertises VITE_CESIUM_ION_TOKEN, while
+    // the rest of the code path uses VITE_CESIUM_ACCESS_TOKEN. If
+    // either is set, prefer it — keeps existing Railway configs
+    // working without renaming.
+    const env = import.meta.env as Record<string, string | undefined>
+    const envToken = env.VITE_CESIUM_ACCESS_TOKEN || env.VITE_CESIUM_ION_TOKEN
 
-    // Cesium ships with a baked-in default Ion token for sample.cesium.com.
-    // Clear it up-front so a missing user/env/server token surfaces as
-    // `Ion.defaultAccessToken === ''` — that's the signal
-    // `getBasemapFallbackOptions()` uses to swap in the OSM fallback
-    // instead of letting Bing Aerial (Ion-only) leave the globe black.
-    Ion.defaultAccessToken = ''
+    // NOTE: do NOT clear Ion.defaultAccessToken at the top — Cesium
+    // ships with a bundled default token that gives free Bing
+    // imagery on most domains. Clearing it removes the working
+    // out-of-the-box experience when no env / server / user token is
+    // configured. The OSM fallback in basemapFallback.ts triggers
+    // only when Ion.defaultAccessToken is genuinely empty (e.g. an
+    // explicit user opt-out).
 
     // Tier 1: user setting (highest priority)
     if (userToken) {
