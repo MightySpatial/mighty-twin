@@ -292,107 +292,116 @@
   max-width: 640px;
 }
 
-/* ─── Mobile (≤767px) ────────────────────────────────────────────────────── */
-/* Stack to a single column. Side nav becomes a horizontal scroll strip
-   of pill chips. Field rows wrap to label-above-input so 360px / 414px
-   inputs no longer push off-screen. Matches useBreakpoint's `isPhone`
-   range (0–767px) so the layout flips in lockstep with Atlas's mobile
-   chrome. */
-@media (max-width: 767px) {
-  .shell {
-    grid-template-columns: 1fr;
-    grid-template-rows: auto 1fr;
-    overflow: hidden;
-  }
+/* ─── Phone layout ────────────────────────────────────────────────────────
+   Keyed off `.shell.isPhone` (set by SettingsShell from matchMedia +
+   `?forceBreakpoint=phone`) rather than a pure viewport media query so
+   AppShell's forced-phone preview at desktop window width also flips
+   the layout. Content sits on top, the section nav becomes a flat
+   tabbar carousel pinned to the base — same scrollable-tabbar pattern
+   as the Atlas bottom-nav. Field rows wrap label-above-input so 360px
+   inputs don't push off-screen. */
+.shell.isPhone {
+  grid-template-columns: 1fr;
+  grid-template-rows: 1fr auto;
+  overflow: hidden;
+}
 
-  .nav {
-    border-right: none;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-    padding: 10px 12px;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    overflow-x: auto;
-    overflow-y: hidden;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-    background: rgba(15, 15, 20, 0.92);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    flex-wrap: nowrap;
-  }
-  .nav::-webkit-scrollbar { display: none; }
+.shell.isPhone .nav {
+  border-right: none;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 0;
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  height: 64px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+  scroll-snap-type: x mandatory;
+  background: rgba(15, 15, 20, 0.92);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  flex-wrap: nowrap;
+}
+.shell.isPhone .nav::-webkit-scrollbar { display: none; }
 
-  .navTitle {
-    display: none;
-  }
+.shell.isPhone .navTitle {
+  display: none;
+}
 
-  .navItem {
-    flex: 0 0 auto;
-    width: auto;
-    padding: 10px 14px;
-    min-height: 44px;
-    border-radius: 999px;
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    white-space: nowrap;
-    font-size: 13px;
-    display: inline-flex;
-    align-items: center;
-  }
+.shell.isPhone .navItem {
+  flex: 0 0 auto;
+  scroll-snap-align: start;
+  width: auto;
+  min-width: 88px;
+  padding: 8px 14px;
+  min-height: 44px;
+  border: none;
+  border-radius: 0;
+  background: none;
+  white-space: nowrap;
+  font-size: 11px;
+  font-weight: 500;
+  color: rgba(240, 242, 248, 0.6);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  -webkit-tap-highlight-color: transparent;
+}
 
-  .navItemActive {
-    background: rgba(45, 212, 191, 0.16);
-    border-color: rgba(45, 212, 191, 0.45);
-    color: #2dd4bf;
-  }
+.shell.isPhone .navItemActive {
+  background: none;
+  color: #2dd4bf;
+}
 
-  .content {
-    padding: 20px 16px 32px;
-  }
+.shell.isPhone .content {
+  padding: 20px 16px 32px;
+}
 
-  .panel h2 {
-    font-size: 18px;
-  }
+.shell.isPhone .panel h2 {
+  font-size: 18px;
+}
 
-  .panel .panelDesc {
-    font-size: 13px;
-    margin-bottom: 18px;
-  }
+.shell.isPhone .panel .panelDesc {
+  font-size: 13px;
+  margin-bottom: 18px;
+}
 
-  .field {
-    grid-template-columns: 1fr;
-    gap: 8px;
-    padding: 14px 0;
-    max-width: 100%;
-  }
+.shell.isPhone .field {
+  grid-template-columns: 1fr;
+  gap: 8px;
+  padding: 14px 0;
+  max-width: 100%;
+}
 
-  .input,
-  .select {
-    width: 100%;
-    max-width: 100%;
-    min-height: 44px;
-    padding: 10px 12px;
-    border-radius: 12px;
-    font-size: 16px; /* prevent iOS zoom on focus */
-  }
+.shell.isPhone .input,
+.shell.isPhone .select {
+  width: 100%;
+  max-width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  font-size: 16px; /* prevent iOS zoom on focus */
+}
 
-  /* iOS Safari zooms the page when focusing an input under 16px. Several
-     panels render plain `<input>` / `<textarea>` / `<select>` with inline
-     `fontSize: 13` for compact desktop tables — !important is required to
-     beat inline styles. Scoped to `.shell` so admin tables outside Settings
-     keep their tighter density. */
-  .shell input:not([type="checkbox"]):not([type="radio"]):not([type="color"]),
-  .shell textarea,
-  .shell select {
-    font-size: 16px !important;
-  }
+/* iOS Safari zooms the page when focusing an input under 16px. Several
+   panels render plain `<input>` / `<textarea>` / `<select>` with inline
+   `fontSize: 13` for compact desktop tables — !important is required to
+   beat inline styles. Scoped to `.shell.isPhone` so admin tables outside
+   Settings (and desktop Settings) keep their tighter density. */
+.shell.isPhone input:not([type="checkbox"]):not([type="radio"]):not([type="color"]),
+.shell.isPhone textarea,
+.shell.isPhone select {
+  font-size: 16px !important;
+}
 
-  .toggle {
-    justify-self: start;
-  }
+.shell.isPhone .toggle {
+  justify-self: start;
+}
 
-  .skeletonNote {
-    max-width: 100%;
-  }
+.shell.isPhone .skeletonNote {
+  max-width: 100%;
 }

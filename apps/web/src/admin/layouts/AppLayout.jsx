@@ -18,11 +18,6 @@ const NAV_ITEMS = [
   { path: '/admin/upload', icon: Upload, label: 'Upload' },
 ]
 
-// Phone bottom-nav: 5 items max so each tab can breathe. The first
-// four are essential, the fifth is the submissions queue (most user-
-// driven action). Everything else goes behind the More sheet.
-const PHONE_PRIMARY = ['/admin/overview', '/admin/sites', '/admin/data', '/admin/library', '/admin/submissions']
-
 /** Atlas layout — the publisher-level chrome. Wraps Sites, Data, Upload,
  *  and Library in a sidebar (desktop) / drawer (tablet) / bottom-tab
  *  (phone) shell. Users, Tools, Integrations, and system settings have
@@ -33,7 +28,6 @@ export default function AppLayout() {
   // pulling from useShellContext keeps the import intact for the badge poll.
   useShellContext()
   const [sidebarOpen, setSidebarOpen] = useState(false)
-  const [moreSheetOpen, setMoreSheetOpen] = useState(false)
   const [badges, setBadges] = useState({})
   const location = useLocation()
 
@@ -71,7 +65,7 @@ export default function AppLayout() {
   }
 
   return (
-    <div className="app-layout">
+    <div className={`app-layout${isPhone ? ' is-phone' : ''}`}>
       {/* ═══ DESKTOP SIDEBAR ═══ */}
       {isDesktop && (
         <aside className="sidebar">
@@ -176,12 +170,15 @@ export default function AppLayout() {
           <Outlet />
         </main>
 
-        {/* Bottom Nav (phone only) — 5 primary tabs + a More sheet
-            for the rest. Without the cap a 9-item row gets too tight
-            to tap reliably on a 390px wide phone. */}
+        {/* Bottom Nav (phone only) — horizontal scrollable carousel of
+            all sections. Earlier shipped a 5-tab cap + "More" sheet,
+            which hid half the nav and forced an extra tap; the
+            scroller keeps every tab one flick away and tap targets
+            chunky (min-width per item). Snap so flicks settle on a
+            tab boundary, scrollbar hidden so it reads as a tabbar. */}
         {isPhone && (
           <nav className="bottom-nav">
-            {NAV_ITEMS.filter(item => PHONE_PRIMARY.includes(item.path)).map(item => (
+            {NAV_ITEMS.map(item => (
               <NavLink
                 key={item.path}
                 to={item.path}
@@ -195,58 +192,6 @@ export default function AppLayout() {
               </NavLink>
             ))}
           </nav>
-        )}
-
-        {isPhone && NAV_ITEMS.some(item => !PHONE_PRIMARY.includes(item.path)) && (
-          <button
-            className="bottom-nav-more-fab"
-            onClick={() => setMoreSheetOpen(true)}
-            title="More sections"
-            aria-label="More"
-          >
-            <Menu size={20} />
-          </button>
-        )}
-
-        {moreSheetOpen && isPhone && (
-          <div
-            className="bottom-nav-more-backdrop"
-            onClick={() => setMoreSheetOpen(false)}
-          >
-            <div
-              className="bottom-nav-more-sheet"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="bottom-nav-more-handle" />
-              <div className="bottom-nav-more-header">
-                <span className="bottom-nav-more-title">More sections</span>
-                <button
-                  type="button"
-                  className="bottom-nav-more-close"
-                  aria-label="Close"
-                  onClick={() => setMoreSheetOpen(false)}
-                >
-                  <X size={18} />
-                </button>
-              </div>
-              <div className="bottom-nav-more-grid">
-                {NAV_ITEMS.filter(item => !PHONE_PRIMARY.includes(item.path)).map(item => (
-                  <NavLink
-                    key={item.path}
-                    to={item.path}
-                    className={({ isActive }) =>
-                      `bottom-nav-more-tile ${isActive ? 'active' : ''}`
-                    }
-                    onClick={() => setMoreSheetOpen(false)}
-                  >
-                    <item.icon size={22} />
-                    <span>{item.label}</span>
-                    {renderBadge(item)}
-                  </NavLink>
-                ))}
-              </div>
-            </div>
-          </div>
         )}
       </div>
     </div>

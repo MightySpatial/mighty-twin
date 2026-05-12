@@ -123,9 +123,11 @@
 }
 .railSecondary {
   background: rgba(17,20,29,0.7);
-  /* Cap the rail width so the carousel inside has something to
-     overflow and the chevron arrows have a reason to appear. */
-  width: min(720px, calc(100vw - 120px));
+  /* Cap the rail width *when tiles overflow* — without this the
+     rail would just keep growing. With max-width (not width), the
+     rail hugs content when it fits and caps to give the carousel
+     something to overflow when it doesn't. */
+  max-width: min(720px, calc(100vw - 120px));
 }
 .tile {
   display: inline-flex; flex-direction: column; align-items: center; gap: 3px;

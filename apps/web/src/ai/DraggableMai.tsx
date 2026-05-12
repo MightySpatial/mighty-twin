@@ -26,15 +26,16 @@ function saveFabPos(p: { x: number; y: number }) {
   try { sessionStorage.setItem(FAB_KEY, JSON.stringify(p)) } catch {}
 }
 
-/** Default FAB anchor: bottom-right of the viewport, sitting above
- *  the secondary rail (~72 px clearance so MAI clears the ~48 px
- *  rail with ~20 px of breathing room). Recomputed if sessionStorage
- *  is empty on first mount. */
+/** Default FAB anchor: bottom-right of the viewport. Clearance has to
+ *  cover the *worst* per-pane bottom chrome (the 64 px Atlas bottom-nav
+ *  and the Settings tabbar are both 64 px; viewer has only the ~48 px
+ *  secondary rail). 88 px gives the FAB ~24 px breathing room above
+ *  any of them so it never overlaps a tap target. */
 function defaultFabPos() {
   if (typeof window === 'undefined') return { x: 0, y: 0 }
   return {
     x: window.innerWidth - FAB_SIZE - 24,
-    y: window.innerHeight - FAB_SIZE - 72,
+    y: window.innerHeight - FAB_SIZE - 88,
   }
 }
 
@@ -47,9 +48,22 @@ const RP_SHIFT = 320
 
 /** Top-level entry point. Desktop and phone share the FAB pattern;
  *  the only difference is how the expanded chat surfaces (anchored
- *  floating panel on desktop, bottom sheet on phone). */
+ *  floating panel on desktop, bottom sheet on phone).
+ *
+ *  In `?forceBreakpoint=` dev-preview mode the shell wraps the app in a
+ *  device-frame mockup, but DraggableMai is mounted as a sibling of
+ *  AppShell at App.tsx root — so its position:fixed FAB lands in the
+ *  outer viewport corner, far outside the frame. Hide the FAB whenever
+ *  a forced breakpoint is active so the preview is navigable; Mai is
+ *  still available in real use (and on actual phones). */
+function isForcedPreview(): boolean {
+  if (typeof window === 'undefined') return false
+  return new URLSearchParams(window.location.search).has('forceBreakpoint')
+}
+
 export function DraggableMai() {
   const [isPhone, setIsPhone] = useState(() => window.innerWidth < 768)
+  const [previewActive, setPreviewActive] = useState(() => isForcedPreview())
 
   useEffect(() => {
     const mq = window.matchMedia('(max-width: 767px)')
@@ -58,6 +72,23 @@ export function DraggableMai() {
     return () => mq.removeEventListener('change', onChange)
   }, [])
 
+  useEffect(() => {
+    // The shell toggles `forceBreakpoint` via history.replaceState, which
+    // doesn't fire popstate. Re-check on every render path that could
+    // have changed it: popstate (back/forward), pageshow, and a short
+    // polling fallback for in-place URL rewrites.
+    const update = () => setPreviewActive(isForcedPreview())
+    window.addEventListener('popstate', update)
+    window.addEventListener('pageshow', update)
+    const id = window.setInterval(update, 500)
+    return () => {
+      window.removeEventListener('popstate', update)
+      window.removeEventListener('pageshow', update)
+      window.clearInterval(id)
+    }
+  }, [])
+
+  if (previewActive) return null
   return isPhone ? <MaiFab variant="phone" /> : <MaiFab variant="desktop" />
 }
 

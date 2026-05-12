@@ -33,6 +33,18 @@ export interface SettingsShellProps {
  *  Reads the initial section from the URL hash (`#basemap`, `#units`, etc.).
  *  Consumer apps pass `extraSections` to add app-specific panels (e.g.
  *  Users, System Settings) without forking the shell. */
+/** Detect phone breakpoint without depending on the host shell: native
+ *  matchMedia for real devices, plus a `?forceBreakpoint=phone` URL
+ *  check so AppShell's preview mode flips the layout too. */
+function detectPhone(): boolean {
+  if (typeof window === 'undefined') return false
+  const forced = new URLSearchParams(window.location.search).get('forceBreakpoint')
+  if (forced === 'phone' || forced === 'tablet' || forced === 'desktop') {
+    return forced === 'phone'
+  }
+  return window.matchMedia('(max-width: 767px)').matches
+}
+
 export function SettingsShell({ extraSections = [] }: SettingsShellProps) {
   const allSections = [...BUILTIN_SECTIONS, ...extraSections]
   const validIds = new Set(allSections.map((s) => s.id))
@@ -41,6 +53,8 @@ export function SettingsShell({ extraSections = [] }: SettingsShellProps) {
     const h = parseHash()
     return h && validIds.has(h) ? h : 'basemap'
   })
+
+  const [isPhone, setIsPhone] = useState<boolean>(detectPhone)
 
   useEffect(() => {
     const onHashChange = () => {
@@ -51,6 +65,20 @@ export function SettingsShell({ extraSections = [] }: SettingsShellProps) {
     return () => window.removeEventListener('hashchange', onHashChange)
   }, [validIds])
 
+  useEffect(() => {
+    const update = () => setIsPhone(detectPhone())
+    const mq = window.matchMedia('(max-width: 767px)')
+    mq.addEventListener('change', update)
+    // AppShell rewrites the `forceBreakpoint` URL via history.replaceState
+    // (no popstate fires); poll cheaply so preview-mode toggles flip
+    // the layout without a page reload.
+    const id = window.setInterval(update, 500)
+    return () => {
+      mq.removeEventListener('change', update)
+      window.clearInterval(id)
+    }
+  }, [])
+
   const selectSection = (id: string) => {
     setActive(id)
     if (typeof window !== 'undefined') {
@@ -60,23 +88,29 @@ export function SettingsShell({ extraSections = [] }: SettingsShellProps) {
 
   const activeSection = allSections.find((s) => s.id === active)
 
-  return (
-    <div className={styles.shell}>
-      <nav className={styles.nav}>
-        <h3 className={styles.navTitle}>Settings</h3>
-        {allSections.map((s) => (
-          <button
-            key={s.id}
-            type="button"
-            className={`${styles.navItem} ${s.id === active ? styles.navItemActive : ''}`}
-            onClick={() => selectSection(s.id)}
-          >
-            {s.label}
-          </button>
-        ))}
-      </nav>
+  // On phone, render content first then the carousel nav so the
+  // grid-template-rows layout reflects DOM order (content top, nav at
+  // the base). Desktop stays nav-then-content for the left-rail layout.
+  const navEl = (
+    <nav className={styles.nav}>
+      <h3 className={styles.navTitle}>Settings</h3>
+      {allSections.map((s) => (
+        <button
+          key={s.id}
+          type="button"
+          className={`${styles.navItem} ${s.id === active ? styles.navItemActive : ''}`}
+          onClick={() => selectSection(s.id)}
+        >
+          {s.label}
+        </button>
+      ))}
+    </nav>
+  )
+  const contentEl = <div className={styles.content}>{activeSection?.panel}</div>
 
-      <div className={styles.content}>{activeSection?.panel}</div>
+  return (
+    <div className={`${styles.shell} ${isPhone ? styles.isPhone : ''}`}>
+      {isPhone ? <>{contentEl}{navEl}</> : <>{navEl}{contentEl}</>}
     </div>
   )
 }

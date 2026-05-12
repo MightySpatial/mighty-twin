@@ -417,8 +417,12 @@
 /* ── Mobile: sidebar fully hidden — primary tools rendered as standalone
    floating buttons in CesiumViewer (same pattern as layer-toggle-btn). */
 
-@media (max-width: 767px) {
-  .viewer-sidebar {
-    display: none;
-  }
+/* Hide the desktop sidebar in mobile/phone breakpoint. Keyed off the
+   `--mobile` modifier class (set by ViewerSidebar from the shell
+   `useBreakpoint`) instead of a viewport media query, so it also
+   fires in `?forceBreakpoint=phone` preview at any window width.
+   CesiumViewer renders the compact floating-icon chrome separately
+   when isMobile is true. */
+.viewer-sidebar.viewer-sidebar--mobile {
+  display: none;
 }

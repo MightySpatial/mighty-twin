@@ -123,6 +123,19 @@ html, body, #root {
   overflow: hidden;
 }
 
+/* AdminRoot is a passthrough wrapper that hosts CommandPalette + the
+   admin routes. Without an explicit height it falls back to height:auto
+   and grows to content, which breaks `forceBreakpoint=phone` preview
+   (the wrapper outgrows the 608px adminPane and overflows the device
+   frame). Constrain it to its parent so .app-layout — and the
+   absolutely-positioned bottom-nav inside it — stay scoped. */
+.admin-root {
+  height: 100%;
+  width: 100%;
+  min-height: 0;
+  min-width: 0;
+}
+
 body {
   font-family: var(--font-family);
   font-size: var(--font-size-md);

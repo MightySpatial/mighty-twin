@@ -324,7 +324,7 @@ export default function ViewerSidebar({
     <>
       {/* Sidebar */}
       <div
-        className={`viewer-sidebar${sidebarOpen ? ' viewer-sidebar--open' : ''}${pinned ? ' viewer-sidebar--pinned' : ''}`}
+        className={`viewer-sidebar${sidebarOpen ? ' viewer-sidebar--open' : ''}${pinned ? ' viewer-sidebar--pinned' : ''}${isMobile ? ' viewer-sidebar--mobile' : ''}`}
         onMouseEnter={onSidebarInteract}
         onPointerDown={onSidebarInteract}
       >
