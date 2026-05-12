@@ -12,11 +12,11 @@ import {
   Cartesian2,
   Color,
   LabelStyle,
-  Terrain,
   ScreenSpaceEventType,
   ScreenSpaceEventHandler,
   ConstantProperty,
 } from 'cesium'
+import { getBasemapFallbackOptions } from '../shared/basemapFallback'
 import { Navigation } from 'lucide-react'
 import { useTokenFetch } from '../components/CesiumViewer/hooks/useTokenFetch'
 import { useBreakpoint } from '../hooks/useBreakpoint'
@@ -175,6 +175,7 @@ export default function SitesMapPage() {
   const setupGlobe = useCallback(() => {
     if (!tokenReady || !containerRef.current || viewerRef.current || destroyedRef.current) return
 
+    const fallback = getBasemapFallbackOptions()
     const viewer = new CesiumViewerType(containerRef.current, {
       timeline: false,
       animation: false,
@@ -185,7 +186,10 @@ export default function SitesMapPage() {
       selectionIndicator: false,
       navigationHelpButton: false,
       infoBox: false,
-      terrain: Terrain.fromWorldTerrain(),
+      // OSM + ellipsoid fallback when no Ion token is configured —
+      // otherwise Bing Aerial (Ion default) leaves a black globe.
+      baseLayer: fallback.baseLayer,
+      terrain: fallback.terrain,
       // creditContainer omitted — Cesium creates one inside the viewer
       // host so basemap attribution renders. The Cesium logo + "Data
       // attribution" expand link are hidden via CSS (see

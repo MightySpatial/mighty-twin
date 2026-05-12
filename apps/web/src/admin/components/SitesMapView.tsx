@@ -18,7 +18,6 @@ import {
   VerticalOrigin,
   Color,
   LabelStyle,
-  Terrain,
   ScreenSpaceEventType,
   ScreenSpaceEventHandler,
   ConstantProperty,
@@ -28,6 +27,7 @@ import 'cesium/Build/Cesium/Widgets/widgets.css'
 import { useTokenFetch } from '../../viewer/components/CesiumViewer/hooks/useTokenFetch'
 import { pointSymbolToDataUrl } from '../../viewer/shared/pointSymbology'
 import { SiteStrip } from '../../viewer/components/SiteStrip/SiteStrip'
+import { getBasemapFallbackOptions } from '../../viewer/shared/basemapFallback'
 
 const DEFAULT_PIN_COLOR = '#6366F1'
 
@@ -102,6 +102,7 @@ export default function SitesMapView({ sites, height }: SitesMapViewProps) {
 
   useEffect(() => {
     if (!tokenReady || !containerRef.current || viewerRef.current || destroyedRef.current) return
+    const fallback = getBasemapFallbackOptions()
     const viewer = new CesiumViewerType(containerRef.current, {
       timeline: false,
       animation: false,
@@ -112,7 +113,9 @@ export default function SitesMapView({ sites, height }: SitesMapViewProps) {
       selectionIndicator: false,
       navigationHelpButton: false,
       infoBox: false,
-      terrain: Terrain.fromWorldTerrain(),
+      // OSM + ellipsoid fallback when no Ion token is configured.
+      baseLayer: fallback.baseLayer,
+      terrain: fallback.terrain,
     })
     viewer.scene.globe.enableLighting = false
     if (viewer.scene.skyAtmosphere) viewer.scene.skyAtmosphere.show = true

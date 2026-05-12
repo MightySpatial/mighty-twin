@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react'
 import {
   Viewer as CesiumViewerType,
+  Ion,
   ImageryLayer,
   IonImageryProvider,
   OpenStreetMapImageryProvider,
@@ -10,7 +11,13 @@ export function useBasemap(
   viewerRef: React.RefObject<CesiumViewerType | null>,
   imgMapRef: React.RefObject<Map<string, ImageryLayer>>,
 ) {
-  const [activeBasemap, setActiveBasemap] = useState('bing-aerial')
+  // Match the actual base layer the viewer was constructed with —
+  // OSM when no Ion token, Bing Aerial when one is configured.
+  // Keeps the basemap picker's active state honest from the first
+  // render.
+  const [activeBasemap, setActiveBasemap] = useState<string>(
+    () => (Ion.defaultAccessToken ? 'bing-aerial' : 'osm'),
+  )
   const [basemapOpen, setBasemapOpen] = useState(false)
 
   const switchBasemap = useCallback(async (id: string) => {

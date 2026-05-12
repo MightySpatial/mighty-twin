@@ -26,6 +26,13 @@ export function useTokenFetch() {
   useEffect(() => {
     const envToken = import.meta.env.VITE_CESIUM_ACCESS_TOKEN as string | undefined
 
+    // Cesium ships with a baked-in default Ion token for sample.cesium.com.
+    // Clear it up-front so a missing user/env/server token surfaces as
+    // `Ion.defaultAccessToken === ''` — that's the signal
+    // `getBasemapFallbackOptions()` uses to swap in the OSM fallback
+    // instead of letting Bing Aerial (Ion-only) leave the globe black.
+    Ion.defaultAccessToken = ''
+
     // Tier 1: user setting (highest priority)
     if (userToken) {
       Ion.defaultAccessToken = userToken
