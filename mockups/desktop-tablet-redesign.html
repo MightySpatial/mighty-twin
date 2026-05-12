@@ -125,11 +125,15 @@
     padding: 3px;
   }
   .mode-tab {
-    padding: 5px 14px;
+    padding: 5px 12px;
     font-size: 12px;
     color: var(--fg-muted);
     border-radius: 6px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
   }
+  .mode-tab svg { width: 14px; height: 14px; }
   .mode-tab.active {
     background: rgba(167,139,250,0.15);
     color: var(--violet);
@@ -337,6 +341,82 @@
   }
   .primary-pill svg { width: 16px; height: 16px; }
 
+  /* ── Side panel (slides out from the floating icon stack) ─── */
+  /* Pattern: the icon column on the left edge is the "primary
+     sidebar" (always visible). Pressing an icon opens a 280-320 px
+     side panel anchored to its right — the "secondary sidebar".
+     Same idea as VSCode's primary + secondary side bar. The panel
+     auto-dismisses when its icon is tapped again or when ESC is
+     pressed. Multiple icons share the slot — pressing a second
+     icon swaps the panel content. */
+  .side-panel {
+    position: absolute;
+    top: 76px;
+    left: 64px;
+    width: 300px;
+    max-height: calc(100% - 200px);
+    background: var(--bg-surface);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    box-shadow: 0 12px 30px rgba(0,0,0,0.35);
+    display: flex; flex-direction: column;
+    overflow: hidden;
+    z-index: 6;
+  }
+  .sp-header {
+    padding: 12px 14px;
+    display: flex; align-items: center; justify-content: space-between;
+    border-bottom: 1px solid var(--line);
+  }
+  .sp-title {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 14px; font-weight: 600; color: var(--fg-primary);
+  }
+  .sp-title svg { width: 16px; height: 16px; color: var(--teal); }
+  .sp-close {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--line);
+    display: flex; align-items: center; justify-content: center;
+    color: var(--fg-secondary);
+  }
+  .sp-close svg { width: 12px; height: 12px; }
+  .sp-body { flex: 1; overflow-y: auto; padding: 6px; }
+  .sp-footer {
+    padding: 8px;
+    border-top: 1px solid var(--line);
+  }
+  .sp-btn {
+    width: 100%;
+    padding: 8px 10px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    color: var(--fg-secondary);
+    font-size: 12px;
+    text-align: left;
+  }
+
+  /* Layer row inside the side panel */
+  .layer-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 8px;
+    border-radius: 8px;
+    color: var(--fg-secondary);
+    font-size: 13px;
+  }
+  .layer-row:hover { background: rgba(255,255,255,0.03); }
+  .layer-row.active { background: rgba(45,212,191,0.08); color: var(--fg-primary); }
+  .vis-toggle {
+    width: 24px; height: 24px;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--fg-secondary);
+  }
+  .vis-toggle svg { width: 16px; height: 16px; }
+  .vis-toggle.off { color: var(--fg-faint); }
+  .layer-name { flex: 1; }
+  .layer-meta { color: var(--fg-faint); font-size: 11px; }
+
   /* ── Mai FAB ──────────────────────────────────────────────── */
   .mai {
     position: absolute;
@@ -541,7 +621,9 @@
     <dt><b>Primary controller pill</b></dt>
     <dd>Horizontal floating pill carrying site chip (with back-to-overview chevron) + zoom + home + bounds + basemap. Same component, same position (top-left of map). Replaces ViewerSidebar's site-chip duty on desktop.</dd>
     <dt><b>Floating left icons</b></dt>
-    <dd>Slim vertical stack for Search · Measure · Legend. No duplicate layers/3D/basemap — those live in the pill.</dd>
+    <dd>Vertical stack for the panel-bearing chrome — Search · Site info · Layers · Measure · Terrain · Legend. Acts as the <b>primary sidebar</b> (always visible). Map controls that already live in the pill (zoom / home / bounds / basemap) are not duplicated here.</dd>
+    <dt><b>Floating side panel</b></dt>
+    <dd>Pressing an icon slides out a 300 px panel docked to the right edge of the icon stack — the <b>secondary sidebar</b>. Single slot; other icons swap the panel content; second tap on the active icon (or ESC) dismisses. Same pattern VSCode uses for primary + secondary side bar. Measure is the exception — it's a tool toggle, no panel.</dd>
     <dt><b>Mai FAB</b></dt>
     <dd>Bottom-right, persistent across all sizes. <code>defaultFabPos.y</code> already calculated to clear stacked nav chrome.</dd>
     <dt><b>Settings nav icons</b></dt>
@@ -574,9 +656,9 @@
       <div class="brand-bar">
         <div class="brand">MightyTwin</div>
         <div class="mode-tabs">
-          <div class="mode-tab active">Map</div>
-          <div class="mode-tab">Atlas</div>
-          <div class="mode-tab">Settings</div>
+          <div class="mode-tab active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round"><polygon points="3 7 9 4 15 7 21 4 21 17 15 20 9 17 3 20 3 7"/><line x1="9" y1="4" x2="9" y2="17"/><line x1="15" y1="7" x2="15" y2="20"/></svg>Map</div>
+          <div class="mode-tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>Atlas</div>
+          <div class="mode-tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>Settings</div>
         </div>
         <div class="brand-controls">
           <span class="brand-chip">P</span>
@@ -605,7 +687,10 @@
 
         <div class="float-icons">
           <div class="float-icon" title="Search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg></div>
+          <div class="float-icon" title="Site info"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></div>
+          <div class="float-icon" title="Layers"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg></div>
           <div class="float-icon" title="Measure"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M21.3 8.7L8.7 21.3a2 2 0 0 1-2.8 0L2.7 18.1a2 2 0 0 1 0-2.8L15.3 2.7a2 2 0 0 1 2.8 0l3.2 3.2a2 2 0 0 1 0 2.8z"/><path d="M14.5 12.5l-2-2"/><path d="M11.5 15.5l-2-2"/><path d="M8.5 18.5l-2-2"/><path d="M17.5 9.5l-2-2"/></svg></div>
+          <div class="float-icon" title="Terrain"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M2 17l5-5 5 5 5-5 5 5M2 12l5-5 5 5 5-5 5 5"/></svg></div>
           <div class="float-icon" title="Legend"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg></div>
         </div>
 
@@ -665,9 +750,139 @@
   </div>
 </div>
 
-<!-- 2: Atlas Overview on desktop -->
+<!-- 2: Map · Layers panel open from icon stack -->
 <div class="frame-wrap">
-  <div class="caption">D2 · Atlas · Overview (sidebar w/ icons)</div>
+  <div class="caption">D2 · Map · Layers panel open from icon stack</div>
+  <div class="desktop">
+    <div class="desktop-titlebar">
+      <span class="traffic red"></span>
+      <span class="traffic amber"></span>
+      <span class="traffic green"></span>
+      <div class="desktop-url">mighty-twin-web.up.railway.app</div>
+    </div>
+    <div class="desktop-body">
+      <div class="brand-bar">
+        <div class="brand">MightyTwin</div>
+        <div class="mode-tabs">
+          <div class="mode-tab active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round"><polygon points="3 7 9 4 15 7 21 4 21 17 15 20 9 17 3 20 3 7"/><line x1="9" y1="4" x2="9" y2="17"/><line x1="15" y1="7" x2="15" y2="20"/></svg>Map</div>
+          <div class="mode-tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>Atlas</div>
+          <div class="mode-tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>Settings</div>
+        </div>
+        <div class="brand-controls">
+          <span class="brand-chip">P</span>
+          <span class="brand-chip">T</span>
+          <span class="brand-chip">D</span>
+        </div>
+      </div>
+
+      <div class="pane" style="height: calc(100% - 44px);">
+        <div class="map-bg"></div>
+
+        <div class="ctrl-pill">
+          <div class="ctrl-site">
+            <span class="back-affordance"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg></span>
+            <span class="avatar">D</span>
+            Demo site
+          </div>
+          <div class="ctrl-divider"></div>
+          <button class="ctrl-btn" aria-label="Zoom in"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg></button>
+          <button class="ctrl-btn" aria-label="Zoom out"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/><line x1="8" y1="11" x2="14" y2="11"/></svg></button>
+          <div class="ctrl-divider"></div>
+          <button class="ctrl-btn" aria-label="Home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12l9-9 9 9"/><path d="M5 10v10a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1V10"/></svg></button>
+          <button class="ctrl-btn" aria-label="Fit bounds"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/></svg></button>
+          <button class="ctrl-btn" aria-label="Basemap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><polygon points="3 7 9 4 15 7 21 4 21 17 15 20 9 17 3 20 3 7"/><line x1="9" y1="4" x2="9" y2="17"/><line x1="15" y1="7" x2="15" y2="20"/></svg></button>
+        </div>
+
+        <div class="float-icons">
+          <div class="float-icon" title="Search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg></div>
+          <div class="float-icon" title="Site info"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></div>
+          <div class="float-icon active" title="Layers"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg></div>
+          <div class="float-icon" title="Measure"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M21.3 8.7L8.7 21.3a2 2 0 0 1-2.8 0L2.7 18.1a2 2 0 0 1 0-2.8L15.3 2.7a2 2 0 0 1 2.8 0l3.2 3.2a2 2 0 0 1 0 2.8z"/><path d="M14.5 12.5l-2-2"/><path d="M11.5 15.5l-2-2"/><path d="M8.5 18.5l-2-2"/><path d="M17.5 9.5l-2-2"/></svg></div>
+          <div class="float-icon" title="Terrain"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M2 17l5-5 5 5 5-5 5 5M2 12l5-5 5 5 5-5 5 5"/></svg></div>
+          <div class="float-icon" title="Legend"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg></div>
+        </div>
+
+        <div class="side-panel">
+          <div class="sp-header">
+            <div class="sp-title">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+              Layers
+            </div>
+            <button class="sp-close" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+          </div>
+          <div class="sp-body">
+            <div class="layer-row active">
+              <button class="vis-toggle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg></button>
+              <span class="layer-name">Buildings</span>
+              <span class="layer-meta">23</span>
+            </div>
+            <div class="layer-row">
+              <button class="vis-toggle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg></button>
+              <span class="layer-name">Roads</span>
+              <span class="layer-meta">142</span>
+            </div>
+            <div class="layer-row">
+              <button class="vis-toggle off"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.94 10.94 0 0 1 12 19c-7 0-11-7-11-7a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A10.94 10.94 0 0 1 12 4c7 0 11 7 11 7a18.34 18.34 0 0 1-3.17 4.16M1 1l22 22"/></svg></button>
+              <span class="layer-name">Tree canopy</span>
+              <span class="layer-meta">—</span>
+            </div>
+            <div class="layer-row">
+              <button class="vis-toggle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg></button>
+              <span class="layer-name">Property bounds</span>
+              <span class="layer-meta">312</span>
+            </div>
+            <div class="layer-row">
+              <button class="vis-toggle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg></button>
+              <span class="layer-name">Contours</span>
+              <span class="layer-meta">87</span>
+            </div>
+            <div class="layer-row">
+              <button class="vis-toggle off"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.94 10.94 0 0 1 12 19c-7 0-11-7-11-7a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A10.94 10.94 0 0 1 12 4c7 0 11 7 11 7a18.34 18.34 0 0 1-3.17 4.16M1 1l22 22"/></svg></button>
+              <span class="layer-name">Aerial 2024</span>
+              <span class="layer-meta">—</span>
+            </div>
+          </div>
+          <div class="sp-footer">
+            <button class="sp-btn">+ Add layer</button>
+          </div>
+        </div>
+
+        <div class="pin" style="left: 62%; top: 48%;">
+          <div class="pin-label">Demo site</div>
+        </div>
+
+        <div class="rail-container" style="left: calc(50% + 60px);">
+          <div class="rail">
+            <div class="rail-tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>Story</div>
+            <div class="rail-tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>Snap</div>
+            <div class="rail-tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/></svg>Design</div>
+            <div class="rail-tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 17 9 11 13 15 21 7"/></svg>Terrain</div>
+            <div class="rail-tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.8 19.2L16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"/></svg>Fly</div>
+          </div>
+        </div>
+
+        <div class="mai"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l1.9 4.6L18 9l-4.1 1.4L12 15l-1.9-4.6L6 9l4.1-1.4L12 3z"/></svg></div>
+      </div>
+    </div>
+  </div>
+  <div class="annot">
+    Pressing an icon in the floating stack slides out a 300 px <b>side panel</b> anchored to its right edge. <b>Other panel-bearing icons (Site info, Search results, Legend) share the slot</b> — pressing a second icon swaps the content; pressing the active icon again dismisses. Measure is a <i>tool toggle</i> (no panel — engages measure mode and changes the cursor). Terrain is a panel too (basemap-style settings). This is the VSCode primary-side-bar + secondary-side-bar pattern adapted for map chrome.
+  </div>
+  <div class="change-list">
+    <h3>Code changes implied</h3>
+    <ul>
+      <li>Extract <a href="../apps/web/src/viewer/components/ViewerSidebar/ViewerSidebar.tsx">ViewerSidebar</a>'s per-tab content (HOME/SITE/LAYERS/MEASURE/TERRAIN) into discrete panel components.</li>
+      <li>Build a shared <code>FloatingSidePanel</code> at <code>apps/web/src/viewer/components/FloatingSidePanel/</code> that mounts whichever panel matches <code>activeSidePanel: string | null</code> in the viewer host.</li>
+      <li>Replace the existing tabbed sidebar with the floating icon stack; each icon toggles its panel ID. Second-tap or ESC clears.</li>
+      <li>Measure stays a separate <code>measureActive</code> state (already wired) — no panel, just engages the tool.</li>
+      <li>Same floating-icon component works on phone via the existing left-edge stack, with the panel rendering as a bottom sheet instead of a side panel on phone widths.</li>
+    </ul>
+  </div>
+</div>
+
+<!-- 3: Atlas Overview on desktop -->
+<div class="frame-wrap">
+  <div class="caption">D3 · Atlas · Overview (sidebar w/ icons)</div>
   <div class="desktop">
     <div class="desktop-titlebar">
       <span class="traffic red"></span>
@@ -679,9 +894,9 @@
       <div class="brand-bar">
         <div class="brand">MightyTwin</div>
         <div class="mode-tabs">
-          <div class="mode-tab">Map</div>
-          <div class="mode-tab active">Atlas</div>
-          <div class="mode-tab">Settings</div>
+          <div class="mode-tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round"><polygon points="3 7 9 4 15 7 21 4 21 17 15 20 9 17 3 20 3 7"/><line x1="9" y1="4" x2="9" y2="17"/><line x1="15" y1="7" x2="15" y2="20"/></svg>Map</div>
+          <div class="mode-tab active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>Atlas</div>
+          <div class="mode-tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>Settings</div>
         </div>
         <div class="brand-controls">
           <span class="brand-chip">P</span>
@@ -734,9 +949,9 @@
   </div>
 </div>
 
-<!-- 3: Settings on desktop with icons -->
+<!-- 4: Settings on desktop with icons -->
 <div class="frame-wrap">
-  <div class="caption">D3 · Settings · Basemap (icons in left rail)</div>
+  <div class="caption">D4 · Settings · Basemap (icons in left rail)</div>
   <div class="desktop">
     <div class="desktop-titlebar">
       <span class="traffic red"></span>
@@ -748,9 +963,9 @@
       <div class="brand-bar">
         <div class="brand">MightyTwin</div>
         <div class="mode-tabs">
-          <div class="mode-tab">Map</div>
-          <div class="mode-tab">Atlas</div>
-          <div class="mode-tab active">Settings</div>
+          <div class="mode-tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round"><polygon points="3 7 9 4 15 7 21 4 21 17 15 20 9 17 3 20 3 7"/><line x1="9" y1="4" x2="9" y2="17"/><line x1="15" y1="7" x2="15" y2="20"/></svg>Map</div>
+          <div class="mode-tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>Atlas</div>
+          <div class="mode-tab active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>Settings</div>
         </div>
         <div class="brand-controls">
           <span class="brand-chip">P</span>
@@ -823,18 +1038,16 @@
 <!-- ═══ Tablet ════════════════════════════════════════════════ -->
 <p class="row-title">Tablet · orientation-driven pattern switch</p>
 
-<!-- 4: Tablet portrait — mobile pattern -->
+<!-- 5: Tablet portrait — mobile pattern -->
 <div class="frame-wrap">
   <div class="caption">T1 · Tablet portrait · Map (mobile pattern · 680×900)</div>
   <div class="tablet portrait">
     <div class="tablet-grid">
       <div class="brand-bar">
         <div class="brand">MightyTwin</div>
-        <div class="mode-tabs">
-          <div class="mode-tab active">Map</div>
-          <div class="mode-tab">Atlas</div>
-          <div class="mode-tab">Settings</div>
-        </div>
+        <!-- No mode tabs in the brand bar on tablet portrait —
+             they live at the bottom (.tablet-bottom-nav) to match
+             the mobile pattern. -->
         <div class="brand-controls">
           <span class="brand-chip">P</span>
           <span class="brand-chip">T</span>
@@ -861,9 +1074,12 @@
         </div>
 
         <div class="float-icons">
-          <div class="float-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg></div>
-          <div class="float-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M21.3 8.7L8.7 21.3a2 2 0 0 1-2.8 0L2.7 18.1a2 2 0 0 1 0-2.8L15.3 2.7a2 2 0 0 1 2.8 0l3.2 3.2a2 2 0 0 1 0 2.8z"/><path d="M14.5 12.5l-2-2"/><path d="M11.5 15.5l-2-2"/><path d="M8.5 18.5l-2-2"/><path d="M17.5 9.5l-2-2"/></svg></div>
-          <div class="float-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg></div>
+          <div class="float-icon" title="Search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg></div>
+          <div class="float-icon" title="Site info"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></div>
+          <div class="float-icon" title="Layers"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg></div>
+          <div class="float-icon" title="Measure"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M21.3 8.7L8.7 21.3a2 2 0 0 1-2.8 0L2.7 18.1a2 2 0 0 1 0-2.8L15.3 2.7a2 2 0 0 1 2.8 0l3.2 3.2a2 2 0 0 1 0 2.8z"/><path d="M14.5 12.5l-2-2"/><path d="M11.5 15.5l-2-2"/><path d="M8.5 18.5l-2-2"/><path d="M17.5 9.5l-2-2"/></svg></div>
+          <div class="float-icon" title="Terrain"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M2 17l5-5 5 5 5-5 5 5M2 12l5-5 5 5 5-5 5 5"/></svg></div>
+          <div class="float-icon" title="Legend"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg></div>
         </div>
 
         <div class="pin" style="left: 48%; top: 38%;">
@@ -895,7 +1111,7 @@
   </div>
 </div>
 
-<!-- 5: Tablet landscape — desktop pattern -->
+<!-- 6: Tablet landscape — desktop pattern -->
 <div class="frame-wrap">
   <div class="caption">T2 · Tablet landscape · Map (desktop pattern · 900×680)</div>
   <div class="tablet landscape">
@@ -903,9 +1119,9 @@
       <div class="brand-bar">
         <div class="brand">MightyTwin</div>
         <div class="mode-tabs">
-          <div class="mode-tab active">Map</div>
-          <div class="mode-tab">Atlas</div>
-          <div class="mode-tab">Settings</div>
+          <div class="mode-tab active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round"><polygon points="3 7 9 4 15 7 21 4 21 17 15 20 9 17 3 20 3 7"/><line x1="9" y1="4" x2="9" y2="17"/><line x1="15" y1="7" x2="15" y2="20"/></svg>Map</div>
+          <div class="mode-tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>Atlas</div>
+          <div class="mode-tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>Settings</div>
         </div>
         <div class="brand-controls">
           <span class="brand-chip">P</span>
@@ -933,9 +1149,12 @@
         </div>
 
         <div class="float-icons">
-          <div class="float-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg></div>
-          <div class="float-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M21.3 8.7L8.7 21.3a2 2 0 0 1-2.8 0L2.7 18.1a2 2 0 0 1 0-2.8L15.3 2.7a2 2 0 0 1 2.8 0l3.2 3.2a2 2 0 0 1 0 2.8z"/><path d="M14.5 12.5l-2-2"/><path d="M11.5 15.5l-2-2"/><path d="M8.5 18.5l-2-2"/><path d="M17.5 9.5l-2-2"/></svg></div>
-          <div class="float-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg></div>
+          <div class="float-icon" title="Search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg></div>
+          <div class="float-icon" title="Site info"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></div>
+          <div class="float-icon" title="Layers"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg></div>
+          <div class="float-icon" title="Measure"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M21.3 8.7L8.7 21.3a2 2 0 0 1-2.8 0L2.7 18.1a2 2 0 0 1 0-2.8L15.3 2.7a2 2 0 0 1 2.8 0l3.2 3.2a2 2 0 0 1 0 2.8z"/><path d="M14.5 12.5l-2-2"/><path d="M11.5 15.5l-2-2"/><path d="M8.5 18.5l-2-2"/><path d="M17.5 9.5l-2-2"/></svg></div>
+          <div class="float-icon" title="Terrain"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M2 17l5-5 5 5 5-5 5 5M2 12l5-5 5 5 5-5 5 5"/></svg></div>
+          <div class="float-icon" title="Legend"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg></div>
         </div>
 
         <div class="pin" style="left: 36%; top: 48%;">
