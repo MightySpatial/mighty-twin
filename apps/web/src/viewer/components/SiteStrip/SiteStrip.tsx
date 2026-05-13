@@ -13,6 +13,7 @@
  *  inner card row layout. See §3.7 of mockups/IMPLEMENTATION.md. */
 
 import { useEffect, useRef } from 'react'
+import { Globe } from 'lucide-react'
 import styles from './SiteStrip.module.css'
 
 export interface SiteStripItem {
@@ -30,6 +31,11 @@ export interface SiteStripProps {
   onSelectSite: (slug: string) => void
   /** Optional override label for the header row (defaults to "Sites"). */
   headerLabel?: string
+  /** When provided, an "All sites" tile is rendered as the FIRST card.
+   *  Tapping it calls this handler (typically to navigate back to the
+   *  all-sites overview route). The brief moves the Overview affordance
+   *  into the site carousel itself when it's open. */
+  onNavigateOverview?: () => void
 }
 
 const GRADIENTS = [
@@ -50,6 +56,7 @@ export function SiteStrip({
   activeSiteSlug,
   onSelectSite,
   headerLabel = 'Sites',
+  onNavigateOverview,
 }: SiteStripProps) {
   const scrollerRef = useRef<HTMLDivElement>(null)
   const cardRefs = useRef<Record<string, HTMLButtonElement | null>>({})
@@ -66,15 +73,32 @@ export function SiteStrip({
     }
   }, [activeSiteSlug])
 
-  if (sites.length === 0) return null
+  if (sites.length === 0 && !onNavigateOverview) return null
 
   return (
     <div className={styles.siteStrip}>
       <div className={styles.header}>
         <span>{headerLabel}</span>
-        <span className={styles.count}>{sites.length}</span>
+        {sites.length > 0 && <span className={styles.count}>{sites.length}</span>}
       </div>
       <div className={styles.cards} ref={scrollerRef}>
+        {onNavigateOverview && (
+          <button
+            key="__overview"
+            type="button"
+            className={`${styles.card} ${styles.cardOverview}`}
+            onClick={onNavigateOverview}
+            aria-label="Back to all sites"
+          >
+            <span className={`${styles.thumb} ${styles.thumbOverview}`}>
+              <Globe size={22} />
+            </span>
+            <span className={styles.info}>
+              <span className={styles.name}>All sites</span>
+              <span className={styles.meta}>Overview</span>
+            </span>
+          </button>
+        )}
         {sites.map((site) => {
           const active = site.slug === activeSiteSlug
           const gradient =

@@ -105,6 +105,10 @@ export interface MapShellProps {
    *  loaded, the widget rail prepends a violet Overview tile (§3.5 of
    *  the implementation brief). */
   onNavigateOverview?: () => void
+  /** When true, the site picker carousel is taking over the bottom
+   *  slot — hide the widget rail + standalone Overview tile so they
+   *  don't visually stack with the picker. */
+  pickerOpen?: boolean
   /** Extra render slot for floating overlays (feature popup etc.) */
   children?: React.ReactNode
 }
@@ -129,6 +133,7 @@ export function MapShell({
   phoneMode = false,
   widgetOverrides = null,
   onNavigateOverview,
+  pickerOpen = false,
   children,
 }: MapShellProps) {
   // Hold-to-look-around on the compass:
@@ -221,7 +226,11 @@ export function MapShell({
           the parent's onAction handler — the pane is purely a content
           slot, the rail is the controller. Phones get the same rail
           plus a Tools FAB further below. */}
-      {!publicMode && secondary.length > 0 && (
+      {/* Bottom chrome — widget rail + standalone Overview tile.
+          Hidden while the site picker carousel is open, since the
+          picker takes over the same slot on phone and the Overview
+          affordance moves into the picker's first card. */}
+      {!publicMode && !pickerOpen && secondary.length > 0 && (
         <div className={styles.rails}>
           {/* Overview tile lives OUTSIDE the widget-rail bezel — it's a
               site-context navigation affordance, not a widget. Renders

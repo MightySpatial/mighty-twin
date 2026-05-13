@@ -68,6 +68,23 @@
   box-shadow: 0 0 0 1px rgba(45, 212, 191, 0.25);
 }
 
+/* "All sites" overview card prepended to the strip when the picker
+   is open. Violet tint matches the standalone Overview tile in the
+   widget rail so the affordance is recognisable across surfaces. */
+.cardOverview {
+  border-color: rgba(167, 139, 250, 0.30);
+}
+.cardOverview:hover {
+  border-color: rgba(167, 139, 250, 0.55);
+}
+.thumbOverview {
+  background: linear-gradient(135deg, #6366f1, #a78bfa) !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+}
+
 .thumb {
   width: 60px;
   height: 60px;

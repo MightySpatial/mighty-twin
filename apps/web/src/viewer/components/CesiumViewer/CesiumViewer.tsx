@@ -1178,6 +1178,7 @@ export default function CesiumViewerComponent({
           phoneMode={isMobile}
           widgetOverrides={widgetOverrides}
           onNavigateOverview={() => navigate('/viewer')}
+          pickerOpen={pickerOpen}
         />
       </div>
 
@@ -1210,18 +1211,22 @@ export default function CesiumViewerComponent({
         />
       )}
 
-      {/* Site picker — a SiteStrip-style horizontal carousel anchored
-          to the bottom of the map pane (replacing the widget rail
-          while open). Tap a card to switch sites; tap the X to close.
-          Same card pattern as the all-sites overview's SiteStrip so
-          the visual language stays consistent across map states. */}
+      {/* Site picker — a SiteStrip-style horizontal carousel.
+          Phone: anchored to the bottom of the map pane (replacing
+          the widget rail while open).
+          Desktop / tablet landscape: anchored to the top-center so
+          the picker lands close to the CtrlPill site chip that
+          triggers it. Tap a card to switch sites; tap the X to
+          close; the first card ("All sites") jumps back to overview. */}
       {pickerOpen && (
         <div
           style={{
             position: 'absolute',
             left: sidebarWidth,
             right: rightPaneWidth,
-            bottom: 16,
+            ...(isMobile
+              ? { bottom: 16 }
+              : { top: 64 }),
             display: 'flex',
             justifyContent: 'center',
             pointerEvents: 'none',
@@ -1314,6 +1319,10 @@ export default function CesiumViewerComponent({
                   if (slug !== siteId) navigate(`/viewer/site/${slug}`)
                 }}
                 headerLabel="Switch site"
+                onNavigateOverview={() => {
+                  setPickerOpen(false)
+                  navigate('/viewer')
+                }}
               />
             )}
           </div>
