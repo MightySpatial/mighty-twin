@@ -24,13 +24,17 @@
   max-width: calc(100% - 20px);
 }
 
-/* ── Solid bar variant (desktop) ─────────────────────────────────
-   Full-width slab anchored to the top of the canvas. Less rounding,
-   more padding, sits flush left-to-right minus a small inset. */
+/* ── Solid bar variant (tablet / desktop) ────────────────────────
+   Fixed-width slab centered at the top of the canvas. 420px matches
+   the inner content column so it reads as a site title bar rather
+   than a viewport-spanning toolbar. Falls back to viewport-minus-inset
+   if the pane is narrower than 420px. */
 .variantBar {
-  left: 14px;
-  right: 14px;
   top: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 420px;
+  max-width: calc(100% - 28px);
   border-radius: 12px;
   padding: 6px 10px;
 }
