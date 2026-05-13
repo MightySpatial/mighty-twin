@@ -16,12 +16,15 @@
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.32);
 }
 
-/* ── Floating pill variant (phone / tablet) ─────────────────────── */
+/* ── Floating pill variant (phone) ──────────────────────────────
+   Anchored to a percentage of the pane so the chip breathes on
+   small screens while still leaving a margin for the gimbal. */
 .variantPill {
-  left: 10px;
+  left: 50%;
+  transform: translateX(-50%);
   border-radius: 999px;
   padding: 4px;
-  max-width: calc(100% - 20px);
+  width: 95%;
 }
 
 /* ── Solid bar variant (tablet / desktop) ────────────────────────
