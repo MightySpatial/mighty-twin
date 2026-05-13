@@ -46,6 +46,8 @@ interface Site {
   primary_color?: string
   marker_color?: string | null
   default_camera?: { longitude: number; latitude: number; height: number } | null
+  thumbnail_url?: string | null
+  hero_image_url?: string | null
   created_at: string | null
   updated_at: string | null
 }

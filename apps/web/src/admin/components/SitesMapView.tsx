@@ -40,6 +40,8 @@ interface AtlasSite {
   is_public_pre_login?: boolean
   default_camera?: { longitude: number; latitude: number; height: number } | null
   marker_color?: string | null
+  thumbnail_url?: string | null
+  hero_image_url?: string | null
 }
 
 interface SitesMapViewProps {
@@ -219,6 +221,7 @@ export default function SitesMapView({ sites, height }: SitesMapViewProps) {
                 is_public_pre_login: s.is_public_pre_login,
                 layer_count: s.layer_count,
                 primary_color: s.primary_color,
+                thumbnail_url: s.thumbnail_url ?? s.hero_image_url ?? null,
               }))}
               activeSiteSlug={selectedSlug}
               onSelectSite={(slug) => onSelectFromStrip(slug)}

@@ -159,6 +159,12 @@ export interface PublicSettings {
   overview_camera_lon?: number
   overview_camera_lat?: number
   overview_camera_height?: number
+  /** Optional hero image for the "All sites" Overview affordance.
+   *  Used as a background photo on the Overview card in the viewer's
+   *  site picker SiteStrip and (when present) on the Atlas Overview
+   *  surface. Lets admins brand the workspace's overview destination
+   *  with a photo of the area, building, etc. */
+  overview_hero_image_url?: string | null
 }
 
 // ─── Story Maps ──────────────────────────────────────────────────────────────
