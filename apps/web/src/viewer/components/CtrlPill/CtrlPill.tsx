@@ -1,24 +1,29 @@
-/** CtrlPill — shared primary controller pill for the Map pane.
+/** CtrlPill — primary controller chrome at the top of the Map pane.
  *
- *  Top-left floating pill carrying the site chip + camera controls
- *  (zoom in/out, home, fit-bounds, basemap toggle). Renders the same
- *  way on phone, tablet portrait, tablet landscape, and desktop —
- *  positioning is identical across breakpoints because the brief
- *  treats this as bottom-anchored chrome's top-of-pane counterpart.
+ *  Two visual variants:
+ *    - `variant="pill"` — floating rounded pill (phone / tablet)
+ *    - `variant="bar"`  — full-width solid bar across the top (desktop)
  *
- *  Two states:
- *    - currentSite === null → "All sites · N" with a stack-of-maps avatar
- *    - currentSite set     → site avatar (single letter) + site name
+ *  Items (in order, per spec):
+ *    [Logo? (optional image)] [Name? (optional text)] [Sites click target]
+ *    [+] [−] [Globe/Map toggle] [Basemap]
  *
- *  The Overview back-affordance is intentionally NOT in this component.
- *  It lives at the start of the widget rail as a square violet tile
- *  (see §3.5 of the implementation brief). */
+ *  No home button — dropped from the top group on direct UX feedback;
+ *  use the site picker's Overview card to reset to all-sites.
+ *
+ *  Dev mode: when `devContent` is provided, a second row renders
+ *  underneath the primary controls. Used by the host to surface
+ *  camera coordinates / FPS / viewer commands while developing.
+ *
+ *  Two site states:
+ *    - currentSite === null  → "All sites · N" with a stack-of-maps glyph
+ *    - currentSite set       → logo (if provided) OR initials avatar + name
+ */
 
+import { useMemo, type ReactNode } from 'react'
 import {
   ZoomIn,
   ZoomOut,
-  Home as HomeIcon,
-  Maximize,
   Map as MapIcon,
   Square,
   Globe,
@@ -35,121 +40,154 @@ export interface CtrlPillProps {
   currentSite: CtrlPillSite | null
   /** Site count for the "All sites · N" label (overview state only). */
   siteCount?: number
+  /** Optional workspace / site logo image. When set, replaces the
+   *  initials avatar. When null/empty the avatar falls back to
+   *  initials over a gradient (Demo Site → "DS"). */
+  logoUrl?: string | null
+  /** When false, hide the site name (logo-only chip). Default true. */
+  showName?: boolean
   /** Camera control handlers — owned by the host component. */
   onZoomIn: () => void
   onZoomOut: () => void
-  onHome: () => void
-  /** Frame-to-bounds. Optional — when omitted the button is hidden. */
-  onFitBounds?: () => void
   /** Basemap picker toggle. Optional — when omitted the button is hidden. */
   onBasemapClick?: () => void
   /** 2D/3D toggle. Optional — when omitted the button is hidden. */
   onToggle2D3D?: () => void
   /** True when the viewer is in 2D mode (toggle icon flips). */
   is2D?: boolean
-  /** Click on the site chip itself — opens the site picker. */
+  /** Click on the site chip — opens the site picker. */
   onSiteChipClick?: () => void
+  /** "pill" = floating rounded chip (phone, tablet).
+   *  "bar"  = full-width solid bar (desktop). */
+  variant?: 'pill' | 'bar'
+  /** Optional second row content shown when dev mode is enabled.
+   *  Renders BELOW the primary controls in the same pill / bar. */
+  devContent?: ReactNode
+}
+
+/** Initials from a site name: "Demo site" → "DS", "Mighty" → "M". */
+function siteInitials(name: string): string {
+  const tokens = name.trim().split(/\s+/).filter(Boolean)
+  if (tokens.length === 0) return '?'
+  if (tokens.length === 1) return tokens[0].charAt(0).toUpperCase()
+  return (tokens[0].charAt(0) + tokens[1].charAt(0)).toUpperCase()
 }
 
 export function CtrlPill({
   currentSite,
   siteCount,
+  logoUrl,
+  showName = true,
   onZoomIn,
   onZoomOut,
-  onHome,
-  onFitBounds,
   onBasemapClick,
   onToggle2D3D,
   is2D = false,
   onSiteChipClick,
+  variant = 'pill',
+  devContent,
 }: CtrlPillProps) {
-  return (
-    <div className={styles.ctrlPill}>
+  const avatarStyle = useMemo<React.CSSProperties | undefined>(
+    () =>
+      logoUrl
+        ? {
+            backgroundImage: `url(${JSON.stringify(logoUrl)})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+          }
+        : undefined,
+    [logoUrl],
+  )
+
+  const chipContent = (
+    <>
       {currentSite ? (
-        <button
-          type="button"
-          className={styles.ctrlSite}
-          onClick={onSiteChipClick}
-          title={`Switch site — ${currentSite.name}`}
-        >
-          <span className={styles.avatar}>
-            {currentSite.name.slice(0, 1).toUpperCase()}
+        <>
+          <span className={styles.avatar} style={avatarStyle}>
+            {!logoUrl && siteInitials(currentSite.name)}
           </span>
-          <span className={styles.siteName}>{currentSite.name}</span>
-        </button>
+          {showName && <span className={styles.siteName}>{currentSite.name}</span>}
+        </>
       ) : (
-        <div className={styles.ctrlSite}>
-          <span className={`${styles.avatar} ${styles.avatarAllSites}`}>
-            <AllSitesGlyph />
+        <>
+          <span className={`${styles.avatar} ${styles.avatarAllSites}`} style={avatarStyle}>
+            {!logoUrl && <AllSitesGlyph />}
           </span>
-          <span className={styles.siteName}>
-            All sites
-            {typeof siteCount === 'number' && (
-              <span className={styles.siteCount}> · {siteCount}</span>
-            )}
-          </span>
+          {showName && (
+            <span className={styles.siteName}>
+              All sites
+              {typeof siteCount === 'number' && (
+                <span className={styles.siteCount}> · {siteCount}</span>
+              )}
+            </span>
+          )}
+        </>
+      )}
+    </>
+  )
+
+  return (
+    <div className={`${styles.ctrlPill} ${variant === 'bar' ? styles.variantBar : styles.variantPill}`}>
+      <div className={styles.row}>
+        {onSiteChipClick ? (
+          <button
+            type="button"
+            className={styles.ctrlSite}
+            onClick={onSiteChipClick}
+            title={currentSite ? `Switch site — ${currentSite.name}` : 'Pick a site'}
+            aria-label="Sites"
+          >
+            {chipContent}
+          </button>
+        ) : (
+          <div className={styles.ctrlSite}>{chipContent}</div>
+        )}
+        <button
+          type="button"
+          className={styles.ctrlBtn}
+          onClick={onZoomIn}
+          title="Zoom in"
+          aria-label="Zoom in"
+        >
+          <ZoomIn size={16} />
+        </button>
+        <button
+          type="button"
+          className={styles.ctrlBtn}
+          onClick={onZoomOut}
+          title="Zoom out"
+          aria-label="Zoom out"
+        >
+          <ZoomOut size={16} />
+        </button>
+        <div className={styles.ctrlDivider} aria-hidden />
+        {onToggle2D3D && (
+          <button
+            type="button"
+            className={styles.ctrlBtn}
+            onClick={onToggle2D3D}
+            title={is2D ? 'Switch to 3D globe' : 'Switch to 2D map'}
+            aria-label={is2D ? 'Switch to 3D globe' : 'Switch to 2D map'}
+          >
+            {is2D ? <Globe size={16} /> : <Square size={16} />}
+          </button>
+        )}
+        {onBasemapClick && (
+          <button
+            type="button"
+            className={styles.ctrlBtn}
+            onClick={onBasemapClick}
+            title="Basemap"
+            aria-label="Basemap picker"
+          >
+            <MapIcon size={16} />
+          </button>
+        )}
+      </div>
+      {devContent && (
+        <div className={styles.devRow} role="group" aria-label="Developer controls">
+          {devContent}
         </div>
-      )}
-      <button
-        type="button"
-        className={styles.ctrlBtn}
-        onClick={onZoomIn}
-        title="Zoom in"
-        aria-label="Zoom in"
-      >
-        <ZoomIn size={16} />
-      </button>
-      <button
-        type="button"
-        className={styles.ctrlBtn}
-        onClick={onZoomOut}
-        title="Zoom out"
-        aria-label="Zoom out"
-      >
-        <ZoomOut size={16} />
-      </button>
-      <div className={styles.ctrlDivider} aria-hidden />
-      <button
-        type="button"
-        className={styles.ctrlBtn}
-        onClick={onHome}
-        title="Home"
-        aria-label="Home view"
-      >
-        <HomeIcon size={16} />
-      </button>
-      {onFitBounds && (
-        <button
-          type="button"
-          className={styles.ctrlBtn}
-          onClick={onFitBounds}
-          title="Fit to bounds"
-          aria-label="Fit to bounds"
-        >
-          <Maximize size={16} />
-        </button>
-      )}
-      {onToggle2D3D && (
-        <button
-          type="button"
-          className={styles.ctrlBtn}
-          onClick={onToggle2D3D}
-          title={is2D ? 'Switch to 3D' : 'Switch to 2D'}
-          aria-label={is2D ? 'Switch to 3D' : 'Switch to 2D'}
-        >
-          {is2D ? <Globe size={16} /> : <Square size={16} />}
-        </button>
-      )}
-      {onBasemapClick && (
-        <button
-          type="button"
-          className={styles.ctrlBtn}
-          onClick={onBasemapClick}
-          title="Basemap"
-          aria-label="Basemap picker"
-        >
-          <MapIcon size={16} />
-        </button>
       )}
     </div>
   )

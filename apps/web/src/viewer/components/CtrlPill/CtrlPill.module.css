@@ -1,28 +1,73 @@
-/* CtrlPill — primary controller pill (top-left of Map pane).
-   Styling copied verbatim from mockups/mobile-redesign.html (.ctrl-pill,
-   .ctrl-site, .ctrl-divider, .ctrl-btn) and mockups/desktop-tablet-redesign.html
-   (same class names, slightly larger inset on desktop). One component,
-   responsive sizing — see §3.1 of mockups/IMPLEMENTATION.md. */
+/* CtrlPill — primary controller chrome at the top of the Map pane.
+   Two variants: floating rounded pill (phone / tablet) vs full-width
+   solid bar (desktop). Dev row optional. */
 
 .ctrlPill {
   position: absolute;
   top: 12px;
-  left: 10px;
-  display: inline-flex;
-  align-items: stretch;
-  gap: 4px;
-  padding: 4px;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  color: rgba(240, 242, 248, 0.72);
   background: rgba(15, 17, 28, 0.92);
   -webkit-backdrop-filter: blur(14px);
   backdrop-filter: blur(14px);
   border: 1px solid rgba(240, 242, 248, 0.07);
-  border-radius: 999px;
-  color: rgba(240, 242, 248, 0.72);
-  z-index: 5;
-  max-width: calc(100% - 20px);
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.32);
 }
 
+/* ── Floating pill variant (phone / tablet) ─────────────────────── */
+.variantPill {
+  left: 10px;
+  border-radius: 999px;
+  padding: 4px;
+  max-width: calc(100% - 20px);
+}
+
+/* ── Solid bar variant (desktop) ─────────────────────────────────
+   Full-width slab anchored to the top of the canvas. Less rounding,
+   more padding, sits flush left-to-right minus a small inset. */
+.variantBar {
+  left: 14px;
+  right: 14px;
+  top: 14px;
+  border-radius: 12px;
+  padding: 6px 10px;
+}
+
+/* Primary controls row — same flex layout regardless of variant. */
+.row {
+  display: inline-flex;
+  align-items: stretch;
+  gap: 4px;
+  min-width: 0;
+}
+
+.variantBar .row {
+  /* On the bar, push controls to the left and let the right side
+     breathe so dev tools (when present) can land on row 2 cleanly. */
+  display: flex;
+  flex-wrap: nowrap;
+}
+
+/* Optional second row — dev-mode controls. Renders below the
+   primary row with a hairline separator. */
+.devRow {
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid rgba(240, 242, 248, 0.07);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  color: rgba(240, 242, 248, 0.55);
+  white-space: nowrap;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.devRow::-webkit-scrollbar { display: none; }
+
+/* ── Site chip / logo + name ─────────────────────────────────────── */
 .ctrlSite {
   display: inline-flex;
   align-items: center;
@@ -52,9 +97,11 @@ button.ctrlSite:hover {
   justify-content: center;
   background: linear-gradient(135deg, #6366f1, #a78bfa);
   color: white;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
   flex-shrink: 0;
+  letter-spacing: 0.02em;
+  overflow: hidden;
 }
 
 .avatarAllSites {
@@ -101,6 +148,11 @@ button.ctrlSite:hover {
   padding: 0;
 }
 
+.variantBar .ctrlBtn {
+  /* Square buttons on the solid bar for a less-floaty look. */
+  border-radius: 8px;
+}
+
 .ctrlBtn:hover {
   background: rgba(255, 255, 255, 0.07);
   color: #f0f2f8;
@@ -111,9 +163,8 @@ button.ctrlSite:hover {
   height: 16px;
 }
 
-/* Tighten the pill on small viewports. The pill is class-gated by
-   the host (via .is-phone on the pane container) rather than @media
-   so the ?forceBreakpoint=phone preview at desktop width works. */
+/* Phone tightening — gated via `:global(.is-phone)` (host applies
+   the class) so `?forceBreakpoint=phone` preview works at any width. */
 :global(.is-phone) .ctrlPill {
   top: 10px;
   left: 10px;

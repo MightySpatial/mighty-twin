@@ -3,6 +3,7 @@
  * Slim orchestrator — wires hooks + widgets together
  */
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
+import { usePersistedSettings } from '@mightyspatial/settings-panels'
 import type { SiteConfigState } from '../../types/api'
 import { Cartesian3, CameraEventType, Math as CesiumMath } from 'cesium'
 import { useBreakpoint } from '../../hooks/useBreakpoint'
@@ -59,7 +60,9 @@ import { voxelLayerMaskRing } from '../../widgets/design/voxel/svoOps'
 import { AddDataWidget } from '../../widgets/add-data'
 import { useCadEngine } from '../../widgets/design/sketch/useCadEngine'
 import { flyToTarget } from '../../utils/flyToTarget'
-import BasemapWidget, { useBasemap } from '../../widgets/basemap'
+import { useBasemap } from '../../widgets/basemap'
+import { BASEMAPS } from '../../widgets/basemap/constants'
+import { BasemapStrip } from '../BasemapStrip/BasemapStrip'
 import TransparencyWidget, { useGlobeTransparency } from '../../widgets/transparency'
 import SearchWidget from '../../widgets/search'
 import LegendWidget from '../../widgets/legend'
@@ -78,6 +81,45 @@ type ActiveRightWidget = 'story' | 'snap' | 'design' | 'terrain' | 'measure' | n
 // Mobile-only floating layer panel
 import { useMaiDock } from '../../../ai/MaiContext'
 import './CesiumViewer.css'
+import type { Viewer as CesiumViewerInstance } from 'cesium'
+import { Math as CesiumMathLib } from 'cesium'
+
+/** Compact dev-row content for the CtrlPill: camera lat / lon /
+ *  height read on a 500ms cadence, plus a quick "?dev" badge so the
+ *  mode is identifiable at a glance. Cheap — no Cesium subscriptions,
+ *  just an interval polling the camera position. */
+function DevRow({ viewerRef }: { viewerRef: React.RefObject<CesiumViewerInstance | null> }) {
+  const [cam, setCam] = useState<{ lat: number; lon: number; h: number } | null>(null)
+  useEffect(() => {
+    let id: ReturnType<typeof setInterval> | null = null
+    const tick = () => {
+      const v = viewerRef.current
+      if (!v || v.isDestroyed()) return
+      const carto = v.camera.positionCartographic
+      if (!carto) return
+      setCam({
+        lat: CesiumMathLib.toDegrees(carto.latitude),
+        lon: CesiumMathLib.toDegrees(carto.longitude),
+        h: carto.height,
+      })
+    }
+    tick()
+    id = setInterval(tick, 500)
+    return () => {
+      if (id) clearInterval(id)
+    }
+  }, [viewerRef])
+  return (
+    <>
+      <span style={{ color: '#a78bfa', fontWeight: 700, letterSpacing: '0.06em' }}>DEV</span>
+      {cam && (
+        <span>
+          {cam.lat.toFixed(4)}, {cam.lon.toFixed(4)} · {Math.round(cam.h).toLocaleString()} m
+        </span>
+      )}
+    </>
+  )
+}
 
 export default function CesiumViewerComponent({
   siteId,
@@ -163,6 +205,9 @@ export default function CesiumViewerComponent({
   const [zoomSplashOpen, setZoomSplashOpen] = useState(false)
   const zoomSplashTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [is2D, setIs2D] = useState(false)
+  /** Dev-mode flag drives the CtrlPill second-row content. */
+  const { settings: persistedSettings } = usePersistedSettings()
+  const devEnabled = !!persistedSettings?.dev?.enabled
   /** Workspace-level Overview hero image — drives the picker's
    *  Overview-card background photo. Sourced from
    *  /api/settings/public.overview_hero_image_url; falls back to
@@ -1185,7 +1230,6 @@ export default function CesiumViewerComponent({
           onAction={onMapShellAction}
           onZoomIn={zoomIn}
           onZoomOut={zoomOut}
-          onHome={flyHome}
           onToggle2D3D={toggleSceneMode}
           onToggleBasemap={() => setBasemapOpen((o) => !o)}
           onResetCamera={resetCamera}
@@ -1197,6 +1241,8 @@ export default function CesiumViewerComponent({
           phoneMode={isMobile}
           widgetOverrides={widgetOverrides}
           pickerOpen={pickerOpen}
+          logoUrl={(site as { logo_url?: string | null } | null)?.logo_url ?? null}
+          devContent={devEnabled ? <DevRow viewerRef={viewerRef} /> : null}
         />
       </div>
 
@@ -1455,30 +1501,68 @@ export default function CesiumViewerComponent({
         </div>
       )}
 
-      {/* Panels */}
+      {/* Basemap picker — bottom carousel of tiles, same pattern as
+          the site picker (per user spec). Phone: bottom-anchored.
+          Desktop / tablet landscape: top-center (close to the CtrlPill
+          basemap button that triggers it). */}
       {basemapOpen && (
-        // Sidebar-aware wrapper so the panel anchors below the topBar's
-        // basemap button (left: 14px) inside the visible canvas, not under
-        // the desktop sidebar. Mobile uses a fullscreen scrim and ignores
-        // this offset.
         <div
           style={{
             position: 'absolute',
-            top: 0,
-            left: isMobile ? 0 : sidebarWidth,
+            left: sidebarWidth,
             right: rightPaneWidth,
-            bottom: 0,
-            zIndex: 25,
+            ...(isMobile ? { bottom: 16 } : { top: 72 }),
+            display: 'flex',
+            justifyContent: 'center',
             pointerEvents: 'none',
+            zIndex: 30,
             transition: 'left 0.2s ease, right 0.2s ease',
           }}
         >
-          <div style={{ pointerEvents: 'auto' }}>
-            <BasemapWidget
-              activeBasemap={activeBasemap}
-              switchBasemap={switchBasemap}
-              onClose={() => setBasemapOpen(false)}
-              isMobile={isMobile}
+          <div
+            style={{
+              width: '100%',
+              maxWidth: isMobile ? 'none' : 720,
+              padding: '0 8px',
+              pointerEvents: 'auto',
+              position: 'relative',
+            }}
+          >
+            <button
+              type="button"
+              onClick={() => setBasemapOpen(false)}
+              aria-label="Close basemap picker"
+              style={{
+                position: 'absolute',
+                top: -2,
+                right: 12,
+                width: 24,
+                height: 24,
+                borderRadius: '50%',
+                background: 'rgba(15, 17, 28, 0.92)',
+                border: '1px solid rgba(240, 242, 248, 0.07)',
+                color: 'rgba(240, 242, 248, 0.72)',
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: 0,
+                zIndex: 1,
+              }}
+            >
+              <X size={12} />
+            </button>
+            <BasemapStrip
+              basemaps={BASEMAPS.map((b) => ({
+                id: b.id,
+                label: b.label,
+                caption: b.id === 'osm' ? '© OpenStreetMap' : undefined,
+              }))}
+              activeBasemapId={activeBasemap}
+              onSelectBasemap={(id) => {
+                switchBasemap(id)
+                setBasemapOpen(false)
+              }}
             />
           </div>
         </div>

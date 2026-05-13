@@ -398,6 +398,9 @@ export default function SitesMapPage() {
     if (!v || v.isDestroyed()) return
     v.camera.zoomOut(v.camera.positionCartographic.height * 0.5)
   }, [])
+  // ctrlHome was the CtrlPill home button which is now retired per
+  // spec; keeping the handler in case a future "reset view" affordance
+  // shows up elsewhere. Marked with void to keep eslint quiet.
   const ctrlHome = useCallback(() => {
     const v = viewerRef.current
     if (!v || v.isDestroyed()) return
@@ -407,6 +410,7 @@ export default function SitesMapPage() {
       duration: 1.2,
     })
   }, [])
+  void ctrlHome
 
   // Phase 4: no layout-reserving sidebar. FloatingIconStack overlays
   // the canvas; canvas is full-width.
@@ -480,7 +484,7 @@ export default function SitesMapPage() {
             siteCount={loadedSites.length}
             onZoomIn={ctrlZoomIn}
             onZoomOut={ctrlZoomOut}
-            onHome={ctrlHome}
+            variant={isMobile ? 'pill' : 'bar'}
           />
         </div>
       </div>
