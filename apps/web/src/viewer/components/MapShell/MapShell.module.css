@@ -88,34 +88,9 @@
 }
 .tile svg { width: 18px; height: 18px; }
 
-/* Overview tile — standalone square icon-button rendered as a sibling
-   of the widget-rail bezel (not inside it). The `.rails` flex container
-   provides the gap between this tile and the rail to its right.
-   Violet tint signals it's navigation, not a tool. */
-.overviewTile {
-  width: 48px;
-  height: 48px;
-  background: rgba(167, 139, 250, 0.12);
-  border: 1px solid rgba(167, 139, 250, 0.30);
-  border-radius: 14px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  color: #a78bfa;
-  padding: 0;
-  flex: 0 0 auto;
-  cursor: pointer;
-  font: inherit;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.32);
-}
-.overviewTile:hover {
-  background: rgba(167, 139, 250, 0.18);
-  border-color: rgba(167, 139, 250, 0.45);
-}
-.overviewTile svg {
-  width: 22px;
-  height: 22px;
-}
+/* Standalone Overview tile retired — the "back to all sites"
+   affordance lives only as the first card of the site-picker
+   SiteStrip now. */
 
 .railDivider { width: 1px; height: 24px; background: rgba(255,255,255,0.07); margin: 0 4px; }
 .moreToggle {

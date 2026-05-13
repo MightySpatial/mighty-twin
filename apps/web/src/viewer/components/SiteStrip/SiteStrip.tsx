@@ -89,14 +89,9 @@ export function SiteStrip({
             className={`${styles.card} ${styles.cardOverview}`}
             onClick={onNavigateOverview}
             aria-label="Back to all sites"
+            title="Back to all sites"
           >
-            <span className={`${styles.thumb} ${styles.thumbOverview}`}>
-              <Globe size={22} />
-            </span>
-            <span className={styles.info}>
-              <span className={styles.name}>All sites</span>
-              <span className={styles.meta}>Overview</span>
-            </span>
+            <Globe size={26} />
           </button>
         )}
         {sites.map((site) => {
@@ -118,11 +113,14 @@ export function SiteStrip({
               <span className={styles.thumb} style={{ background: gradient }} />
               <span className={styles.info}>
                 <span className={styles.name}>{site.name}</span>
+                {site.description && (
+                  <span className={styles.summary} title={site.description}>
+                    {site.description}
+                  </span>
+                )}
                 <span className={styles.meta}>
                   {typeof site.layer_count === 'number' && site.layer_count > 0 && (
-                    <>
-                      <span>{site.layer_count} layer{site.layer_count === 1 ? '' : 's'}</span>
-                    </>
+                    <span>{site.layer_count} layer{site.layer_count === 1 ? '' : 's'}</span>
                   )}
                   {site.is_public_pre_login && (
                     <>

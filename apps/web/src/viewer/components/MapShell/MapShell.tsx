@@ -33,7 +33,6 @@ import {
   BookOpen,
   Mountain,
   Plane,
-  Globe,
 } from 'lucide-react'
 
 import {
@@ -101,13 +100,9 @@ export interface MapShellProps {
    *  controller/position changes get merged in. Pass null/undefined to
    *  fall back to DEFAULT_WIDGETS unchanged. */
   widgetOverrides?: WidgetOverrides | null
-  /** Navigate back to the all-sites overview. When set + a site is
-   *  loaded, the widget rail prepends a violet Overview tile (§3.5 of
-   *  the implementation brief). */
-  onNavigateOverview?: () => void
   /** When true, the site picker carousel is taking over the bottom
-   *  slot — hide the widget rail + standalone Overview tile so they
-   *  don't visually stack with the picker. */
+   *  slot — hide the widget rail so it doesn't visually stack with
+   *  the picker. */
   pickerOpen?: boolean
   /** Extra render slot for floating overlays (feature popup etc.) */
   children?: React.ReactNode
@@ -132,7 +127,6 @@ export function MapShell({
   showPublicBanner = false,
   phoneMode = false,
   widgetOverrides = null,
-  onNavigateOverview,
   pickerOpen = false,
   children,
 }: MapShellProps) {
@@ -226,27 +220,13 @@ export function MapShell({
           the parent's onAction handler — the pane is purely a content
           slot, the rail is the controller. Phones get the same rail
           plus a Tools FAB further below. */}
-      {/* Bottom chrome — widget rail + standalone Overview tile.
-          Hidden while the site picker carousel is open, since the
-          picker takes over the same slot on phone and the Overview
-          affordance moves into the picker's first card. */}
+      {/* Bottom chrome — widget rail only. The Overview affordance
+          ("back to all sites") now lives exclusively as the first card
+          of the site-picker SiteStrip; no standalone tile in the rail
+          row, per direct UX feedback. Rail hides while the picker is
+          open so the picker has the slot to itself. */}
       {!publicMode && !pickerOpen && secondary.length > 0 && (
         <div className={styles.rails}>
-          {/* Overview tile lives OUTSIDE the widget-rail bezel — it's a
-              site-context navigation affordance, not a widget. Renders
-              as a sibling tile to the left of the rail; the .rails
-              flex container puts a small gap between them. */}
-          {site && onNavigateOverview && (
-            <button
-              type="button"
-              className={styles.overviewTile}
-              onClick={onNavigateOverview}
-              title="Back to all sites"
-              aria-label="Back to all sites"
-            >
-              <Globe size={22} />
-            </button>
-          )}
           <SecondaryRail
             widgets={secondary}
             activeToolId={activeToolId}
