@@ -23,6 +23,10 @@ export interface SiteStripItem {
   is_public_pre_login?: boolean | null
   layer_count?: number | null
   primary_color?: string | null
+  /** Optional photo URL for the card thumbnail. When set, the photo
+   *  fills the thumb in cover mode (AllTrails-style). When omitted,
+   *  the thumb falls back to a gradient + the site's initials. */
+  thumbnail_url?: string | null
 }
 
 export interface SiteStripProps {
@@ -36,6 +40,21 @@ export interface SiteStripProps {
    *  all-sites overview route). The brief moves the Overview affordance
    *  into the site carousel itself when it's open. */
   onNavigateOverview?: () => void
+  /** Optional hero image URL for the Overview tile. When set, the
+   *  image fills the tile in cover mode; the Globe icon stays on top
+   *  as a recognisability cue. When omitted, the tile keeps the
+   *  violet gradient. Lets Atlas admins brand the "all sites"
+   *  destination with a workspace photo. */
+  overviewImageUrl?: string | null
+}
+
+/** Take 1–2 character initials from a site name for the avatar fallback.
+ *  "Demo site" → "DS", "Mountain Ridge" → "MR", "MyCorp" → "M". */
+function siteInitials(name: string): string {
+  const tokens = name.trim().split(/\s+/).filter(Boolean)
+  if (tokens.length === 0) return '?'
+  if (tokens.length === 1) return tokens[0].charAt(0).toUpperCase()
+  return (tokens[0].charAt(0) + tokens[1].charAt(0)).toUpperCase()
 }
 
 const GRADIENTS = [
@@ -57,6 +76,7 @@ export function SiteStrip({
   onSelectSite,
   headerLabel = 'Sites',
   onNavigateOverview,
+  overviewImageUrl,
 }: SiteStripProps) {
   const scrollerRef = useRef<HTMLDivElement>(null)
   const cardRefs = useRef<Record<string, HTMLButtonElement | null>>({})
@@ -90,6 +110,15 @@ export function SiteStrip({
             onClick={onNavigateOverview}
             aria-label="Back to all sites"
             title="Back to all sites"
+            style={
+              overviewImageUrl
+                ? {
+                    backgroundImage: `linear-gradient(135deg, rgba(99,102,241,0.55), rgba(167,139,250,0.55)), url(${JSON.stringify(overviewImageUrl)})`,
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                  }
+                : undefined
+            }
           >
             <Globe size={26} />
           </button>
@@ -110,7 +139,23 @@ export function SiteStrip({
               className={`${styles.card} ${active ? styles.cardActive : ''}`}
               onClick={() => onSelectSite(site.slug)}
             >
-              <span className={styles.thumb} style={{ background: gradient }} />
+              <span
+                className={styles.thumb}
+                style={
+                  site.thumbnail_url
+                    ? {
+                        backgroundImage: `url(${JSON.stringify(site.thumbnail_url)})`,
+                        backgroundSize: 'cover',
+                        backgroundPosition: 'center',
+                      }
+                    : { background: gradient }
+                }
+                aria-hidden
+              >
+                {!site.thumbnail_url && (
+                  <span className={styles.thumbInitials}>{siteInitials(site.name)}</span>
+                )}
+              </span>
               <span className={styles.info}>
                 <span className={styles.name}>{site.name}</span>
                 {site.description && (

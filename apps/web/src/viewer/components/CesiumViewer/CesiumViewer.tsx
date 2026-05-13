@@ -163,6 +163,25 @@ export default function CesiumViewerComponent({
   const [zoomSplashOpen, setZoomSplashOpen] = useState(false)
   const zoomSplashTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [is2D, setIs2D] = useState(false)
+  /** Workspace-level Overview hero image — drives the picker's
+   *  Overview-card background photo. Sourced from
+   *  /api/settings/public.overview_hero_image_url; falls back to
+   *  null (violet gradient + Globe icon) when unset. */
+  const [overviewImageUrl, setOverviewImageUrl] = useState<string | null>(null)
+  useEffect(() => {
+    const API_URL = import.meta.env.VITE_API_URL || ''
+    let cancelled = false
+    fetch(`${API_URL}/api/settings/public`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (cancelled || !data) return
+        if (data.overview_hero_image_url) setOverviewImageUrl(data.overview_hero_image_url)
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   // Zoom-to splash: show once per session per site after 3s delay
   useEffect(() => {
@@ -1301,6 +1320,8 @@ export default function CesiumViewerComponent({
                     description?: string | null
                     is_public_pre_login?: boolean
                     primary_color?: string | null
+                    thumbnail_url?: string | null
+                    hero_image_url?: string | null
                   }
                   return {
                     slug: s.slug,
@@ -1309,6 +1330,10 @@ export default function CesiumViewerComponent({
                     is_public_pre_login: extra.is_public_pre_login,
                     layer_count: s.layer_count,
                     primary_color: extra.primary_color,
+                    // Prefer an explicit thumbnail_url, fall back to
+                    // hero_image_url if the API exposes one. Initials
+                    // avatar renders when neither is set.
+                    thumbnail_url: extra.thumbnail_url ?? extra.hero_image_url ?? null,
                   }
                 })}
                 activeSiteSlug={siteId ?? null}
@@ -1322,6 +1347,7 @@ export default function CesiumViewerComponent({
                   setPickerOpen(false)
                   navigate('/viewer')
                 }}
+                overviewImageUrl={overviewImageUrl}
               />
             )}
           </div>
