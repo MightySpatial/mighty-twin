@@ -33,6 +33,8 @@ import {
 import { apiFetch, API_URL, useApiData } from '../hooks/useApi'
 import { useBreakpoint } from '../hooks/useBreakpoint'
 import { useToast } from '../../viewer/hooks/useToast'
+import SitesMapView from '../components/SitesMapView'
+import { Map as MapIcon, Table2 } from 'lucide-react'
 
 interface Site {
   id: string
@@ -42,6 +44,10 @@ interface Site {
   is_public_pre_login: boolean
   layer_count: number
   primary_color?: string
+  marker_color?: string | null
+  default_camera?: { longitude: number; latitude: number; height: number } | null
+  thumbnail_url?: string | null
+  hero_image_url?: string | null
   created_at: string | null
   updated_at: string | null
 }
@@ -58,6 +64,10 @@ export default function SitesPage() {
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState<'all' | 'public' | 'private'>('all')
   const [sortKey, setSortKey] = useState<SortKey>('name')
+  // Phase 5: Table / Map view toggle on desktop. Defaults to Table
+  // (the existing card grid); Map renders SitesMapView with the same
+  // site cards strip + Cesium globe with pins.
+  const [view, setView] = useState<'table' | 'map'>('table')
   const [deleting, setDeleting] = useState<string | null>(null)
   const [importing, setImporting] = useState(false)
   const [importErr, setImportErr] = useState<string | null>(null)
@@ -192,7 +202,43 @@ export default function SitesPage() {
             {total} site{total === 1 ? '' : 's'} configured · {publicCount} public
           </p>
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          {!isPhone && (
+            <div
+              role="tablist"
+              aria-label="View mode"
+              style={{
+                display: 'inline-flex',
+                gap: 2,
+                background: 'rgba(255,255,255,0.04)',
+                border: '1px solid rgba(255,255,255,0.07)',
+                borderRadius: 8,
+                padding: 3,
+                marginRight: 4,
+              }}
+            >
+              <button
+                type="button"
+                role="tab"
+                aria-selected={view === 'table'}
+                onClick={() => setView('table')}
+                style={view === 'table' ? viewTabActive : viewTab}
+              >
+                <Table2 size={13} />
+                Table
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={view === 'map'}
+                onClick={() => setView('map')}
+                style={view === 'map' ? viewTabActive : viewTab}
+              >
+                <MapIcon size={13} />
+                Map
+              </button>
+            </div>
+          )}
           <input
             ref={importInputRef}
             type="file"
@@ -375,8 +421,14 @@ export default function SitesPage() {
         />
       )}
 
-      {/* Card grid */}
-      {!loading && filtered.length > 0 && (
+      {/* Map view — Cesium globe with pins + SiteStrip overlay.
+          Click a card or a pin to navigate to the Atlas detail page. */}
+      {!loading && view === 'map' && !isPhone && filtered.length > 0 && (
+        <SitesMapView sites={filtered} />
+      )}
+
+      {/* Card grid — default Table view. */}
+      {!loading && (view === 'table' || isPhone) && filtered.length > 0 && (
         <div
           style={{
             display: 'grid',
@@ -401,6 +453,26 @@ export default function SitesPage() {
       )}
     </div>
   )
+}
+
+const viewTab: React.CSSProperties = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: 5,
+  padding: '5px 10px',
+  fontSize: 12,
+  color: 'rgba(240,242,248,0.55)',
+  background: 'transparent',
+  border: 'none',
+  borderRadius: 6,
+  cursor: 'pointer',
+  fontFamily: 'inherit',
+}
+
+const viewTabActive: React.CSSProperties = {
+  ...viewTab,
+  background: 'rgba(167,139,250,0.15)',
+  color: '#a78bfa',
 }
 
 function SiteCard({

@@ -21,7 +21,7 @@
  *  rails are filtered to widgets with ``publicVisible: true`` only.
  */
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useMemo, useRef } from 'react'
 import {
   Layers as LayersIcon,
   List as ListIcon,
@@ -33,13 +33,6 @@ import {
   BookOpen,
   Mountain,
   Plane,
-  ZoomIn,
-  ZoomOut,
-  Home as HomeIcon,
-  Square,
-  Globe,
-  Map as MapIcon,
-  LayoutGrid as ToolsIcon,
 } from 'lucide-react'
 
 import {
@@ -52,6 +45,7 @@ import {
 } from './widgetRegistry'
 import styles from './MapShell.module.css'
 import { Carousel } from './Carousel'
+import { CtrlPill } from '../CtrlPill/CtrlPill'
 
 type IconComponent = React.ComponentType<{ size?: number | string }>
 const ICON_MAP: Record<string, IconComponent> = {
@@ -78,7 +72,10 @@ export interface MapShellProps {
   /** Camera control hooks owned by the parent. */
   onZoomIn: () => void
   onZoomOut: () => void
-  onHome: () => void
+  /** Home button retired from CtrlPill — kept as an optional prop in
+   *  case downstream hosts still wire it for other affordances
+   *  (keyboard shortcut etc.); not rendered in the pill. */
+  onHome?: () => void
   onToggle2D3D: () => void
   onToggleBasemap: () => void
   onResetCamera?: () => void
@@ -106,6 +103,16 @@ export interface MapShellProps {
    *  controller/position changes get merged in. Pass null/undefined to
    *  fall back to DEFAULT_WIDGETS unchanged. */
   widgetOverrides?: WidgetOverrides | null
+  /** When true, the site picker carousel is taking over the bottom
+   *  slot — hide the widget rail so it doesn't visually stack with
+   *  the picker. */
+  pickerOpen?: boolean
+  /** Optional workspace / site logo image used in the CtrlPill site
+   *  chip. When omitted, the chip falls back to an initials avatar. */
+  logoUrl?: string | null
+  /** Optional dev-mode second-row content rendered below the
+   *  primary CtrlPill controls. Host gates on settings.dev.enabled. */
+  devContent?: React.ReactNode
   /** Extra render slot for floating overlays (feature popup etc.) */
   children?: React.ReactNode
 }
@@ -129,8 +136,13 @@ export function MapShell({
   showPublicBanner = false,
   phoneMode = false,
   widgetOverrides = null,
+  pickerOpen = false,
+  logoUrl = null,
+  devContent = null,
   children,
 }: MapShellProps) {
+  void onHome // home button retired from CtrlPill; prop kept for compat
+
   // Hold-to-look-around on the compass:
   //   pointerdown → start look-around immediately
   //   pointerup   → detected globally (parent wires window listener), restores orbit
@@ -161,60 +173,32 @@ export function MapShell({
   }, [publicMode, widgetOverrides, phoneMode])
   const secondary = useMemo(() => widgetsForController(widgets, 'secondary'), [widgets])
 
-  // Phone-only: tools sheet open/closed. Notify DraggableMai via
-  // window events so the Mai FAB can step aside while the sheet is
-  // up — otherwise it sits bottom-right over the rightmost widget tile.
-  const [toolsOpen, setToolsOpen] = useState(false)
-  useEffect(() => {
-    const evt = toolsOpen ? 'mighty:tools-open' : 'mighty:tools-close'
-    window.dispatchEvent(new Event(evt))
-  }, [toolsOpen])
+  // The tools-open / tools-close window events were tied to the
+  // retired Tools FAB sheet. Mai's clearance is now governed by the
+  // permanent bottom widget rail (defaultFabPos.y already reserves
+  // 142px so it doesn't overlap).
 
   return (
     <div
-      className={`${styles.shell} ${phoneMode ? styles.shellPhone : ''}`}
+      className={`${styles.shell} ${phoneMode ? `${styles.shellPhone} is-phone` : ''}`}
       aria-hidden="false"
     >
-      {/* Top-left bar.
-          Desktop: nav buttons only (site chip lives in sidebar ribbon).
-          Mobile: site chip only (nav buttons hidden; pinch-to-zoom + tools sheet replaces them). */}
-      {/* Top-left bar: site chip (mobile only) + camera controls */}
-      <div className={styles.topBar}>
-        {site && (
-          <button
-            type="button"
-            className={`${styles.siteChip} ${styles.siteChipMobile}`}
-            onClick={onOpenSitePicker}
-            title={`Switch site — ${site.name}`}
-          >
-            <span className={styles.siteChipIcon}>
-              {site.name.slice(0, 1).toUpperCase()}
-            </span>
-            <span className={styles.siteChipName}>{site.name}</span>
-          </button>
-        )}
-        {site && <div className={`${styles.barDiv} ${styles.barDivDesktop}`} />}
-        <button className={styles.barBtn} onClick={onZoomIn} title="Zoom in">
-          <ZoomIn size={16} />
-        </button>
-        <button className={styles.barBtn} onClick={onZoomOut} title="Zoom out">
-          <ZoomOut size={16} />
-        </button>
-        <div className={styles.barDiv} />
-        <button className={styles.barBtn} onClick={onHome} title="Home">
-          <HomeIcon size={16} />
-        </button>
-        <button
-          className={`${styles.barBtn} ${is2D ? styles.active : ''}`}
-          onClick={onToggle2D3D}
-          title={is2D ? 'Switch to 3D' : 'Switch to 2D'}
-        >
-          {is2D ? <Globe size={16} /> : <Square size={16} />}
-        </button>
-        <button className={styles.barBtn} onClick={onToggleBasemap} title="Basemap">
-          <MapIcon size={16} />
-        </button>
-      </div>
+      {/* Primary controller pill — logo + name + sites + zoom + 2D/3D +
+          basemap. Floating pill on phone/tablet; full-width bar on
+          desktop. Home button intentionally dropped (use the site
+          picker's Overview card to reset). */}
+      <CtrlPill
+        currentSite={site ? { slug: site.slug, name: site.name } : null}
+        logoUrl={logoUrl}
+        onSiteChipClick={onOpenSitePicker}
+        onZoomIn={onZoomIn}
+        onZoomOut={onZoomOut}
+        onToggle2D3D={onToggle2D3D}
+        is2D={is2D}
+        onBasemapClick={onToggleBasemap}
+        variant={phoneMode ? 'pill' : 'bar'}
+        devContent={devContent}
+      />
 
       {/* Compact needle compass — tap = face north, hold = look-around mode */}
       <button
@@ -251,7 +235,12 @@ export function MapShell({
           the parent's onAction handler — the pane is purely a content
           slot, the rail is the controller. Phones get the same rail
           plus a Tools FAB further below. */}
-      {!publicMode && secondary.length > 0 && (
+      {/* Bottom chrome — widget rail only. The Overview affordance
+          ("back to all sites") now lives exclusively as the first card
+          of the site-picker SiteStrip; no standalone tile in the rail
+          row, per direct UX feedback. Rail hides while the picker is
+          open so the picker has the slot to itself. */}
+      {!publicMode && !pickerOpen && secondary.length > 0 && (
         <div className={styles.rails}>
           <SecondaryRail
             widgets={secondary}
@@ -261,77 +250,12 @@ export function MapShell({
         </div>
       )}
 
-      {/* Phone — Tools FAB substitutes for the bottom rails. Opens a
-          slide-up sheet with all widgets in a 4-column grid. */}
-      <button
-        type="button"
-        className={styles.toolsFab}
-        aria-label="Tools"
-        onClick={() => setToolsOpen(true)}
-      >
-        <ToolsIcon size={22} />
-      </button>
-      {toolsOpen && (
-        <div
-          className={styles.toolsSheetBackdrop}
-          onClick={() => setToolsOpen(false)}
-        >
-          <div className={styles.toolsSheet} onClick={(e) => e.stopPropagation()}>
-            <div className={styles.toolsSheetHandle} />
-            {/* Primary tools (Search / Measure / Legend / Layers) live as
-                standalone floating buttons on the left column on phones —
-                they intentionally do NOT appear in this sheet. Only the
-                secondary "Widgets" section is rendered here. */}
-            {!publicMode && secondary.length > 0 && (
-              <div className={styles.toolsSheetSection}>
-                <div className={styles.toolsSheetSectionLabel}>Widgets</div>
-                <Carousel
-                  showArrows={false}
-                  snap
-                  className={styles.toolsSheetWidgets}
-                >
-                  {secondary.map((w) => (
-                    <SheetTile
-                      key={w.id}
-                      widget={w}
-                      active={activeToolId === w.id}
-                      onClick={() => {
-                        onAction(w.id)
-                        setToolsOpen(false)
-                      }}
-                    />
-                  ))}
-                </Carousel>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+      {/* Tools FAB + slide-up sheet retired — the SecondaryRail above
+          is now permanently visible on phone, so there's no need for
+          a FAB indirection. */}
 
       {children}
     </div>
-  )
-}
-
-function SheetTile({
-  widget,
-  active,
-  onClick,
-}: {
-  widget: WidgetDef
-  active: boolean
-  onClick: () => void
-}) {
-  const Icon = ICON_MAP[widget.icon]
-  return (
-    <button
-      type="button"
-      className={`${styles.toolsSheetTile} ${active ? styles.active : ''}`}
-      onClick={onClick}
-    >
-      {Icon ? <Icon size={20} /> : null}
-      {widget.label}
-    </button>
   )
 }
 
@@ -354,14 +278,14 @@ function SecondaryRail({
   return (
     <div className={`${styles.rail} ${styles.railSecondary}`}>
       <Carousel showArrows>
-      {widgets.map((w) => (
-        <RailTile
-          key={w.id}
-          widget={w}
-          active={activeToolId === w.id}
-          onClick={() => onAction(w.id)}
-        />
-      ))}
+        {widgets.map((w) => (
+          <RailTile
+            key={w.id}
+            widget={w}
+            active={activeToolId === w.id}
+            onClick={() => onAction(w.id)}
+          />
+        ))}
       </Carousel>
     </div>
   )

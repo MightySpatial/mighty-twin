@@ -165,39 +165,11 @@
   border-top: 1px solid var(--color-border-light);
 }
 
-/* ─── SIDEBAR (Tablet - Drawer) ───────────────────────────────────────────── */
-
-.sidebar-tablet {
-  /* absolute (not fixed): scoped to .app-layout, not the viewport */
-  position: absolute;
-  top: 0;
-  left: 0;
-  bottom: 0;
-  z-index: 200;
-  transform: translateX(-100%);
-  transition: transform var(--transition-slow);
-  width: 280px;
-}
-
-.sidebar-tablet.open {
-  transform: translateX(0);
-}
-
-.sidebar-tablet .sidebar-close {
-  display: block;
-}
-
-.sidebar-backdrop {
-  /* absolute (not fixed): scoped to .app-layout */
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  z-index: 199;
-  animation: fadeIn var(--transition-fast);
-}
+/* ─── Tablet drawer retired in Phase 3 (mockups/IMPLEMENTATION.md §5.3).
+   Tablet portrait now uses the phone bottom-carousel pattern; tablet
+   landscape uses the desktop sidebar. The old .sidebar-tablet,
+   .sidebar-backdrop, .header-tablet, and .header-menu-btn rules are
+   gone; .header-phone is the only mobile header style left. */
 
 /* ─── MAIN WRAPPER ────────────────────────────────────────────────────────── */
 
@@ -227,26 +199,10 @@
   justify-content: center;
 }
 
-.header-tablet {
-  gap: var(--space-4);
-}
-
 .header-title {
   font-size: var(--font-size-lg);
   font-weight: var(--font-weight-semibold);
   margin: 0;
-}
-
-.header-menu-btn {
-  background: none;
-  border: none;
-  color: var(--color-text-secondary);
-  padding: var(--space-2);
-  cursor: pointer;
-}
-
-.header-spacer {
-  width: 40px;
 }
 
 /* ─── MAIN CONTENT ────────────────────────────────────────────────────────── */

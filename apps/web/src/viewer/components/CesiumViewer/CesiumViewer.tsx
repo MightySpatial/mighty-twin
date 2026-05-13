@@ -3,13 +3,24 @@
  * Slim orchestrator — wires hooks + widgets together
  */
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
+import { usePersistedSettings } from '@mightyspatial/settings-panels'
 import type { SiteConfigState } from '../../types/api'
 import { Cartesian3, CameraEventType, Math as CesiumMath } from 'cesium'
 import { useBreakpoint } from '../../hooks/useBreakpoint'
 import { useWidgetLayout } from '../../hooks/useWidgetLayout'
 import { useFloatingPanels } from '../../hooks/useFloatingPanels'
 import { useLegendDock } from '../../hooks/useLegendDock'
-import { HelpCircle, Search as SearchIcon, Ruler, List as LegendIcon } from 'lucide-react'
+import {
+  HelpCircle,
+  Search as SearchIcon,
+  Ruler,
+  List as LegendIcon,
+  Layers as LayersIcon,
+  Info,
+  Plus,
+  X,
+} from 'lucide-react'
+import { AttributeTable } from '@mightydt/ui'
 import { getExtensionPanels } from '../../extensions'
 import type { ViewerContext } from '../../extensions/types'
 import type { CesiumViewerProps } from './types'
@@ -19,7 +30,8 @@ import {
   FeatureAttributesDrawer,
   useFeatureClick,
 } from '../FeaturePopup'
-import { SitePicker, pushRecentSite } from '../SitePicker'
+import { pushRecentSite } from '../SitePicker'
+import { SiteStrip } from '../SiteStrip/SiteStrip'
 import { useSites } from '../../hooks/useSites'
 import { useNavigate } from 'react-router-dom'
 
@@ -48,42 +60,66 @@ import { voxelLayerMaskRing } from '../../widgets/design/voxel/svoOps'
 import { AddDataWidget } from '../../widgets/add-data'
 import { useCadEngine } from '../../widgets/design/sketch/useCadEngine'
 import { flyToTarget } from '../../utils/flyToTarget'
-import BasemapWidget, { useBasemap } from '../../widgets/basemap'
+import { useBasemap } from '../../widgets/basemap'
+import { BASEMAPS } from '../../widgets/basemap/constants'
+import { BasemapStrip } from '../BasemapStrip/BasemapStrip'
 import TransparencyWidget, { useGlobeTransparency } from '../../widgets/transparency'
 import SearchWidget from '../../widgets/search'
-import { LayersPanel } from '../../widgets/layers'
 import LegendWidget from '../../widgets/legend'
 import SplashOverlay from '../SplashOverlay/SplashOverlay'
 import TetraView from '../TetraView/TetraView'
-import ViewerSidebar from '../ViewerSidebar'
+import { FloatingIconStack } from '../FloatingIconStack'
+import type { FloatingIconStackItem } from '../FloatingIconStack'
+import { FloatingSidePanel } from '../FloatingSidePanel'
+import LayersPanelBody from '../FloatingSidePanel/panels/LayersPanelBody'
+import SiteInfoPanelBody from '../FloatingSidePanel/panels/SiteInfoPanelBody'
 import { DesignWidget } from '../../widgets/design'
 import { RightPane } from '../RightPane'
 
 type ActiveRightWidget = 'story' | 'snap' | 'design' | 'terrain' | 'measure' | null
 
 // Mobile-only floating layer panel
-function MobileLayers({ layers, layersLoading, onLayerToggle, onLayerOpacityChange }: {
-  layers: import('./types').Layer[]
-  layersLoading?: boolean
-  onLayerToggle?: (id: string) => void
-  onLayerOpacityChange?: (id: string, opacity: number) => void
-}) {
-  const [open, setOpen] = useState(false)
-  return (
-    <LayersPanel
-      layers={layers}
-      loading={layersLoading}
-      layerPanelOpen={open}
-      setLayerPanelOpen={setOpen}
-      isMobile={true}
-      onLayerToggle={onLayerToggle}
-      onLayerOpacityChange={onLayerOpacityChange}
-    />
-  )
-}
-
 import { useMaiDock } from '../../../ai/MaiContext'
 import './CesiumViewer.css'
+import type { Viewer as CesiumViewerInstance } from 'cesium'
+import { Math as CesiumMathLib } from 'cesium'
+
+/** Compact dev-row content for the CtrlPill: camera lat / lon /
+ *  height read on a 500ms cadence, plus a quick "?dev" badge so the
+ *  mode is identifiable at a glance. Cheap — no Cesium subscriptions,
+ *  just an interval polling the camera position. */
+function DevRow({ viewerRef }: { viewerRef: React.RefObject<CesiumViewerInstance | null> }) {
+  const [cam, setCam] = useState<{ lat: number; lon: number; h: number } | null>(null)
+  useEffect(() => {
+    let id: ReturnType<typeof setInterval> | null = null
+    const tick = () => {
+      const v = viewerRef.current
+      if (!v || v.isDestroyed()) return
+      const carto = v.camera.positionCartographic
+      if (!carto) return
+      setCam({
+        lat: CesiumMathLib.toDegrees(carto.latitude),
+        lon: CesiumMathLib.toDegrees(carto.longitude),
+        h: carto.height,
+      })
+    }
+    tick()
+    id = setInterval(tick, 500)
+    return () => {
+      if (id) clearInterval(id)
+    }
+  }, [viewerRef])
+  return (
+    <>
+      <span style={{ color: '#a78bfa', fontWeight: 700, letterSpacing: '0.06em' }}>DEV</span>
+      {cam && (
+        <span>
+          {cam.lat.toFixed(4)}, {cam.lon.toFixed(4)} · {Math.round(cam.h).toLocaleString()} m
+        </span>
+      )}
+    </>
+  )
+}
 
 export default function CesiumViewerComponent({
   siteId,
@@ -97,9 +133,21 @@ export default function CesiumViewerComponent({
   onOpenStoryPicker,
   storyActive = false,
 }: CesiumViewerProps) {
-  const { isMobile } = useBreakpoint()
+  // Phase 3 pivot: route widget surface by layoutMode so tablet portrait
+  // gets the phone widget sheet and tablet landscape gets the desktop
+  // right pane. The bool stays named `isMobile` for downstream code; its
+  // meaning is now "phone-style layout" (phone + tablet portrait).
+  const { layoutMode } = useBreakpoint()
+  const isMobile = layoutMode === 'phone' || layoutMode === 'tabletPortrait'
   const widgetOverrides = useWidgetLayout()
-  const [sidebarOpen, setSidebarOpen] = useState(!isMobile)
+  // Phase 4: single-slot floating side panel state. Replaces the
+  // previous tabbed-sidebar `sidebarOpen` / `activeExtPanel` /
+  // `terrainOpen` / `legendDocked` cluster. Each FloatingIconStack
+  // icon toggles its panel id here; second tap or ESC clears.
+  const [activeSidePanel, setActiveSidePanel] = useState<string | null>(null)
+  /** Attribute-table modal target. Triggered by per-row "show
+   *  attributes" in the Layers panel. */
+  const [attrLayerId, setAttrLayerId] = useState<string | null>(null)
   /** Shared utility-panel coordinator. Table / Add Data share a
    *  single-active slot; opening one auto-closes whichever was
    *  previously active. MAI, Fly, and Legend are exempt — they each
@@ -112,13 +160,11 @@ export default function CesiumViewerComponent({
   const addDataOpen = floatingPanel === 'add-data'
   const tableOpen = floatingPanel === 'table'
 
-  // Legend dock state — when docked the LegendWidget mounts inside
-  // the sidebar (handled by ViewerSidebar). When undocked it renders
-  // as a floating draggable panel from this component. The rail tab
-  // toggles collapsed when docked / docks back when undocked, so the
-  // user always has a way to bring the legend home.
+  // Legend dock state — kept for any consumer that still reads the
+  // store, but in the floating-chrome model the "docked" destination
+  // is the Legend panel inside FloatingSidePanel. Undocked = the
+  // existing draggable LegendWidget mount.
   const legendDocked = useLegendDock(s => s.docked)
-  const toggleLegendCollapsed = useLegendDock(s => s.toggleCollapsed)
   const dockLegend = useLegendDock(s => s.dock)
   /** Active sketch id — passed to AddDataWidget so the "Add to
    *  current sketch" destination knows which sketch to tag uploads
@@ -126,18 +172,61 @@ export default function CesiumViewerComponent({
    *  every child. */
   const activeSketchIdForUpload = useCadEngine(s => s.activeSketchId)
   const [searchOpen, setSearchOpen] = useState(false)
-  /** Mobile legend visibility — phones have no sidebar so the legend
-   *  is always a tap-to-reveal overlay. Keeps its own toggle so it
-   *  doesn't fight the desktop dock state. */
-  const [mobileLegendOpen, setMobileLegendOpen] = useState(false)
-  const [activeExtPanel, setActiveExtPanel] = useState<string | null>(null)
+  const [legendPopupOpen, setLegendPopupOpen] = useState(false)
   const [siteConfigState, setSiteConfigState] = useState<SiteConfigState>({})
   const extensionPanels = useMemo(() => getExtensionPanels(), [])
+
+  // Compat shim: existing code reads `sidebarOpen` as "Layers panel
+  // is open" and `activeExtPanel` as "an extension panel is open".
+  // Map both onto the single `activeSidePanel` state.
+  const sidebarOpen = activeSidePanel === 'layers'
+  const setSidebarOpen = useCallback((next: boolean | ((prev: boolean) => boolean)) => {
+    setActiveSidePanel((curr) => {
+      const wasOpen = curr === 'layers'
+      const target = typeof next === 'function' ? next(wasOpen) : next
+      if (target) return 'layers'
+      return curr === 'layers' ? null : curr
+    })
+  }, [])
+  const activeExtPanel = activeSidePanel?.startsWith('ext:') ? activeSidePanel.slice(4) : null
+  const setActiveExtPanel = useCallback(
+    (next: string | null | ((prev: string | null) => string | null)) => {
+      setActiveSidePanel((curr) => {
+        const wasExt = curr?.startsWith('ext:') ? curr.slice(4) : null
+        const target = typeof next === 'function' ? next(wasExt) : next
+        if (target) return `ext:${target}`
+        return wasExt ? null : curr
+      })
+    },
+    [],
+  )
   const [infoWidgetOpen, setInfoWidgetOpen] = useState(false)
   const [tetraActive, setTetraActive] = useState(false)
   const [zoomSplashOpen, setZoomSplashOpen] = useState(false)
   const zoomSplashTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [is2D, setIs2D] = useState(false)
+  /** Dev-mode flag drives the CtrlPill second-row content. */
+  const { settings: persistedSettings } = usePersistedSettings()
+  const devEnabled = !!persistedSettings?.dev?.enabled
+  /** Workspace-level Overview hero image — drives the picker's
+   *  Overview-card background photo. Sourced from
+   *  /api/settings/public.overview_hero_image_url; falls back to
+   *  null (violet gradient + Globe icon) when unset. */
+  const [overviewImageUrl, setOverviewImageUrl] = useState<string | null>(null)
+  useEffect(() => {
+    const API_URL = import.meta.env.VITE_API_URL || ''
+    let cancelled = false
+    fetch(`${API_URL}/api/settings/public`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (cancelled || !data) return
+        if (data.overview_hero_image_url) setOverviewImageUrl(data.overview_hero_image_url)
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   // Zoom-to splash: show once per session per site after 3s delay
   useEffect(() => {
@@ -803,19 +892,7 @@ export default function CesiumViewerComponent({
       case 'layers':
         setSidebarOpen((o) => !o); break
       case 'legend':
-        // Legend is a sidebar fixture, not a utility popup. The rail
-        // tab toggles its collapsed state when docked; when the user
-        // has popped it out into floating mode, the tab snaps it
-        // back home (and expands it) so they can always find it.
-        // Sidebar must be open for the docked body to be visible —
-        // expand it if collapsed so the action has feedback.
-        if (legendDocked) {
-          if (!sidebarOpen) setSidebarOpen(true)
-          toggleLegendCollapsed()
-        } else {
-          dockLegend()
-          if (!sidebarOpen) setSidebarOpen(true)
-        }
+        setLegendPopupOpen((o) => !o)
         break
       case 'table':
         togglePanel('table'); break
@@ -850,10 +927,14 @@ export default function CesiumViewerComponent({
         break
       default: break
     }
-  }, [measureActive, measureResult, cancelMeasure, startMeasure, onOpenStoryPicker, isMobile, setActiveRightWidget, activeRightWidget, legendDocked, sidebarOpen, toggleLegendCollapsed, dockLegend])
+  }, [measureActive, measureResult, cancelMeasure, startMeasure, onOpenStoryPicker, isMobile, setActiveRightWidget, activeRightWidget])
 
   // Sidebar width: tab rail (64px) + content panel (280px) when open
-  const sidebarWidth = !isMobile && sidebarOpen ? 344 : !isMobile ? 64 : 0
+  // Phase 4: no layout-reserving sidebar anymore. The FloatingIconStack
+  // overlays the canvas at left: 10–14px and the FloatingSidePanel
+  // (when open) overlays at left: ~64px. Both float; the canvas is
+  // always 100% width.
+  const sidebarWidth = 0
   // Right pane width — fixed 320px on desktop, 0 on mobile (mobile
   // keeps the legacy floating widget overlays until the mobile PR
   // lands a slide-in pane).
@@ -897,56 +978,210 @@ export default function CesiumViewerComponent({
     />
   ) : null
 
+  // Floating icon stack — primary-sidebar half of the VSCode-style
+  // primary+secondary side bar. Site info / Layers / Measure / Terrain /
+  // Legend always visible; Search toggles the existing SearchWidget
+  // popover (it has its own chrome). Extension panels each get their
+  // own icon appended after the built-ins.
+  const iconStackItems = useMemo<FloatingIconStackItem[]>(() => {
+    const items: FloatingIconStackItem[] = [
+      {
+        id: 'search',
+        label: 'Search',
+        icon: <SearchIcon size={18} />,
+        hasPanel: false,
+        isActive: searchOpen,
+        onClick: () => setSearchOpen((o) => !o),
+      },
+    ]
+    if (site) {
+      items.push({
+        id: 'site-info',
+        label: 'Site info',
+        icon: <Info size={18} />,
+        hasPanel: true,
+      })
+    }
+    items.push({
+      id: 'layers',
+      label: 'Layers',
+      icon: <LayersIcon size={18} />,
+      hasPanel: true,
+    })
+    items.push({
+      id: 'measure',
+      label: 'Measure',
+      icon: <Ruler size={18} />,
+      hasPanel: false,
+      isActive: measureActive || !!measureResult,
+      onClick: () => onMapShellAction('measure'),
+    })
+    // Terrain is intentionally NOT in the floating icon stack — it
+    // already lives as a tile in the bottom widget rail (Story / Snap
+    // / Design / Terrain / Fly). Two entry points for the same tool
+    // is anti-pattern §4.5; pick one home (the rail) and live with it.
+    items.push({
+      id: 'legend',
+      label: 'Legend',
+      icon: <LegendIcon size={18} />,
+      hasPanel: false,
+      isActive: legendPopupOpen,
+      onClick: () => setLegendPopupOpen((o) => !o),
+    })
+    for (const ep of extensionPanels) {
+      items.push({
+        id: `ext:${ep.id}`,
+        label: ep.label,
+        icon: ep.icon,
+        hasPanel: true,
+      })
+    }
+    return items
+  }, [searchOpen, legendPopupOpen, site, measureActive, measureResult, extensionPanels, onMapShellAction])
+
+  // Active panel body — picked from the panel id stored in
+  // activeSidePanel. Each branch returns a (title, body, icon, footer)
+  // tuple so FloatingSidePanel can render a consistent chrome.
+  const activePanelMeta = (() => {
+    if (!activeSidePanel) return null
+    if (activeSidePanel === 'site-info' && site) {
+      return {
+        title: site.name,
+        icon: <Info size={16} />,
+        body: (
+          <SiteInfoPanelBody
+            siteName={site.name}
+            description={site.description ?? null}
+            homeContent={site.home_content ?? null}
+          />
+        ),
+        footer: null as React.ReactNode,
+      }
+    }
+    if (activeSidePanel === 'layers') {
+      return {
+        title: 'Layers',
+        icon: <LayersIcon size={16} />,
+        body: (
+          <LayersPanelBody
+            layers={layers}
+            loading={layersLoading}
+            onLayerToggle={onLayerToggle}
+            onLayerOpacityChange={onLayerOpacityChange}
+            onShowAttributes={setAttrLayerId}
+          />
+        ),
+        footer: (
+          <button
+            type="button"
+            onClick={() => togglePanel('add-data')}
+            style={{
+              width: '100%',
+              padding: '8px 10px',
+              background: 'rgba(255,255,255,0.04)',
+              border: '1px solid rgba(240,242,248,0.07)',
+              borderRadius: 8,
+              color: 'rgba(240,242,248,0.72)',
+              fontSize: 12,
+              textAlign: 'left',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+            }}
+          >
+            <Plus size={14} />
+            Add data
+          </button>
+        ) as React.ReactNode,
+      }
+    }
+    // Terrain intentionally does NOT mount as a side panel — the
+    // bottom widget rail (Story / Snap / Design / Terrain / Fly)
+    // owns it via `setActiveRightWidget('terrain')`. Keeping the
+    // terrain entry point in one place avoids the §4.5 anti-pattern.
+    if (activeSidePanel.startsWith('ext:') && viewerRef.current) {
+      const epId = activeSidePanel.slice(4)
+      const ep = extensionPanels.find((p) => p.id === epId)
+      if (ep) {
+        const ctx: ViewerContext = {
+          siteId: siteId ?? '',
+          getSiteConfig: (key) => siteConfigState[key],
+          setSiteConfig: (key, val) =>
+            setSiteConfigState((prev) => ({ ...prev, [key]: val })),
+        }
+        const PanelComponent = ep.component
+        return {
+          title: ep.label,
+          icon: ep.icon,
+          body: (
+            <PanelComponent
+              viewer={viewerRef.current}
+              context={ctx}
+              onClose={() => setActiveSidePanel(null)}
+            />
+          ),
+          footer: null as React.ReactNode,
+        }
+      }
+    }
+    return null
+  })()
+
   return (
     <div className="cesium-container">
-      {/* Sidebar — left rail on both desktop (full) and mobile (rail-only,
-          positioned below topBar). Camera controls live here on both sizes. */}
-      <ViewerSidebar
-        layers={layers}
-        layersLoading={layersLoading}
-        onLayerToggle={onLayerToggle}
-        onLayerOpacityChange={onLayerOpacityChange}
-        extensionPanels={extensionPanels}
-        activeExtPanel={activeExtPanel}
-        setActiveExtPanel={setActiveExtPanel}
-        viewer={viewerRef.current}
-        siteId={siteId ?? ''}
-        siteConfigState={siteConfigState}
-        setSiteConfigState={setSiteConfigState}
-        sidebarOpen={sidebarOpen}
-        setSidebarOpen={setSidebarOpen}
-        isMobile={isMobile}
-        terrainPanel={isMobile ? terrainSidebarPanel : null}
-        terrainTabActive={isMobile && terrainOpen}
-        onTerrainTabClick={isMobile ? (() => setTerrainOpen(o => !o)) : undefined}
-        activeWidgetId={activeToolId}
-        onWidgetTabClick={onMapShellAction}
-        site={site ? { slug: siteId ?? '', name: site.name } : null}
-        pickerSites={!isMobile ? pickerSites : []}
-        pickerLoading={pickerLoading}
-        homeContent={site?.home_content ?? null}
-        addDataOpen={addDataOpen}
-        onToggleAddData={() => togglePanel('add-data')}
-        autocollapseDelayMs={
-          // Convert site.config.sidebar_autocollapse_delay (seconds)
-          // → ms. null = never auto-collapse; otherwise default to
-          // 3s when unset so the affordance exists out of the box.
-          site?.sidebar_autocollapse_delay === null
-            ? null
-            : (site?.sidebar_autocollapse_delay ?? 3) * 1000
+      {/* Floating icon stack — left-edge primary sidebar. Always
+          mounted; tapping an icon either opens a FloatingSidePanel
+          (Site info / Layers / Terrain / Legend / extension) or
+          toggles a tool (Search / Measure). */}
+      <FloatingIconStack
+        items={iconStackItems}
+        activePanel={activeSidePanel}
+        onTogglePanel={(id) =>
+          setActiveSidePanel((curr) => (curr === id ? null : id))
         }
-        onOpenSitePicker={() => setPickerOpen(o => !o)}
       />
 
-      {/* Add Data panel — floats next to the sidebar (or on top on
-          mobile). Mounted at the viewer-root level so it sits above
-          the canvas chrome but below the AI FAB (z-index 8000). */}
+      {/* Floating side panel — content swaps per activeSidePanel. On
+          phone / tablet portrait this becomes a bottom sheet via the
+          asSheet prop. ESC and the X close it. */}
+      {activePanelMeta && (
+        <FloatingSidePanel
+          id={activeSidePanel!}
+          title={activePanelMeta.title}
+          icon={activePanelMeta.icon}
+          asSheet={isMobile}
+          footer={activePanelMeta.footer}
+          onClose={() => setActiveSidePanel(null)}
+        >
+          {activePanelMeta.body}
+        </FloatingSidePanel>
+      )}
+
+      {/* Attribute-table modal — opened from LayersPanel's per-row
+          show-attributes trigger. Moved here from ViewerSidebar in
+          Phase 4. */}
+      {attrLayerId && (
+        <AttributeTable
+          layerId={attrLayerId}
+          layerName={layers.find((l) => l.id === attrLayerId)?.name ?? ''}
+          fetchAttributes={async (id: string) => {
+            const r = await fetch(`/api/data-sources/${id}/attributes`, { credentials: 'include' })
+            const data = await r.json()
+            return data.features ?? []
+          }}
+          onClose={() => setAttrLayerId(null)}
+          viewerUrl={`/viewer?layer=${attrLayerId}&mode=view`}
+        />
+      )}
+
+      {/* Add Data panel — floats just right of the icon stack. */}
       {addDataOpen && (
         <div
           style={{
             position: 'absolute',
             top: 12,
-            left: sidebarWidth + 12,
+            left: 64,
             zIndex: 7000,
           }}
         >
@@ -995,7 +1230,6 @@ export default function CesiumViewerComponent({
           onAction={onMapShellAction}
           onZoomIn={zoomIn}
           onZoomOut={zoomOut}
-          onHome={flyHome}
           onToggle2D3D={toggleSceneMode}
           onToggleBasemap={() => setBasemapOpen((o) => !o)}
           onResetCamera={resetCamera}
@@ -1006,6 +1240,9 @@ export default function CesiumViewerComponent({
           is2D={is2D}
           phoneMode={isMobile}
           widgetOverrides={widgetOverrides}
+          pickerOpen={pickerOpen}
+          logoUrl={(site as { logo_url?: string | null } | null)?.logo_url ?? null}
+          devContent={devEnabled ? <DevRow viewerRef={viewerRef} /> : null}
         />
       </div>
 
@@ -1038,34 +1275,127 @@ export default function CesiumViewerComponent({
         />
       )}
 
-      {/* Site picker — popover from MapShell site chip. Rendered inside
-          the sidebar-aware frame so it doesn't bleed under the left
-          sidebar on desktop. */}
+      {/* Site picker — a SiteStrip-style horizontal carousel.
+          Phone: anchored to the bottom of the map pane (replacing
+          the widget rail while open).
+          Desktop / tablet landscape: anchored to the top-center so
+          the picker lands close to the CtrlPill site chip that
+          triggers it. Tap a card to switch sites; tap the X to
+          close; the first card ("All sites") jumps back to overview. */}
       {pickerOpen && (
         <div
           style={{
             position: 'absolute',
-            top: 0,
             left: sidebarWidth,
             right: rightPaneWidth,
-            bottom: 0,
-            zIndex: 30,
+            ...(isMobile
+              ? { bottom: 16 }
+              : { top: 64 }),
+            display: 'flex',
+            justifyContent: 'center',
             pointerEvents: 'none',
+            zIndex: 30,
+            transition: 'left 0.2s ease, right 0.2s ease',
           }}
         >
-          <div style={{ pointerEvents: 'auto' }}>
-            <SitePicker
-              sites={pickerSites}
-              currentSlug={siteId ?? null}
-              loading={pickerLoading}
-              isMobile={isMobile}
-              onClose={() => setPickerOpen(false)}
-              onSelect={(slug) => {
-                pushRecentSite(slug)
-                setPickerOpen(false)
-                navigate(`/sites/${slug}`)
+          <div
+            style={{
+              width: '100%',
+              maxWidth: isMobile ? 'none' : 960,
+              padding: '0 8px',
+              pointerEvents: 'auto',
+              position: 'relative',
+            }}
+          >
+            <button
+              type="button"
+              onClick={() => setPickerOpen(false)}
+              aria-label="Close site picker"
+              style={{
+                position: 'absolute',
+                top: -2,
+                right: 12,
+                width: 24,
+                height: 24,
+                borderRadius: '50%',
+                background: 'rgba(15, 17, 28, 0.92)',
+                border: '1px solid rgba(240, 242, 248, 0.07)',
+                color: 'rgba(240, 242, 248, 0.72)',
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: 0,
+                zIndex: 1,
               }}
-            />
+            >
+              <X size={12} />
+            </button>
+            {pickerLoading ? (
+              <div
+                style={{
+                  background: 'rgba(15, 17, 28, 0.92)',
+                  border: '1px solid rgba(240, 242, 248, 0.07)',
+                  borderRadius: 12,
+                  padding: '12px 16px',
+                  color: 'rgba(240, 242, 248, 0.5)',
+                  fontSize: 12,
+                  textAlign: 'center',
+                }}
+              >
+                Loading sites…
+              </div>
+            ) : pickerSites.length === 0 ? (
+              <div
+                style={{
+                  background: 'rgba(15, 17, 28, 0.92)',
+                  border: '1px solid rgba(240, 242, 248, 0.07)',
+                  borderRadius: 12,
+                  padding: '12px 16px',
+                  color: 'rgba(240, 242, 248, 0.5)',
+                  fontSize: 12,
+                  textAlign: 'center',
+                }}
+              >
+                No other sites available.
+              </div>
+            ) : (
+              <SiteStrip
+                sites={pickerSites.map((s) => {
+                  const extra = s as typeof s & {
+                    description?: string | null
+                    is_public_pre_login?: boolean
+                    primary_color?: string | null
+                    thumbnail_url?: string | null
+                    hero_image_url?: string | null
+                  }
+                  return {
+                    slug: s.slug,
+                    name: s.name,
+                    description: extra.description ?? null,
+                    is_public_pre_login: extra.is_public_pre_login,
+                    layer_count: s.layer_count,
+                    primary_color: extra.primary_color,
+                    // Prefer an explicit thumbnail_url, fall back to
+                    // hero_image_url if the API exposes one. Initials
+                    // avatar renders when neither is set.
+                    thumbnail_url: extra.thumbnail_url ?? extra.hero_image_url ?? null,
+                  }
+                })}
+                activeSiteSlug={siteId ?? null}
+                onSelectSite={(slug) => {
+                  pushRecentSite(slug)
+                  setPickerOpen(false)
+                  if (slug !== siteId) navigate(`/viewer/site/${slug}`)
+                }}
+                headerLabel="Switch site"
+                onNavigateOverview={() => {
+                  setPickerOpen(false)
+                  navigate('/viewer')
+                }}
+                overviewImageUrl={overviewImageUrl}
+              />
+            )}
           </div>
         </div>
       )}
@@ -1143,31 +1473,8 @@ export default function CesiumViewerComponent({
         </button>
       )}
 
-      {/* Extension panels — mobile renders launcher icons in a strip */}
-      {isMobile && extensionPanels.length > 0 && (
-        <div
-          style={{
-            position: 'absolute',
-            right: 14,
-            bottom: 90,
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 6,
-            zIndex: 5,
-          }}
-        >
-          {extensionPanels.map((ep) => (
-            <button
-              key={ep.id}
-              className={`map-control-btn${activeExtPanel === ep.id ? ' active' : ''}`}
-              title={ep.label}
-              onClick={() => setActiveExtPanel((p) => (p === ep.id ? null : ep.id))}
-            >
-              {ep.icon}
-            </button>
-          ))}
-        </div>
-      )}
+      {/* Extension-panel launchers moved into FloatingIconStack
+          (Phase 4). The mobile-only right-edge launcher strip is gone. */}
 
       {/* "Coming soon" toast for not-yet-wired secondary widgets */}
       {comingSoon && (
@@ -1194,30 +1501,68 @@ export default function CesiumViewerComponent({
         </div>
       )}
 
-      {/* Panels */}
+      {/* Basemap picker — bottom carousel of tiles, same pattern as
+          the site picker (per user spec). Phone: bottom-anchored.
+          Desktop / tablet landscape: top-center (close to the CtrlPill
+          basemap button that triggers it). */}
       {basemapOpen && (
-        // Sidebar-aware wrapper so the panel anchors below the topBar's
-        // basemap button (left: 14px) inside the visible canvas, not under
-        // the desktop sidebar. Mobile uses a fullscreen scrim and ignores
-        // this offset.
         <div
           style={{
             position: 'absolute',
-            top: 0,
-            left: isMobile ? 0 : sidebarWidth,
+            left: sidebarWidth,
             right: rightPaneWidth,
-            bottom: 0,
-            zIndex: 25,
+            ...(isMobile ? { bottom: 16 } : { top: 72 }),
+            display: 'flex',
+            justifyContent: 'center',
             pointerEvents: 'none',
+            zIndex: 30,
             transition: 'left 0.2s ease, right 0.2s ease',
           }}
         >
-          <div style={{ pointerEvents: 'auto' }}>
-            <BasemapWidget
-              activeBasemap={activeBasemap}
-              switchBasemap={switchBasemap}
-              onClose={() => setBasemapOpen(false)}
-              isMobile={isMobile}
+          <div
+            style={{
+              width: '100%',
+              maxWidth: isMobile ? 'none' : 720,
+              padding: '0 8px',
+              pointerEvents: 'auto',
+              position: 'relative',
+            }}
+          >
+            <button
+              type="button"
+              onClick={() => setBasemapOpen(false)}
+              aria-label="Close basemap picker"
+              style={{
+                position: 'absolute',
+                top: -2,
+                right: 12,
+                width: 24,
+                height: 24,
+                borderRadius: '50%',
+                background: 'rgba(15, 17, 28, 0.92)',
+                border: '1px solid rgba(240, 242, 248, 0.07)',
+                color: 'rgba(240, 242, 248, 0.72)',
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: 0,
+                zIndex: 1,
+              }}
+            >
+              <X size={12} />
+            </button>
+            <BasemapStrip
+              basemaps={BASEMAPS.map((b) => ({
+                id: b.id,
+                label: b.label,
+                caption: b.id === 'osm' ? '© OpenStreetMap' : undefined,
+              }))}
+              activeBasemapId={activeBasemap}
+              onSelectBasemap={(id) => {
+                switchBasemap(id)
+                setBasemapOpen(false)
+              }}
             />
           </div>
         </div>
@@ -1244,82 +1589,22 @@ export default function CesiumViewerComponent({
         />
       )}
 
-      {/* Legend — desktop floating variant. The docked variant mounts
-          inside ViewerSidebar. LegendWidget reads useLegendDock to
-          decide which mode to render in; this mount only fires when
-          the user has explicitly undocked it on desktop. */}
-      {!isMobile && !legendDocked && <LegendWidget layers={layers} />}
-      {/* Legend — mobile overlay. Phones have no sidebar dock target,
-          so the legend is always a floating tap-to-reveal overlay;
-          forceMode pins it to the floating variant regardless of the
-          desktop dock store. */}
-      {isMobile && mobileLegendOpen && (
+      {/* Legend — floating draggable popup, opened by the Legend icon
+          in the FloatingIconStack. forceMode pins it to the floating
+          variant; the legacy "docked-in-sidebar" path retired with
+          the sidebar. */}
+      {legendPopupOpen && (
         <LegendWidget
           layers={layers}
           forceMode="floating"
-          onClose={() => setMobileLegendOpen(false)}
+          onClose={() => setLegendPopupOpen(false)}
         />
       )}
 
-      {/* Mobile: floating layers panel (layer-toggle-btn at top: 60px) */}
-      {isMobile && <MobileLayers
-        layers={layers}
-        layersLoading={layersLoading}
-        onLayerToggle={onLayerToggle}
-        onLayerOpacityChange={onLayerOpacityChange}
-      />}
-
-      {/* Mobile: primary tool buttons — Search, Measure, Legend stacked
-          below the Layers button, same floating pill style. */}
-      {isMobile && (
-        <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
-          <button
-            className={`mobile-tool-btn${searchOpen ? ' mobile-tool-btn--active' : ''}`}
-            style={{ pointerEvents: 'auto', top: 110 }}
-            onClick={() => setSearchOpen(o => !o)}
-            title="Search"
-          >
-            <SearchIcon size={20} />
-          </button>
-          <button
-            className={`mobile-tool-btn${measureActive ? ' mobile-tool-btn--active' : ''}`}
-            style={{ pointerEvents: 'auto', top: 160 }}
-            onClick={() => measureActive ? cancelMeasure() : startMeasure()}
-            title="Measure"
-          >
-            <Ruler size={20} />
-          </button>
-          <button
-            className={`mobile-tool-btn${mobileLegendOpen ? ' mobile-tool-btn--active' : ''}`}
-            style={{ pointerEvents: 'auto', top: 210 }}
-            onClick={() => setMobileLegendOpen(o => !o)}
-            title="Legend"
-          >
-            <LegendIcon size={20} />
-          </button>
-        </div>
-      )}
-
-      {/* Mobile: floating extension panel */}
-      {isMobile && activeExtPanel && viewerRef.current && (() => {
-        const ep = extensionPanels.find(p => p.id === activeExtPanel)
-        if (!ep) return null
-        const ctx: ViewerContext = {
-          siteId: siteId ?? '',
-          getSiteConfig: (key) => siteConfigState[key],
-          setSiteConfig: (key, val) => setSiteConfigState(prev => ({ ...prev, [key]: val })),
-        }
-        const PanelComponent = ep.component
-        return (
-          <div className="ext-panel-container">
-            <PanelComponent
-              viewer={viewerRef.current!}
-              context={ctx}
-              onClose={() => setActiveExtPanel(null)}
-            />
-          </div>
-        )
-      })()}
+      {/* Legacy mobile-only chrome (MobileLayers, mobile-tool-btn
+          column for Search/Measure/Legend, mobile extension panel
+          launcher) retired in Phase 4 — replaced by FloatingIconStack
+          + FloatingSidePanel on every form factor. */}
 
       {/* Info Widget Overlay */}
       {infoWidgetOpen && site?.overlay_config?.info_widget_enabled && (

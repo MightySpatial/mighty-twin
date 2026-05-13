@@ -2,13 +2,13 @@ import { useRef, useEffect } from 'react'
 import {
   Viewer as CesiumViewerType,
   Cartesian3,
-  Terrain,
   HeadingPitchRange,
   Math as CesiumMath,
   BoundingSphere,
   Matrix4,
 } from 'cesium'
 import type { CameraPosition } from '../types'
+import { getBasemapFallbackOptions } from '../../../shared/basemapFallback'
 
 export function useCesiumMount(
   tokenReady: boolean,
@@ -33,6 +33,7 @@ export function useCesiumMount(
     // (and the CSS in CesiumViewer.css already hides the Cesium logo
     // + "Data attribution" expand link) gives us the right balance:
     // a small inline credit band, no Cesium branding.
+    const fallback = getBasemapFallbackOptions()
     const viewer = new CesiumViewerType(containerRef.current, {
       timeline: false,
       animation: false,
@@ -43,7 +44,11 @@ export function useCesiumMount(
       selectionIndicator: false,
       navigationHelpButton: false,
       infoBox: false,
-      terrain: Terrain.fromWorldTerrain(),
+      // Bing Aerial (Ion default) needs a Cesium Ion token; without one
+      // the globe stays black. `getBasemapFallbackOptions()` swaps in
+      // OSM + the default ellipsoid when no token is configured.
+      baseLayer: fallback.baseLayer,
+      terrain: fallback.terrain,
     })
 
     viewer.scene.globe.enableLighting = false

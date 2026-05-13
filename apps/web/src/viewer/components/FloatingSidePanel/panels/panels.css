@@ -1,0 +1,127 @@
+/* Panel content styles — extracted from the legacy
+ * ViewerSidebar.css in Phase 4 (mockups/IMPLEMENTATION.md §5.4).
+ * Imported by HomePanel.tsx + LayersPanelBody.tsx so the body
+ * markup can stay class-based while the file lives next to its
+ * consumers. */
+
+/* ── HomePanel — site welcome content ──────────────────────────── */
+.home-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 14px;
+}
+
+/* "← All sites" escape hatch at the top of the home panel.
+ * Subtle text-link styling so it doesn't compete with the hero. */
+.home-panel-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  align-self: flex-start;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.55);
+  text-decoration: none;
+  padding: 2px 6px;
+  margin-bottom: -8px;
+  border-radius: 4px;
+  transition: color 120ms, background 120ms;
+}
+.home-panel-back:hover {
+  color: rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.home-panel-hero {
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.home-panel-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: #f0f2f8;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.home-panel-title-glyph {
+  color: #a78bfa;
+}
+
+.home-panel-intro {
+  font-size: 13px;
+  line-height: 1.5;
+  color: rgba(240, 242, 248, 0.78);
+}
+.home-panel-intro p {
+  margin: 0 0 10px;
+}
+.home-panel-intro a {
+  color: #9bb3ff;
+  text-decoration: none;
+}
+.home-panel-intro a:hover {
+  text-decoration: underline;
+}
+.home-panel-intro h1,
+.home-panel-intro h2,
+.home-panel-intro h3 {
+  margin: 12px 0 6px;
+  font-size: 14px;
+  color: #f0f2f8;
+}
+
+.home-panel-empty {
+  padding: 22px 14px;
+  text-align: center;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px dashed rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+}
+.home-panel-empty-icon {
+  color: rgba(240, 242, 248, 0.35);
+  margin-bottom: 8px;
+}
+.home-panel-empty-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(240, 242, 248, 0.78);
+  margin-bottom: 4px;
+}
+.home-panel-empty-hint {
+  font-size: 11px;
+  color: rgba(240, 242, 248, 0.5);
+  line-height: 1.5;
+}
+
+.home-panel-links {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.home-panel-link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  background: rgba(36, 83, 255, 0.08);
+  border: 1px solid rgba(36, 83, 255, 0.28);
+  border-radius: 8px;
+  color: #f0f2f8;
+  text-decoration: none;
+  font-size: 12px;
+  font-weight: 500;
+  transition: background 120ms, border-color 120ms;
+}
+.home-panel-link:hover {
+  background: rgba(36, 83, 255, 0.14);
+  border-color: rgba(36, 83, 255, 0.45);
+}
+
+/* ── LayersPanelBody — layer list wrapper ──────────────────────── */
+.sidebar-layer-list {
+  padding: 4px;
+}

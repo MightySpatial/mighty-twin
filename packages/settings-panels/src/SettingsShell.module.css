@@ -37,10 +37,23 @@
   transition: background 100ms ease;
 }
 
-/* Desktop: hide the icon span — left-rail stays text-only.
-   The icon is for the phone bottom carousel below. */
+/* Desktop / tablet landscape: render the icon inline-left of the
+   label. Phone (.shell.isPhone .navItem) overrides this rule to
+   stack the icon above the label in the bottom carousel. Phase 2
+   (mockups/IMPLEMENTATION.md §5.2) dropped the legacy
+   `display: none` gate — icons render on every breakpoint now. */
 .navItemIcon {
-  display: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  margin-right: 10px;
+  flex-shrink: 0;
+  color: rgba(240, 242, 248, 0.55);
+}
+.navItemActive .navItemIcon {
+  color: #fff;
 }
 .navItemLabel {
   display: inline;
@@ -369,6 +382,7 @@
   justify-content: center;
   width: 22px;
   height: 22px;
+  margin-right: 0;
 }
 
 .shell.isPhone .navItemActive {

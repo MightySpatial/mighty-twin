@@ -3,7 +3,7 @@ import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { useShellContext } from '@mightyspatial/app-shell'
 import { useBreakpoint } from '../hooks/useBreakpoint'
 import { apiFetch } from '../hooks/useApi'
-import { LayoutDashboard, MapPin, Database, FolderOpen, Upload, Inbox, BookOpen, Camera, Radio, Menu, X, ChevronRight } from 'lucide-react'
+import { LayoutDashboard, MapPin, Database, FolderOpen, Upload, Inbox, BookOpen, Camera, Radio } from 'lucide-react'
 import './AppLayout.css'
 
 const NAV_ITEMS = [
@@ -23,11 +23,18 @@ const NAV_ITEMS = [
  *  (phone) shell. Users, Tools, Integrations, and system settings have
  *  moved to the top-level Settings tab. */
 export default function AppLayout() {
-  const { isPhone, isTablet, isDesktop } = useBreakpoint()
+  const { layoutMode } = useBreakpoint()
+  // Phase 3 pivot — branch on layoutMode, not breakpoint:
+  //   phone           → bottom carousel
+  //   tabletPortrait  → bottom carousel (was: tablet drawer; retired)
+  //   tabletLandscape → left sidebar  (matches desktop)
+  //   desktop         → left sidebar
+  const showBottomNav = layoutMode === 'phone' || layoutMode === 'tabletPortrait'
+  const showSidebar = layoutMode === 'tabletLandscape' || layoutMode === 'desktop'
+  const showPhoneHeader = layoutMode === 'phone' || layoutMode === 'tabletPortrait'
   // setMode reserved for shell-driven layout overrides — not used here yet,
   // pulling from useShellContext keeps the import intact for the badge poll.
   useShellContext()
-  const [sidebarOpen, setSidebarOpen] = useState(false)
   const [badges, setBadges] = useState({})
   const location = useLocation()
 
@@ -65,9 +72,9 @@ export default function AppLayout() {
   }
 
   return (
-    <div className={`app-layout${isPhone ? ' is-phone' : ''}`}>
-      {/* ═══ DESKTOP SIDEBAR ═══ */}
-      {isDesktop && (
+    <div className={`app-layout${showBottomNav ? ' is-phone' : ''}`}>
+      {/* ═══ SIDEBAR — desktop + tablet landscape ═══ */}
+      {showSidebar && (
         <aside className="sidebar">
           <div className="sidebar-header">
             <div className="sidebar-logo">
@@ -112,55 +119,13 @@ export default function AppLayout() {
         </aside>
       )}
 
-      {/* ═══ TABLET SIDEBAR (drawer) ═══ */}
-      {isTablet && (
-        <>
-          <aside className={`sidebar sidebar-tablet ${sidebarOpen ? 'open' : ''}`}>
-            <div className="sidebar-header">
-              <div className="sidebar-logo">
-                <span className="logo-icon">⬡</span>
-                <span className="logo-text">Atlas</span>
-              </div>
-              <button className="sidebar-close" onClick={() => setSidebarOpen(false)}>
-                <X size={24} />
-              </button>
-            </div>
-
-            <nav className="sidebar-nav">
-              {NAV_ITEMS.map(item => (
-                <NavLink
-                  key={item.path}
-                  to={item.path}
-                  className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
-                  onClick={() => setSidebarOpen(false)}
-                >
-                  <item.icon size={20} />
-                  <span>{item.label}</span>
-                  {renderBadge(item)}
-                  <ChevronRight size={18} className="nav-link-chevron" />
-                </NavLink>
-              ))}
-            </nav>
-          </aside>
-          {sidebarOpen && (
-            <div className="sidebar-backdrop" onClick={() => setSidebarOpen(false)} />
-          )}
-        </>
-      )}
+      {/* The legacy `isTablet` drawer was retired in Phase 3 — tablet
+          portrait now uses the phone bottom carousel; tablet landscape
+          uses the desktop sidebar above. */}
 
       {/* ═══ MAIN CONTENT AREA ═══ */}
       <div className="main-wrapper">
-        {isTablet && (
-          <header className="header header-tablet">
-            <button className="header-menu-btn" onClick={() => setSidebarOpen(true)}>
-              <Menu size={24} />
-            </button>
-            <h1 className="header-title">{getPageTitle()}</h1>
-            <div className="header-spacer" />
-          </header>
-        )}
-
-        {isPhone && (
+        {showPhoneHeader && (
           <header className="header header-phone">
             <h1 className="header-title">{getPageTitle()}</h1>
           </header>
@@ -170,13 +135,13 @@ export default function AppLayout() {
           <Outlet />
         </main>
 
-        {/* Bottom Nav (phone only) — horizontal scrollable carousel of
-            all sections. Earlier shipped a 5-tab cap + "More" sheet,
-            which hid half the nav and forced an extra tap; the
-            scroller keeps every tab one flick away and tap targets
-            chunky (min-width per item). Snap so flicks settle on a
-            tab boundary, scrollbar hidden so it reads as a tabbar. */}
-        {isPhone && (
+        {/* Bottom Nav — phone + tablet portrait. Horizontal scrollable
+            carousel of all sections. Earlier shipped a 5-tab cap +
+            "More" sheet, which hid half the nav and forced an extra
+            tap; the scroller keeps every tab one flick away. Snap so
+            flicks settle on a tab boundary, scrollbar hidden so it
+            reads as a tabbar. */}
+        {showBottomNav && (
           <nav className="bottom-nav">
             {NAV_ITEMS.map(item => (
               <NavLink
