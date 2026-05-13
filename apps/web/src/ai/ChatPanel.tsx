@@ -298,23 +298,26 @@ export default function ChatPanel() {
           borderTop: '1px solid rgba(255,255,255,0.06)',
           display: 'flex',
           gap: 8,
+          alignItems: 'flex-end',
         }}
       >
         <textarea
-          rows={2}
+          rows={1}
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={onKeyDown}
           placeholder={voxelCtx ? 'Describe a shape or location…' : 'Ask Mai (Mighty AI)…'}
           style={{
             flex: 1,
-            padding: '8px 10px',
-            borderRadius: 8,
+            minWidth: 0,
+            padding: '10px 12px',
+            borderRadius: 10,
             border: '1px solid rgba(255,255,255,0.08)',
             background: 'rgba(255,255,255,0.04)',
             color: 'rgba(255,255,255,0.9)',
             font: 'inherit',
-            fontSize: 13,
+            fontSize: 14,
+            lineHeight: 1.3,
             resize: 'none',
           }}
         />
@@ -324,13 +327,19 @@ export default function ChatPanel() {
           aria-label="Send"
           title="Send (Enter)"
           style={{
-            padding: '8px 12px',
-            borderRadius: 8,
+            width: 40,
+            height: 40,
+            flex: '0 0 40px',
+            padding: 0,
+            borderRadius: 10,
             background: voxelCtx ? '#2dd4bf' : '#6366f1',
             color: voxelCtx ? '#042f2e' : '#fff',
             border: 'none',
             cursor: input.trim() && !pending ? 'pointer' : 'not-allowed',
             opacity: input.trim() && !pending ? 1 : 0.5,
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
           }}
         >
           <Send size={16} />
