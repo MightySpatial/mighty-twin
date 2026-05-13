@@ -57,6 +57,19 @@
   flex-wrap: nowrap;
 }
 
+/* On the floating pill the container is 95% of the pane — let the
+   site chip stretch to fill the space so the buttons cluster on the
+   right edge instead of leaving a dark gap. */
+.variantPill .row {
+  display: flex;
+  flex-wrap: nowrap;
+  width: 100%;
+}
+.variantPill .ctrlSite {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
 /* Optional second row — dev-mode controls. Renders below the
    primary row with a hairline separator. */
 .devRow {
