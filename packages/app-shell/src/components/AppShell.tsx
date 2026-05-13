@@ -108,11 +108,17 @@ export function AppShell({
       className={`${styles.root} ${breakpoint === 'phone' ? styles.rootPhone : ''} ${layoutClass}`}
     >
       {breakpoint === 'phone' ? (
-        <MobileHeader
-          brand={brand}
-          forcedBreakpoint={forcedBreakpoint}
-          onForcedBreakpointChange={showDeveloperTools ? onForcedBreakpointChange : undefined}
-        />
+        // On phone in viewer-only mode, the CtrlPill is the only chrome
+        // the user needs — the brand bar adds vertical noise above the
+        // map. Suppress MobileHeader on viewer mode; keep it on admin /
+        // settings where the brand + dev-breakpoint switcher are useful.
+        mode === 'viewer-only' ? null : (
+          <MobileHeader
+            brand={brand}
+            forcedBreakpoint={forcedBreakpoint}
+            onForcedBreakpointChange={showDeveloperTools ? onForcedBreakpointChange : undefined}
+          />
+        )
       ) : (
         <TopBar
           brand={brand}
