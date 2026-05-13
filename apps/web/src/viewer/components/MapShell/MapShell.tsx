@@ -72,7 +72,10 @@ export interface MapShellProps {
   /** Camera control hooks owned by the parent. */
   onZoomIn: () => void
   onZoomOut: () => void
-  onHome: () => void
+  /** Home button retired from CtrlPill — kept as an optional prop in
+   *  case downstream hosts still wire it for other affordances
+   *  (keyboard shortcut etc.); not rendered in the pill. */
+  onHome?: () => void
   onToggle2D3D: () => void
   onToggleBasemap: () => void
   onResetCamera?: () => void
@@ -104,6 +107,12 @@ export interface MapShellProps {
    *  slot — hide the widget rail so it doesn't visually stack with
    *  the picker. */
   pickerOpen?: boolean
+  /** Optional workspace / site logo image used in the CtrlPill site
+   *  chip. When omitted, the chip falls back to an initials avatar. */
+  logoUrl?: string | null
+  /** Optional dev-mode second-row content rendered below the
+   *  primary CtrlPill controls. Host gates on settings.dev.enabled. */
+  devContent?: React.ReactNode
   /** Extra render slot for floating overlays (feature popup etc.) */
   children?: React.ReactNode
 }
@@ -128,8 +137,12 @@ export function MapShell({
   phoneMode = false,
   widgetOverrides = null,
   pickerOpen = false,
+  logoUrl = null,
+  devContent = null,
   children,
 }: MapShellProps) {
+  void onHome // home button retired from CtrlPill; prop kept for compat
+
   // Hold-to-look-around on the compass:
   //   pointerdown → start look-around immediately
   //   pointerup   → detected globally (parent wires window listener), restores orbit
@@ -170,19 +183,21 @@ export function MapShell({
       className={`${styles.shell} ${phoneMode ? `${styles.shellPhone} is-phone` : ''}`}
       aria-hidden="false"
     >
-      {/* Primary controller pill — site chip + camera controls.
-          One component across every form factor; the brief mandates
-          the same chrome on phone, tablet portrait/landscape, and
-          desktop (see §3.1 of mockups/IMPLEMENTATION.md). */}
+      {/* Primary controller pill — logo + name + sites + zoom + 2D/3D +
+          basemap. Floating pill on phone/tablet; full-width bar on
+          desktop. Home button intentionally dropped (use the site
+          picker's Overview card to reset). */}
       <CtrlPill
         currentSite={site ? { slug: site.slug, name: site.name } : null}
+        logoUrl={logoUrl}
         onSiteChipClick={onOpenSitePicker}
         onZoomIn={onZoomIn}
         onZoomOut={onZoomOut}
-        onHome={onHome}
         onToggle2D3D={onToggle2D3D}
         is2D={is2D}
         onBasemapClick={onToggleBasemap}
+        variant={phoneMode ? 'pill' : 'bar'}
+        devContent={devContent}
       />
 
       {/* Compact needle compass — tap = face north, hold = look-around mode */}
