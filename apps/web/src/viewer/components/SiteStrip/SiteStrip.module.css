@@ -68,21 +68,41 @@
   box-shadow: 0 0 0 1px rgba(45, 212, 191, 0.25);
 }
 
-/* "All sites" overview card prepended to the strip when the picker
-   is open. Violet tint matches the standalone Overview tile in the
-   widget rail so the affordance is recognisable across surfaces. */
+/* "All sites" overview card — square icon-only tile prepended to the
+   strip when the picker is open. Distinct shape from the wider site
+   cards so it reads as navigation, not a site. Matches the height of
+   a site card so the row stays aligned. */
 .cardOverview {
-  border-color: rgba(167, 139, 250, 0.30);
-}
-.cardOverview:hover {
-  border-color: rgba(167, 139, 250, 0.55);
-}
-.thumbOverview {
-  background: linear-gradient(135deg, #6366f1, #a78bfa) !important;
+  flex: 0 0 auto;
+  width: 80px;
+  height: 80px;
+  padding: 0;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.85), rgba(167, 139, 250, 0.85));
+  border-color: rgba(167, 139, 250, 0.45);
   display: inline-flex;
   align-items: center;
   justify-content: center;
   color: #fff;
+  scroll-snap-align: start;
+}
+.cardOverview:hover {
+  border-color: rgba(167, 139, 250, 0.85);
+  box-shadow: 0 0 0 1px rgba(167, 139, 250, 0.35);
+}
+.cardOverview svg {
+  width: 28px;
+  height: 28px;
+}
+
+/* Optional one-line description under the site name. Truncates with
+   ellipsis so longer copy doesn't blow out the card height. */
+.summary {
+  font-size: 11px;
+  color: rgba(240, 242, 248, 0.55);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.3;
 }
 
 .thumb {
