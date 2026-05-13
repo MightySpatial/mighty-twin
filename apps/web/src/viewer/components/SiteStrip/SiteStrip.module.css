@@ -42,14 +42,14 @@
 }
 
 .card {
-  /* AllTrails-pattern wide card. On phone (~370px container) the
-     card is ~260px wide, leaving room for the square Overview tile
-     on its left AND ~20px peek of the NEXT card on the right — the
-     visual cue that scroll-snap will get you there. On desktop the
-     max-width caps growth so multiple cards remain visible. */
+  /* AllTrails-pattern wide card. On phone the card is 95vw so it
+     overhangs the screen past the Overview tile — the user sees the
+     Overview + a clear peek of the card extending past the right
+     edge, signalling "swipe to see more". After a swipe + scroll-snap
+     the card aligns to start and fills 95% of the viewport. Desktop
+     overrides this further down with a fixed 340px multi-card layout. */
   flex: 0 0 auto;
-  width: calc(100% - 110px);
-  max-width: 380px;
+  width: 95vw;
   min-height: 100px;
   scroll-snap-align: start;
   display: flex;
