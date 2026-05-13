@@ -33,7 +33,7 @@ import {
   BookOpen,
   Mountain,
   Plane,
-  Globe2,
+  Globe,
 } from 'lucide-react'
 
 import {
@@ -223,12 +223,25 @@ export function MapShell({
           plus a Tools FAB further below. */}
       {!publicMode && secondary.length > 0 && (
         <div className={styles.rails}>
+          {/* Overview tile lives OUTSIDE the widget-rail bezel — it's a
+              site-context navigation affordance, not a widget. Renders
+              as a sibling tile to the left of the rail; the .rails
+              flex container puts a small gap between them. */}
+          {site && onNavigateOverview && (
+            <button
+              type="button"
+              className={styles.overviewTile}
+              onClick={onNavigateOverview}
+              title="Back to all sites"
+              aria-label="Back to all sites"
+            >
+              <Globe size={22} />
+            </button>
+          )}
           <SecondaryRail
             widgets={secondary}
             activeToolId={activeToolId}
             onAction={onAction}
-            showOverviewTile={Boolean(site && onNavigateOverview)}
-            onNavigateOverview={onNavigateOverview}
           />
         </div>
       )}
@@ -253,38 +266,22 @@ function SecondaryRail({
   widgets,
   activeToolId,
   onAction,
-  showOverviewTile,
-  onNavigateOverview,
 }: {
   widgets: WidgetDef[]
   activeToolId: string | null
   onAction: (id: string) => void
-  showOverviewTile: boolean
-  onNavigateOverview?: () => void
 }) {
   return (
     <div className={`${styles.rail} ${styles.railSecondary}`}>
       <Carousel showArrows>
-      {showOverviewTile && (
-        <button
-          key="__overview"
-          type="button"
-          className={styles.overviewTile}
-          onClick={() => onNavigateOverview?.()}
-          title="Back to all sites"
-          aria-label="Back to all sites"
-        >
-          <Globe2 size={22} />
-        </button>
-      )}
-      {widgets.map((w) => (
-        <RailTile
-          key={w.id}
-          widget={w}
-          active={activeToolId === w.id}
-          onClick={() => onAction(w.id)}
-        />
-      ))}
+        {widgets.map((w) => (
+          <RailTile
+            key={w.id}
+            widget={w}
+            active={activeToolId === w.id}
+            onClick={() => onAction(w.id)}
+          />
+        ))}
       </Carousel>
     </div>
   )

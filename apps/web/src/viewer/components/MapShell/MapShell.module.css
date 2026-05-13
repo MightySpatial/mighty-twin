@@ -38,8 +38,11 @@
   position: absolute;
   left: 50%; bottom: 18px;
   transform: translateX(-50%);
-  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  /* Row layout so the Overview tile sits LEFT-OF the widget rail
+     bezel, with a small gap separating them as discrete surfaces. */
+  display: flex; flex-direction: row; align-items: center; gap: 8px;
   pointer-events: none;
+  max-width: calc(100vw - 24px);
 }
 .rails > * { pointer-events: auto; }
 .rail {
@@ -85,49 +88,33 @@
 }
 .tile svg { width: 18px; height: 18px; }
 
-/* Overview tile — square icon-only button prepended to the widget
-   rail when a site is loaded. Violet tint signals it's navigation,
-   not a tool. Tapping it pops back to the all-sites overview state.
-   Mockup ref: mockups/mobile-redesign.html .rail-tile.overview and
-   mockups/desktop-tablet-redesign.html .rail-tile.overview. */
+/* Overview tile — standalone square icon-button rendered as a sibling
+   of the widget-rail bezel (not inside it). The `.rails` flex container
+   provides the gap between this tile and the rail to its right.
+   Violet tint signals it's navigation, not a tool. */
 .overviewTile {
-  width: 44px;
-  height: 44px;
-  margin: 4px 4px 4px 0;
+  width: 48px;
+  height: 48px;
   background: rgba(167, 139, 250, 0.12);
   border: 1px solid rgba(167, 139, 250, 0.30);
-  border-radius: 10px;
+  border-radius: 14px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   color: #a78bfa;
   padding: 0;
   flex: 0 0 auto;
-  position: relative;
   cursor: pointer;
   font: inherit;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.32);
 }
 .overviewTile:hover {
   background: rgba(167, 139, 250, 0.18);
   border-color: rgba(167, 139, 250, 0.45);
 }
-.overviewTile::after {
-  content: '';
-  position: absolute;
-  right: -4px;
-  top: 6px;
-  bottom: 6px;
-  width: 1px;
-  background: rgba(240, 242, 248, 0.07);
-}
 .overviewTile svg {
   width: 22px;
   height: 22px;
-}
-.shellPhone .overviewTile {
-  width: 48px;
-  height: 48px;
-  margin: 8px 4px 8px 0;
 }
 
 .railDivider { width: 1px; height: 24px; background: rgba(255,255,255,0.07); margin: 0 4px; }
@@ -199,30 +186,23 @@
 */
 .shellPhone .gimbal { width: 32px; height: 32px; right: 10px; top: 10px; }
 .shellPhone .rails {
-  left: 12px;
-  right: 12px;
+  /* Same default-width logic as desktop: max-width applies, content
+     drives the actual width. The bezel hugs the tiles when they fit
+     inside the cap, so a 5-tile rail doesn't span the full viewport. */
+  left: 50%;
+  right: auto;
+  transform: translateX(-50%);
   bottom: 12px;
-  transform: none;
-  align-items: stretch;
-}
-.shellPhone .rail {
-  width: 100%;
-  max-width: none;
 }
 
 @media (max-width: 640px) {
   /* compass stays round, 44px to match column hit target */
   .gimbal { width: 44px; height: 44px; border-radius: 50%; right: 10px; top: 10px; }
   .rails {
-    left: 12px;
-    right: 12px;
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
     bottom: 12px;
-    transform: none;
-    align-items: stretch;
-  }
-  .rail {
-    width: 100%;
-    max-width: none;
   }
 }
 

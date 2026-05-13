@@ -17,6 +17,7 @@ import {
   Layers as LayersIcon,
   Info,
   Plus,
+  X,
 } from 'lucide-react'
 import { AttributeTable } from '@mightydt/ui'
 import { getExtensionPanels } from '../../extensions'
@@ -28,7 +29,8 @@ import {
   FeatureAttributesDrawer,
   useFeatureClick,
 } from '../FeaturePopup'
-import { SitePicker, pushRecentSite } from '../SitePicker'
+import { pushRecentSite } from '../SitePicker'
+import { SiteStrip } from '../SiteStrip/SiteStrip'
 import { useSites } from '../../hooks/useSites'
 import { useNavigate } from 'react-router-dom'
 
@@ -1208,34 +1210,112 @@ export default function CesiumViewerComponent({
         />
       )}
 
-      {/* Site picker — popover from MapShell site chip. Rendered inside
-          the sidebar-aware frame so it doesn't bleed under the left
-          sidebar on desktop. */}
+      {/* Site picker — a SiteStrip-style horizontal carousel anchored
+          to the bottom of the map pane (replacing the widget rail
+          while open). Tap a card to switch sites; tap the X to close.
+          Same card pattern as the all-sites overview's SiteStrip so
+          the visual language stays consistent across map states. */}
       {pickerOpen && (
         <div
           style={{
             position: 'absolute',
-            top: 0,
             left: sidebarWidth,
             right: rightPaneWidth,
-            bottom: 0,
-            zIndex: 30,
+            bottom: 16,
+            display: 'flex',
+            justifyContent: 'center',
             pointerEvents: 'none',
+            zIndex: 30,
+            transition: 'left 0.2s ease, right 0.2s ease',
           }}
         >
-          <div style={{ pointerEvents: 'auto' }}>
-            <SitePicker
-              sites={pickerSites}
-              currentSlug={siteId ?? null}
-              loading={pickerLoading}
-              isMobile={isMobile}
-              onClose={() => setPickerOpen(false)}
-              onSelect={(slug) => {
-                pushRecentSite(slug)
-                setPickerOpen(false)
-                navigate(`/sites/${slug}`)
+          <div
+            style={{
+              width: '100%',
+              maxWidth: isMobile ? 'none' : 960,
+              padding: '0 8px',
+              pointerEvents: 'auto',
+              position: 'relative',
+            }}
+          >
+            <button
+              type="button"
+              onClick={() => setPickerOpen(false)}
+              aria-label="Close site picker"
+              style={{
+                position: 'absolute',
+                top: -2,
+                right: 12,
+                width: 24,
+                height: 24,
+                borderRadius: '50%',
+                background: 'rgba(15, 17, 28, 0.92)',
+                border: '1px solid rgba(240, 242, 248, 0.07)',
+                color: 'rgba(240, 242, 248, 0.72)',
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: 0,
+                zIndex: 1,
               }}
-            />
+            >
+              <X size={12} />
+            </button>
+            {pickerLoading ? (
+              <div
+                style={{
+                  background: 'rgba(15, 17, 28, 0.92)',
+                  border: '1px solid rgba(240, 242, 248, 0.07)',
+                  borderRadius: 12,
+                  padding: '12px 16px',
+                  color: 'rgba(240, 242, 248, 0.5)',
+                  fontSize: 12,
+                  textAlign: 'center',
+                }}
+              >
+                Loading sites…
+              </div>
+            ) : pickerSites.length === 0 ? (
+              <div
+                style={{
+                  background: 'rgba(15, 17, 28, 0.92)',
+                  border: '1px solid rgba(240, 242, 248, 0.07)',
+                  borderRadius: 12,
+                  padding: '12px 16px',
+                  color: 'rgba(240, 242, 248, 0.5)',
+                  fontSize: 12,
+                  textAlign: 'center',
+                }}
+              >
+                No other sites available.
+              </div>
+            ) : (
+              <SiteStrip
+                sites={pickerSites.map((s) => {
+                  const extra = s as typeof s & {
+                    description?: string | null
+                    is_public_pre_login?: boolean
+                    primary_color?: string | null
+                  }
+                  return {
+                    slug: s.slug,
+                    name: s.name,
+                    description: extra.description ?? null,
+                    is_public_pre_login: extra.is_public_pre_login,
+                    layer_count: s.layer_count,
+                    primary_color: extra.primary_color,
+                  }
+                })}
+                activeSiteSlug={siteId ?? null}
+                onSelectSite={(slug) => {
+                  pushRecentSite(slug)
+                  setPickerOpen(false)
+                  if (slug !== siteId) navigate(`/viewer/site/${slug}`)
+                }}
+                headerLabel="Switch site"
+              />
+            )}
           </div>
         </div>
       )}
