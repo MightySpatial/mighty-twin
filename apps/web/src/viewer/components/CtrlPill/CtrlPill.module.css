@@ -171,10 +171,13 @@ button.ctrlSite:hover {
 }
 
 /* Phone tightening — gated via `:global(.is-phone)` (host applies
-   the class) so `?forceBreakpoint=phone` preview works at any width. */
+   the class) so `?forceBreakpoint=phone` preview works at any width.
+   `left` is intentionally NOT set here: `.variantPill` handles
+   horizontal positioning via `left: 50% / translateX(-50%)`, and
+   re-anchoring to `left: 10px` would fight that transform and push
+   the pill off-screen. */
 :global(.is-phone) .ctrlPill {
   top: 10px;
-  left: 10px;
 }
 
 :global(.is-phone) .siteName {
