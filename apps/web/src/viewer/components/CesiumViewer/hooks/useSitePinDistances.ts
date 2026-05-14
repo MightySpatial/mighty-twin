@@ -52,9 +52,18 @@ export function useSitePinDistances(
     updateDistances()
 
     return () => {
-      viewer.camera.moveStart.removeEventListener(onMoveStart)
-      viewer.camera.moveEnd.removeEventListener(onMoveEnd)
-      viewer.scene.postRender.removeEventListener(onPostRender)
+      // Viewer may be mid-destroy or already destroyed when this cleanup
+      // fires (route change, hot-reload). Touching viewer.scene after
+      // destroy() throws "this._cesiumWidget.scene is undefined" and
+      // crashes the error boundary. Guard with isDestroyed + try/catch.
+      try {
+        if (viewer.isDestroyed()) return
+        viewer.camera.moveStart.removeEventListener(onMoveStart)
+        viewer.camera.moveEnd.removeEventListener(onMoveEnd)
+        viewer.scene.postRender.removeEventListener(onPostRender)
+      } catch {
+        /* viewer scene already disposed */
+      }
     }
   }, [viewerRef, pinPositions])
 

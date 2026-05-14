@@ -124,7 +124,14 @@ export function useSplatRenderer(
     })
 
     return () => {
-      off()
+      // off() touches viewer.scene.preRender internals; guard against
+      // viewer destroy ordering crashes ("this._cesiumWidget.scene is
+      // undefined") when the viewer is torn down before this cleanup runs.
+      try {
+        off()
+      } catch {
+        /* preRender event already disposed */
+      }
       observer.disconnect()
       try {
         renderer.dispose()
