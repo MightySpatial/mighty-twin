@@ -83,6 +83,7 @@ import { useMaiDock } from '../../../ai/MaiContext'
 import './CesiumViewer.css'
 import type { Viewer as CesiumViewerInstance } from 'cesium'
 import { Math as CesiumMathLib } from 'cesium'
+import { branding } from '../../../branding'
 
 /** Compact dev-row content for the CtrlPill: camera lat / lon /
  *  height read on a 500ms cadence, plus a quick "?dev" badge so the
@@ -1242,6 +1243,7 @@ export default function CesiumViewerComponent({
           widgetOverrides={widgetOverrides}
           pickerOpen={pickerOpen}
           logoUrl={(site as { logo_url?: string | null } | null)?.logo_url ?? null}
+          brandName={branding.name}
           devContent={devEnabled ? <DevRow viewerRef={viewerRef} /> : null}
         />
       </div>

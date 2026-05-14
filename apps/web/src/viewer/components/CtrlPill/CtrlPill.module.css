@@ -87,6 +87,46 @@
 }
 .devRow::-webkit-scrollbar { display: none; }
 
+/* ── Workspace brand block (leading element of the row) ─────────────
+   Renders ahead of the site chip so users always see the workspace
+   identity at the top. On phone the wordmark is hidden via the
+   `.is-phone` override below — only the brand mark (logo) shows so
+   the row stays usable at 95vw. */
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px 4px 4px;
+  color: #f0f2f8;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  flex-shrink: 0;
+}
+
+.brandLogo {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.brandMark {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  background: linear-gradient(135deg, #818cf8, #6366f1);
+  flex-shrink: 0;
+}
+
+.brandName {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 140px;
+}
+
 /* ── Site chip / logo + name ─────────────────────────────────────── */
 .ctrlSite {
   display: inline-flex;
@@ -201,4 +241,13 @@ button.ctrlSite:hover {
 :global(.is-phone) .ctrlBtn {
   width: 28px;
   height: 28px;
+}
+
+/* Narrow viewports (phones, ~< 600px): hide the wordmark so the row
+   stays legible at 95vw. Tablet portrait keeps the wordmark since it
+   has the breathing room. Media query on viewport width is the right
+   gate here — `.is-phone` includes tablet portrait, which has space. */
+@media (max-width: 600px) {
+  .brandName { display: none; }
+  .brand { padding: 4px; }
 }

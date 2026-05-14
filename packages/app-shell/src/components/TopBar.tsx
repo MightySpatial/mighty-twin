@@ -7,6 +7,10 @@ interface TopBarProps {
   breakpoint: Breakpoint
   onModeChange: (mode: ViewMode) => void
   labels: { viewer: string; admin: string; settings: string }
+  /** When true, hide the workspace brand button. Used when the brand
+   *  has been moved into the CtrlPill floating bar (viewer mode) so
+   *  the user doesn't see the wordmark twice. */
+  hideBrand?: boolean
   /** Optional dev-only breakpoint override. */
   forcedBreakpoint?: Breakpoint | null
   onForcedBreakpointChange?: (bp: Breakpoint | null) => void
@@ -21,6 +25,7 @@ export function TopBar({
   breakpoint,
   onModeChange,
   labels,
+  hideBrand = false,
   forcedBreakpoint,
   onForcedBreakpointChange,
   forcedOrientation,
@@ -32,10 +37,12 @@ export function TopBar({
 
   return (
     <header className={styles.topbar}>
-      <button type="button" className={styles.brand} onClick={brand.onClick}>
-        {Icon ? <Icon size={20} /> : null}
-        <span>{brand.name}</span>
-      </button>
+      {!hideBrand && (
+        <button type="button" className={styles.brand} onClick={brand.onClick}>
+          {Icon ? <Icon size={20} /> : null}
+          <span>{brand.name}</span>
+        </button>
+      )}
 
       <div className={styles.tabGroup} role="group" aria-label="Layout">
         <button
