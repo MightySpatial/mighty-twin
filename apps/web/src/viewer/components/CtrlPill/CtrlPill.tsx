@@ -142,11 +142,12 @@ export function CtrlPill({
   // takes over as the primary identity.
   const isOverview = !currentSite && !!brandName
 
-  const brandBlock = brandName ? (
-    <div
-      className={`${styles.brand} ${isOverview ? styles.brandOverview : ''}`}
-      aria-label={`Workspace: ${brandName}`}
-    >
+  // In overview state the brand block is the site-picker trigger
+  // (replaces the suppressed site chip). Wrap it in a button when
+  // onSiteChipClick is wired so the wordmark + logo + count badge
+  // all act as one tap target.
+  const brandInnerContent = brandName ? (
+    <>
       {brandLogoUrl ? (
         <img className={styles.brandLogo} src={brandLogoUrl} alt="" />
       ) : (
@@ -158,7 +159,28 @@ export function CtrlPill({
           {siteCount}
         </span>
       )}
-    </div>
+    </>
+  ) : null
+
+  const brandBlock = brandName ? (
+    isOverview && onSiteChipClick ? (
+      <button
+        type="button"
+        className={`${styles.brand} ${styles.brandOverview} ${styles.brandButton}`}
+        onClick={onSiteChipClick}
+        title={`${brandName} — pick a site`}
+        aria-label="Pick a site"
+      >
+        {brandInnerContent}
+      </button>
+    ) : (
+      <div
+        className={`${styles.brand} ${isOverview ? styles.brandOverview : ''}`}
+        aria-label={`Workspace: ${brandName}`}
+      >
+        {brandInnerContent}
+      </div>
+    )
   ) : null
 
   return (

@@ -136,6 +136,23 @@
   gap: 10px;
   padding-left: 6px;
 }
+
+/* Brand-as-button (overview state with onSiteChipClick wired). Reset
+   default button chrome and add a hover state — the whole brand block
+   becomes the tap target for opening the site picker. */
+.brandButton {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  border-radius: 999px;
+  padding: 4px 6px;
+}
+.brandButton:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
 .brandOverview .brandName {
   font-size: 15px;
   font-weight: 700;
