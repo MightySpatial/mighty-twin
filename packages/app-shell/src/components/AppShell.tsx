@@ -103,16 +103,25 @@ export function AppShell({
   const viewerDisplayMode: DisplayMode =
     mode === 'viewer-only' && breakpoint !== 'phone' ? 'full' : 'compact'
 
+  // On phone viewer-only mode the workspace brand has moved into the
+  // CtrlPill floating bar — MobileHeader is suppressed and the grid
+  // template drops the 48px header row (rootPhoneNoHeader) so the body
+  // fills the freed space. Header stays on admin / settings.
+  const hideMobileHeader = breakpoint === 'phone' && mode === 'viewer-only'
+  const phoneRootClass = hideMobileHeader ? styles.rootPhoneNoHeader : styles.rootPhone
+
   const rootContent = (
     <div
-      className={`${styles.root} ${breakpoint === 'phone' ? styles.rootPhone : ''} ${layoutClass}`}
+      className={`${styles.root} ${breakpoint === 'phone' ? phoneRootClass : ''} ${layoutClass}`}
     >
       {breakpoint === 'phone' ? (
-        <MobileHeader
-          brand={brand}
-          forcedBreakpoint={forcedBreakpoint}
-          onForcedBreakpointChange={showDeveloperTools ? onForcedBreakpointChange : undefined}
-        />
+        hideMobileHeader ? null : (
+          <MobileHeader
+            brand={brand}
+            forcedBreakpoint={forcedBreakpoint}
+            onForcedBreakpointChange={showDeveloperTools ? onForcedBreakpointChange : undefined}
+          />
+        )
       ) : (
         <TopBar
           brand={brand}
@@ -120,6 +129,7 @@ export function AppShell({
           breakpoint={breakpoint}
           onModeChange={setMode}
           labels={labels}
+          hideBrand={mode === 'viewer-only'}
           forcedBreakpoint={forcedBreakpoint}
           onForcedBreakpointChange={showDeveloperTools ? onForcedBreakpointChange : undefined}
           forcedOrientation={forcedOrientation}

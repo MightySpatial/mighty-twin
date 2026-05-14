@@ -110,6 +110,13 @@ export interface MapShellProps {
   /** Optional workspace / site logo image used in the CtrlPill site
    *  chip. When omitted, the chip falls back to an initials avatar. */
   logoUrl?: string | null
+  /** Workspace brand wordmark shown as the leading element of the
+   *  CtrlPill (left of the site chip). Hidden on phone — only the
+   *  brand mark/logo renders there. */
+  brandName?: string
+  /** Optional workspace brand logo image. When unset a small accent
+   *  square renders as the brand mark. */
+  brandLogoUrl?: string | null
   /** Optional dev-mode second-row content rendered below the
    *  primary CtrlPill controls. Host gates on settings.dev.enabled. */
   devContent?: React.ReactNode
@@ -138,6 +145,8 @@ export function MapShell({
   widgetOverrides = null,
   pickerOpen = false,
   logoUrl = null,
+  brandName,
+  brandLogoUrl = null,
   devContent = null,
   children,
 }: MapShellProps) {
@@ -190,6 +199,8 @@ export function MapShell({
       <CtrlPill
         currentSite={site ? { slug: site.slug, name: site.name } : null}
         logoUrl={logoUrl}
+        brandName={brandName}
+        brandLogoUrl={brandLogoUrl}
         onSiteChipClick={onOpenSitePicker}
         onZoomIn={onZoomIn}
         onZoomOut={onZoomOut}

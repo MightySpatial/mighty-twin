@@ -35,6 +35,7 @@ import type { SiteEntry } from '../components/SitePicker'
 import type { PointSymbolType } from '../shared/pointSymbology'
 
 import 'cesium/Build/Cesium/Widgets/widgets.css'
+import { branding } from '../../branding'
 
 const API_URL = import.meta.env.VITE_API_URL || ''
 const DEFAULT_PIN_COLOR = '#6366F1'
@@ -482,6 +483,7 @@ export default function SitesMapPage() {
           <CtrlPill
             currentSite={null}
             siteCount={loadedSites.length}
+            brandName={branding.name}
             onZoomIn={ctrlZoomIn}
             onZoomOut={ctrlZoomOut}
             variant={isMobile ? 'pill' : 'bar'}

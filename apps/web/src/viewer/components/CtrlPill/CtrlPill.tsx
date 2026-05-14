@@ -46,6 +46,13 @@ export interface CtrlPillProps {
   logoUrl?: string | null
   /** When false, hide the site name (logo-only chip). Default true. */
   showName?: boolean
+  /** Workspace brand name shown as the leading wordmark in the pill.
+   *  Wordmark is hidden on phone (only the brand mark/logo shows) so
+   *  the row stays usable at 95vw. */
+  brandName?: string
+  /** Optional workspace brand logo image. When unset a small accent
+   *  square is rendered as the brand mark. */
+  brandLogoUrl?: string | null
   /** Camera control handlers — owned by the host component. */
   onZoomIn: () => void
   onZoomOut: () => void
@@ -78,6 +85,8 @@ export function CtrlPill({
   siteCount,
   logoUrl,
   showName = true,
+  brandName,
+  brandLogoUrl,
   onZoomIn,
   onZoomOut,
   onBasemapClick,
@@ -126,9 +135,22 @@ export function CtrlPill({
     </>
   )
 
+  const brandBlock = brandName ? (
+    <div className={styles.brand} aria-label={`Workspace: ${brandName}`}>
+      {brandLogoUrl ? (
+        <img className={styles.brandLogo} src={brandLogoUrl} alt="" />
+      ) : (
+        <span className={styles.brandMark} aria-hidden />
+      )}
+      <span className={styles.brandName}>{brandName}</span>
+    </div>
+  ) : null
+
   return (
     <div className={`${styles.ctrlPill} ${variant === 'bar' ? styles.variantBar : styles.variantPill}`}>
       <div className={styles.row}>
+        {brandBlock}
+        {brandBlock && <div className={styles.ctrlDivider} aria-hidden />}
         {onSiteChipClick ? (
           <button
             type="button"
