@@ -566,6 +566,18 @@ export default function CesiumViewerComponent({
     if (siteId) pushRecentSite(siteId)
   }, [siteId])
 
+  // Body-level signal so chrome outside the viewer (the Mai chat FAB
+  // in AppShell, primarily) can hide while any viewer bottom-zone
+  // overlay is mounted. Avoids overlay overlap with the FAB without
+  // having to lift overlay state up to AppShell.
+  useEffect(() => {
+    const open = pickerOpen || basemapOpen
+    document.body.dataset.viewerOverlayOpen = open ? 'true' : 'false'
+    return () => {
+      document.body.dataset.viewerOverlayOpen = 'false'
+    }
+  }, [pickerOpen, basemapOpen])
+
   // Feature click → popup → drawer.
   const { picked, anchor, clear: clearPicked } = useFeatureClick(viewerRef)
   const [drawerOpen, setDrawerOpen] = useState(false)
@@ -1242,6 +1254,7 @@ export default function CesiumViewerComponent({
           phoneMode={isMobile}
           widgetOverrides={widgetOverrides}
           pickerOpen={pickerOpen}
+          basemapOpen={basemapOpen}
           logoUrl={(site as { logo_url?: string | null } | null)?.logo_url ?? null}
           brandName={branding.name}
           devContent={devEnabled ? <DevRow viewerRef={viewerRef} /> : null}
