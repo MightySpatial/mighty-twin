@@ -170,7 +170,12 @@ export function SettingsShell({ extraSections = [] }: SettingsShellProps) {
 
   return (
     <div className={`${styles.shell} ${isPhone ? styles.isPhone : ''}`}>
-      {isPhone ? <>{contentEl}{navEl}</> : <>{navEl}{contentEl}</>}
+      {/* Phone: nav at the top (just below MobileHeader) so the bottom
+          half of the viewport isn't double-stacked with the settings
+          sub-nav AND the MobileBottomNav. Was 128px of stacked chrome
+          on a 852px viewport — 15% of the screen for nav alone. */}
+      {navEl}
+      {contentEl}
     </div>
   )
 }

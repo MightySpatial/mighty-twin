@@ -345,13 +345,19 @@
    inputs don't push off-screen. */
 .shell.isPhone {
   grid-template-columns: 1fr;
-  grid-template-rows: 1fr auto;
+  /* Nav at the top (auto height), content fills the rest. Previously
+     `1fr auto` with nav at the bottom — stacked with MobileBottomNav
+     for a 128px-tall double bar. Moving nav to the top makes the
+     settings sub-nav a "tab strip" pattern instead. */
+  grid-template-rows: auto 1fr;
   overflow: hidden;
 }
 
 .shell.isPhone .nav {
   border-right: none;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  /* Bottom border now (nav sits at top, content below). Was top border
+     when nav was pinned to the base. */
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   padding: 0;
   display: flex;
   align-items: stretch;
