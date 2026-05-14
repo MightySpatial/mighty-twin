@@ -85,6 +85,15 @@ import type { Viewer as CesiumViewerInstance } from 'cesium'
 import { Math as CesiumMathLib } from 'cesium'
 import { branding } from '../../../branding'
 
+/** "demo-site" → "Demo site". Used as a fallback chip label while the
+ *  per-site API fetch is in flight so the CtrlPill doesn't flash
+ *  "All sites" and make it look like the user landed on the overview. */
+function slugToDisplayName(slug: string): string {
+  const cleaned = slug.replace(/[-_]+/g, ' ').trim()
+  if (!cleaned) return slug
+  return cleaned.charAt(0).toUpperCase() + cleaned.slice(1)
+}
+
 /** Compact dev-row content for the CtrlPill: camera lat / lon /
  *  height read on a 500ms cadence, plus a quick "?dev" badge so the
  *  mode is identifiable at a glance. Cheap — no Cesium subscriptions,
@@ -1238,7 +1247,17 @@ export default function CesiumViewerComponent({
         }}
       >
         <MapShell
-          site={site ? { slug: siteId ?? '', name: site.name, subtitle: site.description ?? undefined } : null}
+          site={
+            // When the per-site fetch is still in flight (or has failed)
+            // but we DO know the slug from the URL, show a slug-derived
+            // name in the chip so it doesn't flash "All sites" and look
+            // like the user got bounced back to overview.
+            site
+              ? { slug: siteId ?? '', name: site.name, subtitle: site.description ?? undefined }
+              : siteId
+                ? { slug: siteId, name: slugToDisplayName(siteId), subtitle: undefined }
+                : null
+          }
           activeToolId={activeToolId}
           onAction={onMapShellAction}
           onZoomIn={zoomIn}
