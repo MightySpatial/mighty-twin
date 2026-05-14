@@ -161,6 +161,20 @@ export function App() {
         tabLabels={{ viewer: 'Map', admin: 'Atlas' }}
         showDeveloperTools={settings.dev.enabled}
         rightRail={null}
+        onModeChange={(m) => {
+          // Sync URL with mode so each pane's inner Routes can match.
+          // Without this, tapping the Atlas tab flipped mode internally
+          // but URL stayed on /viewer — AdminRoot mounted but its
+          // /admin/* routes matched nothing, rendering an empty pane.
+          const path = location.pathname
+          if (m === 'admin-only' && !path.startsWith('/admin')) {
+            navigate('/admin/overview')
+          } else if (m === 'settings' && !path.startsWith('/settings')) {
+            navigate('/settings')
+          } else if (m === 'viewer-only' && !path.startsWith('/viewer')) {
+            navigate('/viewer')
+          }
+        }}
       />
       {/* Floating repositionable AI panel — draggable on desktop, FAB+sheet on phone.
           Switches to docked bottom-bar when a viewer widget panel is open. */}
