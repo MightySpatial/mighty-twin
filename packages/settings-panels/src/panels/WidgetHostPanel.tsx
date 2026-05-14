@@ -2,19 +2,21 @@ import { usePersistedSettings } from '../hooks/usePersistedSettings'
 import styles from '../SettingsShell.module.css'
 
 /** All widgets that can be toggled on / off via client-side settings.
- *  IDs mirror the widgetRegistry in app-shell — inline (zoom, gimbal)
- *  are excluded since they're never user-toggleable. */
+ *  IDs MUST mirror the canonical registry in
+ *  apps/web/src/viewer/components/MapShell/widgetRegistry.ts.
+ *  Inline widgets (zoom, gimbal) are excluded since they're never
+ *  user-toggleable. Keep this list in lockstep with DEFAULT_WIDGETS. */
 const WIDGET_CATALOG: { id: string; label: string; desc: string; rail: 'primary' | 'secondary' }[] = [
   { id: 'search',  label: 'Search',  desc: 'Address and feature search with fly-to.', rail: 'primary' },
   { id: 'measure', label: 'Measure', desc: 'Point-to-point distance and area measurement.', rail: 'primary' },
   { id: 'layers',  label: 'Layers',  desc: 'Layer visibility, opacity, and order panel.', rail: 'primary' },
   { id: 'legend',  label: 'Legend',  desc: 'Auto-generated colour and symbol legend.', rail: 'primary' },
+  { id: 'table',   label: 'Table',   desc: 'Attribute table for filtered feature inspection.', rail: 'primary' },
   { id: 'story',   label: 'Story',   desc: 'Guided story-map narrative player.', rail: 'secondary' },
   { id: 'snap',    label: 'Snap',    desc: 'Capture and share screenshots of the viewer.', rail: 'secondary' },
   { id: 'design',  label: 'Design',  desc: 'Draw and annotate features on the map.', rail: 'secondary' },
-  { id: 'table',   label: 'Table',   desc: 'Attribute table for filtered feature inspection.', rail: 'secondary' },
-  { id: 'strike',  label: 'Strike',  desc: '3D pipe-strike analysis along a traverse line.', rail: 'secondary' },
   { id: 'terrain', label: 'Terrain', desc: 'Globe transparency and underground floor controls.', rail: 'secondary' },
+  { id: 'fly',     label: 'Fly',     desc: 'Free-flight camera with keyboard controls.', rail: 'secondary' },
 ]
 
 const PRIMARY = WIDGET_CATALOG.filter((w) => w.rail === 'primary')
@@ -50,7 +52,7 @@ export function WidgetHostPanel() {
       <section className={styles.widgetSection}>
         <div className={styles.widgetSectionHeader}>
           <span className={styles.widgetSectionLabel}>Primary rail</span>
-          <span className={styles.widgetSectionHint}>Always-visible bottom bar</span>
+          <span className={styles.widgetSectionHint}>Floating icon stack on the map edge</span>
         </div>
         <div className={styles.widgetGrid}>
           {PRIMARY.map((w) => {

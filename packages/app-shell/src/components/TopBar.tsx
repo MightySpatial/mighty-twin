@@ -67,7 +67,7 @@ export function TopBar({
           onClick={() => onModeChange('settings')}
           title={labels.settings}
         >
-          ⚙ {labels.settings}
+          {labels.settings}
         </button>
       </div>
 

@@ -57,16 +57,17 @@ const loadingFallback = (
 const ICON_SIZE = 20
 const ICON_STROKE = 1.75
 const TWIN_SETTINGS_SECTIONS = [
-  // Workspace admin
-  { id: 'profile', label: 'Profile', icon: <ProfileIcon size={ICON_SIZE} strokeWidth={ICON_STROKE} />, panel: <ProfilePanel /> },
-  { id: 'branding', label: 'Branding', icon: <BrandingIcon size={ICON_SIZE} strokeWidth={ICON_STROKE} />, panel: <BrandingPanel /> },
-  { id: 'users', label: 'Users', icon: <UsersIcon size={ICON_SIZE} strokeWidth={ICON_STROKE} />, panel: <UsersPage /> },
-  // Engine
-  { id: 'ai', label: 'AI', icon: <AIIcon size={ICON_SIZE} strokeWidth={ICON_STROKE} />, panel: <AISettings /> },
-  { id: 'autodetect', label: 'Autodetect', icon: <AutodetectIcon size={ICON_SIZE} strokeWidth={ICON_STROKE} />, panel: <AutodetectRulesPanel /> },
-  { id: 'widgets', label: 'Widgets', icon: <WidgetsIcon size={ICON_SIZE} strokeWidth={ICON_STROKE} />, panel: <WidgetLayoutPanel /> },
-  { id: 'system', label: 'System', icon: <SystemIcon size={ICON_SIZE} strokeWidth={ICON_STROKE} />, panel: <SystemSettingsPage /> },
-  { id: 'diagnostics', label: 'Diagnostics', icon: <DiagnosticsIcon size={ICON_SIZE} strokeWidth={ICON_STROKE} />, panel: <DiagnosticsPanel /> },
+  // Account
+  { id: 'profile', label: 'Profile', group: 'Account', icon: <ProfileIcon size={ICON_SIZE} strokeWidth={ICON_STROKE} />, panel: <ProfilePanel /> },
+  // Workspace
+  { id: 'branding', label: 'Branding', group: 'Workspace', icon: <BrandingIcon size={ICON_SIZE} strokeWidth={ICON_STROKE} />, panel: <BrandingPanel /> },
+  { id: 'users', label: 'Users', group: 'Workspace', icon: <UsersIcon size={ICON_SIZE} strokeWidth={ICON_STROKE} />, panel: <UsersPage /> },
+  { id: 'ai', label: 'AI', group: 'Workspace', icon: <AIIcon size={ICON_SIZE} strokeWidth={ICON_STROKE} />, panel: <AISettings /> },
+  { id: 'autodetect', label: 'Autodetect', group: 'Workspace', icon: <AutodetectIcon size={ICON_SIZE} strokeWidth={ICON_STROKE} />, panel: <AutodetectRulesPanel /> },
+  { id: 'widgets', label: 'Widgets', group: 'Workspace', icon: <WidgetsIcon size={ICON_SIZE} strokeWidth={ICON_STROKE} />, panel: <WidgetLayoutPanel /> },
+  // Advanced
+  { id: 'system', label: 'System', group: 'Advanced', icon: <SystemIcon size={ICON_SIZE} strokeWidth={ICON_STROKE} />, panel: <SystemSettingsPage /> },
+  { id: 'diagnostics', label: 'Diagnostics', group: 'Advanced', icon: <DiagnosticsIcon size={ICON_SIZE} strokeWidth={ICON_STROKE} />, panel: <DiagnosticsPanel /> },
 ]
 
 /** Auth gate: when not authenticated, the entire screen is the login

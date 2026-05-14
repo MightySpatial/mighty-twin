@@ -85,6 +85,15 @@ import type { Viewer as CesiumViewerInstance } from 'cesium'
 import { Math as CesiumMathLib } from 'cesium'
 import { branding } from '../../../branding'
 
+/** "demo-site" → "Demo site". Used as a fallback chip label while the
+ *  per-site API fetch is in flight so the CtrlPill doesn't flash
+ *  "All sites" and make it look like the user landed on the overview. */
+function slugToDisplayName(slug: string): string {
+  const cleaned = slug.replace(/[-_]+/g, ' ').trim()
+  if (!cleaned) return slug
+  return cleaned.charAt(0).toUpperCase() + cleaned.slice(1)
+}
+
 /** Compact dev-row content for the CtrlPill: camera lat / lon /
  *  height read on a 500ms cadence, plus a quick "?dev" badge so the
  *  mode is identifiable at a glance. Cheap — no Cesium subscriptions,
@@ -565,6 +574,18 @@ export default function CesiumViewerComponent({
   useEffect(() => {
     if (siteId) pushRecentSite(siteId)
   }, [siteId])
+
+  // Body-level signal so chrome outside the viewer (the Mai chat FAB
+  // in AppShell, primarily) can hide while any viewer bottom-zone
+  // overlay is mounted. Avoids overlay overlap with the FAB without
+  // having to lift overlay state up to AppShell.
+  useEffect(() => {
+    const open = pickerOpen || basemapOpen
+    document.body.dataset.viewerOverlayOpen = open ? 'true' : 'false'
+    return () => {
+      document.body.dataset.viewerOverlayOpen = 'false'
+    }
+  }, [pickerOpen, basemapOpen])
 
   // Feature click → popup → drawer.
   const { picked, anchor, clear: clearPicked } = useFeatureClick(viewerRef)
@@ -1226,7 +1247,17 @@ export default function CesiumViewerComponent({
         }}
       >
         <MapShell
-          site={site ? { slug: siteId ?? '', name: site.name, subtitle: site.description ?? undefined } : null}
+          site={
+            // When the per-site fetch is still in flight (or has failed)
+            // but we DO know the slug from the URL, show a slug-derived
+            // name in the chip so it doesn't flash "All sites" and look
+            // like the user got bounced back to overview.
+            site
+              ? { slug: siteId ?? '', name: site.name, subtitle: site.description ?? undefined }
+              : siteId
+                ? { slug: siteId, name: slugToDisplayName(siteId), subtitle: undefined }
+                : null
+          }
           activeToolId={activeToolId}
           onAction={onMapShellAction}
           onZoomIn={zoomIn}
@@ -1242,6 +1273,7 @@ export default function CesiumViewerComponent({
           phoneMode={isMobile}
           widgetOverrides={widgetOverrides}
           pickerOpen={pickerOpen}
+          basemapOpen={basemapOpen}
           logoUrl={(site as { logo_url?: string | null } | null)?.logo_url ?? null}
           brandName={branding.name}
           devContent={devEnabled ? <DevRow viewerRef={viewerRef} /> : null}

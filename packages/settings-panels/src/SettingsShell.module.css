@@ -22,6 +22,23 @@
   margin: 0;
 }
 
+/* Group heading rendered above a group of sections in the sidebar.
+   Sections sharing the same `group` cluster together. Hidden on phone
+   (the bottom-carousel layout flattens groups). */
+.navGroup {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(255, 255, 255, 0.32);
+  padding: 14px 12px 6px;
+  margin: 0;
+  font-weight: 600;
+}
+
+.shell.isPhone .navGroup {
+  display: none;
+}
+
 .navItem {
   display: block;
   width: 100%;
@@ -116,6 +133,10 @@
   color: rgba(255, 255, 255, 0.45);
 }
 
+/* "Reload" badge for fields that require a viewer reload after change.
+   Neutral grey-blue palette — earlier red made it read as a destructive
+   action when it's really just a notice that the value won't take
+   effect until you reload. */
 .reloadBadge {
   display: inline-block;
   margin-left: 8px;
@@ -124,9 +145,9 @@
   font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: #fca5a5;
-  background: rgba(239, 68, 68, 0.12);
-  border: 1px solid rgba(239, 68, 68, 0.35);
+  color: rgba(240, 242, 248, 0.65);
+  background: rgba(240, 242, 248, 0.06);
+  border: 1px solid rgba(240, 242, 248, 0.14);
   border-radius: 4px;
 }
 
@@ -386,8 +407,11 @@
 }
 
 .shell.isPhone .navItemActive {
+  /* Brand-aligned accent (matches MobileBottomNav active color + the
+     TopBar tab active bg). Was teal — mixed palette with the rest of
+     the chrome was disorienting. */
   background: none;
-  color: #2dd4bf;
+  color: #818cf8;
 }
 
 .shell.isPhone .content {
