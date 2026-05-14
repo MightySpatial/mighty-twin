@@ -121,7 +121,10 @@
   overflow: hidden;
 }
 
-/* Phone — Mighty AI FAB + bottom sheet. */
+/* Phone — Mighty AI FAB + bottom sheet. Hidden while a viewer bottom
+   overlay (site picker, basemap picker, …) is mounted so the FAB
+   doesn't overlap their content. Viewer flips
+   body[data-viewer-overlay-open] via useEffect — see CesiumViewer.tsx. */
 .chatFab {
   position: fixed;
   right: 14px;
@@ -137,6 +140,13 @@
   justify-content: center;
   cursor: pointer;
   box-shadow: 0 6px 20px rgba(167, 139, 250, 0.45);
+  transition: opacity 160ms ease, transform 160ms ease;
+}
+
+:global(body[data-viewer-overlay-open="true"]) .chatFab {
+  opacity: 0;
+  transform: translateY(8px);
+  pointer-events: none;
   z-index: 50;
 }
 .chatFab::after {

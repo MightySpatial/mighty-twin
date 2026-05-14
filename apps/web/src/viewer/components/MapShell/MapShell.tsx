@@ -107,6 +107,10 @@ export interface MapShellProps {
    *  slot — hide the widget rail so it doesn't visually stack with
    *  the picker. */
   pickerOpen?: boolean
+  /** When true, the basemap-picker carousel is taking over the bottom
+   *  slot — hide the widget rail. Mutually exclusive with pickerOpen
+   *  by convention (only one overlay should be open at a time). */
+  basemapOpen?: boolean
   /** Optional workspace / site logo image used in the CtrlPill site
    *  chip. When omitted, the chip falls back to an initials avatar. */
   logoUrl?: string | null
@@ -144,6 +148,7 @@ export function MapShell({
   phoneMode = false,
   widgetOverrides = null,
   pickerOpen = false,
+  basemapOpen = false,
   logoUrl = null,
   brandName,
   brandLogoUrl = null,
@@ -251,7 +256,7 @@ export function MapShell({
           of the site-picker SiteStrip; no standalone tile in the rail
           row, per direct UX feedback. Rail hides while the picker is
           open so the picker has the slot to itself. */}
-      {!publicMode && !pickerOpen && secondary.length > 0 && (
+      {!publicMode && !pickerOpen && !basemapOpen && secondary.length > 0 && (
         <div className={styles.rails}>
           <SecondaryRail
             widgets={secondary}
