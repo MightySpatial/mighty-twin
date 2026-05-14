@@ -50,9 +50,17 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const addToast = useCallback((type: ToastType, message: string) => {
-    const id = ++nextId
-    setToasts(prev => [...prev.slice(-4), { id, type, message }])
-    setTimeout(() => removeToast(id), TOAST_DURATION)
+    // Dedup: if the same message is already in the stack, skip — keeps
+    // the screen from filling with five "Failed to load X" copies when
+    // a single network blip cascades across multiple data fetches.
+    // Cap at 2 visible at a time (oldest gets pushed out) so toasts
+    // don't take over the screen even with distinct messages.
+    setToasts(prev => {
+      if (prev.some(t => t.message === message && !t.exiting)) return prev
+      const id = ++nextId
+      setTimeout(() => removeToast(id), TOAST_DURATION)
+      return [...prev.slice(-1), { id, type, message }]
+    })
   }, [removeToast])
 
   return (
@@ -61,12 +69,17 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       {toasts.length > 0 && (
         <div style={{
           position: 'fixed',
-          top: 'calc(60px + var(--safe-top, 0px))',
-          right: 16,
+          // Anchor to the bottom on phone (above the bottom-nav / FAB
+          // zone) so toasts don't pile up next to the CtrlPill at the
+          // top. Desktop still gets top-right via the media query.
+          bottom: 'calc(80px + var(--safe-bottom, 0px))',
+          left: '50%',
+          transform: 'translateX(-50%)',
           zIndex: 10000,
           display: 'flex',
           flexDirection: 'column',
           gap: 8,
+          width: 'calc(100vw - 32px)',
           maxWidth: 400,
           pointerEvents: 'none',
         }}>
