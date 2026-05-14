@@ -93,6 +93,14 @@
   grid-template-rows: 48px 1fr 64px;
 }
 
+/* Phone viewer-only: the workspace brand has moved into the CtrlPill
+   floating bar, so MobileHeader is omitted entirely. Drop the 48px
+   header row from the grid template so the body fills the freed space
+   instead of leaving an empty band at the top. */
+.rootPhoneNoHeader {
+  grid-template-rows: 1fr 64px;
+}
+
 .bodyShell {
   display: flex;
   min-height: 0;
