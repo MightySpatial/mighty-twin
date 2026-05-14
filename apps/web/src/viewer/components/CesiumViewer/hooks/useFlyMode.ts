@@ -449,13 +449,28 @@ export function useFlyMode({
     const removeTick = viewer.clock.onTick.addEventListener(onTick)
 
     return () => {
-      removeTick()
+      // viewer may be mid-destroy; touching viewer.clock after destroy()
+      // throws "this._cesiumWidget.clock is undefined". Guard removeTick
+      // + clock writes with isDestroyed + try/catch.
+      try {
+        if (!viewer.isDestroyed()) {
+          removeTick()
+        }
+      } catch {
+        /* onTick event already disposed */
+      }
       window.removeEventListener('keydown', onKeyDown)
       window.removeEventListener('keyup', onKeyUp)
       // Restore clock animation state on cleanup (covers the case where
       // the component unmounts while active, bypassing the !active path).
       if (savedShouldAnimateRef.current !== null) {
-        viewer.clock.shouldAnimate = savedShouldAnimateRef.current
+        try {
+          if (!viewer.isDestroyed()) {
+            viewer.clock.shouldAnimate = savedShouldAnimateRef.current
+          }
+        } catch {
+          /* clock already gone */
+        }
         savedShouldAnimateRef.current = null
       }
     }
