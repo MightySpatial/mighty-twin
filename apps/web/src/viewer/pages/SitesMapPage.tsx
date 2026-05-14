@@ -76,6 +76,11 @@ export default function SitesMapPage() {
   const sitesWithCamera = useRef<SiteWithCamera[]>([])
   const sitesLoaded = useRef(false)
   // Mirror of sitesWithCamera for reactive rendering (dropdown list).
+  // Overview picker open state. Brand button in the CtrlPill toggles
+  // this; SiteStrip below renders only when open. Matches the per-site
+  // viewer's chip→picker pattern so site selection works the same way
+  // across overview and per-site.
+  const [pickerOpen, setPickerOpen] = useState(false)
   const [loadedSites, setLoadedSites] = useState<SiteWithCamera[]>([])
 
   // Full /api/spatial/sites payload — feeds the sidebar's Site tab
@@ -486,16 +491,18 @@ export default function SitesMapPage() {
             brandName={branding.name}
             onZoomIn={ctrlZoomIn}
             onZoomOut={ctrlZoomOut}
+            onSiteChipClick={() => setPickerOpen((o) => !o)}
             variant={isMobile ? 'pill' : 'bar'}
           />
         </div>
       </div>
 
-      {/* Site list strip — replaces the (non-existent) widget rail at
-          the bottom of the overview pane. Phone full-width; on desktop
-          this wrapper centers the strip with max-width 960. Card click
-          + pin click stay in sync via activeSiteSlug. */}
-      {pickerSites.length > 0 && (
+      {/* Site list strip — on-demand picker triggered from the CtrlPill
+          brand button. Same UX pattern as the per-site viewer's chip-
+          opens-picker flow. Phone full-width; desktop centers with
+          max-width 960. Card click + pin click stay in sync via
+          activeSiteSlug. */}
+      {pickerOpen && pickerSites.length > 0 && (
         <div
           style={{
             position: 'absolute',
@@ -509,11 +516,46 @@ export default function SitesMapPage() {
             zIndex: 6,
           }}
         >
-          <div style={{ width: '100%', maxWidth: isMobile ? 'none' : 960, pointerEvents: 'auto' }}>
+          <div
+            style={{
+              width: '100%',
+              maxWidth: isMobile ? 'none' : 960,
+              pointerEvents: 'auto',
+              position: 'relative',
+            }}
+          >
+            <button
+              type="button"
+              onClick={() => setPickerOpen(false)}
+              aria-label="Close site picker"
+              style={{
+                position: 'absolute',
+                top: -2,
+                right: 12,
+                width: 28,
+                height: 28,
+                borderRadius: '50%',
+                background: 'rgba(15, 17, 28, 0.92)',
+                border: '1px solid rgba(240, 242, 248, 0.07)',
+                color: 'rgba(240, 242, 248, 0.72)',
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                zIndex: 1,
+                font: 'inherit',
+                lineHeight: 1,
+              }}
+            >
+              ×
+            </button>
             <SiteStrip
               sites={pickerSites}
               activeSiteSlug={selectedSlug}
-              onSelectSite={onSitePickerSelect}
+              onSelectSite={(slug) => {
+                onSitePickerSelect(slug)
+                setPickerOpen(false)
+              }}
             />
           </div>
         </div>
