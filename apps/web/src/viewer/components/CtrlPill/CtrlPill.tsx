@@ -135,14 +135,29 @@ export function CtrlPill({
     </>
   )
 
+  // Overview state: no specific site is loaded but the workspace brand
+  // IS available. Let the brand take the full top bar — the redundant
+  // "All sites · N" chip is replaced by a count badge on the brand
+  // block. On per-site view the brand stays compact and the site chip
+  // takes over as the primary identity.
+  const isOverview = !currentSite && !!brandName
+
   const brandBlock = brandName ? (
-    <div className={styles.brand} aria-label={`Workspace: ${brandName}`}>
+    <div
+      className={`${styles.brand} ${isOverview ? styles.brandOverview : ''}`}
+      aria-label={`Workspace: ${brandName}`}
+    >
       {brandLogoUrl ? (
         <img className={styles.brandLogo} src={brandLogoUrl} alt="" />
       ) : (
         <span className={styles.brandMark} aria-hidden />
       )}
       <span className={styles.brandName}>{brandName}</span>
+      {isOverview && typeof siteCount === 'number' && (
+        <span className={styles.brandCount} aria-label={`${siteCount} sites`}>
+          {siteCount}
+        </span>
+      )}
     </div>
   ) : null
 
@@ -150,8 +165,12 @@ export function CtrlPill({
     <div className={`${styles.ctrlPill} ${variant === 'bar' ? styles.variantBar : styles.variantPill}`}>
       <div className={styles.row}>
         {brandBlock}
-        {brandBlock && <div className={styles.ctrlDivider} aria-hidden />}
-        {onSiteChipClick ? (
+        {/* Site chip is suppressed in overview state — the brand block
+            already conveys workspace identity and the count badge
+            replaces the "All sites · N" text. Per-site state still
+            shows the chip beside the brand with a divider between. */}
+        {!isOverview && brandBlock && <div className={styles.ctrlDivider} aria-hidden />}
+        {!isOverview && (onSiteChipClick ? (
           <button
             type="button"
             className={styles.ctrlSite}
@@ -163,7 +182,7 @@ export function CtrlPill({
           </button>
         ) : (
           <div className={styles.ctrlSite}>{chipContent}</div>
-        )}
+        ))}
         <button
           type="button"
           className={styles.ctrlBtn}

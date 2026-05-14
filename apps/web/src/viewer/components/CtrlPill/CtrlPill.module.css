@@ -127,6 +127,45 @@
   max-width: 140px;
 }
 
+/* ── Brand overview state ─────────────────────────────────────────
+   When no site is loaded, the brand takes the whole bar (the site
+   chip is suppressed). Wordmark scales up, count badge replaces the
+   "All sites · N" text from the old chip. */
+.brandOverview {
+  flex: 1 1 auto;
+  gap: 10px;
+  padding-left: 6px;
+}
+.brandOverview .brandName {
+  font-size: 15px;
+  font-weight: 700;
+  max-width: none;
+  letter-spacing: -0.015em;
+}
+.brandOverview .brandLogo,
+.brandOverview .brandMark {
+  width: 26px;
+  height: 26px;
+}
+
+/* Count badge — small pill on the brand row, only rendered in overview
+   state. Replaces the old "All sites · N" chip text. */
+.brandCount {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 20px;
+  padding: 0 7px;
+  border-radius: 999px;
+  background: rgba(129, 140, 248, 0.16);
+  color: #c7d2fe;
+  font-size: 11px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  margin-left: 4px;
+}
+
 /* ── Site chip / logo + name ─────────────────────────────────────── */
 .ctrlSite {
   display: inline-flex;
@@ -246,8 +285,12 @@ button.ctrlSite:hover {
 /* Narrow viewports (phones, ~< 600px): hide the wordmark so the row
    stays legible at 95vw. Tablet portrait keeps the wordmark since it
    has the breathing room. Media query on viewport width is the right
-   gate here — `.is-phone` includes tablet portrait, which has space. */
+   gate here — `.is-phone` includes tablet portrait, which has space.
+   Exception: overview state keeps the wordmark visible since the
+   brand is the only thing in the bar — hiding it would leave just
+   the mark + count badge, no identity. */
 @media (max-width: 600px) {
-  .brandName { display: none; }
-  .brand { padding: 4px; }
+  .brand:not(.brandOverview) .brandName { display: none; }
+  .brand:not(.brandOverview) { padding: 4px; }
+  .brandOverview .brandName { font-size: 14px; }
 }
