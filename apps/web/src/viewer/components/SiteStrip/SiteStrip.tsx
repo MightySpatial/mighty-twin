@@ -89,7 +89,12 @@ export function SiteStrip({
     const cardRect = card.getBoundingClientRect()
     const scrollerRect = scroller.getBoundingClientRect()
     if (cardRect.left < scrollerRect.left || cardRect.right > scrollerRect.right) {
-      card.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' })
+      // `inline: 'nearest'` instead of 'center' so the Overview tile
+      // (always the first card) stays visible on the left edge of the
+      // strip after auto-scroll. With 'center' the active site card
+      // got centered horizontally, which pushed the Overview tile off
+      // the left edge — losing the "back to all sites" affordance.
+      card.scrollIntoView({ behavior: 'smooth', inline: 'nearest', block: 'nearest' })
     }
   }, [activeSiteSlug])
 

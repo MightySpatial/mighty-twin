@@ -44,6 +44,11 @@ export function useCesiumMount(
       selectionIndicator: false,
       navigationHelpButton: false,
       infoBox: false,
+      // Cesium's built-in fullscreen corner button overlapped the
+      // widget rail and bottom-nav on phone. Browsers offer their own
+      // fullscreen affordance (iOS Safari pulls the URL bar away on
+      // scroll), and we don't need a duplicate.
+      fullscreenButton: false,
       // Bing Aerial (Ion default) needs a Cesium Ion token; without one
       // the globe stays black. `getBasemapFallbackOptions()` swaps in
       // OSM + the default ellipsoid when no token is configured.
