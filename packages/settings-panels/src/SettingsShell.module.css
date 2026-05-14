@@ -22,6 +22,23 @@
   margin: 0;
 }
 
+/* Group heading rendered above a group of sections in the sidebar.
+   Sections sharing the same `group` cluster together. Hidden on phone
+   (the bottom-carousel layout flattens groups). */
+.navGroup {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(255, 255, 255, 0.32);
+  padding: 14px 12px 6px;
+  margin: 0;
+  font-weight: 600;
+}
+
+.shell.isPhone .navGroup {
+  display: none;
+}
+
 .navItem {
   display: block;
   width: 100%;

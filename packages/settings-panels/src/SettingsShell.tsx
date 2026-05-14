@@ -16,6 +16,11 @@ interface Section {
    *  (Lucide, inline SVG, whatever) — keeps the package independent
    *  of any specific icon library. */
   icon?: ReactNode
+  /** Section group — sections sharing the same group cluster together
+   *  in the nav with a heading above the first item. Sections without
+   *  a group land at the top under "General". Renders on desktop sidebar
+   *  only; phone bottom carousel still flattens. */
+  group?: string
 }
 
 /** Inline SVG factory — keeps settings-panels free of a hard
@@ -29,11 +34,11 @@ const svg = (path: string) => (
 )
 
 const BUILTIN_SECTIONS: Section[] = [
-  { id: 'basemap', label: 'Basemap & terrain', icon: svg('<polygon points="3 7 9 4 15 7 21 4 21 17 15 20 9 17 3 20 3 7"/><line x1="9" y1="4" x2="9" y2="17"/><line x1="15" y1="7" x2="15" y2="20"/>'), panel: <BasemapTerrainPanel /> },
-  { id: 'units', label: 'Units', icon: svg('<path d="M3 7v10"/><path d="M3 12h18"/><path d="M21 7v10"/><path d="M7 9v6"/><path d="M11 8v8"/><path d="M15 9v6"/>'), panel: <UnitsPanel /> },
-  { id: 'widgets', label: 'Widget host', icon: svg('<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/>'), panel: <WidgetHostPanel /> },
-  { id: 'theme', label: 'Theme & density', icon: svg('<circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 0 0 18"/><circle cx="8.5" cy="9.5" r="1"/><circle cx="15.5" cy="9.5" r="1"/><circle cx="8.5" cy="14.5" r="1"/>'), panel: <ThemePanel /> },
-  { id: 'dev', label: 'Developer', icon: svg('<path d="M14.7 6.3a3 3 0 0 1 0 4.2l-1.5 1.5 4.2 4.2-2.1 2.1-4.2-4.2-1.5 1.5a3 3 0 0 1-4.2 0L3.5 13.5a3 3 0 0 1 0-4.2l4.2-4.2a3 3 0 0 1 4.2 0z"/>'), panel: <DeveloperPanel /> },
+  { id: 'basemap', label: 'Basemap & terrain', group: 'Engine', icon: svg('<polygon points="3 7 9 4 15 7 21 4 21 17 15 20 9 17 3 20 3 7"/><line x1="9" y1="4" x2="9" y2="17"/><line x1="15" y1="7" x2="15" y2="20"/>'), panel: <BasemapTerrainPanel /> },
+  { id: 'units', label: 'Units', group: 'Engine', icon: svg('<path d="M3 7v10"/><path d="M3 12h18"/><path d="M21 7v10"/><path d="M7 9v6"/><path d="M11 8v8"/><path d="M15 9v6"/>'), panel: <UnitsPanel /> },
+  { id: 'widgets', label: 'Widget host', group: 'Engine', icon: svg('<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/>'), panel: <WidgetHostPanel /> },
+  { id: 'theme', label: 'Theme & density', group: 'Engine', icon: svg('<circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 0 0 18"/><circle cx="8.5" cy="9.5" r="1"/><circle cx="15.5" cy="9.5" r="1"/><circle cx="8.5" cy="14.5" r="1"/>'), panel: <ThemePanel /> },
+  { id: 'dev', label: 'Developer', group: 'Advanced', icon: svg('<path d="M14.7 6.3a3 3 0 0 1 0 4.2l-1.5 1.5 4.2 4.2-2.1 2.1-4.2-4.2-1.5 1.5a3 3 0 0 1-4.2 0L3.5 13.5a3 3 0 0 1 0-4.2l4.2-4.2a3 3 0 0 1 4.2 0z"/>'), panel: <DeveloperPanel /> },
 ]
 
 export interface SettingsShellProps {
@@ -130,22 +135,35 @@ export function SettingsShell({ extraSections = [] }: SettingsShellProps) {
   // On phone, render content first then the carousel nav so the
   // grid-template-rows layout reflects DOM order (content top, nav at
   // the base). Desktop stays nav-then-content for the left-rail layout.
+  // Render group headings between sections whose `group` value changes.
+  // Sections without an explicit group share the implicit "" bucket and
+  // get no heading above them (used for un-grouped consumer additions).
+  let prevGroup: string | undefined = undefined
+
   const navEl = (
     <nav className={styles.nav}>
       <h3 className={styles.navTitle}>Settings</h3>
-      {allSections.map((s) => (
-        <button
-          key={s.id}
-          type="button"
-          className={`${styles.navItem} ${s.id === active ? styles.navItemActive : ''}`}
-          onClick={() => selectSection(s.id)}
-        >
-          {/* Icon only rendered on phone (CSS hides it on desktop) so
-              the desktop left-rail layout stays text-only. */}
-          {s.icon && <span className={styles.navItemIcon}>{s.icon}</span>}
-          <span className={styles.navItemLabel}>{s.label}</span>
-        </button>
-      ))}
+      {allSections.map((s) => {
+        const showGroupHeader = s.group && s.group !== prevGroup
+        prevGroup = s.group
+        return (
+          <span key={s.id} style={{ display: 'contents' }}>
+            {showGroupHeader && (
+              <h4 className={styles.navGroup}>{s.group}</h4>
+            )}
+            <button
+              type="button"
+              className={`${styles.navItem} ${s.id === active ? styles.navItemActive : ''}`}
+              onClick={() => selectSection(s.id)}
+            >
+              {/* Icon only rendered on phone (CSS hides it on desktop) so
+                  the desktop left-rail layout stays text-only. */}
+              {s.icon && <span className={styles.navItemIcon}>{s.icon}</span>}
+              <span className={styles.navItemLabel}>{s.label}</span>
+            </button>
+          </span>
+        )
+      })}
     </nav>
   )
   const contentEl = <div className={styles.content}>{activeSection?.panel}</div>
