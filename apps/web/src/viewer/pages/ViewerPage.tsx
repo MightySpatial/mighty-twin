@@ -313,12 +313,15 @@ export default function ViewerPage() {
             <button className="user-menu" onClick={() => setMenuOpen(!menuOpen)}>
               <div className="user-avatar">
                 {user.avatar ? (
-                  <img src={user.avatar} alt={user.name} />
+                  <img src={user.avatar} alt={user.name ?? 'User'} />
                 ) : (
-                  user.name.charAt(0).toUpperCase()
+                  // Crash guard: user.name was undefined for some auth
+                  // responses (e.g. SSO callbacks that only return id +
+                  // email), throwing 'cannot read charAt of undefined'.
+                  (user.name ?? user.email ?? '?').charAt(0).toUpperCase()
                 )}
               </div>
-              <span className="user-name">{user.name}</span>
+              <span className="user-name">{user.name ?? user.email ?? 'User'}</span>
               <ChevronDown size={14} className="user-chevron" />
             </button>
           )}

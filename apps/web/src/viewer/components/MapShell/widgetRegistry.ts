@@ -62,7 +62,7 @@ export const DEFAULT_WIDGETS: WidgetDef[] = [
   // pane bottom.
   { id: 'story',    label: 'Story',    icon: 'BookOpen', controller: 'secondary', position: 0, loadMode: 'sharePane', defaultSize: 'standard', scope: 'per-site', publicVisible: true,                       paneZone: 'top' },
   { id: 'snap',     label: 'Snap',     icon: 'Camera',   controller: 'secondary', position: 1, loadMode: 'sharePane', defaultSize: 'compact',  scope: 'per-site',                                            paneZone: 'top' },
-  { id: 'design',   label: 'Design',   icon: 'Hexagon',  controller: 'secondary', position: 2, loadMode: 'sharePane', defaultSize: 'expanded', scope: 'per-site',                                            paneZone: 'top' },
+  { id: 'design',   label: 'Create',   icon: 'Hexagon',  controller: 'secondary', position: 2, loadMode: 'sharePane', defaultSize: 'expanded', scope: 'per-site',                                            paneZone: 'top' },
   { id: 'terrain',  label: 'Terrain',  icon: 'Mountain', controller: 'secondary', position: 3, loadMode: 'sharePane', defaultSize: 'compact',  scope: 'per-site',                                            paneZone: 'top' },
   { id: 'fly',      label: 'Fly',      icon: 'Plane',    controller: 'secondary', position: 4, loadMode: 'sharePane', defaultSize: 'compact',  scope: 'per-site', publicVisible: true,                       paneZone: 'top' },
 ]
