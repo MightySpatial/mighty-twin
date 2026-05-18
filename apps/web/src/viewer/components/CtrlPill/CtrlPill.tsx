@@ -73,7 +73,8 @@ export interface CtrlPillProps {
 }
 
 /** Initials from a site name: "Demo site" → "DS", "Mighty" → "M". */
-function siteInitials(name: string): string {
+function siteInitials(name: string | null | undefined): string {
+  if (!name) return '?'
   const tokens = name.trim().split(/\s+/).filter(Boolean)
   if (tokens.length === 0) return '?'
   if (tokens.length === 1) return tokens[0].charAt(0).toUpperCase()

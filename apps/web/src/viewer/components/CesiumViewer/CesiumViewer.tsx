@@ -1696,48 +1696,20 @@ export default function CesiumViewerComponent({
           inline inside the right pane (see RightPane render at the
           bottom of this file). ChatPanel listens for design:open /
           design:close window events to minimise itself out of the way. */}
+      {/* DesignWidget renders itself fullscreen on mobile via its own
+          .design-widget--mobile { position: fixed; inset: 0 } rule.
+          When the user picks a draw tool the widget auto-slides off
+          screen except for a 60px MobileMinimiseHandle at the bottom,
+          giving a mini-palette feel that exposes the map for drawing.
+          A 420px right-side wrapper here used to constrain it and
+          break that slide-to-handle behaviour — removed. The widget's
+          own close button (in .design-panel-header) handles dismiss. */}
       {designOpen && isMobile && viewerRef.current && (
-        <div
-          style={{
-            position: 'absolute',
-            top: 0,
-            right: 0,
-            bottom: 0,
-            width: 420,
-            zIndex: 50,
-            background: 'rgba(18, 22, 30, 0.97)',
-            backdropFilter: 'blur(12px)',
-            borderLeft: '1px solid rgba(255,255,255,0.08)',
-            display: 'flex',
-            flexDirection: 'column',
-            boxShadow: '-8px 0 40px rgba(0,0,0,0.4)',
-            animation: 'slideInRight 200ms ease',
-          }}
-        >
-          <button
-            onClick={closeDesign}
-            title="Close"
-            aria-label="Close design"
-            style={{
-              position: 'absolute',
-              top: 10,
-              right: 10,
-              zIndex: 1,
-              background: 'none',
-              border: 'none',
-              cursor: 'pointer',
-              color: 'rgba(255,255,255,0.5)',
-              fontSize: 18,
-            }}
-          >
-            ✕
-          </button>
-          <DesignWidget
-            viewer={viewerRef.current}
-            onClose={closeDesign}
-            siteSlug={siteId ?? null}
-          />
-        </div>
+        <DesignWidget
+          viewer={viewerRef.current}
+          onClose={closeDesign}
+          siteSlug={siteId ?? null}
+        />
       )}
 
       {/* Terrain widget — mobile only; desktop version lives in the sidebar */}
@@ -1781,7 +1753,7 @@ export default function CesiumViewerComponent({
       {activeRightWidget !== null && (() => {
         const bodyLabel = activeRightWidget === 'story' ? 'Story'
           : activeRightWidget === 'snap' ? 'Snap'
-          : activeRightWidget === 'design' ? 'Design'
+          : activeRightWidget === 'design' ? 'Create'
           : activeRightWidget === 'terrain' ? 'Terrain'
           : activeRightWidget === 'measure' ? 'Measure'
           : null

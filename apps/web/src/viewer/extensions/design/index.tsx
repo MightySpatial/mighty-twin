@@ -19,7 +19,7 @@ registerExtension({
 
   panel: {
     icon: <span style={{ fontSize: 14, fontWeight: 700 }}>⬡</span>,
-    label: 'Design',
+    label: 'Create',
     component: DesignPanel,
   },
 })
