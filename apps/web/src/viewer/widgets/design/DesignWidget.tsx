@@ -174,7 +174,7 @@ export default function DesignWidget({ viewer, onClose, siteSlug = null, mode = 
 
         <div className="design-panel-content">
           <div className="design-panel-header">
-            <h4 className="design-panel-title">Design</h4>
+            <h4 className="design-panel-title">Create</h4>
             <span className="design-panel-ctx">{activeSketch?.name ?? 'No sketch'}</span>
             {siteSlug && (
               <SaveIndicator

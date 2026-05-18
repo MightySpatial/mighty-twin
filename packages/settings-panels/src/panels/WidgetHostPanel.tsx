@@ -14,7 +14,7 @@ const WIDGET_CATALOG: { id: string; label: string; desc: string; rail: 'primary'
   { id: 'table',   label: 'Table',   desc: 'Attribute table for filtered feature inspection.', rail: 'primary' },
   { id: 'story',   label: 'Story',   desc: 'Guided story-map narrative player.', rail: 'secondary' },
   { id: 'snap',    label: 'Snap',    desc: 'Capture and share screenshots of the viewer.', rail: 'secondary' },
-  { id: 'design',  label: 'Design',  desc: 'Draw and annotate features on the map.', rail: 'secondary' },
+  { id: 'design',  label: 'Create',  desc: 'Draw and annotate features on the map.', rail: 'secondary' },
   { id: 'terrain', label: 'Terrain', desc: 'Globe transparency and underground floor controls.', rail: 'secondary' },
   { id: 'fly',     label: 'Fly',     desc: 'Free-flight camera with keyboard controls.', rail: 'secondary' },
 ]

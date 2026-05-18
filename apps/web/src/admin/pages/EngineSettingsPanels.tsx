@@ -756,7 +756,7 @@ const WIDGETS: { id: string; label: string; icon: IconCmp; defaultController: Co
   { id: 'legend',   label: 'Legend',   icon: List,          defaultController: 'primary' },
   { id: 'story',    label: 'Story',    icon: BookOpen,      defaultController: 'secondary' },
   { id: 'snap',     label: 'Snap',     icon: Camera,        defaultController: 'secondary' },
-  { id: 'design',   label: 'Design',   icon: HexagonIcon,   defaultController: 'secondary' },
+  { id: 'design',   label: 'Create',   icon: HexagonIcon,   defaultController: 'secondary' },
   { id: 'table',    label: 'Table',    icon: TableIcon,     defaultController: 'secondary' },
   { id: 'terrain',  label: 'Terrain',  icon: Mountain,      defaultController: 'secondary' },
   { id: 'fly',      label: 'Fly',      icon: Plane,         defaultController: 'secondary' },
