@@ -55,6 +55,15 @@ export const DEFAULT_WIDGETS: WidgetDef[] = [
   // sidebar so the secondary rail can go away entirely).
   { id: 'table',    label: 'Table',    icon: 'Table',    controller: 'primary',   position: 4, loadMode: 'drawer',    defaultSize: 'standard', scope: 'per-site' },
 
+  // Probe — interior navigation. Tile is drag-activatable (pegman pattern).
+  // Drop onto a NavigableSpace-tagged feature → camera enters Probe at the
+  // nearest centerline point / volume interior. See mockups/PROBE.md.
+  { id: 'probe',    label: 'Probe',    icon: 'Target',   controller: 'primary',   position: 5, loadMode: 'floating', defaultSize: 'compact',  scope: 'per-site', publicVisible: true },
+
+  // Street View — Google panorama. Same drag-activate pattern as Probe;
+  // drop onto a covered road segment. Settings → Google holds the API key.
+  { id: 'streetview', label: 'Street View', icon: 'Eye', controller: 'primary',  position: 6, loadMode: 'floating', defaultSize: 'standard', scope: 'global',   publicVisible: false },
+
   // Secondary rail — bottom-centre below the canvas. Each tile opens
   // its widget in the right pane (`loadMode: 'sharePane'`); the pane
   // is a content slot, not a controller. Fly sits next to the others

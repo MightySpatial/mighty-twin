@@ -1,0 +1,153 @@
+/* Street View panel — split-pane (panorama side) anchored to a corner of
+ * the viewer. The Cesium half stays the host element; this panel sits
+ * over it on phone (top half), and side-by-side on tablet+/desktop. */
+
+.panel {
+  position: absolute;
+  z-index: 60;
+  background: rgba(15, 17, 28, 0.98);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: svSlideIn 240ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes svSlideIn {
+  from { opacity: 0; transform: scale(0.98); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+/* Phone: top half, edge-to-edge, no rounded corners on outer edges. */
+.panel.phone {
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 60%;
+  border-left: none;
+  border-right: none;
+  border-top: none;
+}
+
+/* Tablet portrait: top 60 % of viewport. */
+.panel.tabletPortrait {
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 60%;
+  border-top: none;
+  border-left: none;
+  border-right: none;
+}
+
+/* Tablet landscape + desktop: left half, full height. */
+.panel.wide {
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 50%;
+  border-left: none;
+  border-top: none;
+  border-bottom: none;
+  border-right: 1px solid rgba(255, 255, 255, 0.10);
+}
+
+.panoWrap {
+  position: relative;
+  flex: 1;
+  background: #000;
+}
+
+.pano {
+  position: absolute;
+  inset: 0;
+}
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 13px;
+  background: rgba(15, 17, 28, 0.6);
+  backdrop-filter: blur(4px);
+  pointer-events: none;
+}
+
+.hint {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.spinner {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.15);
+  border-top-color: #818cf8;
+  animation: svSpin 0.8s linear infinite;
+}
+
+@keyframes svSpin {
+  to { transform: rotate(360deg); }
+}
+
+.closeBtn {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 2;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(15, 17, 28, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  color: rgba(255, 255, 255, 0.85);
+  cursor: pointer;
+  transition: background 120ms ease, transform 120ms ease;
+}
+
+.closeBtn:hover {
+  background: rgba(15, 17, 28, 1);
+  transform: scale(1.05);
+}
+
+.hud {
+  position: absolute;
+  bottom: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 8px 14px;
+  background: rgba(15, 17, 28, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  border-radius: 8px;
+  backdrop-filter: blur(8px);
+  pointer-events: none;
+}
+
+.hudLabel {
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: #818cf8;
+}
+
+.hudCoord {
+  font-family: 'SF Mono', Menlo, Consolas, monospace;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.85);
+}

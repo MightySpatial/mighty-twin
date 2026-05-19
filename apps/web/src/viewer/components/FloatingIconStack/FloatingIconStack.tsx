@@ -10,7 +10,7 @@
  *  Active state: when the icon's panel ID equals `activePanel` OR
  *  when the icon's `isActive` prop is true (e.g. Measure mode). */
 
-import type { ReactNode } from 'react'
+import type { ReactNode, RefObject } from 'react'
 import styles from './FloatingIconStack.module.css'
 
 export interface FloatingIconStackItem {
@@ -26,6 +26,10 @@ export interface FloatingIconStackItem {
   /** Override the default click behaviour (panel toggle). Used by
    *  Measure to engage the measure tool instead. */
   onClick?: () => void
+  /** Optional ref the host can pass in to grab the button element.
+   *  Used by drag-to-activate widgets (Probe, Street View) so the
+   *  drag glyph can be summoned from this tile via pointerdown. */
+  tileRef?: RefObject<HTMLButtonElement>
 }
 
 export interface FloatingIconStackProps {
@@ -49,6 +53,7 @@ export function FloatingIconStack({
         return (
           <button
             key={item.id}
+            ref={item.tileRef}
             type="button"
             className={`${styles.icon} ${active ? styles.iconActive : ''}`}
             title={item.label}
