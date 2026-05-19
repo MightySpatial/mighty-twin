@@ -258,3 +258,95 @@ function cartographicFromCartesian(p: Cartesian3): { lonDeg: number; latDeg: num
 
 // Cesium Cartographic — imported lazily to avoid circular import surface.
 import { Cartographic as CartographicRef } from 'cesium'
+
+/** Volume constraint — Phase E.
+ *
+ *  For kind='volume' NavigableSpaces with an AABB defined on the volume
+ *  geometry, clamp the camera to remain inside the box. AABB is in
+ *  geographic coordinates (minLon/minLat/minH → maxLon/maxLat/maxH).
+ *
+ *  Mesh-SDF support (true polyhedral surface with arbitrary geometry)
+ *  ships in a follow-up when we wire in the three-mesh-bvh dep — for
+ *  v1, AABB covers the dominant use case (rectangular rooms, pits).
+ */
+export interface VolumeConstraintInputs {
+  targetLonLatH: [number, number, number]
+  velocityEnu: [number, number, number]
+  space: { volumeGeometry?: { bbox?: { minLon: number; minLat: number; minH: number; maxLon: number; maxLat: number; maxH: number } } }
+  dampThreshold: number
+}
+
+export interface VolumeConstraintResult {
+  position: [number, number, number]
+  velocity: [number, number, number]
+  dampFraction: number
+  /** Which face the camera is nearest to: 0=W,1=E,2=S,3=N,4=Down,5=Up. */
+  nearestFace: number
+  /** Distance to that face in meters. */
+  distanceToFace: number
+}
+
+export function constrainToVolume(inp: VolumeConstraintInputs): VolumeConstraintResult | null {
+  const bbox = inp.space.volumeGeometry?.bbox
+  if (!bbox) return null
+
+  const [lon, lat, h] = inp.targetLonLatH
+  // Hard clamp: keep inside the AABB. We accept some lat/lon non-metric
+  // imprecision at the wall — for room-scale (< 50 m) this is sub-cm.
+  const clampedLon = Math.max(bbox.minLon, Math.min(bbox.maxLon, lon))
+  const clampedLat = Math.max(bbox.minLat, Math.min(bbox.maxLat, lat))
+  const clampedH = Math.max(bbox.minH, Math.min(bbox.maxH, h))
+
+  // Distance-to-face calculation (in approximate meters).
+  // Use the local metric scale for lon/lat at this latitude.
+  const metersPerDegLat = 110540
+  const metersPerDegLon = 111320 * Math.cos(((bbox.minLat + bbox.maxLat) / 2) * Math.PI / 180)
+  const dW = Math.abs(clampedLon - bbox.minLon) * metersPerDegLon
+  const dE = Math.abs(bbox.maxLon - clampedLon) * metersPerDegLon
+  const dS = Math.abs(clampedLat - bbox.minLat) * metersPerDegLat
+  const dN = Math.abs(bbox.maxLat - clampedLat) * metersPerDegLat
+  const dDown = Math.abs(clampedH - bbox.minH)
+  const dUp = Math.abs(bbox.maxH - clampedH)
+
+  const faces = [dW, dE, dS, dN, dDown, dUp]
+  let minDist = faces[0]
+  let minIdx = 0
+  for (let i = 1; i < 6; i++) {
+    if (faces[i] < minDist) {
+      minDist = faces[i]
+      minIdx = i
+    }
+  }
+
+  // Soft damp: velocity into the nearest wall is damped within `dampThreshold` of it.
+  let velOut: [number, number, number] = [inp.velocityEnu[0], inp.velocityEnu[1], inp.velocityEnu[2]]
+  if (minDist < inp.dampThreshold) {
+    const damp = 1 - minDist / inp.dampThreshold
+    // ENU vector pointing toward the wall
+    const wallDir: [number, number, number] = [0, 0, 0]
+    if (minIdx === 0) wallDir[0] = -1
+    else if (minIdx === 1) wallDir[0] = 1
+    else if (minIdx === 2) wallDir[1] = -1
+    else if (minIdx === 3) wallDir[1] = 1
+    else if (minIdx === 4) wallDir[2] = -1
+    else if (minIdx === 5) wallDir[2] = 1
+    const vIntoWall = velOut[0] * wallDir[0] + velOut[1] * wallDir[1] + velOut[2] * wallDir[2]
+    if (vIntoWall > 0) {
+      velOut = [
+        velOut[0] - wallDir[0] * vIntoWall * damp,
+        velOut[1] - wallDir[1] * vIntoWall * damp,
+        velOut[2] - wallDir[2] * vIntoWall * damp,
+      ]
+    }
+  }
+
+  const dampFraction = Math.max(0, 1 - minDist / inp.dampThreshold)
+
+  return {
+    position: [clampedLon, clampedLat, clampedH],
+    velocity: velOut,
+    dampFraction,
+    nearestFace: minIdx,
+    distanceToFace: minDist,
+  }
+}
