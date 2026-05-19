@@ -87,8 +87,27 @@ function detectPhoneLikeLayout(): boolean {
   return false
 }
 
+/** Stable group ordering for the sidebar — the renderer emits a header
+ *  whenever the group changes between adjacent sections, so we sort by
+ *  this order before rendering. Without this, two consecutive sections
+ *  in different positions could produce the same group header twice. */
+const GROUP_ORDER = ['Engine', 'Workspace', 'Account', 'Advanced']
+function groupRank(group?: string): number {
+  if (!group) return 999
+  const i = GROUP_ORDER.indexOf(group)
+  return i === -1 ? 998 : i
+}
+
 export function SettingsShell({ extraSections = [] }: SettingsShellProps) {
   const allSections = [...BUILTIN_SECTIONS, ...extraSections]
+    .map((s, originalIndex) => ({ s, originalIndex }))
+    .sort((a, b) => {
+      // Sort by group first, then preserve original order within group.
+      const rg = groupRank(a.s.group) - groupRank(b.s.group)
+      if (rg !== 0) return rg
+      return a.originalIndex - b.originalIndex
+    })
+    .map(({ s }) => s)
   const validIds = new Set(allSections.map((s) => s.id))
 
   const [active, setActive] = useState<string>(() => {
@@ -174,12 +193,22 @@ export function SettingsShell({ extraSections = [] }: SettingsShellProps) {
 
   return (
     <div className={`${styles.shell} ${isPhone ? styles.isPhone : ''}`}>
-      {/* Phone: nav at the top (just below MobileHeader) so the bottom
-          half of the viewport isn't double-stacked with the settings
-          sub-nav AND the MobileBottomNav. Was 128px of stacked chrome
-          on a 852px viewport — 15% of the screen for nav alone. */}
-      {navEl}
-      {contentEl}
+      {/* Phone: nav rendered AFTER content so flex order puts it at the
+          bottom (same pattern as Atlas's bottom-nav). Desktop / tablet
+          landscape keep nav-then-content for the left-rail sidebar.
+          The double-bar-at-bottom is intentional and matches the Atlas
+          UX — consistency beats vertical-pixel savings. */}
+      {isPhone ? (
+        <>
+          {contentEl}
+          {navEl}
+        </>
+      ) : (
+        <>
+          {navEl}
+          {contentEl}
+        </>
+      )}
     </div>
   )
 }
