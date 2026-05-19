@@ -5,6 +5,9 @@ import { useDragActivate } from '../../hooks/useDragActivate'
 import { useToast } from '../../hooks/useToast'
 import { ProbeGlyph } from './ProbeGlyph'
 import { ProbeOverlay } from './ProbeOverlay'
+import { ProbeMapLayer } from './ProbeMapLayer'
+import { ProbeTileset } from './ProbeTileset'
+import { ProbeJunctionArrows } from './ProbeJunctionArrows'
 import { useProbe, type ProbeState } from './useProbe'
 import { listSpaces, seedDemoSpaces } from './registry'
 import type { NavigableSpace } from './types'
@@ -212,9 +215,59 @@ export function ProbeWidget({
     onActiveChange(false)
   }, [probe, onActiveChange])
 
+  /** Sample camera position once per frame for the junction-arrows
+   *  proximity test. We only need ~10 Hz fidelity for arrows; setInterval
+   *  is fine and avoids piggybacking on the constraint loop. */
+  const [cameraPos, setCameraPos] = useState<{ lon: number; lat: number; h: number } | null>(null)
+  useEffect(() => {
+    if (!probe.state.active || !viewer || viewer.isDestroyed()) return
+    const id = window.setInterval(() => {
+      if (!viewer || viewer.isDestroyed()) return
+      try {
+        const carto = Cartographic.fromCartesian(viewer.camera.position)
+        setCameraPos({
+          lon: CesiumMathLib.toDegrees(carto.longitude),
+          lat: CesiumMathLib.toDegrees(carto.latitude),
+          h: carto.height,
+        })
+      } catch {
+        /* viewer dying */
+      }
+    }, 100)
+    return () => window.clearInterval(id)
+  }, [probe.state.active, viewer])
+
+  const switchToSpace = useCallback(
+    async (target: NavigableSpace, headingRad: number) => {
+      await probe.activate(target, { headingRad, flyDurationS: 0.4 })
+    },
+    [probe],
+  )
+
   return (
     <>
       {drag.glyphPortal}
+      {/* Centerlines on the surface — always rendered when there are
+          spaces, so users can see what's navigable before activating. */}
+      <ProbeMapLayer
+        viewer={viewer}
+        siteSlug={siteSlug}
+        activeSpaceId={probe.state.active?.id ?? null}
+      />
+      {/* Interior 3D tileset (Phase C) — loaded only while probe is
+          active and the space declares an interior_tileset_url. */}
+      <ProbeTileset viewer={viewer} space={probe.state.active} />
+      {/* Junction arrows (Phase D) — render branches at network
+          connections within range. */}
+      {probe.state.active && (
+        <ProbeJunctionArrows
+          viewer={viewer}
+          activeSpace={probe.state.active}
+          t={probe.state.t}
+          cameraPos={cameraPos}
+          onSwitchSpace={switchToSpace}
+        />
+      )}
       {probe.state.active && <ProbeOverlay state={probe.state} onExit={handleExit} />}
     </>
   )
