@@ -70,6 +70,9 @@ import SplashOverlay from '../SplashOverlay/SplashOverlay'
 import TetraView from '../TetraView/TetraView'
 import { FloatingIconStack } from '../FloatingIconStack'
 import type { FloatingIconStackItem } from '../FloatingIconStack'
+import { ProbeWidget } from '../../widgets/probe/ProbeWidget'
+import { StreetViewWidget } from '../../widgets/streetview/StreetViewWidget'
+import { Target as TargetIcon, Eye as EyeIcon } from 'lucide-react'
 import { FloatingSidePanel } from '../FloatingSidePanel'
 import LayersPanelBody from '../FloatingSidePanel/panels/LayersPanelBody'
 import SiteInfoPanelBody from '../FloatingSidePanel/panels/SiteInfoPanelBody'
@@ -614,6 +617,16 @@ export default function CesiumViewerComponent({
   // Terrain section — opens via Terrain rail tile (T+1170). Folds the
   // existing globe-transparency knob into a tab inside the same panel.
   const [terrainOpen, setTerrainOpen] = useState(false)
+  // Probe (interior navigation) — see mockups/PROBE.md. Tile lives in the
+  // FloatingIconStack; the widget renders its own glyph + overlay
+  // independently. `probeActive` mirrors the widget's runtime state so the
+  // tile can highlight and other systems (Fly etc.) can know.
+  const [probeActive, setProbeActive] = useState(false)
+  const probeTileRef = useRef<HTMLButtonElement>(null)
+  // Street View — same drag-to-activate pattern as Probe, different drop
+  // semantics (Google panorama coverage).
+  const [streetViewActive, setStreetViewActive] = useState(false)
+  const streetViewTileRef = useRef<HTMLButtonElement>(null)
   const terrain = useTerrain(viewerRef)
   const underground = useUnderground(viewerRef, globeAlpha, setGlobeAlpha)
 
@@ -1050,6 +1063,34 @@ export default function CesiumViewerComponent({
       isActive: legendPopupOpen,
       onClick: () => setLegendPopupOpen((o) => !o),
     })
+    // Probe — interior navigation. The widget owns the drag-activate
+    // wiring via tileRef + its own glyph portal; clicking the tile (no
+    // drag) enters tap-to-place mode, then the next map tap activates.
+    if (siteId) {
+      items.push({
+        id: 'probe',
+        label: 'Probe — drag to a feature',
+        icon: <TargetIcon size={18} />,
+        hasPanel: false,
+        isActive: probeActive,
+        tileRef: probeTileRef,
+        // Click handler is a no-op — pointerdown is consumed by the
+        // drag hook via tileRef. If the click bubbles through it means
+        // the drag was too short to register; the hook still handles
+        // tap-mode internally.
+        onClick: () => { /* drag hook handles via tileRef */ },
+      })
+    }
+    // Street View — same drag-activate pattern, different drop semantics.
+    items.push({
+      id: 'streetview',
+      label: 'Street View — drag to a road',
+      icon: <EyeIcon size={18} />,
+      hasPanel: false,
+      isActive: streetViewActive,
+      tileRef: streetViewTileRef,
+      onClick: () => { /* drag hook handles via tileRef */ },
+    })
     for (const ep of extensionPanels) {
       items.push({
         id: `ext:${ep.id}`,
@@ -1059,7 +1100,7 @@ export default function CesiumViewerComponent({
       })
     }
     return items
-  }, [searchOpen, legendPopupOpen, site, measureActive, measureResult, extensionPanels, onMapShellAction])
+  }, [searchOpen, legendPopupOpen, site, measureActive, measureResult, extensionPanels, onMapShellAction, probeActive, streetViewActive, siteId])
 
   // Active panel body — picked from the panel id stored in
   // activeSidePanel. Each branch returns a (title, body, icon, footer)
@@ -1711,6 +1752,33 @@ export default function CesiumViewerComponent({
           siteSlug={siteId ?? null}
         />
       )}
+
+      {/* Probe — interior navigation. ProbeWidget owns the drag-activate
+          state, the glyph portal, and the in-probe vignette overlay. The
+          widget is always mounted on per-site routes so the drag mechanic
+          can be triggered any time the user pinches its rail tile. */}
+      {siteId && (
+        <ProbeWidget
+          viewer={viewerRef.current}
+          siteSlug={siteId}
+          tileRef={probeTileRef}
+          active={probeActive}
+          onActiveChange={setProbeActive}
+          dampThresholdM={persistedSettings.probe?.dampThreshold ?? 0.3}
+        />
+      )}
+
+      {/* Street View — same drag-activate pattern. The widget renders its
+          own panel + Cesium-side position mirror when active. */}
+      <StreetViewWidget
+        viewer={viewerRef.current}
+        apiKey={persistedSettings.google?.mapsApiKey ?? ''}
+        searchRadiusM={persistedSettings.google?.panoramaRadiusM ?? 25}
+        active={streetViewActive}
+        onActivate={() => setStreetViewActive(true)}
+        onDeactivate={() => setStreetViewActive(false)}
+        tileRef={streetViewTileRef}
+      />
 
       {/* Terrain widget — mobile only; desktop version lives in the sidebar */}
       {terrainOpen && isMobile && (
