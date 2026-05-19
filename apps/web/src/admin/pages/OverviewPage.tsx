@@ -85,6 +85,21 @@ export default function OverviewPage() {
   }
   if (!data) return <div style={pageStyle}>Loading…</div>
 
+  // Defensive guard: if the API returns a malformed payload (missing
+  // counts/recent_layers/etc) the page used to crash with
+  // "Cannot read properties of undefined (reading 'sites')". Show a
+  // graceful loading-ish state instead so admins land on a useful
+  // empty state rather than the global error boundary.
+  if (!data.counts) {
+    return (
+      <div style={pageStyle}>
+        <div style={{ color: '#fca5a5' }}>
+          Overview data is malformed. Refresh, or check that the API is returning the expected shape.
+        </div>
+      </div>
+    )
+  }
+
   // Brand-new workspace shortcut: when every counter is zero, surface
   // a getting-started block above the dashboard so the first time
   // users see this page it doesn't feel like a graveyard of zeros.

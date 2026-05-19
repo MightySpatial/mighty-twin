@@ -345,19 +345,19 @@
    inputs don't push off-screen. */
 .shell.isPhone {
   grid-template-columns: 1fr;
-  /* Nav at the top (auto height), content fills the rest. Previously
-     `1fr auto` with nav at the bottom — stacked with MobileBottomNav
-     for a 128px-tall double bar. Moving nav to the top makes the
-     settings sub-nav a "tab strip" pattern instead. */
-  grid-template-rows: auto 1fr;
+  /* Content first, nav pinned to the base — matches the Atlas layout
+     pattern where the section nav sits as a horizontal tab strip at
+     the bottom (above the global MobileBottomNav). Yes this means two
+     stacked bars; the consistency between Atlas + Settings matters
+     more than the vertical-pixel savings of moving nav to the top. */
+  grid-template-rows: 1fr auto;
   overflow: hidden;
 }
 
 .shell.isPhone .nav {
   border-right: none;
-  /* Bottom border now (nav sits at top, content below). Was top border
-     when nav was pinned to the base. */
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  /* Top border separates the nav strip from the scrollable content above. */
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
   padding: 0;
   display: flex;
   align-items: stretch;
