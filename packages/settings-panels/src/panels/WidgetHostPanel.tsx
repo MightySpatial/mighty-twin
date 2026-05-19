@@ -12,6 +12,8 @@ const WIDGET_CATALOG: { id: string; label: string; desc: string; rail: 'primary'
   { id: 'layers',  label: 'Layers',  desc: 'Layer visibility, opacity, and order panel.', rail: 'primary' },
   { id: 'legend',  label: 'Legend',  desc: 'Auto-generated colour and symbol legend.', rail: 'primary' },
   { id: 'table',   label: 'Table',   desc: 'Attribute table for filtered feature inspection.', rail: 'primary' },
+  { id: 'probe',   label: 'Probe',   desc: 'Interior navigation — pipes, rooms, pits. Drag onto a feature.', rail: 'primary' },
+  { id: 'streetview', label: 'Street View', desc: 'Google panorama view. Drag onto a covered road segment.', rail: 'primary' },
   { id: 'story',   label: 'Story',   desc: 'Guided story-map narrative player.', rail: 'secondary' },
   { id: 'snap',    label: 'Snap',    desc: 'Capture and share screenshots of the viewer.', rail: 'secondary' },
   { id: 'design',  label: 'Create',  desc: 'Draw and annotate features on the map.', rail: 'secondary' },

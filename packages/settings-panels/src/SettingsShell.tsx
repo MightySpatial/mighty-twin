@@ -4,6 +4,8 @@ import styles from './SettingsShell.module.css'
 import { BasemapTerrainPanel } from './panels/BasemapTerrainPanel'
 import { UnitsPanel } from './panels/UnitsPanel'
 import { WidgetHostPanel } from './panels/WidgetHostPanel'
+import { GooglePanel } from './panels/GooglePanel'
+import { ProbePanel } from './panels/ProbePanel'
 import { ThemePanel } from './panels/ThemePanel'
 import { DeveloperPanel } from './panels/DeveloperPanel'
 
@@ -38,6 +40,8 @@ const BUILTIN_SECTIONS: Section[] = [
   { id: 'units', label: 'Units', group: 'Engine', icon: svg('<path d="M3 7v10"/><path d="M3 12h18"/><path d="M21 7v10"/><path d="M7 9v6"/><path d="M11 8v8"/><path d="M15 9v6"/>'), panel: <UnitsPanel /> },
   { id: 'widgets', label: 'Widget host', group: 'Engine', icon: svg('<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/>'), panel: <WidgetHostPanel /> },
   { id: 'theme', label: 'Theme & density', group: 'Engine', icon: svg('<circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 0 0 18"/><circle cx="8.5" cy="9.5" r="1"/><circle cx="15.5" cy="9.5" r="1"/><circle cx="8.5" cy="14.5" r="1"/>'), panel: <ThemePanel /> },
+  { id: 'google', label: 'Google', group: 'Engine', icon: svg('<circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/>'), panel: <GooglePanel /> },
+  { id: 'probe', label: 'Probe', group: 'Engine', icon: svg('<circle cx="12" cy="12" r="2"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="10" opacity="0.6"/>'), panel: <ProbePanel /> },
   { id: 'dev', label: 'Developer', group: 'Advanced', icon: svg('<path d="M14.7 6.3a3 3 0 0 1 0 4.2l-1.5 1.5 4.2 4.2-2.1 2.1-4.2-4.2-1.5 1.5a3 3 0 0 1-4.2 0L3.5 13.5a3 3 0 0 1 0-4.2l4.2-4.2a3 3 0 0 1 4.2 0z"/>'), panel: <DeveloperPanel /> },
 ]
 

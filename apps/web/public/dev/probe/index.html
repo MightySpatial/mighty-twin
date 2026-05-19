@@ -1,0 +1,442 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Probe UX — interior navigation spec</title>
+<style>
+:root {
+  --bg: #0f0f14;
+  --bg-2: #14141c;
+  --surface: rgba(20, 20, 28, 0.96);
+  --fill-1: rgba(255, 255, 255, 0.04);
+  --fill-2: rgba(255, 255, 255, 0.06);
+  --fill-3: rgba(255, 255, 255, 0.08);
+  --border: rgba(255, 255, 255, 0.10);
+  --border-strong: rgba(255, 255, 255, 0.18);
+  --text-strong: #ffffff;
+  --text-1: rgba(255, 255, 255, 0.92);
+  --text-2: rgba(255, 255, 255, 0.70);
+  --text-3: #8b8fa8;
+  --text-4: rgba(255, 255, 255, 0.35);
+  --indigo: #818cf8;
+  --indigo-strong: #6366f1;
+  --indigo-soft: rgba(129, 140, 248, 0.16);
+  --teal: #2dd4bf;
+  --warning: #fbbf24;
+  --danger: #f87171;
+  --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+body {
+  background: var(--bg);
+  color: var(--text-1);
+  font-family: var(--font);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  background-image:
+    radial-gradient(circle at 20% 0%, rgba(129, 140, 248, 0.06), transparent 40%),
+    radial-gradient(circle at 80% 90%, rgba(45, 212, 191, 0.05), transparent 50%);
+}
+a { color: var(--indigo); text-decoration: none; }
+a:hover { color: var(--indigo-strong); }
+.shell { max-width: 1180px; margin: 0 auto; padding: 32px 24px 80px; }
+.crumb {
+  font-size: 11px; color: var(--text-3); text-transform: uppercase;
+  letter-spacing: 0.06em; margin-bottom: 18px;
+  display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+}
+.crumb__sep { color: var(--text-4); }
+.crumb__cur { color: var(--indigo); }
+.hero { margin-bottom: 36px; }
+.hero h1 {
+  font-size: 36px; font-weight: 700; letter-spacing: -0.02em;
+  color: var(--text-strong); margin-bottom: 10px;
+}
+.hero p {
+  font-size: 15px; color: var(--text-2);
+  max-width: 780px; line-height: 1.6;
+}
+.hero p + p { margin-top: 12px; }
+.hero em { color: var(--indigo); font-style: normal; font-weight: 500; }
+
+.section { margin-top: 48px; }
+.section h2 {
+  font-size: 13px; font-weight: 700;
+  color: var(--text-3); text-transform: uppercase; letter-spacing: 0.08em;
+  margin-bottom: 18px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+}
+.card {
+  display: block;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  transition: border-color 120ms ease, transform 120ms ease;
+}
+.card:hover {
+  border-color: var(--indigo);
+  transform: translateY(-2px);
+}
+.card__thumb {
+  height: 160px;
+  background: linear-gradient(135deg, #1a1c25, #14141c);
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  position: relative;
+}
+.card__body { padding: 14px 16px 16px; }
+.card__label {
+  font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em;
+  color: var(--indigo); font-weight: 700;
+  margin-bottom: 4px;
+}
+.card__title {
+  font-size: 15px; font-weight: 600; color: var(--text-1);
+  margin-bottom: 6px;
+}
+.card__desc {
+  font-size: 12px; color: var(--text-3); line-height: 1.5;
+}
+
+/* Iconography for thumbs */
+.thumb-svg { width: 100%; height: 100%; }
+
+.callout {
+  background: var(--fill-1);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px 18px;
+  margin-top: 24px;
+}
+.callout strong { color: var(--text-strong); font-weight: 600; }
+.callout code {
+  background: var(--fill-3);
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-family: 'SF Mono', Menlo, Consolas, monospace;
+  font-size: 12px;
+}
+
+table.flows {
+  width: 100%; border-collapse: collapse;
+  font-size: 13px;
+}
+table.flows th, table.flows td {
+  text-align: left; padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+table.flows th {
+  color: var(--text-3);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 600;
+  font-size: 11px;
+}
+table.flows td.from { color: var(--indigo); font-weight: 600; }
+table.flows td.action { color: var(--text-2); }
+
+.foot {
+  margin-top: 60px;
+  padding-top: 24px;
+  border-top: 1px solid var(--border);
+  color: var(--text-3);
+  font-size: 12px;
+}
+</style>
+</head>
+<body>
+<div class="shell">
+  <div class="crumb">
+    <span>MightyTwin dev</span>
+    <span class="crumb__sep">›</span>
+    <span class="crumb__cur">Probe</span>
+  </div>
+  <div class="hero">
+    <h1>Probe — interior navigation</h1>
+    <p>
+      A single primitive (<em>NavigableSpace</em>) for the inside of pipes, rooms, pits, and tunnels.
+      The camera is a point particle that respects walls — hard collision and a soft proximity damp give
+      the feel of natural physical constraint, like the user IS their eye.
+    </p>
+    <p>
+      Sibling paradigm: <em>Street View</em>. Same Fly-widget step binding, different geometry source
+      (Google panoramas). Cross-flow tables in §11 of <a href="/dev/probe/spec.html">PROBE.md</a> and
+      illustrated in the flow mockups below.
+    </p>
+  </div>
+
+  <div class="section">
+    <h2>States</h2>
+    <div class="grid">
+
+      <a class="card" href="probe-idle.html">
+        <div class="card__thumb">
+          <svg class="thumb-svg" viewBox="0 0 280 160">
+            <rect width="280" height="160" fill="#1a1c25"/>
+            <!-- ground -->
+            <line x1="0" y1="100" x2="280" y2="100" stroke="#3b3f4f" stroke-width="1"/>
+            <!-- pipe (highlighted) -->
+            <line x1="20" y1="125" x2="260" y2="125" stroke="#818cf8" stroke-width="3" stroke-dasharray="4 3"/>
+            <circle cx="40" cy="125" r="5" fill="#818cf8"/>
+            <circle cx="240" cy="125" r="5" fill="#818cf8"/>
+            <!-- a feature popup -->
+            <rect x="155" y="115" width="80" height="22" rx="5" fill="#14141c" stroke="#818cf8" stroke-width="1"/>
+            <text x="195" y="129" text-anchor="middle" fill="#fff" font-size="9" font-family="-apple-system">Probe pipe →</text>
+          </svg>
+        </div>
+        <div class="card__body">
+          <div class="card__label">Surface · pre-entry</div>
+          <div class="card__title">Idle map with navigable spaces</div>
+          <div class="card__desc">NavigableSpace centerlines render as dashed indigo lines. Tapping a probe-enabled feature surfaces the "Probe" action in the popup.</div>
+        </div>
+      </a>
+
+      <a class="card" href="probe-path.html">
+        <div class="card__thumb">
+          <svg class="thumb-svg" viewBox="0 0 280 160">
+            <defs>
+              <radialGradient id="tunnel-light" cx="50%" cy="50%" r="60%">
+                <stop offset="0%" stop-color="#2a2e3d"/>
+                <stop offset="100%" stop-color="#0a0a0e"/>
+              </radialGradient>
+            </defs>
+            <rect width="280" height="160" fill="url(#tunnel-light)"/>
+            <!-- pipe perspective -->
+            <ellipse cx="140" cy="80" rx="120" ry="58" fill="none" stroke="#3b3f4f" stroke-width="1.5"/>
+            <ellipse cx="140" cy="80" rx="80" ry="38" fill="none" stroke="#3b3f4f" stroke-width="1"/>
+            <ellipse cx="140" cy="80" rx="42" ry="20" fill="none" stroke="#3b3f4f" stroke-width="1"/>
+            <ellipse cx="140" cy="80" rx="14" ry="6" fill="#000"/>
+            <!-- crosshair -->
+            <line x1="135" y1="80" x2="145" y2="80" stroke="#818cf8" stroke-width="1"/>
+            <line x1="140" y1="75" x2="140" y2="85" stroke="#818cf8" stroke-width="1"/>
+            <!-- step hint -->
+            <text x="140" y="148" text-anchor="middle" fill="#818cf8" font-size="9" font-family="-apple-system" letter-spacing="1">PROBE · t = 0.42</text>
+          </svg>
+        </div>
+        <div class="card__body">
+          <div class="card__label">Inside path</div>
+          <div class="card__title">Locked to centerline, free yaw</div>
+          <div class="card__desc">Camera origin clamps to the pipe centerline. Fly W advances t along the polyline. Soft damp engages at 0.6 · r.</div>
+        </div>
+      </a>
+
+      <a class="card" href="probe-junction.html">
+        <div class="card__thumb">
+          <svg class="thumb-svg" viewBox="0 0 280 160">
+            <rect width="280" height="160" fill="#14141c"/>
+            <ellipse cx="140" cy="80" rx="120" ry="58" fill="none" stroke="#3b3f4f" stroke-width="1"/>
+            <ellipse cx="140" cy="80" rx="60" ry="28" fill="none" stroke="#3b3f4f" stroke-width="1"/>
+            <ellipse cx="140" cy="80" rx="20" ry="9" fill="#000"/>
+            <!-- forward arrow -->
+            <path d="M 130 50 L 150 50 L 150 44 L 162 56 L 150 68 L 150 62 L 130 62 Z" fill="#818cf8" opacity="0.9"/>
+            <!-- left branch arrow -->
+            <path d="M 70 80 L 90 80 L 90 74 L 102 86 L 90 98 L 90 92 L 70 92 Z" fill="#818cf8" opacity="0.7" transform="rotate(-90 86 86)"/>
+            <!-- right branch -->
+            <path d="M 200 80 L 220 80 L 220 74 L 232 86 L 220 98 L 220 92 L 200 92 Z" fill="#818cf8" opacity="0.7"/>
+            <text x="140" y="148" text-anchor="middle" fill="#818cf8" font-size="9" font-family="-apple-system" letter-spacing="1">JUNCTION · 3 branches</text>
+          </svg>
+        </div>
+        <div class="card__body">
+          <div class="card__label">Network</div>
+          <div class="card__title">Junction with directional arrows</div>
+          <div class="card__desc">Within 2·r of a NavigableConnection, 3D arrows render along each connected space's tangent. Tap to step.</div>
+        </div>
+      </a>
+
+      <a class="card" href="probe-volume.html">
+        <div class="card__thumb">
+          <svg class="thumb-svg" viewBox="0 0 280 160">
+            <rect width="280" height="160" fill="#14141c"/>
+            <!-- room walls in perspective -->
+            <polygon points="40,30 240,30 200,130 80,130" fill="none" stroke="#3b3f4f" stroke-width="1.5"/>
+            <polygon points="80,130 200,130 200,150 80,150" fill="#1a1c25" stroke="#3b3f4f" stroke-width="1"/>
+            <!-- back wall -->
+            <line x1="40" y1="30" x2="240" y2="30" stroke="#3b3f4f"/>
+            <!-- corner indicators -->
+            <circle cx="80" cy="130" r="3" fill="#818cf8"/>
+            <circle cx="200" cy="130" r="3" fill="#818cf8"/>
+            <!-- crosshair -->
+            <line x1="135" y1="90" x2="145" y2="90" stroke="#818cf8" stroke-width="1"/>
+            <line x1="140" y1="85" x2="140" y2="95" stroke="#818cf8" stroke-width="1"/>
+            <text x="140" y="155" text-anchor="middle" fill="#818cf8" font-size="9" font-family="-apple-system" letter-spacing="1">VOLUME · room 4.3 × 6.1 m</text>
+          </svg>
+        </div>
+        <div class="card__body">
+          <div class="card__label">Inside volume</div>
+          <div class="card__title">Inside a room / pit / chamber</div>
+          <div class="card__desc">kind = 'volume'. Free 6DOF clamped by signed-distance against the closed mesh. Same constraint engine; different SDF source.</div>
+        </div>
+      </a>
+
+      <a class="card" href="probe-wall-feel.html">
+        <div class="card__thumb">
+          <svg class="thumb-svg" viewBox="0 0 280 160">
+            <defs>
+              <radialGradient id="vignR" cx="100%" cy="50%" r="80%">
+                <stop offset="0%" stop-color="#0a0a0e" stop-opacity="0.7"/>
+                <stop offset="50%" stop-color="#000" stop-opacity="0"/>
+              </radialGradient>
+            </defs>
+            <rect width="280" height="160" fill="#14141c"/>
+            <ellipse cx="140" cy="80" rx="120" ry="58" fill="none" stroke="#3b3f4f" stroke-width="1"/>
+            <ellipse cx="140" cy="80" rx="40" ry="19" fill="#000"/>
+            <line x1="135" y1="80" x2="145" y2="80" stroke="#818cf8"/>
+            <line x1="140" y1="75" x2="140" y2="85" stroke="#818cf8"/>
+            <!-- right-side vignette -->
+            <rect x="0" y="0" width="280" height="160" fill="url(#vignR)"/>
+            <text x="140" y="148" text-anchor="middle" fill="#fbbf24" font-size="9" font-family="-apple-system" letter-spacing="1">NEAR WALL · damped</text>
+          </svg>
+        </div>
+        <div class="card__body">
+          <div class="card__label">Feedback</div>
+          <div class="card__title">Near-wall vignette + damp</div>
+          <div class="card__desc">Past 60 % of radius, motion in that direction damps; vignette darkens on the wall side. The "feel" of natural constraint.</div>
+        </div>
+      </a>
+
+      <a class="card" href="street-view-split.html">
+        <div class="card__thumb">
+          <svg class="thumb-svg" viewBox="0 0 280 160">
+            <rect width="280" height="160" fill="#14141c"/>
+            <!-- panorama (left half) -->
+            <rect x="0" y="0" width="138" height="160" fill="#2a3b50"/>
+            <!-- horizon line -->
+            <line x1="0" y1="85" x2="138" y2="85" stroke="#4a5b70" stroke-width="0.5"/>
+            <!-- building outlines -->
+            <polygon points="10,85 28,85 28,50 60,50 60,85 88,85 88,40 120,40 120,85" fill="#1c2530" stroke="#4a5b70"/>
+            <!-- pano arrow -->
+            <path d="M 60 130 L 80 130 L 80 124 L 92 136 L 80 148 L 80 142 L 60 142 Z" fill="#fff" opacity="0.7"/>
+            <!-- divider -->
+            <line x1="140" y1="0" x2="140" y2="160" stroke="#3b3f4f" stroke-width="2"/>
+            <!-- cesium half (right) -->
+            <rect x="142" y="0" width="138" height="160" fill="#1a1c25"/>
+            <circle cx="210" cy="80" r="40" fill="none" stroke="#3b3f4f"/>
+            <circle cx="210" cy="80" r="25" fill="none" stroke="#3b3f4f"/>
+            <!-- you-are-here marker on cesium -->
+            <circle cx="200" cy="92" r="5" fill="#fbbf24"/>
+            <path d="M 200 87 L 200 80" stroke="#fbbf24" stroke-width="1.5"/>
+            <text x="69" y="20" text-anchor="middle" fill="#fff" font-size="9" font-family="-apple-system">STREET VIEW</text>
+            <text x="211" y="20" text-anchor="middle" fill="#818cf8" font-size="9" font-family="-apple-system">MAP</text>
+          </svg>
+        </div>
+        <div class="card__body">
+          <div class="card__label">Street View</div>
+          <div class="card__title">Split: panorama + Cesium</div>
+          <div class="card__desc">Google panorama on one side, live Cesium camera mirror on the other. WASD steps to next pano. Yellow marker shows pano position on the map.</div>
+        </div>
+      </a>
+
+      <a class="card" href="admin-mark.html">
+        <div class="card__thumb">
+          <svg class="thumb-svg" viewBox="0 0 280 160">
+            <rect width="280" height="160" fill="#14141c"/>
+            <!-- modal -->
+            <rect x="40" y="30" width="200" height="100" rx="8" fill="#1a1c25" stroke="#818cf8" stroke-width="1"/>
+            <text x="140" y="55" text-anchor="middle" fill="#fff" font-size="11" font-weight="600" font-family="-apple-system">Mark as Probe-navigable</text>
+            <text x="60" y="76" fill="#8b8fa8" font-size="9" font-family="-apple-system">Radius (m)</text>
+            <rect x="60" y="80" width="60" height="20" rx="4" fill="#0f0f14" stroke="#3b3f4f"/>
+            <text x="90" y="94" text-anchor="middle" fill="#fff" font-size="10" font-family="SF Mono">0.50</text>
+            <text x="140" y="76" fill="#8b8fa8" font-size="9" font-family="-apple-system">Interior tileset URL</text>
+            <rect x="140" y="80" width="80" height="20" rx="4" fill="#0f0f14" stroke="#3b3f4f"/>
+            <text x="180" y="94" text-anchor="middle" fill="#8b8fa8" font-size="9" font-family="-apple-system">(optional)</text>
+            <rect x="156" y="108" width="64" height="18" rx="4" fill="#818cf8"/>
+            <text x="188" y="120" text-anchor="middle" fill="#fff" font-size="10" font-family="-apple-system" font-weight="600">Save</text>
+          </svg>
+        </div>
+        <div class="card__body">
+          <div class="card__label">Admin</div>
+          <div class="card__title">Mark a feature as navigable</div>
+          <div class="card__desc">Admin clicks a feature → modal sets radius + optional tileset URL → creates the NavigableSpace row.</div>
+        </div>
+      </a>
+
+      <a class="card" href="settings-google.html">
+        <div class="card__thumb">
+          <svg class="thumb-svg" viewBox="0 0 280 160">
+            <rect width="280" height="160" fill="#14141c"/>
+            <!-- left settings rail -->
+            <rect x="0" y="0" width="80" height="160" fill="#1a1c25"/>
+            <text x="40" y="18" text-anchor="middle" fill="#8b8fa8" font-size="8" font-family="-apple-system" letter-spacing="1">SETTINGS</text>
+            <text x="10" y="40" fill="#8b8fa8" font-size="9" font-family="-apple-system">ENGINE</text>
+            <text x="14" y="56" fill="#fff" font-size="10" font-family="-apple-system">Basemap</text>
+            <text x="14" y="72" fill="#fff" font-size="10" font-family="-apple-system">Units</text>
+            <text x="14" y="88" fill="#818cf8" font-size="10" font-family="-apple-system" font-weight="600">Google</text>
+            <text x="14" y="104" fill="#fff" font-size="10" font-family="-apple-system">Probe</text>
+            <!-- right panel -->
+            <text x="100" y="30" fill="#fff" font-size="12" font-weight="600" font-family="-apple-system">Google</text>
+            <text x="100" y="48" fill="#8b8fa8" font-size="9" font-family="-apple-system">Maps API key</text>
+            <rect x="100" y="52" width="160" height="20" rx="4" fill="#0f0f14" stroke="#3b3f4f"/>
+            <text x="110" y="66" fill="#fbbf24" font-size="9" font-family="SF Mono">AIzaSy•••••••••••••</text>
+            <text x="100" y="92" fill="#8b8fa8" font-size="9" font-family="-apple-system">Default panorama radius (m)</text>
+            <rect x="100" y="96" width="60" height="20" rx="4" fill="#0f0f14" stroke="#3b3f4f"/>
+            <text x="130" y="110" text-anchor="middle" fill="#fff" font-size="10" font-family="SF Mono">25</text>
+          </svg>
+        </div>
+        <div class="card__body">
+          <div class="card__label">Settings · Engine</div>
+          <div class="card__title">Google API key + Probe defaults</div>
+          <div class="card__desc">Maps API key (Street View), default panorama search radius, and Probe defaults (radius, damp threshold, roll lock).</div>
+        </div>
+      </a>
+
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Cross-flow table (excerpt)</h2>
+    <table class="flows">
+      <thead><tr>
+        <th style="width:18%">From</th>
+        <th style="width:18%">To</th>
+        <th>Click path</th>
+      </tr></thead>
+      <tbody>
+        <tr><td class="from">Per-site map</td><td>Probe</td><td class="action">Tap pipe → FeaturePopup → tap <strong>Probe</strong> button → camera fly-to-entry (1.2 s) → fade-to-interior → centerline lock at t=0</td></tr>
+        <tr><td class="from">Per-site map</td><td>Street View</td><td class="action">Primary rail → <strong>Street View</strong> tile → "Tap a point" hint → tap road point → StreetViewService.getPanorama → split-pane opens</td></tr>
+        <tr><td class="from">Probe</td><td>Street View</td><td class="action">Primary rail → <strong>Street View</strong> → modal: "Exit Probe to enter Street View?" → Confirm → ESC-style exit → SV "Tap a point"</td></tr>
+        <tr><td class="from">Street View</td><td>Probe</td><td class="action">Cesium half → tap a pipe → toast: "Probe this pipe?" with Confirm → SV closes → Probe enters at nearest segment</td></tr>
+        <tr><td class="from">Probe</td><td>Create</td><td class="action">Primary rail → <strong>Create</strong> → Probe auto-saves position to URL → exits → Create opens</td></tr>
+        <tr><td class="from">Probe</td><td>Story</td><td class="action">Primary rail → <strong>Story</strong> → if story includes Probe segments, they replay in-place; otherwise Probe auto-exits</td></tr>
+        <tr><td class="from">Story</td><td>Probe</td><td class="action">Story playback hits a Probe waypoint → Probe activates automatically on the linked NavigableSpace at the waypoint's t</td></tr>
+        <tr><td class="from">Probe at junction</td><td>Next path</td><td class="action">Press W (forward) → step into forward arrow direction OR tap an arrow → smooth fly (0.4 s) → new active space takes over</td></tr>
+        <tr><td class="from">Probe</td><td>Overview</td><td class="action">CtrlPill brand button → modal: "Exit Probe?" → Confirm → camera flies back to surface entry → SiteStrip opens (overview state)</td></tr>
+      </tbody>
+    </table>
+    <div class="callout">
+      <strong>Note:</strong> every cross-flow has a behaviour. The complete table is in
+      <a href="/dev/probe/spec.html">spec §11</a>. Cells with "modal" mean a destructive
+      transition prompts before executing; cells with "auto-saves" mean state survives the
+      transition via URL.
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Constraint feel — the "I am my eye" feedback</h2>
+    <div class="callout">
+      <strong>Two layers.</strong>
+      <ul style="margin-top: 8px; padding-left: 20px; color: var(--text-2); line-height: 1.7;">
+        <li><strong>Hard collide</strong>: the camera origin is a point. Cannot cross a surface. Motion projects onto the surface tangent (collide-and-slide).</li>
+        <li><strong>Soft damp</strong>: as distance drops below <code>collision_threshold</code> (default 0.3 m), velocity toward the wall is damped with a spring. Visually: vignette darkens on the wall side.</li>
+      </ul>
+      Net effect: lean against a wall, slide along it, can't punch through. Rapid input near a wall gives perceptible resistance — the hand feels the wall through the camera response.
+    </div>
+  </div>
+
+  <div class="foot">
+    Spec: <a href="/dev/probe/spec.html">PROBE.md rendered</a> · Repo path: <code>mockups/PROBE.md</code>
+  </div>
+</div>
+</body>
+</html>
