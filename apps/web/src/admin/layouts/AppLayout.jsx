@@ -6,17 +6,24 @@ import { apiFetch } from '../hooks/useApi'
 import { LayoutDashboard, MapPin, Database, FolderOpen, Upload, Inbox, BookOpen, Camera, Radio } from 'lucide-react'
 import './AppLayout.css'
 
+/** Atlas nav items, grouped for the desktop sidebar. Phone bottom-nav
+ *  flattens to a single horizontal strip (groups don't fit there).
+ *  Order preserves the previous flat layout; groups are added on top. */
 const NAV_ITEMS = [
-  { path: '/admin/overview', icon: LayoutDashboard, label: 'Overview' },
-  { path: '/admin/sites', icon: MapPin, label: 'Sites' },
-  { path: '/admin/data', icon: Database, label: 'Data' },
-  { path: '/admin/feeds', icon: Radio, label: 'Feeds' },
-  { path: '/admin/library', icon: FolderOpen, label: 'Library' },
-  { path: '/admin/stories', icon: BookOpen, label: 'Stories' },
-  { path: '/admin/snapshots', icon: Camera, label: 'Snaps' },
-  { path: '/admin/submissions', icon: Inbox, label: 'Submissions', badgeKey: 'submissions_pending' },
-  { path: '/admin/upload', icon: Upload, label: 'Upload' },
+  // Workspace — where the user navigates the workspace itself.
+  { path: '/admin/overview', icon: LayoutDashboard, label: 'Overview', group: 'Workspace' },
+  { path: '/admin/sites', icon: MapPin, label: 'Sites', group: 'Workspace' },
+  // Data — sources, ingest, holding.
+  { path: '/admin/data', icon: Database, label: 'Data', group: 'Data' },
+  { path: '/admin/feeds', icon: Radio, label: 'Feeds', group: 'Data' },
+  { path: '/admin/upload', icon: Upload, label: 'Upload', group: 'Data' },
+  { path: '/admin/library', icon: FolderOpen, label: 'Library', group: 'Data' },
+  { path: '/admin/submissions', icon: Inbox, label: 'Submissions', badgeKey: 'submissions_pending', group: 'Data' },
+  // Content — narrative + captured artefacts.
+  { path: '/admin/stories', icon: BookOpen, label: 'Stories', group: 'Content' },
+  { path: '/admin/snapshots', icon: Camera, label: 'Snaps', group: 'Content' },
 ]
+const NAV_GROUP_ORDER = ['Workspace', 'Data', 'Content']
 
 /** Atlas layout — the publisher-level chrome. Wraps Sites, Data, Upload,
  *  and Library in a sidebar (desktop) / drawer (tablet) / bottom-tab
@@ -101,20 +108,26 @@ export default function AppLayout() {
           </button>
 
           <nav className="sidebar-nav">
-            <div className="nav-section">
-              <span className="nav-section-title">Publisher</span>
-              {NAV_ITEMS.map(item => (
-                <NavLink
-                  key={item.path}
-                  to={item.path}
-                  className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
-                >
-                  <item.icon size={20} />
-                  <span>{item.label}</span>
-                  {renderBadge(item)}
-                </NavLink>
-              ))}
-            </div>
+            {NAV_GROUP_ORDER.map(group => {
+              const itemsInGroup = NAV_ITEMS.filter(i => i.group === group)
+              if (itemsInGroup.length === 0) return null
+              return (
+                <div key={group} className="nav-section">
+                  <span className="nav-section-title">{group}</span>
+                  {itemsInGroup.map(item => (
+                    <NavLink
+                      key={item.path}
+                      to={item.path}
+                      className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
+                    >
+                      <item.icon size={20} />
+                      <span>{item.label}</span>
+                      {renderBadge(item)}
+                    </NavLink>
+                  ))}
+                </div>
+              )
+            })}
           </nav>
         </aside>
       )}
