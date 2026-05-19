@@ -8,7 +8,9 @@ import { ProbeOverlay } from './ProbeOverlay'
 import { ProbeMapLayer } from './ProbeMapLayer'
 import { ProbeTileset } from './ProbeTileset'
 import { ProbeJunctionArrows } from './ProbeJunctionArrows'
+import { ProbeHudStrip } from './ProbeHudStrip'
 import { useProbe, type ProbeState } from './useProbe'
+import { useProbeHud, type FeatureSourceResolver } from './useProbeHud'
 import { listSpaces, seedDemoSpaces } from './registry'
 import type { NavigableSpace } from './types'
 
@@ -27,6 +29,10 @@ interface Props {
   dampThresholdM: number
   /** Re-export the current probe state so parents can pipe it to Fly etc. */
   onStateChange?: (state: ProbeState) => void
+  /** Optional resolver — given a layer id, returns features (with
+   *  position + properties) for the HUD near-query. When omitted the
+   *  HUD renders nothing. */
+  featureSource?: FeatureSourceResolver
 }
 
 /** ProbeWidget — orchestrates drag-to-activate, hit-testing the map for
@@ -41,7 +47,7 @@ interface Props {
  *     known NavigableSpace as a valid drop (gives slack for the user).
  */
 export function ProbeWidget({
-  viewer, siteSlug, tileRef, active, onActiveChange, dampThresholdM, onStateChange,
+  viewer, siteSlug, tileRef, active, onActiveChange, dampThresholdM, onStateChange, featureSource,
 }: Props) {
   const { addToast } = useToast()
   const probe = useProbe(viewer)
@@ -248,6 +254,14 @@ export function ProbeWidget({
     return () => window.clearInterval(id)
   }, [probe.state.active, viewer])
 
+  // Near-analysis HUD — Phase G
+  const hud = useProbeHud({
+    viewer,
+    activeSpace: probe.state.active,
+    siteSlug,
+    featureSource,
+  })
+
   const switchToSpace = useCallback(
     async (target: NavigableSpace, headingRad: number) => {
       await probe.activate(target, { headingRad, flyDurationS: 0.4 })
@@ -280,6 +294,7 @@ export function ProbeWidget({
         />
       )}
       {probe.state.active && <ProbeOverlay state={probe.state} onExit={handleExit} />}
+      {probe.state.active && hud.config?.enabled && <ProbeHudStrip rows={hud.rows} />}
     </>
   )
 }
