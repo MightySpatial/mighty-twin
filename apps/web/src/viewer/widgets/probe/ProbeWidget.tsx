@@ -128,8 +128,19 @@ export function ProbeWidget({
               best = { space, distance: d, dropLon: lon, dropLat: lat }
             }
           }
+        } else if (space.kind === 'volume' && space.volumeGeometry?.bbox) {
+          // Accept drop if inside the volume's bbox (Phase E AABB volume).
+          const b = space.volumeGeometry.bbox
+          if (lon >= b.minLon && lon <= b.maxLon && lat >= b.minLat && lat <= b.maxLat) {
+            // Distance to bbox centroid acts as tiebreaker
+            const cx = (b.minLon + b.maxLon) / 2
+            const cy = (b.minLat + b.maxLat) / 2
+            const d = Math.hypot(cx - lon, cy - lat)
+            if (!best || d < best.distance) {
+              best = { space, distance: d, dropLon: lon, dropLat: lat }
+            }
+          }
         }
-        // Volume support comes in Phase E
       }
 
       return best ? { space: best.space, dropLon: best.dropLon, dropLat: best.dropLat } : null

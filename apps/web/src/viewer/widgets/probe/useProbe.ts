@@ -4,7 +4,7 @@ import {
 } from 'cesium'
 import type { Viewer as CesiumViewer } from 'cesium'
 import type { NavigableSpace, PathConstraintResult } from './types'
-import { buildPathEnu, constrainToPath } from './constraint'
+import { buildPathEnu, constrainToPath, constrainToVolume } from './constraint'
 
 /** useProbe — orchestrates entry/exit + per-frame constraint of the
  *  Cesium camera against a NavigableSpace. Returns the active probe
@@ -89,40 +89,69 @@ export function useProbe(viewer: CesiumViewer | null) {
         }
         lastCameraPosRef.current = Cartesian3.clone(cam.position)
 
-        const result: PathConstraintResult | null = constrainToPath({
-          targetLonLatH: [lonDeg, latDeg, carto.height],
-          velocityEnu: [velEnuEast, velEnuNorth, velEnuUp],
-          space: active,
-          dampThreshold: dampThresholdRef.current,
-        })
+        let resultPos: [number, number, number] | null = null
+        let resultDamp = 0
+        let resultT = 0
+        let resultPerp = 0
+        let resultTangent: [number, number, number] | null = null
 
-        if (!result) return
+        if (active.kind === 'path') {
+          const result: PathConstraintResult | null = constrainToPath({
+            targetLonLatH: [lonDeg, latDeg, carto.height],
+            velocityEnu: [velEnuEast, velEnuNorth, velEnuUp],
+            space: active,
+            dampThreshold: dampThresholdRef.current,
+          })
+          if (!result) return
+          resultPos = result.position
+          resultDamp = result.dampFraction
+          resultT = result.t
+          resultPerp = result.perpDistance
+          resultTangent = result.tangent
+        } else if (active.kind === 'volume') {
+          const result = constrainToVolume({
+            targetLonLatH: [lonDeg, latDeg, carto.height],
+            velocityEnu: [velEnuEast, velEnuNorth, velEnuUp],
+            space: active,
+            dampThreshold: dampThresholdRef.current,
+          })
+          if (!result) return
+          resultPos = result.position
+          resultDamp = result.dampFraction
+          resultT = 0  // volumes don't have a t parameter
+          resultPerp = result.distanceToFace
+          resultTangent = null
+        } else {
+          return // network kind: handled by switching active to a child
+        }
+
+        if (!resultPos) return
 
         // Write clamped position back to the camera (only when constraint
         // actually moved us — avoids fighting the camera controller).
-        const dx = result.position[0] - lonDeg
-        const dy = result.position[1] - latDeg
-        const dh = result.position[2] - carto.height
+        const dx = resultPos[0] - lonDeg
+        const dy = resultPos[1] - latDeg
+        const dh = resultPos[2] - carto.height
         const movedDeg = Math.hypot(dx, dy)
         const movedH = Math.abs(dh)
         if (movedDeg > 1e-9 || movedH > 0.001) {
-          const corrected = Cartesian3.fromDegrees(result.position[0], result.position[1], result.position[2])
+          const corrected = Cartesian3.fromDegrees(resultPos[0], resultPos[1], resultPos[2])
           cam.position = corrected
         }
 
         // Update UI state at lower frequency than 60 fps to avoid React thrash
         setState((s) => {
           const same =
-            Math.abs(s.t - result.t) < 0.001 &&
-            Math.abs(s.perpDistance - result.perpDistance) < 0.005 &&
-            Math.abs(s.dampFraction - result.dampFraction) < 0.02
+            Math.abs(s.t - resultT) < 0.001 &&
+            Math.abs(s.perpDistance - resultPerp) < 0.005 &&
+            Math.abs(s.dampFraction - resultDamp) < 0.02
           if (same) return s
           return {
             ...s,
-            t: result.t,
-            perpDistance: result.perpDistance,
-            dampFraction: result.dampFraction,
-            tangent: result.tangent,
+            t: resultT,
+            perpDistance: resultPerp,
+            dampFraction: resultDamp,
+            tangent: resultTangent,
           }
         })
       } catch {
@@ -148,8 +177,26 @@ export function useProbe(viewer: CesiumViewer | null) {
   const activate = useCallback(
     async (space: NavigableSpace, opts: ActivateOptions = {}) => {
       if (!viewer || viewer.isDestroyed()) return
+      if (space.kind === 'volume' && space.volumeGeometry?.bbox) {
+        // Volume entry: fly camera to the bbox centroid at mid-height.
+        const b = space.volumeGeometry.bbox
+        const cLon = (b.minLon + b.maxLon) / 2
+        const cLat = (b.minLat + b.maxLat) / 2
+        const cH = (b.minH + b.maxH) / 2
+        return new Promise<void>((resolve) => {
+          viewer.camera.flyTo({
+            destination: Cartesian3.fromDegrees(cLon, cLat, cH),
+            orientation: { heading: opts.headingRad ?? 0, pitch: 0, roll: 0 },
+            duration: opts.flyDurationS ?? 1.4,
+            complete: () => {
+              setState({ active: space, t: 0, perpDistance: 0, dampFraction: 0, tangent: null })
+              resolve()
+            },
+            cancel: () => resolve(),
+          })
+        })
+      }
       if (space.kind !== 'path' || !space.pathGeometry) {
-        // Volume support comes in Phase E; bail with a sensible message
         return
       }
 

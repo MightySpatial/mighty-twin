@@ -49,11 +49,6 @@ export function ProbeMapLayer({ viewer, siteSlug, highlightSpaceId, activeSpaceI
     viewer.scene.primitives.add(points)
 
     for (const space of spaces) {
-      if (space.kind !== 'path' || !space.pathGeometry) continue
-      const positions = space.pathGeometry.vertices.map(([lon, lat, h]) =>
-        Cartesian3.fromDegrees(lon, lat, h),
-      )
-
       const isActive = activeSpaceId === space.id
       const isHover = highlightSpaceId === space.id
       const color = isActive
@@ -62,18 +57,60 @@ export function ProbeMapLayer({ viewer, siteSlug, highlightSpaceId, activeSpaceI
         ? Color.fromCssColorString('#818cf8')
         : Color.fromCssColorString('#6366f1').withAlpha(0.7)
 
-      lines.add({
-        positions,
-        width: isActive ? 5 : isHover ? 4 : 2.5,
-        material: Material.fromType('PolylineDash', {
+      let pathPositions: Cartesian3[] | null = null
+      if (space.kind === 'path' && space.pathGeometry) {
+        pathPositions = space.pathGeometry.vertices.map(([lon, lat, h]) =>
+          Cartesian3.fromDegrees(lon, lat, h),
+        )
+        lines.add({
+          positions: pathPositions,
+          width: isActive ? 5 : isHover ? 4 : 2.5,
+          material: Material.fromType('PolylineDash', {
+            color,
+            dashLength: 16,
+            dashPattern: 255,
+          }),
+        })
+      } else if (space.kind === 'volume' && space.volumeGeometry?.bbox) {
+        // Render the bbox footprint as a closed dashed rectangle on the surface.
+        const b = space.volumeGeometry.bbox
+        const corners: Array<[number, number, number]> = [
+          [b.minLon, b.minLat, b.minH],
+          [b.maxLon, b.minLat, b.minH],
+          [b.maxLon, b.maxLat, b.minH],
+          [b.minLon, b.maxLat, b.minH],
+          [b.minLon, b.minLat, b.minH],
+        ]
+        const positions = corners.map(([lon, lat, h]) => Cartesian3.fromDegrees(lon, lat, h))
+        lines.add({
+          positions,
+          width: isActive ? 4 : isHover ? 3 : 2,
+          material: Material.fromType('PolylineDash', {
+            color,
+            dashLength: 12,
+            dashPattern: 255,
+          }),
+        })
+        // Center marker
+        points.add({
+          position: Cartesian3.fromDegrees(
+            (b.minLon + b.maxLon) / 2,
+            (b.minLat + b.maxLat) / 2,
+            (b.minH + b.maxH) / 2,
+          ),
           color,
-          dashLength: 16,
-          dashPattern: 255,
-        }),
-      })
+          outlineColor: Color.WHITE.withAlpha(0.8),
+          outlineWidth: 1.5,
+          pixelSize: isActive ? 8 : 6,
+        })
+        continue // skip the path-specific endpoint/junction logic below
+      } else {
+        continue
+      }
 
-      // Endpoint dots
-      const endpoints = [positions[0], positions[positions.length - 1]]
+      // Endpoint dots (paths only)
+      if (!pathPositions) continue
+      const endpoints = [pathPositions[0], pathPositions[pathPositions.length - 1]]
       for (const pos of endpoints) {
         points.add({
           position: pos,
